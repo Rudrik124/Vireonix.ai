@@ -744,7 +744,7 @@ export function AIGenerativeVideoPage() {
         isOpen={isLoginOpen}
         onClose={() => setIsLoginOpen(false)}
         customTitle="Login Required"
-        customMessage="Please login to generate your video"
+        customMessage="Please sign in to generate your video."
       />
 
       <HistoryDialog 

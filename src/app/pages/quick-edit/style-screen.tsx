@@ -26,6 +26,7 @@ import {
   Video,
   Image as ImageIcon,
   Maximize2,
+  Minimize2,
   Volume2,
   VolumeX,
   X,
@@ -141,87 +142,1280 @@ const CANVAS_PREVIEW_FILTERS = [
   'retro-film',
 ];
 
-const TimelineHub = memo(({ mediaItems, audioTracks, progress, handleTimelineClick, activePreviewId }: any) => (
-  <div className="flex flex-col gap-4">
-    <div className="flex items-center justify-between text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em]">
-      <div className="flex items-center gap-2">
-        <span className="text-white">Timeline Hub</span>
-        <div className="w-[1px] h-3 bg-white/10" />
-        <span>{mediaItems.length} Layers • {audioTracks.length} Tracks</span>
-      </div>
-      <div className="flex items-center gap-4">
-        <div className="px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-[8px] text-emerald-400 tracking-tighter uppercase font-black">Ready for Studio</div>
-      </div>
-    </div>
+const TimelineHub = memo(({
+  mediaItems,
+  audioTracks,
+  progress,
+  handleTimelineClick,
+  activePreviewId,
+  setActivePreviewId,
+  isPlaying,
+  clipTrimRanges,
+  setClipTrimRanges,
+  getTrimRangeForItem,
+  videoRef,
+  handleAddAudio,
+  handleAddVideo,
+  handleReorderClips,
+  getMediaDuration,
+  setMediaItems,
+  saveToUndo,
+  timelineSize,
+  setTimelineSize
+}: any) => {
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [showAudioChoiceLocal, setShowAudioChoiceLocal] = useState(false);
+  const [selectedAudioLane, setSelectedAudioLane] = useState(0);
 
-    <div className="h-11 w-full relative group cursor-pointer" onClick={handleTimelineClick}>
-      <div className="absolute inset-0 bg-white/5 rounded-xl border border-white/10 transition-colors" />
+  const pixelsPerSecond = 20; // 20px represents 1 second on the timeline
 
-      <div className="absolute inset-y-[2px] left-1 right-1 flex gap-[2px] pointer-events-none">
-        {mediaItems.map((item: any, i: number) => {
-          const totalDuration = mediaItems.reduce((acc: any, item: any) => acc + item.duration, 0);
-          const widthPercent = (item.duration / (totalDuration || 1)) * 100;
-          const isActive = activePreviewId === item.id;
-          return (
-            <div
-              key={item.id}
-              style={{ width: `${widthPercent}%` }}
-              className={`h-full transition-all duration-500 relative ${i === 0 ? 'rounded-l-lg' : ''} ${i === mediaItems.length - 1 ? 'rounded-r-lg' : ''} ${isActive
-                ? 'bg-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.2)] border-x border-cyan-400/50 z-10'
-                : 'bg-white/5 border-x border-white/10'
-                }`}
-            >
-              {isActive && (
-                <motion.div
-                  layoutId="activeTimelineGlow"
-                  className="absolute inset-0 bg-cyan-400/10 blur-sm"
-                />
-              )}
-            </div>
-          );
-        })}
-        {mediaItems.length === 0 && (
-          <div className="flex-1 h-full bg-white/5 border border-dashed border-white/10 rounded-lg flex items-center justify-center">
-            <span className="text-[8px] font-bold text-slate-700 uppercase tracking-widest">No Media Sequence</span>
-          </div>
-        )}
-      </div>
+  const dragRef = useRef<{
+    itemId: string;
+    type: 'start' | 'end';
+    initialX: number;
+    initialVal: number;
+    itemDuration: number;
+    currentTrim: { start: number; end: number };
+  } | null>(null);
 
-      <motion.div
-        initial={false}
-        animate={{ left: `${progress}%` }}
-        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className="absolute top-0 bottom-0 w-[1px] bg-cyan-400 z-20 shadow-[0_0_15px_rgba(34,211,238,0.8)] pointer-events-none"
-      >
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-cyan-400" />
-        <div className="absolute inset-y-0 left-[-1px] right-[-1px] bg-cyan-400/20 blur-[2px]" />
-      </motion.div>
-    </div>
-  </div>
-));
+  const handleMouseDown = (e: React.MouseEvent, itemId: string, type: 'start' | 'end', itemDuration: number) => {
+    e.stopPropagation();
+    e.preventDefault();
 
-const QuickToolsGrid = memo(({ QUICK_TOOLS, setActiveTool, copyActiveClip }: any) => (
-  <div className="grid grid-cols-3 gap-3">
-    {QUICK_TOOLS.map((tool: any, index: number) => (
-      <button
-        key={index}
-        onClick={() => {
-          if (tool.id === 'copy') {
-            copyActiveClip();
-            return;
+    const currentTrim = getTrimRangeForItem(itemId, itemDuration);
+    const initialVal = type === 'start' ? currentTrim.start : currentTrim.end;
+
+    dragRef.current = {
+      itemId,
+      type,
+      initialX: e.clientX,
+      initialVal,
+      itemDuration,
+      currentTrim
+    };
+    setIsDragging(true);
+
+    const handleMouseMove = (ev: MouseEvent) => {
+      const drag = dragRef.current;
+      if (!drag) return;
+
+      const dx = ev.clientX - drag.initialX;
+      const dt = dx / pixelsPerSecond; // Convert pixel delta straight to seconds
+
+      let newVal = drag.initialVal + dt;
+
+      if (drag.type === 'start') {
+        newVal = Math.max(0, Math.min(drag.currentTrim.end - 0.1, newVal));
+        setClipTrimRanges((prev: any) => ({
+          ...prev,
+          [drag.itemId]: {
+            start: newVal,
+            end: drag.currentTrim.end
           }
-          setActiveTool(tool.id);
-        }}
-        className="flex flex-col items-center gap-2 p-3 rounded-xl bg-white/10 border border-white/10 hover:bg-white/20 hover:border-white/30 transition-all active:scale-[0.98] group"
-      >
-        <tool.icon className={`w-5 h-5 ${tool.color} group-hover:scale-105 transition-transform`} />
-        <span className="text-[8px] font-bold text-slate-200 uppercase tracking-widest">{tool.label}</span>
-      </button>
-    ))}
+        }));
+        if (videoRef && videoRef.current && drag.itemId === activePreviewId) {
+          videoRef.current.currentTime = newVal;
+        }
+      } else {
+        newVal = Math.max(drag.currentTrim.start + 0.1, Math.min(drag.itemDuration, newVal));
+        setClipTrimRanges((prev: any) => ({
+          ...prev,
+          [drag.itemId]: {
+            start: drag.currentTrim.start,
+            end: newVal
+          }
+        }));
+        if (videoRef && videoRef.current && drag.itemId === activePreviewId) {
+          videoRef.current.currentTime = newVal;
+        }
+      }
+    };
+
+    const handleMouseUp = () => {
+      dragRef.current = null;
+      setIsDragging(false);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+  };
+
+  // Calculate timeline durations
+  const totalDuration = mediaItems.reduce((acc: number, it: any) => {
+    const t = getTrimRangeForItem(it.id, it.duration);
+    const eff = it.type === 'video' ? (t.end - t.start) : it.duration;
+    return acc + (Number(eff) || 3.0);
+  }, 0) || 1;
+
+  const playheadLeft = (progress / 100) * totalDuration * pixelsPerSecond;
+
+  const localHandleTimelineClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (totalDuration === 0) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const globalSeekTime = clickX / pixelsPerSecond;
+    const clampedSeekTime = Math.max(0, Math.min(totalDuration, globalSeekTime));
+    
+    handleTimelineClick(clampedSeekTime);
+  };
+
+  return (
+    <div className="flex flex-col h-full bg-[#080914] border border-white/10 rounded-xl overflow-hidden shadow-2xl relative">
+      {/* Timeline Header Toolbar */}
+      <div className="h-8 border-b border-white/5 bg-[#0d0e1f]/60 px-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-widest flex-none">
+        <div className="flex items-center gap-4">
+          <span className="text-white">Timeline 1</span>
+          <div className="w-[1px] h-3 bg-white/10" />
+          <span>{mediaItems.length} Video Clips • {audioTracks.length} Audio Tracks</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="px-1.5 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[8px] uppercase tracking-wider font-black">Edit Mode</span>
+          
+          <div className="w-[1px] h-3 bg-white/10" />
+
+          {/* Timeline height adjust controls */}
+          <div className="flex items-center gap-1 bg-black/40 p-0.5 rounded-lg border border-white/5">
+            <button
+              onClick={() => setTimelineSize('minimized')}
+              className={`p-1 rounded text-[8px] font-black uppercase tracking-wider flex items-center justify-center transition-all ${
+                timelineSize === 'minimized'
+                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+                  : 'text-slate-500 hover:text-slate-300 hover:bg-white/5 border border-transparent'
+              }`}
+              title="Minimize Timeline"
+            >
+              <Minimize2 className="w-2.5 h-2.5" />
+            </button>
+            <button
+              onClick={() => setTimelineSize('normal')}
+              className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider flex items-center justify-center transition-all ${
+                timelineSize === 'normal'
+                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+                  : 'text-slate-500 hover:text-slate-300 hover:bg-white/5 border border-transparent'
+              }`}
+              title="Normal Timeline"
+            >
+              Normal
+            </button>
+            <button
+              onClick={() => setTimelineSize('maximized')}
+              className={`p-1 rounded text-[8px] font-black uppercase tracking-wider flex items-center justify-center transition-all ${
+                timelineSize === 'maximized'
+                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+                  : 'text-slate-500 hover:text-slate-300 hover:bg-white/5 border border-transparent'
+              }`}
+              title="Maximize Timeline"
+            >
+              <Maximize2 className="w-2.5 h-2.5" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex-1 flex overflow-hidden">
+        {/* Track Headers (Left Pane of Timeline) */}
+        <div className="w-16 md:w-20 border-r border-white/10 bg-[#0d0e1f]/40 flex flex-col flex-none select-none">
+          {/* Timeline ruler spacer */}
+          <div className="h-6 border-b border-white/5 bg-black/20" />
+          
+          {/* Video track header */}
+          <div className="flex-1 border-b border-white/5 p-2 flex flex-col justify-center min-h-[44px]">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-black text-slate-300">V1</span>
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleAddVideo();
+                }}
+                className="w-4 h-4 rounded-full bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 hover:bg-cyan-500 hover:text-[#0b0d1f] hover:border-cyan-400 transition-all flex items-center justify-center cursor-pointer shadow-md"
+                title="Add Video/Image"
+              >
+                <Plus className="w-2.5 h-2.5" />
+              </button>
+            </div>
+            <span className="text-[7px] text-slate-600 font-bold uppercase mt-0.5">Video</span>
+          </div>
+
+          {/* Audio track headers A1 to A4 */}
+          {[0, 1, 2, 3].map((idx) => {
+            const laneName = `A${idx + 1}`;
+            return (
+              <div key={idx} className="flex-1 p-2 flex flex-col justify-center min-h-[30px] border-b border-white/5 last:border-b-0 relative group/audioheader">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black text-slate-300">{laneName}</span>
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedAudioLane(idx);
+                      setShowAudioChoiceLocal(true);
+                    }}
+                    className="w-4 h-4 rounded-full bg-purple-500/20 border border-purple-500/30 text-purple-300 hover:bg-purple-500 hover:text-[#0b0d1f] hover:border-purple-400 transition-all flex items-center justify-center cursor-pointer shadow-md"
+                    title={`Add Audio to ${laneName}`}
+                  >
+                    <Plus className="w-2.5 h-2.5" />
+                  </button>
+                </div>
+                <span className="text-[7px] text-slate-600 font-bold uppercase mt-0.5">Audio</span>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Tracks Area (Right Pane of Timeline) - Horizontally Scrollable! */}
+        <div className="flex-1 flex flex-col relative overflow-x-auto overflow-y-hidden custom-scrollbar bg-black/10 select-none">
+          <div 
+            style={{ width: `${Math.max(400, totalDuration * pixelsPerSecond + 100)}px`, minWidth: '100%' }} 
+            className="flex-1 flex flex-col relative h-full"
+          >
+            
+            {/* Time Ruler */}
+            <div 
+              className="h-6 border-b border-white/5 bg-black/30 relative flex items-end px-1 select-none cursor-pointer" 
+              onClick={localHandleTimelineClick}
+            >
+              <div className="absolute inset-0 pointer-events-none flex justify-between px-2 text-[8px] text-slate-600 font-mono py-0.5">
+                <span>00:00:00</span>
+                <span>00:00:05</span>
+                <span>00:00:10</span>
+                <span>00:00:15</span>
+                <span>00:00:20</span>
+                <span>00:00:25</span>
+                <span>00:00:30</span>
+              </div>
+            </div>
+
+            <div className="flex-1 flex flex-col relative" onClick={localHandleTimelineClick}>
+              
+              {/* Playhead (Red line) */}
+              <motion.div
+                initial={false}
+                animate={{ left: `${playheadLeft}px` }}
+                transition={isPlaying ? { duration: 0 } : { type: "spring", stiffness: 300, damping: 30 }}
+                className="absolute top-0 bottom-0 w-[2px] bg-red-500 z-30 shadow-[0_0_10px_rgba(239,68,68,0.8)] pointer-events-none"
+                style={{ transform: 'translateX(-50%)' }}
+              >
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-red-500 border border-red-400 rotate-45 transform origin-top -translate-y-1.5 shadow" />
+                <div className="absolute inset-y-0 left-[-1px] right-[-1px] bg-red-500/20 blur-[1px]" />
+              </motion.div>
+
+              {/* Video Track Lane (V1) */}
+              <div 
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={async (e) => {
+                  e.preventDefault();
+                  const files = Array.from(e.dataTransfer.files || []);
+                  if (files.length > 0) {
+                    const newItems = await Promise.all(files.map(async file => ({
+                      id: Math.random().toString(36).substr(2, 9),
+                      file,
+                      preview: URL.createObjectURL(file),
+                      type: file.type.startsWith('video/') ? 'video' as const : 'image' as const,
+                      duration: await getMediaDuration(file)
+                    })));
+                    setMediaItems((prev: any) => {
+                      const filteredPrev = prev.filter((p: any) => p.id !== 'initial' || p.file !== null);
+                      const updated = [...filteredPrev, ...newItems];
+                      saveToUndo(updated);
+                      return updated;
+                    });
+                  } else {
+                    const clipId = e.dataTransfer.getData('clipId');
+                    const fromIndexStr = e.dataTransfer.getData('dragIndex');
+                    if (clipId && !fromIndexStr) {
+                      const item = mediaItems.find((m: any) => m.id === clipId);
+                      if (item) {
+                        setActivePreviewId(item.id);
+                      }
+                    }
+                  }
+                }}
+                className="flex-1 border-b border-white/5 relative flex items-center bg-white/[0.01]"
+              >
+                <div ref={trackRef} className="absolute inset-0 flex gap-0 p-0">
+                  {mediaItems.map((item: any, i: number) => {
+                    const trim = getTrimRangeForItem(item.id, item.duration);
+                    const effectiveDuration = item.type === 'video' ? (trim.end - trim.start) : item.duration;
+                    const widthPx = effectiveDuration * pixelsPerSecond;
+                    const isActive = activePreviewId === item.id;
+                    return (
+                      <div
+                        key={item.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActivePreviewId(item.id);
+                        }}
+                        draggable="true"
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData('clipId', item.id);
+                          e.dataTransfer.setData('dragIndex', String(i));
+                        }}
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          const draggedId = e.dataTransfer.getData('clipId');
+                          const fromIndexStr = e.dataTransfer.getData('dragIndex');
+                          if (fromIndexStr) {
+                            const fromIdx = Number(fromIndexStr);
+                            const toIdx = i;
+                            if (fromIdx !== toIdx) {
+                              handleReorderClips(fromIdx, toIdx);
+                            }
+                          } else if (draggedId) {
+                            handleReorderClips(draggedId, i);
+                          }
+                        }}
+                        style={{ width: `${widthPx}px` }}
+                        className={`h-full relative overflow-hidden rounded-md border flex items-center px-2 cursor-pointer ${
+                          isDragging && dragRef.current?.itemId === item.id ? '' : 'transition-all duration-300'
+                        } ${isActive
+                          ? 'bg-cyan-500/20 border-cyan-400 shadow-[inset_0_0_10px_rgba(34,211,238,0.2)] text-white'
+                          : 'bg-cyan-950/20 border-white/5 hover:border-white/20 text-slate-400'
+                          }`}
+                      >
+                        {item.type === 'video' ? (
+                          <Video className="w-3.5 h-3.5 mr-1 flex-shrink-0 text-cyan-400/70" />
+                        ) : (
+                          <ImageIcon className="w-3.5 h-3.5 mr-1 flex-shrink-0 text-cyan-400/70" />
+                        )}
+                        <span className="text-[8px] font-black uppercase tracking-wider truncate mr-1">
+                          {item.file ? item.file.name : `Clip ${i + 1}`}
+                        </span>
+                        <span className="text-[7px] text-slate-500 font-mono ml-auto flex-shrink-0 z-10">
+                          {effectiveDuration.toFixed(1)}s
+                        </span>
+
+                        {/* Trimming Handles for Video Clips */}
+                        {isActive && item.type === 'video' && (
+                          <>
+                            {/* Left Handle (Trim Start) */}
+                            <div
+                              onMouseDown={(e) => handleMouseDown(e, item.id, 'start', item.duration)}
+                              className="absolute left-0 top-0 bottom-0 w-2 bg-cyan-400/90 cursor-ew-resize hover:bg-cyan-300 hover:w-2.5 z-20 flex items-center justify-center border-r border-black/40 shadow-[0_0_8px_rgba(34,211,238,0.4)] transition-all"
+                              title="Trim Start"
+                            >
+                              <div className="w-[1px] h-3 bg-black/60 rounded" />
+                            </div>
+                            
+                            {/* Right Handle (Trim End) */}
+                            <div
+                              onMouseDown={(e) => handleMouseDown(e, item.id, 'end', item.duration)}
+                              className="absolute right-0 top-0 bottom-0 w-2 bg-cyan-400/90 cursor-ew-resize hover:bg-cyan-300 hover:w-2.5 z-20 flex items-center justify-center border-l border-black/40 shadow-[0_0_8px_rgba(34,211,238,0.4)] transition-all"
+                              title="Trim End"
+                            >
+                              <div className="w-[1px] h-3 bg-black/60 rounded" />
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {mediaItems.length === 0 && (
+                    <div className="w-full h-full flex items-center justify-center border border-dashed border-white/5 rounded-lg">
+                      <span className="text-[8px] font-bold text-slate-600 uppercase tracking-widest">Empty Video Track</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Audio Track Lanes A1 to A4 */}
+              {[0, 1, 2, 3].map((idx) => {
+                const laneAudios = audioTracks.filter((t: any) => (t.trackIndex ?? 0) === idx);
+                return (
+                  <div key={idx} className="flex-1 border-b border-white/5 last:border-b-0 relative flex items-center bg-white/[0.01]">
+                    <div className="absolute inset-0 flex gap-0 p-0">
+                      {laneAudios.map((track: any) => {
+                        return (
+                          <div
+                            key={track.id}
+                            style={{ width: `${totalDuration * pixelsPerSecond}px` }}
+                            className="h-full flex-none rounded-md border border-purple-500/30 bg-purple-500/10 flex items-center justify-between px-2 select-none"
+                          >
+                            <div className="flex items-center overflow-hidden">
+                              <Music className="w-3 h-3 mr-1 text-purple-400 flex-shrink-0" />
+                              <span className="text-[8px] font-black uppercase tracking-wider text-purple-300 truncate">
+                                {track.name}
+                              </span>
+                            </div>
+                            
+                            {/* Waveform graphic */}
+                            <div className="flex items-center gap-[1px] h-3 mr-2">
+                              {[4, 8, 12, 6, 10, 4, 8, 12, 6, 2, 8, 4].map((h, index) => (
+                                <div
+                                  key={index}
+                                  style={{ height: `${h}px` }}
+                                  className={`w-[1px] bg-purple-400/60 rounded-full ${isPlaying ? 'animate-pulse' : ''}`}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {laneAudios.length === 0 && (
+                        <div 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedAudioLane(idx);
+                            setShowAudioChoiceLocal(!showAudioChoiceLocal);
+                          }}
+                          className="w-full h-full flex flex-col items-center justify-center border border-dashed border-purple-500/15 hover:border-purple-500/40 hover:bg-purple-500/[0.02] cursor-pointer rounded-lg transition-all group relative"
+                        >
+                          <div className="absolute inset-0 flex items-center gap-[2px] opacity-[0.01] pointer-events-none">
+                            {Array.from({ length: 40 }).map((_, i) => (
+                              <div
+                                key={i}
+                                style={{ height: `${Math.sin(i * 0.5) * 12 + 16}px` }}
+                                className="w-[2px] bg-white rounded-full"
+                              />
+                            ))}
+                          </div>
+                          <div className="flex items-center gap-1.5 text-[8px] font-bold text-slate-500 group-hover:text-purple-400 uppercase tracking-widest transition-colors z-10">
+                            <Plus className="w-3 h-3 text-purple-500/60 group-hover:text-purple-400" />
+                            <span>Add Track A{idx + 1} Audio</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Floating Audio Tracks Choice Overlay inside TimelineHub */}
+      <AnimatePresence>
+        {showAudioChoiceLocal && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+            className="absolute left-20 bottom-3 z-45 flex items-center gap-3 bg-[#0c0d1ebf] border border-white/10 p-2.5 rounded-xl shadow-2xl backdrop-blur-2xl"
+          >
+            <button
+              onClick={() => {
+                handleAddAudio('extracted', selectedAudioLane);
+                setShowAudioChoiceLocal(false);
+              }}
+              className="flex flex-col items-center gap-1.5 p-2 rounded-lg hover:bg-white/5 text-slate-300 w-20 transition-all border border-transparent hover:border-white/5 active:scale-95"
+            >
+              <Scissors className="w-4 h-4 text-purple-400" />
+              <span className="text-[7.5px] font-black uppercase tracking-wider text-slate-300">Extract</span>
+            </button>
+            <div className="w-[1px] h-8 bg-white/10" />
+            <button
+              onClick={() => {
+                handleAddAudio('direct', selectedAudioLane);
+                setShowAudioChoiceLocal(false);
+              }}
+              className="flex flex-col items-center gap-1.5 p-2 rounded-lg hover:bg-white/5 text-slate-300 w-20 transition-all border border-transparent hover:border-white/5 active:scale-95"
+            >
+              <FileAudio className="w-4 h-4 text-cyan-400" />
+              <span className="text-[7.5px] font-black uppercase tracking-wider text-slate-300">Upload</span>
+            </button>
+            <button 
+              onClick={() => setShowAudioChoiceLocal(false)} 
+              className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-slate-950 border border-white/10 flex items-center justify-center text-slate-500 hover:text-white transition-colors cursor-pointer"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+});
+
+const AudioMixer = memo(({ isPlaying, isMuted }: any) => {
+  // Use stable/constant values if not playing, animate slightly if playing
+  const val1 = isMuted ? 0 : isPlaying ? Math.floor(Math.sin(Date.now() / 200) * 15) + 60 : 50;
+  const val2 = isMuted ? 0 : isPlaying ? Math.floor(Math.cos(Date.now() / 150) * 10) + 65 : 55;
+
+  return (
+    <div className="w-24 md:w-28 bg-[#0c0d1e] border border-white/10 rounded-xl p-2.5 flex flex-col h-full select-none shadow-xl flex-none">
+      <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 text-center block">Mixer</span>
+      <div className="flex-1 flex gap-2 justify-center items-stretch h-[80px]">
+        {/* A1 Track volume meter */}
+        <div className="flex flex-col items-center flex-1">
+          <div className="flex-1 w-2 bg-black/40 rounded-full overflow-hidden flex flex-col justify-end p-[1px] relative">
+            <div
+              className="w-full rounded-full transition-all duration-100 bg-gradient-to-t from-emerald-500 via-yellow-400 to-red-500"
+              style={{ height: `${val1}%` }}
+            />
+          </div>
+          <span className="text-[7px] text-slate-500 font-bold uppercase mt-1">A1</span>
+        </div>
+
+        {/* Master Output meter */}
+        <div className="flex flex-col items-center flex-1">
+          <div className="flex-1 w-2 bg-black/40 rounded-full overflow-hidden flex flex-col justify-end p-[1px] relative">
+            <div
+              className="w-full rounded-full transition-all duration-100 bg-gradient-to-t from-emerald-500 via-yellow-400 to-red-500"
+              style={{ height: `${val2}%` }}
+            />
+          </div>
+          <span className="text-[7px] text-slate-500 font-bold uppercase mt-1">MST</span>
+        </div>
+      </div>
+    </div>
+  );
+});
+
+const QuickToolsGrid = memo(({ QUICK_TOOLS, activeTool, setActiveTool, copyActiveClip, setExpandedSections }: any) => (
+  <div className="grid grid-cols-3 gap-2">
+    {QUICK_TOOLS.map((tool: any, index: number) => {
+      const isSelected = activeTool === tool.id;
+      return (
+        <button
+          key={index}
+          onClick={() => {
+            if (tool.id === 'copy') {
+              copyActiveClip();
+              return;
+            }
+            setActiveTool(tool.id);
+            
+            // Auto expand the corresponding Inspector accordion group
+            if (['effects', 'transitions', 'filters'].includes(tool.id)) {
+              setExpandedSections((prev: any) => ({ ...prev, fx: true }));
+            } else if (['speed', 'trim'].includes(tool.id)) {
+              setExpandedSections((prev: any) => ({ ...prev, speed: true }));
+            } else if (['rotate', 'zoom', 'keyframe'].includes(tool.id)) {
+              setExpandedSections((prev: any) => ({ ...prev, transform: true }));
+            } else if (tool.id === 'crop') {
+              setExpandedSections((prev: any) => ({ ...prev, cropping: true }));
+            } else if (tool.id === 'volume') {
+              setExpandedSections((prev: any) => ({ ...prev, audio: true }));
+            } else if (tool.id === 'text-tool') {
+              setExpandedSections((prev: any) => ({ ...prev, text: true }));
+            }
+          }}
+          className={`flex flex-col items-center justify-center gap-1.5 p-2.5 rounded-xl border transition-all active:scale-[0.98] group ${
+            isSelected 
+              ? 'bg-cyan-500/20 border-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.2)]' 
+              : 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/15'
+          }`}
+        >
+          <tool.icon className={`w-4 h-4 ${tool.color} group-hover:scale-105 transition-transform`} />
+          <span className="text-[8px] font-bold text-slate-300 uppercase tracking-wider text-center line-clamp-1">{tool.label}</span>
+        </button>
+      );
+    })}
   </div>
 ));
 
+const ToolInspector = memo(({
+  activeTool,
+  setActiveTool,
+  selectedFilter,
+  setSelectedFilter,
+  selectedEffect,
+  setSelectedEffect,
+  blurAmount,
+  setBlurAmount,
+  brightness,
+  setBrightness,
+  contrast,
+  setContrast,
+  saturation,
+  setSaturation,
+  slowMotionSpeed,
+  setSlowMotionSpeed,
+  glitchIntensity,
+  setGlitchIntensity,
+  animatedText,
+  setAnimatedText,
+  overlayText,
+  setOverlayText,
+  overlayFontId,
+  setOverlayFontId,
+  overlayFontSize,
+  setOverlayFontSize,
+  overlayColor,
+  setOverlayColor,
+  overlayPosX,
+  setOverlayPosX,
+  overlayPosY,
+  setOverlayPosY,
+  isTextPlacementMode,
+  setIsTextPlacementMode,
+  clipTransitions,
+  applyTransitionForActiveClip,
+  speedValue,
+  setSpeedValue,
+  activePreviewId,
+  activePreviewItem,
+  getTrimRangeForItem,
+  clipTrimRanges,
+  setClipTrimRanges,
+  rotationDegrees,
+  setRotationDegrees,
+  volumeLevel,
+  setVolumeLevel,
+  isMuted,
+  setIsMuted,
+  cropWidthPct,
+  setCropWidthPct,
+  cropHeightPct,
+  setCropHeightPct,
+  cropCenterX,
+  setCropCenterX,
+  cropCenterY,
+  setCropCenterY,
+  zoomToolAmount,
+  setZoomToolAmount,
+  keyframeMode,
+  setKeyframeMode,
+  keyframeAmount,
+  setKeyframeAmount,
+  videoRef
+}: any) => {
+  switch (activeTool) {
+    case 'filters':
+      return (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between border-b border-white/5 pb-1.5">
+            <span className="text-[9px] font-black uppercase tracking-widest text-slate-300">Filters</span>
+            <span className="text-[8px] text-slate-500 font-bold uppercase">Color Presets</span>
+          </div>
+          <div className="space-y-1.5 max-h-56 overflow-y-auto custom-scrollbar pr-1">
+            <button
+              onClick={() => setSelectedFilter('none')}
+              className={`w-full px-2.5 py-2 rounded-lg text-left text-[9px] font-bold uppercase tracking-wider transition-colors ${selectedFilter === 'none' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10'}`}
+            >
+              No Filter
+            </button>
+            {[
+              { id: 'vintage', label: 'Vintage (Old Film)' },
+              { id: 'black-white', label: 'Black and White' },
+              { id: 'cinematic', label: 'Cinematic' },
+              { id: 'warm', label: 'Warm' },
+              { id: 'cool', label: 'Cool' },
+              { id: 'sepia', label: 'Sepia' },
+              { id: 'hdr', label: 'HDR' },
+              { id: 'vivid', label: 'Vivid' },
+              { id: 'soft-glow', label: 'Soft Glow' },
+              { id: 'retro-film', label: 'Retro Film (VHS)' },
+            ].map((f) => (
+              <button
+                key={f.id}
+                onClick={() => setSelectedFilter(f.id as any)}
+                className={`w-full px-2.5 py-2 rounded-lg text-left text-[9px] font-bold uppercase tracking-wider transition-colors ${selectedFilter === f.id ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10'}`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+    case 'effects':
+      return (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between border-b border-white/5 pb-1.5">
+            <span className="text-[9px] font-black uppercase tracking-widest text-slate-300">Effects</span>
+            <span className="text-[8px] text-slate-500 font-bold uppercase">Visual FX</span>
+          </div>
+          <div className="space-y-1.5 max-h-48 overflow-y-auto custom-scrollbar pr-1">
+            <button
+              onClick={() => setSelectedEffect('none')}
+              className={`w-full px-2.5 py-2 rounded-lg text-left text-[9px] font-bold uppercase tracking-wider transition-colors ${selectedEffect === 'none' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10'}`}
+            >
+              No Effect
+            </button>
+            {[
+              { id: 'fade-in', label: 'Fade In' },
+              { id: 'blur', label: 'Blur' },
+              { id: 'zoom', label: 'Zoom' },
+              { id: 'color-correction', label: 'Color Correction' },
+              { id: 'green-screen', label: 'Green Screen' },
+              { id: 'slow-motion', label: 'Slow Motion' },
+              { id: 'glitch', label: 'Glitch' },
+              { id: 'transition', label: 'Transition' },
+              { id: 'text-animation', label: 'Text Animation' },
+              { id: 'motion-tracking', label: 'Motion Tracking' },
+            ].map((eff) => (
+              <button
+                key={eff.id}
+                onClick={() => setSelectedEffect(eff.id as any)}
+                className={`w-full px-2.5 py-2 rounded-lg text-left text-[9px] font-bold uppercase tracking-wider transition-colors ${selectedEffect === eff.id ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'bg-white/5 text-slate-300 border-white/10 hover:bg-white/10'}`}
+              >
+                {eff.label}
+              </button>
+            ))}
+          </div>
 
+          {selectedEffect === 'blur' && (
+            <div className="mt-2 p-2.5 rounded-lg bg-white/5 border border-white/10 space-y-1.5">
+              <div className="flex items-center justify-between text-[8px] font-bold uppercase tracking-widest text-slate-300">
+                <span>Blur Amount</span>
+                <span>{blurAmount}px</span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={30}
+                value={blurAmount}
+                onChange={(e) => setBlurAmount(Number(e.target.value))}
+                className="w-full accent-cyan-400"
+              />
+            </div>
+          )}
+
+          {selectedEffect === 'color-correction' && (
+            <div className="mt-2 p-2.5 rounded-lg bg-white/5 border border-white/10 space-y-2.5">
+              <div>
+                <div className="flex items-center justify-between text-[8px] font-bold uppercase tracking-widest text-slate-300 mb-0.5">
+                  <span>Brightness</span>
+                  <span>{brightness.toFixed(1)}</span>
+                </div>
+                <input
+                  type="range"
+                  min={0.1}
+                  max={3}
+                  step={0.1}
+                  value={brightness}
+                  onChange={(e) => setBrightness(Number(e.target.value))}
+                  className="w-full accent-cyan-400"
+                />
+              </div>
+              <div>
+                <div className="flex items-center justify-between text-[8px] font-bold uppercase tracking-widest text-slate-300 mb-0.5">
+                  <span>Contrast</span>
+                  <span>{contrast.toFixed(1)}</span>
+                </div>
+                <input
+                  type="range"
+                  min={0.1}
+                  max={3}
+                  step={0.1}
+                  value={contrast}
+                  onChange={(e) => setContrast(Number(e.target.value))}
+                  className="w-full accent-cyan-400"
+                />
+              </div>
+              <div>
+                <div className="flex items-center justify-between text-[8px] font-bold uppercase tracking-widest text-slate-300 mb-0.5">
+                  <span>Saturation</span>
+                  <span>{saturation.toFixed(1)}</span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={3}
+                  step={0.1}
+                  value={saturation}
+                  onChange={(e) => setSaturation(Number(e.target.value))}
+                  className="w-full accent-cyan-400"
+                />
+              </div>
+            </div>
+          )}
+
+          {selectedEffect === 'slow-motion' && (
+            <div className="mt-2 p-2.5 rounded-lg bg-white/5 border border-white/10 space-y-1.5">
+              <div className="flex items-center justify-between text-[8px] font-bold uppercase tracking-widest text-slate-300">
+                <span>Speed</span>
+                <span>{slowMotionSpeed.toFixed(2)}x</span>
+              </div>
+              <input
+                type="range"
+                min={0.1}
+                max={1}
+                step={0.1}
+                value={slowMotionSpeed}
+                onChange={(e) => setSlowMotionSpeed(Number(e.target.value))}
+                className="w-full accent-cyan-400"
+              />
+            </div>
+          )}
+
+          {selectedEffect === 'glitch' && (
+            <div className="mt-2 p-2.5 rounded-lg bg-white/5 border border-white/10 space-y-1.5">
+              <div className="flex items-center justify-between text-[8px] font-bold uppercase tracking-widest text-slate-300">
+                <span>Glitch Intensity</span>
+                <span>{glitchIntensity.toFixed(1)}</span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={3}
+                step={0.5}
+                value={glitchIntensity}
+                onChange={(e) => setGlitchIntensity(Number(e.target.value))}
+                className="w-full accent-cyan-400"
+              />
+            </div>
+          )}
+
+          {selectedEffect === 'text-animation' && (
+            <div className="mt-2 p-2.5 rounded-lg bg-white/5 border border-white/10 space-y-1.5">
+              <label className="text-[8px] font-bold uppercase tracking-widest text-slate-300">Overlay Text</label>
+              <input
+                value={animatedText}
+                onChange={(e) => {
+                  setAnimatedText(e.target.value);
+                  setOverlayText(e.target.value);
+                }}
+                placeholder="Enter text"
+                className="w-full px-2.5 py-1.5 rounded bg-black/30 border border-white/10 text-white text-xs focus:outline-none"
+              />
+            </div>
+          )}
+        </div>
+      );
+    case 'transitions':
+      return (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between border-b border-white/5 pb-1.5">
+            <span className="text-[9px] font-black uppercase tracking-widest text-slate-300">Transitions</span>
+            <span className="text-[8px] text-slate-500 font-bold uppercase">Cuts</span>
+          </div>
+          <div className="rounded border border-white/5 bg-white/[0.02] px-2 py-1 text-[8px] font-bold uppercase tracking-wider text-slate-400 text-center">
+            {activePreviewId
+              ? `Clip: ${activePreviewId.slice(0, 8)} • ${clipTransitions[activePreviewId] || 'none'}`
+              : 'Select clip from Timeline first'}
+          </div>
+          <div className="space-y-1.5 max-h-48 overflow-y-auto custom-scrollbar pr-1">
+            {[
+              { id: 'cross-dissolve', label: 'Cross Dissolve' },
+              { id: 'slide-left', label: 'Slide Left' },
+              { id: 'slide-right', label: 'Slide Right' },
+              { id: 'dip-black', label: 'Dip to Black' },
+              { id: 'dip-white', label: 'Dip to White' },
+              { id: 'zoom-transition', label: 'Zoom Transition' },
+              { id: 'blur-transition', label: 'Blur Transition' },
+              { id: 'spin-transition', label: 'Spin Transition' },
+              { id: 'glitch-transition', label: 'Glitch Transition' },
+              { id: 'flash-transition', label: 'Flash Transition' },
+            ].map((tr) => (
+              <button
+                key={tr.id}
+                onClick={() => applyTransitionForActiveClip(tr.id as any)}
+                className={`w-full px-2.5 py-2 rounded-lg text-left text-[9px] font-bold uppercase tracking-wider transition-colors ${activePreviewId && clipTransitions[activePreviewId] === tr.id ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10'}`}
+              >
+                {tr.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+    case 'speed':
+      return (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between border-b border-white/5 pb-1.5">
+            <span className="text-[9px] font-black uppercase tracking-widest text-slate-300">Speed Change</span>
+            <span className="text-[8px] text-slate-500 font-bold uppercase">Rate</span>
+          </div>
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between text-[8px] font-bold uppercase tracking-widest text-slate-300">
+              <span>Speed</span>
+              <span>{speedValue.toFixed(2)}x</span>
+            </div>
+            <input
+              type="range"
+              min={0.25}
+              max={2}
+              step={0.05}
+              value={speedValue}
+              onChange={(e) => setSpeedValue(Number(e.target.value))}
+              className="w-full accent-cyan-400"
+            />
+            <div className="flex gap-1">
+              {[0.5, 1, 1.25, 1.5, 2].map((preset) => (
+                <button
+                  key={preset}
+                  onClick={() => setSpeedValue(preset)}
+                  className={`flex-1 py-1 rounded text-[8px] font-black uppercase border transition-colors ${Math.abs(speedValue - preset) < 0.001 ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40' : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10'}`}
+                >
+                  {preset}x
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    case 'trim':
+      return (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between border-b border-white/5 pb-1.5">
+            <span className="text-[9px] font-black uppercase tracking-widest text-slate-300">Trim Clip</span>
+            <span className="text-[8px] text-slate-500 font-bold uppercase">Cut</span>
+          </div>
+          {activePreviewItem?.type === 'video' ? (
+            <div className="space-y-3">
+              <div className="text-[8px] font-bold uppercase tracking-widest text-slate-400">
+                Duration: {activePreviewItem.duration.toFixed(2)}s
+              </div>
+              <div>
+                <div className="flex items-center justify-between text-[8px] font-bold uppercase tracking-widest text-slate-300 mb-0.5">
+                  <span>Start</span>
+                  <span>{getTrimRangeForItem(activePreviewItem.id, activePreviewItem.duration).start.toFixed(2)}s</span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={Math.max(0, activePreviewItem.duration - 0.01)}
+                  step={0.01}
+                  value={getTrimRangeForItem(activePreviewItem.id, activePreviewItem.duration).start}
+                  onChange={(e) => {
+                    const nextStart = Number(e.target.value);
+                    const current = getTrimRangeForItem(activePreviewItem.id, activePreviewItem.duration);
+                    const safeEnd = Math.max(nextStart + 0.01, current.end);
+                    setClipTrimRanges((prev: any) => ({
+                      ...prev,
+                      [activePreviewItem.id]: {
+                        start: nextStart,
+                        end: Math.min(activePreviewItem.duration, safeEnd),
+                      },
+                    }));
+                    if (videoRef.current) {
+                      videoRef.current.currentTime = nextStart;
+                    }
+                  }}
+                  className="w-full accent-cyan-400"
+                />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between text-[8px] font-bold uppercase tracking-widest text-slate-300 mb-0.5">
+                  <span>End</span>
+                  <span>{getTrimRangeForItem(activePreviewItem.id, activePreviewItem.duration).end.toFixed(2)}s</span>
+                </div>
+                <input
+                  type="range"
+                  min={0.01}
+                  max={activePreviewItem.duration}
+                  step={0.01}
+                  value={getTrimRangeForItem(activePreviewItem.id, activePreviewItem.duration).end}
+                  onChange={(e) => {
+                    const nextEnd = Number(e.target.value);
+                    const current = getTrimRangeForItem(activePreviewItem.id, activePreviewItem.duration);
+                    setClipTrimRanges((prev: any) => ({
+                      ...prev,
+                      [activePreviewItem.id]: {
+                        start: current.start,
+                        end: Math.max(current.start + 0.01, nextEnd),
+                      },
+                    }));
+                  }}
+                  className="w-full accent-cyan-400"
+                />
+              </div>
+              <button
+                onClick={() => {
+                  if (activePreviewItem) {
+                    setClipTrimRanges((prev: any) => ({
+                      ...prev,
+                      [activePreviewItem.id]: { start: 0, end: activePreviewItem.duration },
+                    }));
+                  }
+                }}
+                className="w-full py-1.5 rounded bg-white/5 border border-white/10 text-slate-300 text-[8px] font-black uppercase hover:bg-white/10"
+              >
+                Reset Trim
+              </button>
+            </div>
+          ) : (
+            <div className="py-3 text-center text-[8px] font-bold uppercase tracking-widest text-slate-500">
+              Select a video clip
+            </div>
+          )}
+        </div>
+      );
+    case 'rotate':
+      return (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between border-b border-white/5 pb-1.5">
+            <span className="text-[9px] font-black uppercase tracking-widest text-slate-300">Rotation</span>
+            <span className="text-[8px] text-slate-500 font-bold uppercase">Angle</span>
+          </div>
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between text-[8px] font-bold uppercase tracking-widest text-slate-300">
+              <span>Degrees</span>
+              <span>{rotationDegrees}°</span>
+            </div>
+            <div className="grid grid-cols-4 gap-1">
+              {[0, 90, 180, 270].map((deg) => (
+                <button
+                  key={deg}
+                  onClick={() => setRotationDegrees(deg)}
+                  className={`py-1.5 rounded text-[8px] font-black uppercase border transition-colors ${rotationDegrees === deg ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40' : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10'}`}
+                >
+                  {deg}°
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    case 'volume':
+      return (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between border-b border-white/5 pb-1.5">
+            <span className="text-[9px] font-black uppercase tracking-widest text-slate-300">Volume</span>
+            <span className="text-[8px] text-slate-500 font-bold uppercase">Audio Level</span>
+          </div>
+          <div className="space-y-2.5">
+            <button
+              onClick={() => setIsMuted((prev: any) => !prev)}
+              className={`w-full py-2 rounded-lg text-[8px] font-black uppercase border transition-colors ${isMuted ? 'bg-red-500/20 text-red-300 border-red-500/40' : 'bg-white/5 text-slate-400 border-white/10 hover:bg-white/15'}`}
+            >
+              {isMuted ? 'Unmute' : 'Mute'}
+            </button>
+            <div className="flex items-center justify-between text-[8px] font-bold uppercase tracking-widest text-slate-300">
+              <span>Volume</span>
+              <span>{Math.round(volumeLevel * 100)}%</span>
+            </div>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.01}
+              value={volumeLevel}
+              onChange={(e) => {
+                const next = Number(e.target.value);
+                setVolumeLevel(next);
+                if (next > 0 && isMuted) {
+                  setIsMuted(false);
+                }
+              }}
+              className="w-full accent-cyan-400"
+            />
+          </div>
+        </div>
+      );
+    case 'crop':
+      return (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between border-b border-white/5 pb-1.5">
+            <span className="text-[9px] font-black uppercase tracking-widest text-slate-300">Cropping</span>
+            <span className="text-[8px] text-slate-500 font-bold uppercase">Dimensions</span>
+          </div>
+          <div className="space-y-2">
+            <div>
+              <div className="flex items-center justify-between text-[8px] font-bold uppercase tracking-widest text-slate-300 mb-0.5">
+                <span>Width</span>
+                <span>{Math.round(cropWidthPct)}%</span>
+              </div>
+              <input type="range" min={30} max={100} step={1} value={cropWidthPct} onChange={(e) => setCropWidthPct(Number(e.target.value))} className="w-full accent-cyan-400 font-sans" />
+            </div>
+            <div>
+              <div className="flex items-center justify-between text-[8px] font-bold uppercase tracking-widest text-slate-300 mb-0.5">
+                <span>Height</span>
+                <span>{Math.round(cropHeightPct)}%</span>
+              </div>
+              <input type="range" min={30} max={100} step={1} value={cropHeightPct} onChange={(e) => setCropHeightPct(Number(e.target.value))} className="w-full accent-cyan-400" />
+            </div>
+            <div>
+              <div className="flex items-center justify-between text-[8px] font-bold uppercase tracking-widest text-slate-300 mb-0.5">
+                <span>Center X</span>
+                <span>{Math.round(cropCenterX)}%</span>
+              </div>
+              <input type="range" min={0} max={100} step={1} value={cropCenterX} onChange={(e) => setCropCenterX(Number(e.target.value))} className="w-full accent-cyan-400" />
+            </div>
+            <div>
+              <div className="flex items-center justify-between text-[8px] font-bold uppercase tracking-widest text-slate-300 mb-0.5">
+                <span>Center Y</span>
+                <span>{Math.round(cropCenterY)}%</span>
+              </div>
+              <input type="range" min={0} max={100} step={1} value={cropCenterY} onChange={(e) => setCropCenterY(Number(e.target.value))} className="w-full accent-cyan-400" />
+            </div>
+            <button
+              onClick={() => {
+                setCropWidthPct(100);
+                setCropHeightPct(100);
+                setCropCenterX(50);
+                setCropCenterY(50);
+              }}
+              className="w-full py-1.5 rounded bg-white/5 border border-white/10 text-slate-300 text-[8px] font-black uppercase hover:bg-white/10"
+            >
+              Reset Crop
+            </button>
+          </div>
+        </div>
+      );
+    case 'zoom':
+      return (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between border-b border-white/5 pb-1.5">
+            <span className="text-[9px] font-black uppercase tracking-widest text-slate-300">Zoom</span>
+            <span className="text-[8px] text-slate-500 font-bold uppercase">Scale</span>
+          </div>
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between text-[8px] font-bold uppercase tracking-widest text-slate-300">
+              <span>Zoom Factor</span>
+              <span>{zoomToolAmount.toFixed(2)}x</span>
+            </div>
+            <input
+              type="range"
+              min={1}
+              max={2.5}
+              step={0.05}
+              value={zoomToolAmount}
+              onChange={(e) => setZoomToolAmount(Number(e.target.value))}
+              className="w-full accent-cyan-400"
+            />
+            <button
+              onClick={() => setZoomToolAmount(1)}
+              className="w-full py-1.5 rounded bg-white/5 border border-white/10 text-slate-300 text-[8px] font-black uppercase hover:bg-white/10"
+            >
+              Reset Zoom
+            </button>
+          </div>
+        </div>
+      );
+    case 'keyframe':
+      return (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between border-b border-white/5 pb-1.5">
+            <span className="text-[9px] font-black uppercase tracking-widest text-slate-300">Keyframe</span>
+            <span className="text-[8px] text-slate-500 font-bold uppercase">Animation</span>
+          </div>
+          <div className="space-y-2.5">
+            <div className="grid grid-cols-2 gap-1">
+              {[
+                { id: 'none', label: 'None' },
+                { id: 'zoom-in', label: 'Zoom In' },
+                { id: 'zoom-out', label: 'Zoom Out' },
+                { id: 'pulse', label: 'Pulse' },
+              ].map((preset) => (
+                <button
+                  key={preset.id}
+                  onClick={() => setKeyframeMode(preset.id as any)}
+                  className={`py-1.5 rounded text-[8px] font-black uppercase border transition-colors ${keyframeMode === preset.id ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40' : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10'}`}
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+            <div>
+              <div className="flex items-center justify-between text-[8px] font-bold uppercase tracking-widest text-slate-300 mb-0.5">
+                <span>Strength</span>
+                <span>{keyframeAmount.toFixed(2)}x</span>
+              </div>
+              <input
+                type="range"
+                min={1.05}
+                max={1.8}
+                step={0.05}
+                value={keyframeAmount}
+                onChange={(e) => setKeyframeAmount(Number(e.target.value))}
+                className="w-full accent-cyan-400"
+                disabled={keyframeMode === 'none'}
+              />
+            </div>
+          </div>
+        </div>
+      );
+    case 'text-tool':
+      return (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between border-b border-white/5 pb-1.5">
+            <span className="text-[9px] font-black uppercase tracking-widest text-slate-300">Text overlay</span>
+            <span className="text-[8px] text-slate-500 font-bold uppercase">Titles</span>
+          </div>
+          <div className="space-y-2">
+            <div>
+              <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400">Content</label>
+              <Textarea
+                value={overlayText}
+                onChange={(e) => {
+                  setOverlayText(e.target.value);
+                  setAnimatedText(e.target.value);
+                }}
+                placeholder="Overlay text"
+                className="mt-0.5 bg-black/30 border-white/10 text-white text-[11px] min-h-[44px]"
+              />
+            </div>
+            <div>
+              <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400">Font</label>
+              <div className="mt-0.5 grid grid-cols-2 gap-1 max-h-24 overflow-y-auto custom-scrollbar pr-0.5">
+                {textFontOptions.map((font) => (
+                  <button
+                    key={font.id}
+                    onClick={() => setOverlayFontId(font.id)}
+                    className={`px-2 py-1 rounded text-left text-[8px] font-bold uppercase border transition-colors ${overlayFontId === font.id ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40' : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10'}`}
+                    style={{ fontFamily: font.family }}
+                  >
+                    {font.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400">Size</label>
+                <input
+                  type="range"
+                  min={18}
+                  max={96}
+                  value={overlayFontSize}
+                  onChange={(e) => setOverlayFontSize(Number(e.target.value))}
+                  className="w-full accent-cyan-400"
+                />
+              </div>
+              <div>
+                <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400">Color</label>
+                <input
+                  type="color"
+                  value={overlayColor}
+                  onChange={(e) => setOverlayColor(e.target.value)}
+                  className="w-full h-6 rounded bg-transparent border border-white/10 cursor-pointer"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400">Position X</label>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={overlayPosX}
+                  onChange={(e) => setOverlayPosX(Number(e.target.value))}
+                  className="w-full accent-cyan-400"
+                />
+              </div>
+              <div>
+                <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400">Position Y</label>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={overlayPosY}
+                  onChange={(e) => setOverlayPosY(Number(e.target.value))}
+                  className="w-full accent-cyan-400"
+                />
+              </div>
+            </div>
+            <button
+              onClick={() => setIsTextPlacementMode(!isTextPlacementMode)}
+              className={`w-full py-1.5 rounded text-[8px] font-black uppercase border transition-colors ${isTextPlacementMode ? 'bg-cyan-500 text-[#0b0d1f] border-cyan-400' : 'bg-white/5 text-slate-300 border-white/10 hover:bg-white/15'}`}
+            >
+              {isTextPlacementMode ? 'Click Preview' : 'Place on Preview'}
+            </button>
+            <button
+              onClick={() => {
+                setOverlayText('');
+                setAnimatedText('');
+                setIsTextPlacementMode(false);
+              }}
+              className="w-full py-1.5 rounded bg-red-500/15 border border-red-500/40 text-red-300 text-[8px] font-black uppercase hover:bg-red-500/25"
+            >
+              Delete Text
+            </button>
+          </div>
+        </div>
+      );
+    default:
+      return null;
+  }
+});
 
 export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
     type FilterType =
@@ -248,6 +1442,15 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
   const [customFrame, setCustomFrame] = useState({ width: 1920, height: 1080 });
   const [fps, setFps] = useState(60);
   const [exportQuality, setExportQuality] = useState("1080p");
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    preset: true,
+    transform: false,
+    cropping: false,
+    speed: false,
+    audio: false,
+    text: false,
+    fx: false
+  });
 
   const [watermark, setWatermark] = useState(true);
   const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
@@ -386,6 +1589,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
   const [keyframeAmount, setKeyframeAmount] = useState(1.25);
   const [keyframeProgress, setKeyframeProgress] = useState(0);
   const [clipTrimRanges, setClipTrimRanges] = useState<Record<string, { start: number; end: number | null }>>({});
+  const [clipSettings, setClipSettings] = useState<Record<string, any>>({});
 
   type TransitionType =
     | 'none'
@@ -430,6 +1634,8 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
   const thumbnailVideoRefs = useRef<Record<string, HTMLVideoElement | null>>({});
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [isToolboxOpen, setIsToolboxOpen] = useState(false);
+  const [timelineSize, setTimelineSize] = useState<'minimized' | 'normal' | 'maximized'>('normal');
 
   const activePreviewItem = mediaItems.find((i) => i.id === activePreviewId) || null;
 
@@ -453,6 +1659,133 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
   const getTotalEffectiveDuration = useCallback(() => {
     return mediaItems.reduce((acc, item) => acc + getEffectiveDurationForItem(item), 0);
   }, [mediaItems, getEffectiveDurationForItem]);
+
+  // Load settings per clip when switching activePreviewId
+  useEffect(() => {
+    if (!activePreviewId) return;
+    const settings = clipSettings[activePreviewId] || {};
+    
+    setSelectedEffect(settings.selectedEffect || 'none');
+    setSelectedFilter(settings.selectedFilter || 'none');
+    setSpeedValue(settings.speedValue ?? 1);
+    setRotationDegrees(settings.rotationDegrees ?? 0);
+    setVolumeLevel(settings.volumeLevel ?? 1);
+    setZoomToolAmount(settings.zoomToolAmount ?? 1);
+    
+    setCropCenterX(settings.cropCenterX ?? 50);
+    setCropCenterY(settings.cropCenterY ?? 50);
+    setCropWidthPct(settings.cropWidthPct ?? 100);
+    setCropHeightPct(settings.cropHeightPct ?? 100);
+    
+    setKeyframeMode(settings.keyframeMode || 'none');
+    setKeyframeAmount(settings.keyframeAmount ?? 1.25);
+    
+    setOverlayText(settings.overlayText || '');
+    setOverlayFontId(settings.overlayFontId || 'serif');
+    setOverlayFontSize(settings.overlayFontSize ?? 48);
+    setOverlayColor(settings.overlayColor || '#FFFFFF');
+    setOverlayPosX(settings.overlayPosX ?? 50);
+    setOverlayPosY(settings.overlayPosY ?? 50);
+    
+    setBlurAmount(settings.blurAmount ?? 10);
+    setBrightness(settings.brightness ?? 1);
+    setContrast(settings.contrast ?? 1);
+    setSaturation(settings.saturation ?? 1);
+    setSlowMotionSpeed(settings.slowMotionSpeed ?? 0.25);
+    setGlitchIntensity(settings.glitchIntensity ?? 1);
+  }, [activePreviewId]);
+
+  // Sync state changes to clipSettings per clip
+  useEffect(() => {
+    if (!activePreviewId) return;
+    setClipSettings(prev => {
+      const current = prev[activePreviewId] || {};
+      if (
+        current.selectedEffect === selectedEffect &&
+        current.selectedFilter === selectedFilter &&
+        current.speedValue === speedValue &&
+        current.rotationDegrees === rotationDegrees &&
+        current.volumeLevel === volumeLevel &&
+        current.zoomToolAmount === zoomToolAmount &&
+        current.cropCenterX === cropCenterX &&
+        current.cropCenterY === cropCenterY &&
+        current.cropWidthPct === cropWidthPct &&
+        current.cropHeightPct === cropHeightPct &&
+        current.keyframeMode === keyframeMode &&
+        current.keyframeAmount === keyframeAmount &&
+        current.overlayText === overlayText &&
+        current.overlayFontId === overlayFontId &&
+        current.overlayFontSize === overlayFontSize &&
+        current.overlayColor === overlayColor &&
+        current.overlayPosX === overlayPosX &&
+        current.overlayPosY === overlayPosY &&
+        current.blurAmount === blurAmount &&
+        current.brightness === brightness &&
+        current.contrast === contrast &&
+        current.saturation === saturation &&
+        current.slowMotionSpeed === slowMotionSpeed &&
+        current.glitchIntensity === glitchIntensity
+      ) {
+        return prev;
+      }
+      
+      return {
+        ...prev,
+        [activePreviewId]: {
+          selectedEffect,
+          selectedFilter,
+          speedValue,
+          rotationDegrees,
+          volumeLevel,
+          zoomToolAmount,
+          cropCenterX,
+          cropCenterY,
+          cropWidthPct,
+          cropHeightPct,
+          keyframeMode,
+          keyframeAmount,
+          overlayText,
+          overlayFontId,
+          overlayFontSize,
+          overlayColor,
+          overlayPosX,
+          overlayPosY,
+          blurAmount,
+          brightness,
+          contrast,
+          saturation,
+          slowMotionSpeed,
+          glitchIntensity
+        }
+      };
+    });
+  }, [
+    activePreviewId,
+    selectedEffect,
+    selectedFilter,
+    speedValue,
+    rotationDegrees,
+    volumeLevel,
+    zoomToolAmount,
+    cropCenterX,
+    cropCenterY,
+    cropWidthPct,
+    cropHeightPct,
+    keyframeMode,
+    keyframeAmount,
+    overlayText,
+    overlayFontId,
+    overlayFontSize,
+    overlayColor,
+    overlayPosX,
+    overlayPosY,
+    blurAmount,
+    brightness,
+    contrast,
+    saturation,
+    slowMotionSpeed,
+    glitchIntensity
+  ]);
 
   const triggerClipTransition = useCallback((nextId: string) => {
     if (!activePreviewId || activePreviewId === nextId) {
@@ -566,20 +1899,19 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
     }
   };
 
-  const handleTimelineClick = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleTimelineClick = useCallback((globalSeekTime: number) => {
     const totalDuration = getTotalEffectiveDuration();
     if (totalDuration === 0) return;
 
-    const rect = e.currentTarget.getBoundingClientRect();
-    const pos = (e.clientX - rect.left) / rect.width;
-    const globalSeekTime = pos * totalDuration;
+    const clampedSeekTime = Math.max(0, Math.min(totalDuration, globalSeekTime));
+    const pos = (clampedSeekTime / totalDuration) * 100;
 
     // Find which item this global time corresponds to
     let accumulated = 0;
     for (const item of mediaItems) {
       const itemEffectiveDuration = getEffectiveDurationForItem(item);
-      if (globalSeekTime <= accumulated + itemEffectiveDuration) {
-        const offset = globalSeekTime - accumulated;
+      if (clampedSeekTime <= accumulated + itemEffectiveDuration) {
+        const offset = clampedSeekTime - accumulated;
         triggerClipTransition(item.id);
         // Use a tiny timeout to let the video/img mount before seeking
         setTimeout(() => {
@@ -592,8 +1924,8 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
       }
       accumulated += itemEffectiveDuration;
     }
-    setProgress(pos * 100);
-  };
+    setProgress(pos);
+  }, [mediaItems, getEffectiveDurationForItem, getTotalEffectiveDuration, triggerClipTransition, getTrimRangeForItem]);
 
   // Sync background audio with main playback
   useEffect(() => {
@@ -1121,7 +2453,28 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
     });
   };
 
-  const handleAddAudio = (type: 'extracted' | 'direct') => {
+  const handleReorderClips = useCallback((fromIndexOrId: number | string, toIndex: number) => {
+    setMediaItems((prev) => {
+      const updated = [...prev];
+      let fromIdx = -1;
+      
+      if (typeof fromIndexOrId === 'number') {
+        fromIdx = fromIndexOrId;
+      } else {
+        fromIdx = prev.findIndex((item) => item.id === fromIndexOrId);
+      }
+
+      if (fromIdx === -1 || fromIdx === toIndex) return prev;
+
+      const [removed] = updated.splice(fromIdx, 1);
+      updated.splice(toIndex, 0, removed);
+      
+      saveToUndo(updated);
+      return updated;
+    });
+  }, [saveToUndo]);
+
+  const handleAddAudio = (type: 'extracted' | 'direct', trackIndex = 0) => {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = type === 'extracted' ? 'video/*' : 'audio/*';
@@ -1132,7 +2485,8 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
           id: Math.random().toString(36).substr(2, 9),
           name: file.name,
           type,
-          file
+          file,
+          trackIndex
         }]);
       }
       setShowAudioChoice(false);
@@ -1383,564 +2737,120 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
       </div>
 
       {/* Top Header */}
-      <header className="h-16 flex-none border-b border-white/10 flex items-center justify-between px-6 bg-black/20 backdrop-blur-3xl z-20">
+      <header className="h-14 flex-none border-b border-white/10 flex items-center justify-between px-6 bg-black/20 backdrop-blur-3xl z-20">
         <div className="flex items-center gap-4">
           <button
             onClick={() => navigate("/quick-edit/upload")}
-            className="p-2 hover:bg-white/5 rounded-lg transition-colors text-slate-400 hover:text-white"
+            className="p-1.5 hover:bg-white/5 rounded transition-colors text-slate-400 hover:text-white"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="w-4 h-4" />
           </button>
-          <div className="h-8 w-[1px] bg-white/10 mx-2" />
-          <div className="flex flex-col">
-            <h1 className="text-sm font-bold tracking-tight text-white uppercase tracking-[0.1em]">Quick Edit <span className="text-cyan-400">Studio</span></h1>
-            <div className="flex items-center gap-2">
+          <div className="h-4 w-[1px] bg-white/10" />
+          <div className="flex items-center gap-2">
+            <h1 className="text-[11px] font-black tracking-widest text-white uppercase">Studio Engine</h1>
+            <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
               <div className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-pulse" />
-              <span className="text-[10px] text-cyan-400/80 font-bold uppercase tracking-widest">Studio Engine Active</span>
+              <span className="text-[8px] font-bold uppercase tracking-widest">Active</span>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-3 z-50">
-          <Dialog open={activeTool === 'advanced'} onOpenChange={(open) => setActiveTool(open ? 'advanced' : null)}>
-            <DialogTrigger asChild>
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-full px-4 py-1.5 flex items-center gap-2 transition-colors"
-              >
-                <Settings className="w-3.5 h-3.5 text-slate-400" />
-                <span className="text-[11px] font-bold text-slate-300">Advanced Config</span>
-              </motion.button>
-            </DialogTrigger>
-            <DialogContent className="bg-[#0b0d1f]/95 backdrop-blur-2xl border-white/10 text-white w-[95vw] sm:max-w-[425px] rounded-3xl shadow-2xl z-[100]">
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2 text-xl font-black uppercase tracking-tighter">
-                  <Settings2 className="w-5 h-5 text-cyan-400" />
-                  Production Settings
-                </DialogTitle>
-              </DialogHeader>
-
-              <div className="grid gap-6 py-6 font-sans">
-                {/* Export Quality */}
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Download className="w-4 h-4 text-emerald-400" />
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Export Quality</Label>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    {['720p', '1080p', '4K'].map((res) => {
-                      const isPremium = res === '4K';
-                      return (
-                        <button
-                          key={res}
-                          onClick={() => isPremium ? handlePremiumIntercept("4k") : setExportQuality(res)}
-                          className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border flex flex-col items-center gap-1 ${exportQuality === res
-                            ? 'bg-cyan-500/10 border-cyan-500 text-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.2)]'
-                            : 'bg-white/5 border-white/5 text-slate-500 hover:border-white/20'
-                            }`}
-                        >
-                          <span>{res}</span>
-                          {isPremium && (
-                            <div className="flex items-center gap-1 text-[8px] text-amber-500">
-                              <Crown className="w-2 h-2" />
-                              <span>PREMIUM</span>
-                            </div>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Frame Rate */}
-                <div className="space-y-3">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                    <Zap className="w-3 h-3 text-cyan-400" /> Target Frame Rate
-                  </label>
-                  <div className="flex gap-2">
-                    {[24, 30, 60].map((f) => {
-                      const isPremium = f === 60;
-                      return (
-                        <button
-                          key={f}
-                          onClick={() => isPremium ? handlePremiumIntercept("60fps") : setFps(f)}
-                          className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border flex flex-col items-center gap-1 ${fps === f
-                            ? 'bg-indigo-500/10 border-indigo-500 text-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.2)]'
-                            : 'bg-white/5 border-white/5 text-slate-500 hover:border-white/20'
-                            }`}
-                        >
-                          <span>{f} FPS</span>
-                          {isPremium && (
-                            <div className="flex items-center gap-1 text-[8px] text-amber-500">
-                              <Crown className="w-2 h-2" />
-                              <span>PREMIUM</span>
-                            </div>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Watermark Toggle */}
-                <div className="pt-4 border-t border-white/5">
-                  <div className="flex items-center justify-between bg-white/5 p-4 rounded-2xl border border-white/5">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-orange-500/10 text-orange-400">
-                        <Layers className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-white">Production Watermark</p>
-                        <p className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">Branded: VIREONIX</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-1 px-2 py-0.5 bg-amber-500/10 rounded-md text-amber-500 text-[8px] font-black uppercase tracking-widest">
-                        <Crown className="w-3 h-3" />
-                        <span>PREMIUM TO REMOVE</span>
-                      </div>
-                      <button
-                        onClick={() => handlePremiumIntercept("watermark")}
-                        className={`w-12 h-6 rounded-full relative transition-all bg-cyan-600 shadow-[0_0_10px_rgba(34,211,238,0.3)]`}
-                      >
-                        <div className={`absolute top-1 right-1 w-4 h-4 rounded-full bg-white transition-all`} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-end pt-4 border-t border-white/5">
-                <Button
-                  onClick={() => setActiveTool(null)}
-                  className="px-8 bg-white/10 hover:bg-white/20 text-white border-white/10 hover:border-white/20 rounded-xl text-[11px] font-black uppercase tracking-[0.2em] transition-all py-6 h-auto"
-                >
-                  Save Changes
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-
+        <div className="flex items-center gap-3">
           <motion.button
             onClick={() => setActiveTool('history')}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-full px-4 py-1.5 flex items-center gap-2 transition-colors z-50"
+            className="bg-white/5 hover:bg-white/10 border border-white/10 rounded px-3 py-1 flex items-center gap-1.5 transition-colors"
           >
-            <HistoryIcon className="w-3.5 h-3.5 text-slate-400" />
-            <span className="text-[11px] font-bold text-slate-300">Edit History</span>
+            <HistoryIcon className="w-3 h-3 text-slate-400" />
+            <span className="text-[10px] font-bold text-slate-300">History</span>
           </motion.button>
         </div>
       </header>
 
       {/* Main Multi-Pane Studio Area */}
-      <main className="flex-1 flex flex-col md:flex-row overflow-hidden md:overflow-hidden overflow-y-auto relative z-10">
-
-        {/* Left Column: AI Control and Styling */}
-        <aside className="w-full md:w-[340px] flex-none border-r border-white/10 flex flex-col bg-[#0b0d1f]/40 backdrop-blur-md overflow-y-auto custom-scrollbar">
-          <div className="p-6 space-y-8">
-
-            {/* AI Control Panel */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-md bg-white/5 flex items-center justify-center border border-white/10">
-                  <Zap className="w-3.5 h-3.5 text-cyan-400" />
+      <main className="flex-1 flex flex-col overflow-hidden relative z-10">
+        
+        {/* Top Part of Workspace: Three Column Layout */}
+        <div className="flex-1 flex flex-col md:flex-row overflow-hidden border-b border-white/10">
+          
+          {/* Left Column: Media Pool & Toolbox */}
+          <aside className="w-full md:w-[350px] flex-none border-r border-white/10 flex flex-col bg-[#0b0d1f]/40 backdrop-blur-md overflow-hidden relative">
+            
+            {/* Media Pool Title Header */}
+            <div className="p-4 border-b border-white/5 flex-none bg-black/10">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <ImageIcon className="w-4 h-4 text-cyan-400" />
+                  <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">Media Pool</span>
                 </div>
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">AI Control Center</label>
-              </div>
-
-              <div className="space-y-2">
-                {[
-                  { id: 'subtitles', label: 'Smart Subtitles', icon: Layers, color: 'text-purple-400' },
-                  { id: 'autoCuts', label: 'AI Auto-Cuts', icon: Trash2, color: 'text-red-400' },
-                  { id: 'backgroundMusic', label: 'Trending Music', icon: Music, color: 'text-amber-400' },
-                  { id: 'faceTracking', label: 'Face Tracking', icon: Monitor, color: 'text-emerald-400' },
-                ].map((opt) => (
-                  <div key={opt.id} className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
-                    <div className="flex items-center gap-3">
-                      <opt.icon className={`w-4 h-4 ${opt.color}`} />
-                      <span className="text-[11px] font-bold text-slate-200">{opt.label}</span>
-                    </div>
-                    <Switch
-                      checked={aiOptions[opt.id as keyof typeof aiOptions]}
-                      onCheckedChange={() => toggleOption(opt.id as keyof typeof aiOptions)}
-                      className="scale-75 data-[state=checked]:bg-cyan-500"
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-
-
-
-            {/* Quick Action Icons [NEW] */}
-            <div className="space-y-3 pt-2">
-              <label className="text-[9px] font-black text-slate-300 uppercase tracking-widest px-1">Quick Tools</label>
-              <QuickToolsGrid
-                QUICK_TOOLS={QUICK_TOOLS}
-                setActiveTool={setActiveTool}
-                copyActiveClip={copyActiveClip}
-              />
-            </div>
-
-          </div>
-        </aside>
-
-        {/* Center Creation Canvas & Media Management */}
-        <section className="flex-1 flex flex-col bg-black/10 relative overflow-hidden">
-
-          {/* Main Preview Container */}
-          <div className="flex-1 relative p-8 flex items-center justify-center overflow-hidden">
-            <div className="absolute inset-0 pointer-events-none">
-              <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
-            </div>
-
-            <motion.div
-              ref={previewFrameRef}
-              layout
-              animate={{
-                aspectRatio: getRatioValue()
-              }}
-              onClick={(e) => {
-                if (!isTextPlacementMode || !previewFrameRef.current) return;
-                const rect = previewFrameRef.current.getBoundingClientRect();
-                const x = ((e.clientX - rect.left) / rect.width) * 100;
-                const y = ((e.clientY - rect.top) / rect.height) * 100;
-                setOverlayPosX(Math.max(0, Math.min(100, x)));
-                setOverlayPosY(Math.max(0, Math.min(100, y)));
-                setIsTextPlacementMode(false);
-              }}
-              className={`relative h-full max-w-4xl max-h-[85%] rounded-2xl bg-slate-900 border border-white/20 shadow-2xl overflow-hidden shadow-cyan-500/5 flex items-center justify-center transition-all duration-500 ${isTextPlacementMode ? 'cursor-crosshair' : 'cursor-default'}`}
-            >
-              <AnimatePresence mode="popLayout">
-                {activePreviewId && mediaItems.find(i => i.id === activePreviewId) ? (
-                  <motion.div
-                    key={activePreviewId}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    transition={{ duration: 0.3, ease: "easeOut" }}
-                    className="absolute inset-0 w-full h-full"
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => { setIsToolboxOpen(true); setActiveTool(null); }}
+                    className="px-2 py-1 rounded-md bg-gradient-to-r from-cyan-500/20 to-purple-600/20 hover:from-cyan-500 hover:to-purple-600 hover:text-[#0b0d26] border border-cyan-500/35 hover:border-cyan-400 text-cyan-300 text-[8px] font-black uppercase tracking-wider transition-all flex items-center gap-1 shadow-[0_0_8px_rgba(6,182,212,0.1)] cursor-pointer"
                   >
-                    {mediaItems.find(i => i.id === activePreviewId)?.type === 'video' ? (
-                      <>
-                        <video
-                          ref={videoRef}
-                          onTimeUpdate={handleTimeUpdate}
-                          onEnded={playNextMedia}
-                          onLoadedMetadata={() => {
-                            if (selectedEffect === 'fade-in') {
-                              setPreviewOpacity(0);
-                            } else {
-                              setPreviewOpacity(1);
-                            }
-                            if (selectedEffect !== 'zoom') {
-                              setPreviewZoom(1);
-                            }
-                          }}
-                          onCanPlay={(e) => {
-                            if (isPlaying) e.currentTarget.play().catch(() => { });
-                          }}
-                          src={mediaItems.find(i => i.id === activePreviewId)?.preview}
-                          className={CANVAS_PREVIEW_EFFECTS.includes(selectedEffect) || CANVAS_PREVIEW_FILTERS.includes(selectedFilter) ? 'hidden' : 'w-full h-full object-contain'}
-                          style={{
-                            opacity: selectedEffect === 'fade-in' ? previewOpacity : 1,
-                            filter: getCombinedPreviewFilterCss(),
-                            transform: getPreviewTransform(),
-                            clipPath: getPreviewClipPath(),
-                            transformOrigin: 'center center'
-                          }}
-                          muted={isMuted}
-                          playsInline
-                          loop={false}
-                        />
-                        {(CANVAS_PREVIEW_EFFECTS.includes(selectedEffect) || CANVAS_PREVIEW_FILTERS.includes(selectedFilter)) && (
-                          <canvas
-                            ref={greenScreenCanvasRef}
-                            className="w-full h-full object-contain"
-                          />
-                        )}
-                      </>
-                    ) : (
-                      <>
-                        <img
-                          src={mediaItems.find(i => i.id === activePreviewId)?.preview}
-                          className="w-full h-full object-contain"
-                          decoding="async"
-                          style={{
-                            opacity: selectedEffect === 'fade-in' ? previewOpacity : 1,
-                            filter: getCombinedPreviewFilterCss(),
-                            transform: getPreviewTransform(),
-                            clipPath: getPreviewClipPath(),
-                            transformOrigin: 'center center'
-                          }}
-                          alt="Preview"
-                        />
-                        {audioUrl && (
-                          <audio
-                            ref={audioRef}
-                            src={audioUrl}
-                            muted={isMuted}
-                            className="hidden"
-                          />
-                        )}
-                      </>
-                    )}
-                  </motion.div>
-                ) : (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Video className="w-16 h-16 text-cyan-400/10" />
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center group cursor-pointer hover:bg-white/10 transition-all">
-                        <Play className="w-5 h-5 text-white/40 ml-1 group-hover:text-white transition-colors" />
-                      </div>
-                      <span className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em]">Source Preview</span>
-                    </div>
-                  </div>
-                )}
-              </AnimatePresence>
-
-              {transitionOverlay && (
-                <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden">
-                  {(() => {
-                    const fromItem = mediaItems.find((m) => m.id === transitionOverlay.fromId);
-                    const toItem = mediaItems.find((m) => m.id === transitionOverlay.toId);
-                    if (!fromItem || !toItem) return null;
-
-                    const transitionFilter = getCombinedPreviewFilterCss();
-                    const fromStyle = {
-                      ...getTransitionLayerStyle('from', transitionOverlay.type, transitionProgress),
-                      filter: transitionFilter !== 'none'
-                        ? `${getTransitionLayerStyle('from', transitionOverlay.type, transitionProgress).filter === 'none' ? '' : `${getTransitionLayerStyle('from', transitionOverlay.type, transitionProgress).filter} `}${transitionFilter}`.trim()
-                        : getTransitionLayerStyle('from', transitionOverlay.type, transitionProgress).filter,
-                    };
-                    const toStyle = {
-                      ...getTransitionLayerStyle('to', transitionOverlay.type, transitionProgress),
-                      filter: transitionFilter !== 'none'
-                        ? `${getTransitionLayerStyle('to', transitionOverlay.type, transitionProgress).filter === 'none' ? '' : `${getTransitionLayerStyle('to', transitionOverlay.type, transitionProgress).filter} `}${transitionFilter}`.trim()
-                        : getTransitionLayerStyle('to', transitionOverlay.type, transitionProgress).filter,
-                    };
-
-                    return (
-                      <>
-                        <div className="absolute inset-0" style={fromStyle}>
-                          {fromItem.type === 'video' ? (
-                            <video src={fromItem.preview} className="w-full h-full object-contain" muted playsInline autoPlay loop preload="metadata" />
-                          ) : (
-                            <img src={fromItem.preview} className="w-full h-full object-contain" alt="Transition from" loading="lazy" decoding="async" />
-                          )}
-                        </div>
-                        <div className="absolute inset-0" style={toStyle}>
-                          {toItem.type === 'video' ? (
-                            <video src={toItem.preview} className="w-full h-full object-contain" muted playsInline autoPlay loop preload="metadata" />
-                          ) : (
-                            <img src={toItem.preview} className="w-full h-full object-contain" alt="Transition to" loading="lazy" decoding="async" />
-                          )}
-                        </div>
-                        {(transitionOverlay.type === 'dip-black' || transitionOverlay.type === 'dip-white' || transitionOverlay.type === 'flash-transition') && (
-                          <div
-                            className="absolute inset-0"
-                            style={{
-                              background:
-                                transitionOverlay.type === 'dip-white' || transitionOverlay.type === 'flash-transition'
-                                  ? '#ffffff'
-                                  : '#000000',
-                              opacity:
-                                transitionOverlay.type === 'flash-transition'
-                                  ? Math.max(0, 1 - Math.abs(transitionProgress - 0.5) * 4)
-                                  : transitionProgress < 0.5
-                                    ? transitionProgress * 2
-                                    : (1 - transitionProgress) * 2,
-                            }}
-                          />
-                        )}
-                      </>
-                    );
-                  })()}
-                </div>
-              )}
-
-              {selectedEffect !== 'text-animation' && overlayText.trim().length > 0 && (
-                <div
-                  className="absolute z-40 pointer-events-none select-none"
-                  style={{
-                    left: `${overlayPosX}%`,
-                    top: `${overlayPosY}%`,
-                    transform: 'translate(-50%, -50%)',
-                    fontFamily: textFontOptions.find((f) => f.id === overlayFontId)?.family || textFontOptions[0].family,
-                    fontSize: `${overlayFontSize}px`,
-                    color: overlayColor,
-                    textShadow: '0 4px 14px rgba(0,0,0,0.8)',
-                    fontWeight: 700,
-                    letterSpacing: '0.02em',
-                    textAlign: 'center',
-                    whiteSpace: 'pre-wrap',
-                    maxWidth: '88%',
-                  }}
-                >
-                  {overlayText}
-                </div>
-              )}
-
-              {/* HUD Overlays */}
-              <div className="absolute top-4 right-4 flex flex-col gap-2">
-                <div className="px-2.5 py-1.5 rounded-lg bg-black/40 backdrop-blur-md border border-white/10 flex items-center gap-3">
-                  <div className="flex flex-col">
-                    <span className="text-[8px] text-slate-500 font-black uppercase leading-none mb-0.5">Frame Mode</span>
-                    <span className="text-[10px] text-cyan-400 font-bold leading-none">{aspectRatio} • {fps}FPS</span>
-                  </div>
+                    <Zap className="w-2.5 h-2.5 animate-pulse" />
+                    <span>Toolbox</span>
+                  </button>
+                  <span className="text-[9px] font-bold text-slate-500 uppercase">{mediaItems.length} Clips</span>
                 </div>
               </div>
+            </div>
 
-              <div className="absolute top-4 left-4 flex flex-wrap gap-2 max-w-[70%] z-40">
-                {Math.abs(speedValue - 1) > 0.001 && (
-                  <div className="px-2 py-1 rounded-md bg-cyan-500/20 border border-cyan-400/40 text-[9px] font-black uppercase tracking-widest text-cyan-200">
-                    Speed {speedValue.toFixed(2)}x
-                  </div>
-                )}
-                {hasTrimApplied && activeTrim && (
-                  <div className="px-2 py-1 rounded-md bg-emerald-500/20 border border-emerald-400/40 text-[9px] font-black uppercase tracking-widest text-emerald-200">
-                    Trim {activeTrim.start.toFixed(2)}s-{activeTrim.end.toFixed(2)}s
-                  </div>
-                )}
-                {rotationDegrees % 360 !== 0 && (
-                  <div className="px-2 py-1 rounded-md bg-teal-500/20 border border-teal-400/40 text-[9px] font-black uppercase tracking-widest text-teal-200">
-                    Rotate {rotationDegrees}°
-                  </div>
-                )}
-                {(isMuted || Math.abs(volumeLevel - 1) > 0.001) && (
-                  <div className="px-2 py-1 rounded-md bg-indigo-500/20 border border-indigo-400/40 text-[9px] font-black uppercase tracking-widest text-indigo-200">
-                    {isMuted ? 'Muted' : `Volume ${Math.round(volumeLevel * 100)}%`}
-                  </div>
-                )}
-                {(cropWidthPct < 99.99 || cropHeightPct < 99.99) && (
-                  <div className="px-2 py-1 rounded-md bg-red-500/20 border border-red-400/40 text-[9px] font-black uppercase tracking-widest text-red-200">
-                    Crop {Math.round(cropWidthPct)}% x {Math.round(cropHeightPct)}%
-                  </div>
-                )}
-                {zoomToolAmount > 1.001 && (
-                  <div className="px-2 py-1 rounded-md bg-yellow-500/20 border border-yellow-400/40 text-[9px] font-black uppercase tracking-widest text-yellow-200">
-                    Zoom {zoomToolAmount.toFixed(2)}x
-                  </div>
-                )}
-                {keyframeMode !== 'none' && (
-                  <div className="px-2 py-1 rounded-md bg-emerald-500/20 border border-emerald-400/40 text-[9px] font-black uppercase tracking-widest text-emerald-200">
-                    Keyframe {keyframeMode}
-                  </div>
-                )}
-              </div>
-
-              {/* Transport Controls */}
-              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4 px-6 py-2 rounded-full bg-black/60 backdrop-blur-xl border border-white/10 shadow-2xl">
-                <button className="text-slate-400 hover:text-white transition-colors">
-                  <RefreshCw className="w-4 h-4" />
-                </button>
-                <button onClick={togglePlay} className="w-10 h-10 rounded-full bg-cyan-500 flex items-center justify-center text-[#0b0d1f] hover:scale-105 transition-all">
-                  {isPlaying ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 fill-current ml-0.5" />}
-                </button>
-                <button className="text-slate-400 hover:text-white transition-colors">
-                  <Settings className="w-4 h-4" />
-                </button>
-              </div>
-            </motion.div>
-          </div>
-
-          {/* Media Import & Arrangement Section */}
-          <div className="flex-none p-6 space-y-6 border-t border-white/10 bg-black/20 backdrop-blur-md">
-
-            {/* Horizontal Media Sequence */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between px-2">
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <ImageIcon className="w-3.5 h-3.5 text-cyan-400" />
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Media Sequence</span>
-                  </div>
-                  <div className="h-4 w-[1px] bg-white/10" />
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      onClick={undo}
-                      disabled={historyIndex <= 0}
-                      className="p-2 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 md:p-1 flex items-center justify-center rounded hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                    >
-                      <Undo2 className="w-3.5 h-3.5 text-slate-400" />
-                    </button>
-                    <button
-                      onClick={redo}
-                      disabled={historyIndex >= history.length - 1}
-                      className="p-2 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 md:p-1 flex items-center justify-center rounded hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                    >
-                      <Redo2 className="w-3.5 h-3.5 text-slate-400" />
-                    </button>
-                    <div className="w-[1px] h-3 bg-white/5 mx-1" />
-                    <button
-                      onClick={() => setIsMuted(!isMuted)}
-                      className="p-2 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 md:p-1 flex items-center justify-center rounded hover:bg-white/5 transition-colors"
-                    >
-                      {isMuted ? <VolumeX className="w-3.5 h-3.5 text-red-400" /> : <Volume2 className="w-3.5 h-3.5 text-cyan-400" />}
-                    </button>
-                  </div>
-                </div>
-                <span className="text-[9px] font-bold text-slate-600 uppercase tracking-tighter">{mediaItems.length} Items</span>
-              </div>
-
-              <div className="h-28 flex items-center gap-4 overflow-x-auto custom-scrollbar pb-2 px-2">
-                {mediaItems.map((item) => (
-                  <motion.div
+            {/* Media Clips Grid List */}
+            <div className="h-[210px] flex-none overflow-y-auto p-4 custom-scrollbar bg-black/5">
+              <div className="grid grid-cols-2 gap-2">
+                {mediaItems.map((item, i) => (
+                  <div
                     key={item.id}
-                    layout
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
                     onClick={() => triggerClipTransition(item.id)}
-                    style={{ aspectRatio: getRatioValue() }}
-                    className={`group relative flex-none h-full rounded-xl border transition-all cursor-pointer overflow-hidden ring-1 shadow-xl ${activePreviewId === item.id
-                      ? 'border-cyan-500 ring-cyan-500/50 scale-[1.02] shadow-cyan-500/10'
-                      : 'border-white/10 bg-slate-900 ring-white/5 hover:border-white/30'
-                      }`}
+                    draggable="true"
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData('clipId', item.id);
+                    }}
+                    className={`group relative aspect-video rounded-lg border transition-all cursor-pointer overflow-hidden bg-slate-900 ${
+                      activePreviewId === item.id
+                        ? 'border-cyan-500 shadow-[0_0_10px_rgba(34,211,238,0.2)]'
+                        : 'border-white/10 hover:border-white/20'
+                    }`}
                   >
-                      {item.type === 'video' ? (
-                        <video
-                          ref={(el) => {
-                            thumbnailVideoRefs.current[item.id] = el;
-                          }}
-                          src={item.preview}
-                          className="w-full h-full object-cover"
-                          muted
-                          playsInline
-                          autoPlay={activePreviewId === item.id && isPlaying}
-                          loop={activePreviewId === item.id && isPlaying}
-                          preload="metadata"
-                        />
-                      ) : (
-                        <img src={item.preview} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
-                      )}
+                    {item.type === 'video' ? (
+                      <video
+                        ref={(el) => { thumbnailVideoRefs.current[item.id] = el; }}
+                        src={item.preview}
+                        className="w-full h-full object-cover"
+                        muted
+                        playsInline
+                        preload="metadata"
+                      />
+                    ) : (
+                      <img src={item.preview} alt="" className="w-full h-full object-cover" loading="lazy" />
+                    )}
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                       <button
-                        onClick={() => removeMediaItem(item.id)}
-                        className="p-1.5 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/40 transition-all"
+                        onClick={(e) => { e.stopPropagation(); removeMediaItem(item.id); }}
+                        className="p-1 rounded bg-red-500/20 text-red-400 hover:bg-red-500/40 transition-all"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <Trash2 className="w-3 h-3" />
                       </button>
                     </div>
-                    <div className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded-md bg-black/60 backdrop-blur-sm text-[8px] font-black text-white/60 uppercase">
+                    <div className="absolute bottom-1 left-1 px-1 py-0.5 rounded bg-black/60 text-[7px] font-black text-white/70 uppercase">
                       {item.type}
                     </div>
                     {!!clipTransitions[item.id] && clipTransitions[item.id] !== 'none' && (
-                      <div className="absolute top-1 right-1 px-1.5 py-0.5 rounded-md bg-cyan-500/20 border border-cyan-400/40 text-[8px] font-black text-cyan-300 uppercase">
-                        {clipTransitions[item.id]}
+                      <div className="absolute top-1 right-1 px-1 py-0.5 rounded bg-cyan-500/25 border border-cyan-400/40 text-[7px] font-black text-cyan-200 uppercase">
+                        {clipTransitions[item.id].replace('-transition', '')}
                       </div>
                     )}
-                  </motion.div>
+                  </div>
                 ))}
 
                 <button
                   onClick={() => mediaInputRef.current?.click()}
-                  style={{ aspectRatio: getRatioValue() }}
-                  className="flex-none h-full rounded-xl border-2 border-dashed border-white/5 bg-white/5 hover:border-cyan-500/30 hover:bg-cyan-500/5 transition-all text-slate-600 hover:text-cyan-400 flex flex-col items-center justify-center gap-2"
+                  className="aspect-video rounded-lg border border-dashed border-white/10 bg-white/5 hover:border-cyan-500/30 hover:bg-cyan-500/5 transition-all text-slate-500 hover:text-cyan-400 flex flex-col items-center justify-center gap-1.5"
                 >
-                  <Plus className="w-5 h-5" />
-                  <span className="text-[9px] font-black uppercase tracking-widest">Add Media</span>
+                  <Plus className="w-4 h-4" />
+                  <span className="text-[8px] font-black uppercase tracking-widest">Add Media</span>
                 </button>
 
                 <input
@@ -1954,1451 +2864,703 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
               </div>
             </div>
 
-            {/* Audio Tracks Section [NEW] */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between px-2">
-                <div className="flex items-center gap-2">
-                  <Volume2 className="w-3.5 h-3.5 text-purple-400" />
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Audio Tracks</span>
-                </div>
-                <button
-                  onClick={() => setShowAudioChoice(!showAudioChoice)}
-                  className="text-[9px] font-black text-cyan-400 uppercase tracking-widest hover:text-cyan-300 transition-colors flex items-center gap-1.5"
+            {/* Floating Toolbox Overlay */}
+            <AnimatePresence>
+              {isToolboxOpen && (
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="absolute inset-0 z-30 flex flex-col bg-[#0b0d26] p-4 border-t border-white/10"
                 >
-                  <Plus className="w-3 h-3" /> Add Audio
+                  <div className="flex items-center justify-between mb-3 pb-1.5 border-b border-white/10">
+                    <div className="flex items-center gap-2">
+                      <Zap className="w-4 h-4 text-cyan-400" />
+                      <span className="text-xs font-black uppercase tracking-wider text-slate-200">Toolbox Options</span>
+                    </div>
+                    <button
+                      onClick={() => setIsToolboxOpen(false)}
+                      className="p-1 rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-all cursor-pointer"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="flex-1 overflow-y-auto space-y-4 pr-1 custom-scrollbar">
+                    {activeTool ? (
+                      <div className="space-y-3">
+                        <button
+                          onClick={() => setActiveTool(null)}
+                          className="px-2.5 py-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-[9px] font-black uppercase tracking-wider text-slate-300 transition-all flex items-center gap-1 cursor-pointer"
+                        >
+                          ← Back to Tools List
+                        </button>
+                        <div className="p-3 bg-black/40 rounded-xl border border-white/5 shadow-inner">
+                          <ToolInspector
+                            activeTool={activeTool}
+                            setActiveTool={setActiveTool}
+                            selectedFilter={selectedFilter}
+                            setSelectedFilter={setSelectedFilter}
+                            selectedEffect={selectedEffect}
+                            setSelectedEffect={setSelectedEffect}
+                            blurAmount={blurAmount}
+                            setBlurAmount={setBlurAmount}
+                            brightness={brightness}
+                            setBrightness={setBrightness}
+                            contrast={contrast}
+                            setContrast={setContrast}
+                            saturation={saturation}
+                            setSaturation={setSaturation}
+                            slowMotionSpeed={slowMotionSpeed}
+                            setSlowMotionSpeed={setSlowMotionSpeed}
+                            glitchIntensity={glitchIntensity}
+                            setGlitchIntensity={setGlitchIntensity}
+                            animatedText={animatedText}
+                            setAnimatedText={setAnimatedText}
+                            overlayText={overlayText}
+                            setOverlayText={setOverlayText}
+                            overlayFontId={overlayFontId}
+                            setOverlayFontId={setOverlayFontId}
+                            overlayFontSize={overlayFontSize}
+                            setOverlayFontSize={setOverlayFontSize}
+                            overlayColor={overlayColor}
+                            setOverlayColor={setOverlayColor}
+                            overlayPosX={overlayPosX}
+                            setOverlayPosX={setOverlayPosX}
+                            overlayPosY={overlayPosY}
+                            setOverlayPosY={setOverlayPosY}
+                            isTextPlacementMode={isTextPlacementMode}
+                            setIsTextPlacementMode={setIsTextPlacementMode}
+                            clipTransitions={clipTransitions}
+                            applyTransitionForActiveClip={applyTransitionForActiveClip}
+                            speedValue={speedValue}
+                            setSpeedValue={setSpeedValue}
+                            activePreviewId={activePreviewId}
+                            activePreviewItem={activePreviewItem}
+                            getTrimRangeForItem={getTrimRangeForItem}
+                            clipTrimRanges={clipTrimRanges}
+                            setClipTrimRanges={setClipTrimRanges}
+                            rotationDegrees={rotationDegrees}
+                            setRotationDegrees={setRotationDegrees}
+                            volumeLevel={volumeLevel}
+                            setVolumeLevel={setVolumeLevel}
+                            isMuted={isMuted}
+                            setIsMuted={setIsMuted}
+                            cropWidthPct={cropWidthPct}
+                            setCropWidthPct={setCropWidthPct}
+                            cropHeightPct={cropHeightPct}
+                            setCropHeightPct={setCropHeightPct}
+                            cropCenterX={cropCenterX}
+                            setCropCenterX={setCropCenterX}
+                            cropCenterY={cropCenterY}
+                            setCropCenterY={setCropCenterY}
+                            zoomToolAmount={zoomToolAmount}
+                            setZoomToolAmount={setZoomToolAmount}
+                            keyframeMode={keyframeMode}
+                            setKeyframeMode={setKeyframeMode}
+                            keyframeAmount={keyframeAmount}
+                            setKeyframeAmount={setKeyframeAmount}
+                            videoRef={videoRef}
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        {/* AI Settings Switches */}
+                        <div>
+                          <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest block mb-2">Smart Auto Features</span>
+                          <div className="grid grid-cols-2 gap-1.5">
+                            {[
+                              { id: 'subtitles', label: 'Subtitles', icon: Layers, color: 'text-purple-400' },
+                              { id: 'autoCuts', label: 'Auto-Cuts', icon: Trash2, color: 'text-red-400' },
+                              { id: 'backgroundMusic', label: 'Music', icon: Music, color: 'text-amber-400' },
+                              { id: 'faceTracking', label: 'Tracking', icon: Monitor, color: 'text-emerald-400' },
+                            ].map((opt) => (
+                              <div key={opt.id} className="flex items-center justify-between p-1.5 rounded bg-white/[0.03] border border-white/5 hover:bg-white/5 transition-all">
+                                <div className="flex items-center gap-1.5">
+                                  <opt.icon className={`w-3 h-3 ${opt.color}`} />
+                                  <span className="text-[8px] font-bold text-slate-300">{opt.label}</span>
+                                </div>
+                                <Switch
+                                  checked={aiOptions[opt.id as keyof typeof aiOptions]}
+                                  onCheckedChange={() => toggleOption(opt.id as keyof typeof aiOptions)}
+                                  className="scale-50 data-[state=checked]:bg-cyan-500"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Quick Tools Grid */}
+                        <div>
+                          <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest block mb-2">Creative Quick Tools</span>
+                          <QuickToolsGrid
+                            QUICK_TOOLS={QUICK_TOOLS}
+                            activeTool={activeTool}
+                            setActiveTool={(toolId: string) => {
+                              setActiveTool(toolId);
+                            }}
+                            copyActiveClip={copyActiveClip}
+                            setExpandedSections={setExpandedSections}
+                          />
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+          </aside>
+
+          {/* Center Column: Video Monitor */}
+          <section className="flex-1 flex flex-col bg-black/15 relative overflow-hidden">
+            <div className="absolute inset-0 pointer-events-none z-0">
+              <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+            </div>
+
+            {/* Video Canvas Container */}
+            <div className="flex-1 relative p-4 flex items-center justify-center overflow-hidden z-10">
+              <motion.div
+                ref={previewFrameRef}
+                layout
+                style={{ 
+                  aspectRatio: getRatioValue(), 
+                  width: getRatioValue() > 1 ? '100%' : 'auto', 
+                  height: getRatioValue() > 1 ? 'auto' : '100%',
+                  maxWidth: '100%',
+                  maxHeight: '90%'
+                }}
+                onClick={(e) => {
+                  if (!isTextPlacementMode || !previewFrameRef.current) return;
+                  const rect = previewFrameRef.current.getBoundingClientRect();
+                  const x = ((e.clientX - rect.left) / rect.width) * 100;
+                  const y = ((e.clientY - rect.top) / rect.height) * 100;
+                  setOverlayPosX(Math.max(0, Math.min(100, x)));
+                  setOverlayPosY(Math.max(0, Math.min(100, y)));
+                  setIsTextPlacementMode(false);
+                }}
+                className={`relative rounded-xl bg-slate-950 border border-white/10 shadow-2xl overflow-hidden flex items-center justify-center transition-all ${isTextPlacementMode ? 'cursor-crosshair' : 'cursor-default'}`}
+              >
+                <AnimatePresence mode="popLayout">
+                  {activePreviewId && activePreviewItem ? (
+                    <motion.div
+                      key={activePreviewId}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="absolute inset-0 w-full h-full"
+                    >
+                      {activePreviewItem.type === 'video' ? (
+                        <>
+                          <video
+                            ref={videoRef}
+                            onTimeUpdate={handleTimeUpdate}
+                            onEnded={playNextMedia}
+                            onLoadedMetadata={() => {
+                              if (selectedEffect === 'fade-in') setPreviewOpacity(0);
+                              else setPreviewOpacity(1);
+                              if (selectedEffect !== 'zoom') setPreviewZoom(1);
+                            }}
+                            onCanPlay={(e) => { if (isPlaying) e.currentTarget.play().catch(() => {}); }}
+                            src={activePreviewItem.preview}
+                            className={CANVAS_PREVIEW_EFFECTS.includes(selectedEffect) || CANVAS_PREVIEW_FILTERS.includes(selectedFilter) ? 'hidden' : 'w-full h-full object-contain'}
+                            style={{
+                              opacity: selectedEffect === 'fade-in' ? previewOpacity : 1,
+                              filter: getCombinedPreviewFilterCss(),
+                              transform: getPreviewTransform(),
+                              clipPath: getPreviewClipPath(),
+                              transformOrigin: 'center center'
+                            }}
+                            muted={isMuted}
+                            playsInline
+                          />
+                          {(CANVAS_PREVIEW_EFFECTS.includes(selectedEffect) || CANVAS_PREVIEW_FILTERS.includes(selectedFilter)) && (
+                            <canvas ref={greenScreenCanvasRef} className="w-full h-full object-contain" />
+                       )}
+                        </>
+                      ) : (
+                        <>
+                          <img
+                            src={activePreviewItem.preview}
+                            className="w-full h-full object-contain"
+                            style={{
+                              opacity: selectedEffect === 'fade-in' ? previewOpacity : 1,
+                              filter: getCombinedPreviewFilterCss(),
+                              transform: getPreviewTransform(),
+                              clipPath: getPreviewClipPath(),
+                              transformOrigin: 'center center'
+                            }}
+                            alt="Preview"
+                          />
+                          {audioUrl && <audio ref={audioRef} src={audioUrl} muted={isMuted} className="hidden" />}
+                        </>
+                      )}
+                    </motion.div>
+                  ) : (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-center p-6">
+                      <Video className="w-12 h-12 text-cyan-400/10 animate-pulse" />
+                      <span className="text-[9px] font-black text-white/20 uppercase tracking-[0.2em]">Source Preview Empty</span>
+                    </div>
+                  )}
+                </AnimatePresence>
+
+                {/* Transition overlay */}
+                {transitionOverlay && (
+                  <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden">
+                    {(() => {
+                      const fromItem = mediaItems.find((m) => m.id === transitionOverlay.fromId);
+                      const toItem = mediaItems.find((m) => m.id === transitionOverlay.toId);
+                      if (!fromItem || !toItem) return null;
+                      const transitionFilter = getCombinedPreviewFilterCss();
+                      const fromStyle = {
+                        ...getTransitionLayerStyle('from', transitionOverlay.type, transitionProgress),
+                        filter: transitionFilter !== 'none'
+                          ? `${getTransitionLayerStyle('from', transitionOverlay.type, transitionProgress).filter === 'none' ? '' : `${getTransitionLayerStyle('from', transitionOverlay.type, transitionProgress).filter} `}${transitionFilter}`.trim()
+                          : getTransitionLayerStyle('from', transitionOverlay.type, transitionProgress).filter,
+                      };
+                      const toStyle = {
+                        ...getTransitionLayerStyle('to', transitionOverlay.type, transitionProgress),
+                        filter: transitionFilter !== 'none'
+                          ? `${getTransitionLayerStyle('to', transitionOverlay.type, transitionProgress).filter === 'none' ? '' : `${getTransitionLayerStyle('to', transitionOverlay.type, transitionProgress).filter} `}${transitionFilter}`.trim()
+                          : getTransitionLayerStyle('to', transitionOverlay.type, transitionProgress).filter,
+                      };
+                      return (
+                        <>
+                          <div className="absolute inset-0" style={fromStyle}>
+                            {fromItem.type === 'video' ? <video src={fromItem.preview} className="w-full h-full object-contain" muted playsInline autoPlay loop /> : <img src={fromItem.preview} className="w-full h-full object-contain" alt="" />}
+                          </div>
+                          <div className="absolute inset-0" style={toStyle}>
+                            {toItem.type === 'video' ? <video src={toItem.preview} className="w-full h-full object-contain" muted playsInline autoPlay loop /> : <img src={toItem.preview} className="w-full h-full object-contain" alt="" />}
+                          </div>
+                          {(transitionOverlay.type === 'dip-black' || transitionOverlay.type === 'dip-white' || transitionOverlay.type === 'flash-transition') && (
+                            <div
+                              className="absolute inset-0"
+                              style={{
+                                background: transitionOverlay.type === 'dip-white' || transitionOverlay.type === 'flash-transition' ? '#ffffff' : '#000000',
+                                opacity: transitionOverlay.type === 'flash-transition' ? Math.max(0, 1 - Math.abs(transitionProgress - 0.5) * 4) : transitionProgress < 0.5 ? transitionProgress * 2 : (1 - transitionProgress) * 2,
+                              }}
+                            />
+                          )}
+                        </>
+                      );
+                    })()}
+                  </div>
+                )}
+
+                {selectedEffect !== 'text-animation' && overlayText.trim().length > 0 && (
+                  <div
+                    className="absolute z-40 pointer-events-none select-none text-center"
+                    style={{
+                      left: `${overlayPosX}%`,
+                      top: `${overlayPosY}%`,
+                      transform: 'translate(-50%, -50%)',
+                      fontFamily: textFontOptions.find((f) => f.id === overlayFontId)?.family || textFontOptions[0].family,
+                      fontSize: `${overlayFontSize}px`,
+                      color: overlayColor,
+                      textShadow: '0 4px 14px rgba(0,0,0,0.8)',
+                      fontWeight: 700,
+                      whiteSpace: 'pre-wrap',
+                      maxWidth: '88%',
+                    }}
+                  >
+                    {overlayText}
+                  </div>
+                )}
+
+                {/* HUD Overlay Badges */}
+                <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 z-40 max-w-[80%]">
+                  {Math.abs(speedValue - 1) > 0.001 && <div className="px-1.5 py-0.5 rounded bg-cyan-500/20 border border-cyan-400/30 text-[8px] font-black uppercase text-cyan-200">Speed {speedValue.toFixed(2)}x</div>}
+                  {hasTrimApplied && activePreviewId && <div className="px-1.5 py-0.5 rounded bg-emerald-500/20 border border-emerald-400/30 text-[8px] font-black uppercase text-emerald-200">Trimmed</div>}
+                  {rotationDegrees % 360 !== 0 && <div className="px-1.5 py-0.5 rounded bg-teal-500/20 border border-teal-400/30 text-[8px] font-black uppercase text-teal-200">Rotated {rotationDegrees}°</div>}
+                  {isMuted && <div className="px-1.5 py-0.5 rounded bg-red-500/20 border border-red-400/30 text-[8px] font-black uppercase text-red-200">Muted</div>}
+                  {zoomToolAmount > 1.001 && <div className="px-1.5 py-0.5 rounded bg-yellow-500/20 border border-yellow-400/30 text-[8px] font-black uppercase text-yellow-200">Zoom {zoomToolAmount.toFixed(2)}x</div>}
+                </div>
+
+              </motion.div>
+            </div>
+
+            {/* Video Player Transport Bar */}
+            <div className="h-12 border-t border-white/10 bg-black/35 flex items-center justify-between px-6 z-10 flex-none select-none">
+              {/* Timeline Time Code display */}
+              <div className="font-mono text-[10px] text-slate-400 tracking-wider">
+                {activePreviewId && activePreviewItem ? (
+                  <span>
+                    00:00:
+                    {Math.floor((progress * activePreviewItem.duration) / 100).toString().padStart(2, '0')}
+                    :
+                    {Math.floor((progress * fps) % fps).toString().padStart(2, '0')}
+                  </span>
+                ) : (
+                  <span>00:00:00:00</span>
+                )}
+              </div>
+
+              {/* Hardware Transport Deck buttons */}
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={undo}
+                  disabled={historyIndex <= 0}
+                  className="p-1 text-slate-500 hover:text-white disabled:opacity-20 transition-colors"
+                >
+                  <Undo2 className="w-4 h-4" />
+                </button>
+
+                <button
+                  onClick={() => {
+                    if (videoRef.current) videoRef.current.currentTime = 0;
+                    if (audioRef.current) audioRef.current.currentTime = 0;
+                    setProgress(0);
+                  }}
+                  className="p-1 text-slate-400 hover:text-white transition-colors"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                </button>
+
+                <button
+                  onClick={togglePlay}
+                  className="w-8 h-8 rounded-full bg-cyan-500 flex items-center justify-center text-[#0b0d1f] hover:scale-105 active:scale-95 transition-all shadow-md shadow-cyan-500/10"
+                >
+                  {isPlaying ? <Pause className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current ml-0.5" />}
+                </button>
+
+                <button
+                  onClick={() => setIsMuted(!isMuted)}
+                  className="p-1 text-slate-400 hover:text-white transition-colors"
+                >
+                  {isMuted ? <VolumeX className="w-4 h-4 text-red-400" /> : <Volume2 className="w-4 h-4 text-cyan-400" />}
+                </button>
+
+                <button
+                  onClick={redo}
+                  disabled={historyIndex >= history.length - 1}
+                  className="p-1 text-slate-500 hover:text-white disabled:opacity-20 transition-colors"
+                >
+                  <Redo2 className="w-4 h-4" />
                 </button>
               </div>
 
-              <div className="relative">
-                <div className="space-y-2 max-h-32 overflow-y-auto custom-scrollbar px-2">
-                  {audioTracks.length === 0 ? (
-                    <div className="py-4 text-center rounded-xl bg-white/5 border border-dashed border-white/5">
-                      <span className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">No audio tracks added yet</span>
-                    </div>
-                  ) : (
-                    audioTracks.map((track) => (
-                      <motion.div
-                        key={track.id}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className="flex items-center justify-between p-2.5 rounded-xl bg-white/5 border border-white/10 group hover:border-cyan-500/20 transition-all"
-                      >
-                        <div className="flex items-center gap-3 overflow-hidden">
-                          <div className="w-7 h-7 rounded-lg bg-cyan-400/10 flex items-center justify-center flex-none">
-                            {track.type === 'extracted' ? <Scissors className="w-3.5 h-3.5 text-purple-400" /> : <Music className="w-3.5 h-3.5 text-cyan-400" />}
-                          </div>
-                          <span className="text-[10px] font-bold text-slate-300 truncate tracking-tight">{track.name}</span>
-                          <span className="flex-none text-[8px] font-black text-slate-600 uppercase bg-white/5 px-1.5 py-0.5 rounded">{track.type}</span>
-                        </div>
-                        <button
-                          onClick={() => removeAudioTrack(track.id)}
-                          className="p-1 px-1.5 rounded-md hover:bg-red-500/10 text-slate-600 hover:text-red-400 transition-colors"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </motion.div>
-                    ))
-                  )}
-                </div>
-
-                {/* Choice Overlay */}
-                <AnimatePresence>
-                  {showAudioChoice && (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.95 }}
-                      className="absolute inset-0 z-20 flex items-center justify-center gap-4 bg-[#0b0d1f]/90 backdrop-blur-md rounded-xl border border-white/10"
-                    >
-                      <button
-                        onClick={() => handleAddAudio('extracted')}
-                        className="flex flex-col items-center gap-1.5 p-3 rounded-lg hover:bg-white/5 transition-all w-32"
-                      >
-                        <Scissors className="w-4 h-4 text-purple-400" />
-                        <span className="text-[8px] font-black uppercase tracking-widest text-slate-300">Extract Audio</span>
-                      </button>
-                      <div className="w-[1px] h-8 bg-white/10" />
-                      <button
-                        onClick={() => handleAddAudio('direct')}
-                        className="flex flex-col items-center gap-1.5 p-3 rounded-lg hover:bg-white/5 transition-all w-32"
-                      >
-                        <FileAudio className="w-4 h-4 text-cyan-400" />
-                        <span className="text-[8px] font-black uppercase tracking-widest text-slate-300">Upload File</span>
-                      </button>
-                      <button
-                        onClick={() => setShowAudioChoice(false)}
-                        className="absolute top-1 right-1 p-1 text-slate-600"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+              {/* FPS & Ratio status info */}
+              <div className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
+                {aspectRatio} • {fps} FPS
               </div>
             </div>
 
-          </div>
+          </section>
 
-        </section>
+          {/* Right Column: Inspector Panel */}
+          <aside className="w-full md:w-[340px] flex-none flex flex-col bg-[#080914]/95 border-l border-white/10 backdrop-blur-2xl shadow-2xl overflow-hidden select-none">
+            
+            {/* Inspector Header */}
+            <div className="p-4 border-b border-white/10 bg-black/20 flex items-center gap-2 flex-none">
+              <Settings2 className="w-4 h-4 text-pink-400" />
+              <span className="text-xs font-black uppercase tracking-wider text-slate-300">Inspector</span>
+            </div>
 
-        {/* Right Column: Style Atelier and Frame Customization */}
-        <aside className="w-full md:w-[320px] flex-none border-l border-white/10 flex flex-col bg-[#0b0d1f]/40 backdrop-blur-md overflow-y-auto custom-scrollbar">
-          <div className="p-6 space-y-8">
-
-            <div className="space-y-6">
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-md bg-white/5 flex items-center justify-center border border-white/10">
-                  <Layers className="w-3.5 h-3.5 text-pink-400" />
-                </div>
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Style Atelier</label>
-              </div>
-
-              <div className="grid grid-cols-1 gap-3">
-                {editingStyles.map((style) => (
-                  <button
-                    key={style.id}
-                    onClick={() => {
-                      setSelectedStyle(style.id);
-                      setIsCustomFrameOpen(false);
-                    }}
-                    className={`relative p-4 rounded-2xl border transition-all text-left group overflow-hidden ${selectedStyle === style.id && !isCustomFrameOpen
-                      ? 'border-cyan-500/50 bg-cyan-500/5 shadow-[0_0_20px_rgba(34,211,238,0.1)]'
-                      : 'border-white/5 bg-white/5 hover:border-white/10'
-                      }`}
-                  >
-                    <div className={`absolute inset-0 bg-gradient-to-br ${style.gradient} opacity-20 group-hover:opacity-100 transition-opacity`} />
-                    <div className="relative flex items-center gap-4">
-                      <div className={`p-2 rounded-xl bg-black/40 border border-white/10 transition-colors ${selectedStyle === style.id ? 'text-cyan-400 border-cyan-400/30' : 'text-slate-500'}`}>
-                        <style.icon className="w-5 h-5" />
-                      </div>
-                      <div className="flex flex-col">
-                        <span className={`text-[11px] font-black uppercase tracking-[0.15em] ${selectedStyle === style.id ? 'text-cyan-100' : 'text-slate-400'}`}>
-                          {style.title}
-                        </span>
-                        <span className="text-[9px] font-bold text-slate-500 mt-0.5">Platform Preset</span>
-                      </div>
-                      {selectedStyle === style.id && (
-                        <div className="ml-auto w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.8)]" />
-                      )}
+            {/* Accordion list details */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+              
+              {/* Presets / Style Atelier panel */}
+              <div className="border border-white/5 rounded-xl overflow-hidden bg-black/10">
+                <button
+                  onClick={() => setExpandedSections(prev => ({ ...prev, preset: !prev.preset }))}
+                  className="w-full p-3 flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-slate-400 bg-white/[0.02] border-b border-white/5"
+                >
+                  <div className="flex items-center gap-2">
+                    <Palette className="w-3.5 h-3.5 text-pink-400" />
+                    <span>Presets & Framing</span>
+                  </div>
+                  <span className="text-[8px] text-slate-500">{expandedSections.preset ? 'COLLAPSE' : 'EXPAND'}</span>
+                </button>
+                {expandedSections.preset && (
+                  <div className="p-3 space-y-3 bg-black/20">
+                    <div className="grid grid-cols-1 gap-2">
+                      {editingStyles.map((style) => (
+                        <button
+                          key={style.id}
+                          onClick={() => {
+                            setSelectedStyle(style.id);
+                            setIsCustomFrameOpen(false);
+                          }}
+                          className={`relative p-3 rounded-xl border transition-all text-left overflow-hidden ${
+                            selectedStyle === style.id && !isCustomFrameOpen
+                              ? 'border-cyan-500/50 bg-cyan-500/5 shadow-[0_0_10px_rgba(34,211,238,0.1)]'
+                              : 'border-white/5 bg-white/5 hover:border-white/10'
+                          }`}
+                        >
+                          <div className={`absolute inset-0 bg-gradient-to-br ${style.gradient} opacity-20`} />
+                          <div className="relative flex items-center gap-3">
+                            <style.icon className={`w-4 h-4 ${selectedStyle === style.id ? 'text-cyan-400' : 'text-slate-500'}`} />
+                            <div className="flex flex-col">
+                              <span className={`text-[10px] font-bold uppercase tracking-wider ${selectedStyle === style.id ? 'text-cyan-200' : 'text-slate-400'}`}>
+                                {style.title}
+                              </span>
+                            </div>
+                            {selectedStyle === style.id && !isCustomFrameOpen && (
+                              <div className="ml-auto w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_5px_rgba(34,211,238,0.8)]" />
+                            )}
+                          </div>
+                        </button>
+                      ))}
                     </div>
-                  </button>
-                ))}
-              </div>
-
-              {/* Customize Frame Link */}
-              <button
-                onClick={() => {
-                  setIsCustomFrameOpen(!isCustomFrameOpen);
-                  if (!isCustomFrameOpen) setAspectRatio('Custom');
-                }}
-                className={`w-full py-3 rounded-xl border border-dashed transition-all text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 ${isCustomFrameOpen ? 'border-purple-500 text-purple-400 bg-purple-500/5' : 'border-white/10 text-slate-500 hover:text-slate-300 hover:border-white/20'
-                  }`}
-              >
-                <Maximize2 className="w-3.5 h-3.5" />
-                Customize Frame
-              </button>
-
-              <AnimatePresence>
-                {isCustomFrameOpen && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    className="space-y-4 pt-2"
-                  >
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1.5">
-                        <label className="text-[8px] font-black text-slate-600 uppercase px-1">Width (px)</label>
-                        <input
-                          type="number"
-                          value={customFrame.width}
-                          onChange={(e) => setCustomFrame(prev => ({ ...prev, width: Number(e.target.value) }))}
-                          className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-xs font-bold text-white focus:border-purple-500/50 focus:outline-none"
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-[8px] font-black text-slate-600 uppercase px-1">Height (px)</label>
-                        <input
-                          type="number"
-                          value={customFrame.height}
-                          onChange={(e) => setCustomFrame(prev => ({ ...prev, height: Number(e.target.value) }))}
-                          className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-xs font-bold text-white focus:border-purple-500/50 focus:outline-none"
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[8px] font-black text-slate-600 uppercase px-1">Frame Rate (FPS)</label>
-                      <div className="flex gap-2">
-                        {[24, 30, 60].map(f => (
+                    
+                    {/* Framing / Aspect Ratio Quick Selection Grid */}
+                    <div className="space-y-2 border-t border-white/5 pt-3">
+                      <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest block">Format Aspect Ratio</span>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        {[
+                          { ratio: '16:9' },
+                          { ratio: '9:16' },
+                          { ratio: '1:1' },
+                          { ratio: '4:3' },
+                          { ratio: '4:5' },
+                          { ratio: '21:9' },
+                        ].map((item) => (
                           <button
-                            key={f}
-                            onClick={() => setFps(f)}
-                            className={`flex-1 py-1.5 rounded-lg border text-[9px] font-black transition-all ${fps === f ? 'border-purple-500 bg-purple-500/10 text-purple-400' : 'border-white/5 bg-white/5 text-slate-600 hover:border-white/10'}`}
+                            key={item.ratio}
+                            onClick={() => {
+                              setAspectRatio(item.ratio);
+                              setIsCustomFrameOpen(false);
+                            }}
+                            className={`py-1.5 px-2 rounded-lg border text-[8px] font-black uppercase transition-all ${
+                              aspectRatio === item.ratio && !isCustomFrameOpen
+                                ? 'border-cyan-500 bg-cyan-500/10 text-cyan-400 font-bold'
+                                : 'border-white/5 bg-white/5 text-slate-400 hover:border-white/10 hover:text-slate-300'
+                            }`}
                           >
-                            {f}
+                            {item.ratio}
                           </button>
                         ))}
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                      {['1:1', '4:3', '4:5'].map(r => (
-                        <button
-                          key={r}
-                          onClick={() => setAspectRatio(r)}
-                          className={`flex-1 py-1.5 rounded-lg border text-[9px] font-black transition-all ${aspectRatio === r ? 'border-purple-500 bg-purple-500/10 text-purple-400' : 'border-white/5 bg-white/5 text-slate-600 hover:border-white/10'}`}
-                        >
-                          {r}
-                        </button>
-                      ))}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
 
-
-
-          </div>
-        </aside>
-
-      </main>
-
-      {/* Footer Timeline & Controls */}
-      <footer className="h-44 flex-none border-t border-white/10 bg-black/40 backdrop-blur-3xl z-20 flex flex-col p-6 gap-6 relative">
-
-        {/* Timeline Visualizer */}
-        <div className="flex-1 space-y-3">
-          <TimelineHub
-            mediaItems={mediaItems}
-            audioTracks={audioTracks}
-            progress={progress}
-            handleTimelineClick={handleTimelineClick}
-            activePreviewId={activePreviewId}
-          />
-        </div>
-
-        {/* Global Controls */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 transition-all font-bold text-[10px] uppercase tracking-widest">
-              <Smartphone className="w-4 h-4 text-purple-400" />
-              <span>Format: {aspectRatio}</span>
-              <ChevronRight className="w-3 h-3 text-slate-500" />
-            </button>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => navigate("/quick-edit/upload")}
-              className="px-6 h-12 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-white text-xs font-black uppercase tracking-widest transition-all"
-            >
-              Discard
-            </button>
-            <motion.button
-              whileHover={{ scale: 1.02, boxShadow: '0 0 40px rgba(34,211,238,0.4)' }}
-              whileTap={{ scale: 0.98 }}
-              onClick={handleGenerate}
-              className="relative h-12 px-10 rounded-xl flex items-center gap-3 transition-all overflow-hidden bg-gradient-to-r from-cyan-600 via-teal-500 to-cyan-400 text-[#0b0d1f] cursor-pointer"
-            >
-              <motion.div
-                animate={{ opacity: [0.3, 0.6, 0.3], scale: [1, 1.2, 1] }}
-                transition={{ duration: 2, repeat: Infinity }}
-                className="absolute inset-0 bg-white/20 blur-xl"
-              />
-              <Sparkles className="w-4 h-4 relative z-10" />
-              <span className="text-sm font-black uppercase tracking-[0.2em] relative z-10">Generate Quick Edit</span>
-            </motion.button>
-          </div>
-        </div>
-
-      </footer>
-
-      <AnimatePresence>
-        {activeTool === 'filters' && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            className="fixed inset-0 z-[121] flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
-            onClick={() => setActiveTool(null)}
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.15 }}
-              className="w-[95vw] md:w-full md:max-w-md rounded-2xl border border-white/10 bg-[#0b0d1f]/95 shadow-2xl p-5"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-sm font-black uppercase tracking-widest text-white">Filters</h3>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-1">Choose a visual filter</p>
-                </div>
-                <button
-                  onClick={() => setActiveTool(null)}
-                  className="p-2 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 md:p-1.5 flex items-center justify-center rounded-lg bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="space-y-2">
-                <button
-                  onClick={() => {
-                    setSelectedFilter('none');
-                    setActiveTool(null);
-                  }}
-                  className={`w-full px-3 py-3 rounded-xl text-left text-[11px] font-bold uppercase tracking-widest transition-colors ${selectedFilter === 'none' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10'}`}
-                >
-                  No Filter
-                </button>
-                {[
-                  { id: 'vintage', label: 'Vintage (Old Film)' },
-                  { id: 'black-white', label: 'Black and White' },
-                  { id: 'cinematic', label: 'Cinematic' },
-                  { id: 'warm', label: 'Warm' },
-                  { id: 'cool', label: 'Cool' },
-                  { id: 'sepia', label: 'Sepia' },
-                  { id: 'hdr', label: 'HDR' },
-                  { id: 'vivid', label: 'Vivid' },
-                  { id: 'soft-glow', label: 'Soft Glow' },
-                  { id: 'retro-film', label: 'Retro Film (VHS)' },
-                ].map((f) => (
-                  <button
-                    key={f.id}
-                    onClick={() => { setSelectedFilter(f.id as FilterType); setActiveTool(null); }}
-                    className={`w-full px-3 py-3 rounded-xl text-left text-[11px] font-bold uppercase tracking-widest transition-colors ${selectedFilter === f.id ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10'}`}
-                  >
-                    {f.label}
-                  </button>
-                ))}
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {activeTool === 'effects' && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            className="fixed inset-0 z-[120] flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
-            onClick={() => setActiveTool(null)}
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.15 }}
-              className="w-[95vw] md:w-full md:max-w-md rounded-2xl border border-white/10 bg-[#0b0d1f]/95 shadow-2xl p-5"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-sm font-black uppercase tracking-widest text-white">Effects</h3>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-1">Choose an effect for preview</p>
-                </div>
-                <button
-                  onClick={() => setActiveTool(null)}
-                  className="p-2 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 md:p-1.5 flex items-center justify-center rounded-lg bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="space-y-2">
-                <button
-                  onClick={() => {
-                    setSelectedEffect('none');
-                    setActiveTool(null);
-                  }}
-                  className={`w-full px-3 py-3 rounded-xl text-left text-[11px] font-bold uppercase tracking-widest transition-colors ${selectedEffect === 'none' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10'}`}
-                >
-                  No Effect
-                </button>
-                <button
-                  onClick={() => {
-                    setSelectedEffect('fade-in');
-                    setActiveTool(null);
-                  }}
-                  className={`w-full px-3 py-3 rounded-xl text-left text-[11px] font-bold uppercase tracking-widest transition-colors ${selectedEffect === 'fade-in' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10'}`}
-                >
-                  Fade In
-                </button>
-                <button
-                  onClick={() => {
-                    setSelectedEffect('blur');
-                  }}
-                  className={`w-full px-3 py-3 rounded-xl text-left text-[11px] font-bold uppercase tracking-widest transition-colors ${selectedEffect === 'blur' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10'}`}
-                >
-                  Blur
-                </button>
-                <button
-                  onClick={() => {
-                    setSelectedEffect('zoom');
-                    setActiveTool(null);
-                  }}
-                  className={`w-full px-3 py-3 rounded-xl text-left text-[11px] font-bold uppercase tracking-widest transition-colors ${selectedEffect === 'zoom' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10'}`}
-                >
-                  Zoom
-                </button>
-                <button
-                  onClick={() => {
-                    setSelectedEffect('color-correction');
-                  }}
-                  className={`w-full px-3 py-3 rounded-xl text-left text-[11px] font-bold uppercase tracking-widest transition-colors ${selectedEffect === 'color-correction' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10'}`}
-                >
-                  Color Correction
-                </button>
-                <button
-                  onClick={() => {
-                    setSelectedEffect('green-screen');
-                    setActiveTool(null);
-                  }}
-                  className={`w-full px-3 py-3 rounded-xl text-left text-[11px] font-bold uppercase tracking-widest transition-colors ${selectedEffect === 'green-screen' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10'}`}
-                >
-                  Green Screen
-                </button>
-                <button
-                  onClick={() => {
-                    setSelectedEffect('slow-motion');
-                  }}
-                  className={`w-full px-3 py-3 rounded-xl text-left text-[11px] font-bold uppercase tracking-widest transition-colors ${selectedEffect === 'slow-motion' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10'}`}
-                >
-                  Slow Motion
-                </button>
-                <button
-                  onClick={() => {
-                    setSelectedEffect('glitch');
-                  }}
-                  className={`w-full px-3 py-3 rounded-xl text-left text-[11px] font-bold uppercase tracking-widest transition-colors ${selectedEffect === 'glitch' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10'}`}
-                >
-                  Glitch
-                </button>
-                <button
-                  onClick={() => {
-                    setSelectedEffect('transition');
-                    setActiveTool(null);
-                  }}
-                  className={`w-full px-3 py-3 rounded-xl text-left text-[11px] font-bold uppercase tracking-widest transition-colors ${selectedEffect === 'transition' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10'}`}
-                >
-                  Transition
-                </button>
-                <button
-                  onClick={() => {
-                    setSelectedEffect('text-animation');
-                    setActiveTool(null);
-                  }}
-                  className={`w-full px-3 py-3 rounded-xl text-left text-[11px] font-bold uppercase tracking-widest transition-colors ${selectedEffect === 'text-animation' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10'}`}
-                >
-                  Text Animation
-                </button>
-                <button
-                  onClick={() => {
-                    setSelectedEffect('motion-tracking');
-                    setActiveTool(null);
-                  }}
-                  className={`w-full px-3 py-3 rounded-xl text-left text-[11px] font-bold uppercase tracking-widest transition-colors ${selectedEffect === 'motion-tracking' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10'}`}
-                >
-                  Motion Tracking
-                </button>
-
-                {selectedEffect === 'blur' && (
-                  <div className="mt-2 p-3 rounded-xl bg-white/5 border border-white/10">
-                    <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-slate-300 mb-2">
-                      <span>Blur Amount</span>
-                      <span>{blurAmount}px</span>
-                    </div>
-                    <input
-                      type="range"
-                      min={0}
-                      max={30}
-                      value={blurAmount}
-                      onChange={(e) => setBlurAmount(Number(e.target.value))}
-                      className="w-full accent-cyan-400"
-                    />
-                    <button
-                      onClick={() => setActiveTool(null)}
-                      className="mt-3 w-full px-3 py-2 rounded-lg bg-cyan-500 text-[#0b0d1f] text-[10px] font-black uppercase tracking-widest hover:bg-cyan-400 transition-colors"
-                    >
-                      Apply Blur
-                    </button>
-                  </div>
-                )}
-
-                {selectedEffect === 'color-correction' && (
-                  <div className="mt-2 p-3 rounded-xl bg-white/5 border border-white/10 space-y-3">
-                    <div>
-                      <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-slate-300 mb-1">
-                        <span>Brightness</span>
-                        <span>{brightness.toFixed(1)}</span>
-                      </div>
-                      <input
-                        type="range"
-                        min={0.1}
-                        max={3}
-                        step={0.1}
-                        value={brightness}
-                        onChange={(e) => setBrightness(Number(e.target.value))}
-                        className="w-full accent-cyan-400"
-                      />
-                    </div>
-                    <div>
-                      <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-slate-300 mb-1">
-                        <span>Contrast</span>
-                        <span>{contrast.toFixed(1)}</span>
-                      </div>
-                      <input
-                        type="range"
-                        min={0.1}
-                        max={3}
-                        step={0.1}
-                        value={contrast}
-                        onChange={(e) => setContrast(Number(e.target.value))}
-                        className="w-full accent-cyan-400"
-                      />
-                    </div>
-                    <div>
-                      <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-slate-300 mb-1">
-                        <span>Saturation</span>
-                        <span>{saturation.toFixed(1)}</span>
-                      </div>
-                      <input
-                        type="range"
-                        min={0}
-                        max={3}
-                        step={0.1}
-                        value={saturation}
-                        onChange={(e) => setSaturation(Number(e.target.value))}
-                        className="w-full accent-cyan-400"
-                      />
-                    </div>
-                    <button
-                      onClick={() => setActiveTool(null)}
-                      className="w-full px-3 py-2 rounded-lg bg-cyan-500 text-[#0b0d1f] text-[10px] font-black uppercase tracking-widest hover:bg-cyan-400 transition-colors"
-                    >
-                      Apply Color
-                    </button>
-                  </div>
-                )}
-
-                {selectedEffect === 'slow-motion' && (
-                  <div className="mt-2 p-3 rounded-xl bg-white/5 border border-white/10 space-y-3">
-                    <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-slate-300 mb-1">
-                      <span>Speed</span>
-                      <span>{slowMotionSpeed.toFixed(2)}x</span>
-                    </div>
-                    <input
-                      type="range"
-                      min={0.1}
-                      max={1}
-                      step={0.1}
-                      value={slowMotionSpeed}
-                      onChange={(e) => setSlowMotionSpeed(Number(e.target.value))}
-                      className="w-full accent-cyan-400"
-                    />
-                    <button
-                      onClick={() => setActiveTool(null)}
-                      className="w-full px-3 py-2 rounded-lg bg-cyan-500 text-[#0b0d1f] text-[10px] font-black uppercase tracking-widest hover:bg-cyan-400 transition-colors"
-                    >
-                      Apply Slow Motion
-                    </button>
-                  </div>
-                )}
-
-                {selectedEffect === 'glitch' && (
-                  <div className="mt-2 p-3 rounded-xl bg-white/5 border border-white/10 space-y-3">
-                    <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-slate-300 mb-1">
-                      <span>Glitch Intensity</span>
-                      <span>{glitchIntensity.toFixed(1)}</span>
-                    </div>
-                    <input
-                      type="range"
-                      min={0}
-                      max={3}
-                      step={0.5}
-                      value={glitchIntensity}
-                      onChange={(e) => setGlitchIntensity(Number(e.target.value))}
-                      className="w-full accent-cyan-400"
-                    />
-                    <button
-                      onClick={() => setActiveTool(null)}
-                      className="w-full px-3 py-2 rounded-lg bg-cyan-500 text-[#0b0d1f] text-[10px] font-black uppercase tracking-widest hover:bg-cyan-400 transition-colors"
-                    >
-                      Apply Glitch
-                    </button>
-                  </div>
-                )}
-
-                {selectedEffect === 'text-animation' && (
-                  <div className="mt-2 p-3 rounded-xl bg-white/5 border border-white/10 space-y-3">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-300">Overlay Text</label>
-                    <input
-                      value={animatedText}
-                      onChange={(e) => {
-                        setAnimatedText(e.target.value);
-                        setOverlayText(e.target.value);
-                      }}
-                      placeholder="Enter text"
-                      className="w-full px-3 py-2 rounded-lg bg-black/30 border border-white/10 text-white text-sm focus:outline-none focus:border-cyan-500/50"
-                    />
-                    <button
-                      onClick={() => setActiveTool(null)}
-                      className="w-full px-3 py-2 rounded-lg bg-cyan-500 text-[#0b0d1f] text-[10px] font-black uppercase tracking-widest hover:bg-cyan-400 transition-colors"
-                    >
-                      Apply Text
-                    </button>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {activeTool === 'transitions' && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[121] flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
-            onClick={() => setActiveTool(null)}
-          >
-            <motion.div
-              initial={{ opacity: 0, y: 20, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.98 }}
-              transition={{ duration: 0.2 }}
-              className="w-[95vw] md:w-full md:max-w-md rounded-2xl border border-white/10 bg-[#0b0d1f]/95 shadow-2xl p-5"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-sm font-black uppercase tracking-widest text-white">Transitions</h3>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-1">Assign transition to selected clip</p>
-                </div>
-                <button
-                  onClick={() => setActiveTool(null)}
-                  className="p-2 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 md:p-1.5 flex items-center justify-center rounded-lg bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="mb-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-slate-300">
-                {activePreviewId
-                  ? `Selected Clip: ${activePreviewId.slice(0, 8)} • ${clipTransitions[activePreviewId] || 'none'}`
-                  : 'Select a clip from Media Sequence first'}
-              </div>
-
-              <div className="space-y-2">
-                <button
-                  onClick={() => applyTransitionForActiveClip('cross-dissolve')}
-                  className={`w-full px-3 py-3 rounded-xl text-left text-[11px] font-bold uppercase tracking-widest transition-colors ${activePreviewId && clipTransitions[activePreviewId] === 'cross-dissolve' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10'}`}
-                >
-                  Cross Dissolve
-                </button>
-                <button
-                  onClick={() => applyTransitionForActiveClip('slide-left')}
-                  className={`w-full px-3 py-3 rounded-xl text-left text-[11px] font-bold uppercase tracking-widest transition-colors ${activePreviewId && clipTransitions[activePreviewId] === 'slide-left' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10'}`}
-                >
-                  Slide Left
-                </button>
-                <button
-                  onClick={() => applyTransitionForActiveClip('slide-right')}
-                  className={`w-full px-3 py-3 rounded-xl text-left text-[11px] font-bold uppercase tracking-widest transition-colors ${activePreviewId && clipTransitions[activePreviewId] === 'slide-right' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10'}`}
-                >
-                  Slide Right
-                </button>
-                <button
-                  onClick={() => applyTransitionForActiveClip('dip-black')}
-                  className={`w-full px-3 py-3 rounded-xl text-left text-[11px] font-bold uppercase tracking-widest transition-colors ${activePreviewId && clipTransitions[activePreviewId] === 'dip-black' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10'}`}
-                >
-                  Dip to Black
-                </button>
-                <button
-                  onClick={() => applyTransitionForActiveClip('dip-white')}
-                  className={`w-full px-3 py-3 rounded-xl text-left text-[11px] font-bold uppercase tracking-widest transition-colors ${activePreviewId && clipTransitions[activePreviewId] === 'dip-white' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10'}`}
-                >
-                  Dip to White
-                </button>
-                <button
-                  onClick={() => applyTransitionForActiveClip('zoom-transition')}
-                  className={`w-full px-3 py-3 rounded-xl text-left text-[11px] font-bold uppercase tracking-widest transition-colors ${activePreviewId && clipTransitions[activePreviewId] === 'zoom-transition' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10'}`}
-                >
-                  Zoom Transition
-                </button>
-                <button
-                  onClick={() => applyTransitionForActiveClip('blur-transition')}
-                  className={`w-full px-3 py-3 rounded-xl text-left text-[11px] font-bold uppercase tracking-widest transition-colors ${activePreviewId && clipTransitions[activePreviewId] === 'blur-transition' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10'}`}
-                >
-                  Blur Transition
-                </button>
-                <button
-                  onClick={() => applyTransitionForActiveClip('spin-transition')}
-                  className={`w-full px-3 py-3 rounded-xl text-left text-[11px] font-bold uppercase tracking-widest transition-colors ${activePreviewId && clipTransitions[activePreviewId] === 'spin-transition' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10'}`}
-                >
-                  Spin Transition
-                </button>
-                <button
-                  onClick={() => applyTransitionForActiveClip('glitch-transition')}
-                  className={`w-full px-3 py-3 rounded-xl text-left text-[11px] font-bold uppercase tracking-widest transition-colors ${activePreviewId && clipTransitions[activePreviewId] === 'glitch-transition' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10'}`}
-                >
-                  Glitch Transition
-                </button>
-                <button
-                  onClick={() => applyTransitionForActiveClip('flash-transition')}
-                  className={`w-full px-3 py-3 rounded-xl text-left text-[11px] font-bold uppercase tracking-widest transition-colors ${activePreviewId && clipTransitions[activePreviewId] === 'flash-transition' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10'}`}
-                >
-                  Flash Transition
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {activeTool === 'speed' && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[123] flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
-            onClick={() => setActiveTool(null)}
-          >
-            <motion.div
-              initial={{ opacity: 0, y: 20, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.98 }}
-              transition={{ duration: 0.2 }}
-              className="w-[95vw] md:w-full md:max-w-md rounded-2xl border border-white/10 bg-[#0b0d1f]/95 shadow-2xl p-5"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-sm font-black uppercase tracking-widest text-white">Speed</h3>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-1">Control preview and export playback speed</p>
-                </div>
-                <button
-                  onClick={() => setActiveTool(null)}
-                  className="p-2 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 md:p-1.5 flex items-center justify-center rounded-lg bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-slate-300">
-                  <span>Playback Speed</span>
-                  <span>{speedValue.toFixed(2)}x</span>
-                </div>
-                <input
-                  type="range"
-                  min={0.25}
-                  max={2}
-                  step={0.05}
-                  value={speedValue}
-                  onChange={(e) => setSpeedValue(Number(e.target.value))}
-                  className="w-full accent-cyan-400"
-                />
-                <div className="flex gap-2">
-                  {[0.5, 1, 1.25, 1.5, 2].map((preset) => (
-                    <button
-                      key={preset}
-                      onClick={() => setSpeedValue(preset)}
-                      className={`flex-1 px-2 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest border transition-colors ${Math.abs(speedValue - preset) < 0.001 ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40' : 'bg-white/5 text-slate-300 border-white/10 hover:bg-white/10'}`}
-                    >
-                      {preset}x
-                    </button>
-                  ))}
-                </div>
-                <button
-                  onClick={() => setActiveTool(null)}
-                  className="w-full px-3 py-2 rounded-lg bg-cyan-500 text-[#0b0d1f] text-[10px] font-black uppercase tracking-widest hover:bg-cyan-400 transition-colors"
-                >
-                  Apply Speed
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {activeTool === 'trim' && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[123] flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
-            onClick={() => setActiveTool(null)}
-          >
-            <motion.div
-              initial={{ opacity: 0, y: 20, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.98 }}
-              transition={{ duration: 0.2 }}
-              className="w-[95vw] md:w-full md:max-w-md rounded-2xl border border-white/10 bg-[#0b0d1f]/95 shadow-2xl p-5"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-sm font-black uppercase tracking-widest text-white">Trim</h3>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-1">Cut start/end for selected video clip</p>
-                </div>
-                <button
-                  onClick={() => setActiveTool(null)}
-                  className="p-2 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 md:p-1.5 flex items-center justify-center rounded-lg bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              {activePreviewItem?.type === 'video' ? (
-                <div className="space-y-3">
-                  <div className="text-[10px] font-bold uppercase tracking-widest text-slate-300">
-                    Clip Duration: {activePreviewItem.duration.toFixed(2)}s
-                  </div>
-
-                  <div>
-                    <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-slate-300 mb-1">
-                      <span>Trim Start</span>
-                      <span>{getTrimRangeForItem(activePreviewItem.id, activePreviewItem.duration).start.toFixed(2)}s</span>
-                    </div>
-                    <input
-                      type="range"
-                      min={0}
-                      max={Math.max(0, activePreviewItem.duration - 0.01)}
-                      step={0.01}
-                      value={getTrimRangeForItem(activePreviewItem.id, activePreviewItem.duration).start}
-                      onChange={(e) => {
-                        const nextStart = Number(e.target.value);
-                        const current = getTrimRangeForItem(activePreviewItem.id, activePreviewItem.duration);
-                        const safeEnd = Math.max(nextStart + 0.01, current.end);
-                        setClipTrimRanges((prev) => ({
-                          ...prev,
-                          [activePreviewItem.id]: {
-                            start: nextStart,
-                            end: Math.min(activePreviewItem.duration, safeEnd),
-                          },
-                        }));
-                        if (videoRef.current) {
-                          videoRef.current.currentTime = nextStart;
-                        }
-                      }}
-                      className="w-full accent-cyan-400"
-                    />
-                  </div>
-
-                  <div>
-                    <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-slate-300 mb-1">
-                      <span>Trim End</span>
-                      <span>{getTrimRangeForItem(activePreviewItem.id, activePreviewItem.duration).end.toFixed(2)}s</span>
-                    </div>
-                    <input
-                      type="range"
-                      min={0.01}
-                      max={activePreviewItem.duration}
-                      step={0.01}
-                      value={getTrimRangeForItem(activePreviewItem.id, activePreviewItem.duration).end}
-                      onChange={(e) => {
-                        const nextEnd = Number(e.target.value);
-                        const current = getTrimRangeForItem(activePreviewItem.id, activePreviewItem.duration);
-                        setClipTrimRanges((prev) => ({
-                          ...prev,
-                          [activePreviewItem.id]: {
-                            start: current.start,
-                            end: Math.max(current.start + 0.01, nextEnd),
-                          },
-                        }));
-                      }}
-                      className="w-full accent-cyan-400"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Start (s)</label>
-                      <input
-                        type="number"
-                        min={0}
-                        max={Math.max(0, activePreviewItem.duration - 0.01)}
-                        step={0.01}
-                        value={getTrimRangeForItem(activePreviewItem.id, activePreviewItem.duration).start.toFixed(2)}
-                        onChange={(e) => {
-                          const nextStart = Number(e.target.value);
-                          const current = getTrimRangeForItem(activePreviewItem.id, activePreviewItem.duration);
-                          const safeStart = Math.max(0, Math.min(activePreviewItem.duration - 0.01, nextStart));
-                          const safeEnd = Math.max(safeStart + 0.01, current.end);
-                          setClipTrimRanges((prev) => ({
-                            ...prev,
-                            [activePreviewItem.id]: {
-                              start: safeStart,
-                              end: Math.min(activePreviewItem.duration, safeEnd),
-                            },
-                          }));
-                        }}
-                        className="mt-1 w-full rounded-lg border border-white/10 bg-black/30 px-2 py-1 text-xs text-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[9px] font-bold uppercase tracking-widest text-slate-400">End (s)</label>
-                      <input
-                        type="number"
-                        min={0.01}
-                        max={activePreviewItem.duration}
-                        step={0.01}
-                        value={getTrimRangeForItem(activePreviewItem.id, activePreviewItem.duration).end.toFixed(2)}
-                        onChange={(e) => {
-                          const nextEnd = Number(e.target.value);
-                          const current = getTrimRangeForItem(activePreviewItem.id, activePreviewItem.duration);
-                          const safeEnd = Math.max(current.start + 0.01, Math.min(activePreviewItem.duration, nextEnd));
-                          setClipTrimRanges((prev) => ({
-                            ...prev,
-                            [activePreviewItem.id]: {
-                              start: current.start,
-                              end: safeEnd,
-                            },
-                          }));
-                        }}
-                        className="mt-1 w-full rounded-lg border border-white/10 bg-black/30 px-2 py-1 text-xs text-white"
-                      />
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => {
-                      if (activePreviewItem) {
-                        setClipTrimRanges((prev) => ({
-                          ...prev,
-                          [activePreviewItem.id]: { start: 0, end: activePreviewItem.duration },
-                        }));
-                      }
-                    }}
-                    className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-slate-300 text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-colors"
-                  >
-                    Reset Trim
-                  </button>
-                </div>
-              ) : (
-                <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-300">
-                  Select a video clip to use trim.
-                </div>
-              )}
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {activeTool === 'rotate' && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[123] flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
-            onClick={() => setActiveTool(null)}
-          >
-            <motion.div
-              initial={{ opacity: 0, y: 20, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.98 }}
-              transition={{ duration: 0.2 }}
-              className="w-[95vw] md:w-full md:max-w-md rounded-2xl border border-white/10 bg-[#0b0d1f]/95 shadow-2xl p-5"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-sm font-black uppercase tracking-widest text-white">Rotate</h3>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-1">Rotate preview and export output</p>
-                </div>
-                <button
-                  onClick={() => setActiveTool(null)}
-                  className="p-2 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 md:p-1.5 flex items-center justify-center rounded-lg bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-slate-300">
-                  <span>Rotation</span>
-                  <span>{rotationDegrees}°</span>
-                </div>
-                <div className="grid grid-cols-4 gap-2">
-                  {[0, 90, 180, 270].map((deg) => (
-                    <button
-                      key={deg}
-                      onClick={() => setRotationDegrees(deg)}
-                      className={`px-2 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest border transition-colors ${rotationDegrees === deg ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40' : 'bg-white/5 text-slate-300 border-white/10 hover:bg-white/10'}`}
-                    >
-                      {deg}°
-                    </button>
-                  ))}
-                </div>
-                <button
-                  onClick={() => setActiveTool(null)}
-                  className="w-full px-3 py-2 rounded-lg bg-cyan-500 text-[#0b0d1f] text-[10px] font-black uppercase tracking-widest hover:bg-cyan-400 transition-colors"
-                >
-                  Apply Rotation
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {activeTool === 'volume' && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[123] flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
-            onClick={() => setActiveTool(null)}
-          >
-            <motion.div
-              initial={{ opacity: 0, y: 20, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.98 }}
-              transition={{ duration: 0.2 }}
-              className="w-[95vw] md:w-full md:max-w-md rounded-2xl border border-white/10 bg-[#0b0d1f]/95 shadow-2xl p-5"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-sm font-black uppercase tracking-widest text-white">Volume</h3>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-1">Adjust preview and export volume</p>
-                </div>
-                <button
-                  onClick={() => setActiveTool(null)}
-                  className="p-2 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 md:p-1.5 flex items-center justify-center rounded-lg bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="space-y-3">
-                <button
-                  onClick={() => setIsMuted((prev) => !prev)}
-                  className={`w-full px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest border transition-colors ${isMuted ? 'bg-red-500/20 text-red-300 border-red-500/40' : 'bg-white/5 text-slate-300 border-white/10 hover:bg-white/10'}`}
-                >
-                  {isMuted ? 'Unmute' : 'Mute'}
-                </button>
-
-                <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-slate-300">
-                  <span>Volume Level</span>
-                  <span>{Math.round(volumeLevel * 100)}%</span>
-                </div>
-                <input
-                  type="range"
-                  min={0}
-                  max={1}
-                  step={0.01}
-                  value={volumeLevel}
-                  onChange={(e) => {
-                    const next = Number(e.target.value);
-                    setVolumeLevel(next);
-                    if (next > 0 && isMuted) {
-                      setIsMuted(false);
-                    }
-                  }}
-                  className="w-full accent-cyan-400"
-                />
-
-                <button
-                  onClick={() => setActiveTool(null)}
-                  className="w-full px-3 py-2 rounded-lg bg-cyan-500 text-[#0b0d1f] text-[10px] font-black uppercase tracking-widest hover:bg-cyan-400 transition-colors"
-                >
-                  Apply Volume
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {activeTool === 'crop' && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[123] flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
-            onClick={() => setActiveTool(null)}
-          >
-            <motion.div
-              initial={{ opacity: 0, y: 20, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.98 }}
-              transition={{ duration: 0.2 }}
-              className="w-[95vw] md:w-full md:max-w-md rounded-2xl border border-white/10 bg-[#0b0d1f]/95 shadow-2xl p-5"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-sm font-black uppercase tracking-widest text-white">Crop</h3>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-1">Crop area for preview and export</p>
-                </div>
-                <button
-                  onClick={() => setActiveTool(null)}
-                  className="p-2 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 md:p-1.5 flex items-center justify-center rounded-lg bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="space-y-3">
-                <div>
-                  <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-slate-300 mb-1">
-                    <span>Crop Width</span>
-                    <span>{Math.round(cropWidthPct)}%</span>
-                  </div>
-                  <input type="range" min={30} max={100} step={1} value={cropWidthPct} onChange={(e) => setCropWidthPct(Number(e.target.value))} className="w-full accent-cyan-400" />
-                </div>
-                <div>
-                  <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-slate-300 mb-1">
-                    <span>Crop Height</span>
-                    <span>{Math.round(cropHeightPct)}%</span>
-                  </div>
-                  <input type="range" min={30} max={100} step={1} value={cropHeightPct} onChange={(e) => setCropHeightPct(Number(e.target.value))} className="w-full accent-cyan-400" />
-                </div>
-                <div>
-                  <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-slate-300 mb-1">
-                    <span>Center X</span>
-                    <span>{Math.round(cropCenterX)}%</span>
-                  </div>
-                  <input type="range" min={0} max={100} step={1} value={cropCenterX} onChange={(e) => setCropCenterX(Number(e.target.value))} className="w-full accent-cyan-400" />
-                </div>
-                <div>
-                  <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-slate-300 mb-1">
-                    <span>Center Y</span>
-                    <span>{Math.round(cropCenterY)}%</span>
-                  </div>
-                  <input type="range" min={0} max={100} step={1} value={cropCenterY} onChange={(e) => setCropCenterY(Number(e.target.value))} className="w-full accent-cyan-400" />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => {
-                      setCropWidthPct(100);
-                      setCropHeightPct(100);
-                      setCropCenterX(50);
-                      setCropCenterY(50);
-                    }}
-                    className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-slate-300 text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-colors"
-                  >
-                    Reset
-                  </button>
-                  <button
-                    onClick={() => setActiveTool(null)}
-                    className="px-3 py-2 rounded-lg bg-cyan-500 text-[#0b0d1f] text-[10px] font-black uppercase tracking-widest hover:bg-cyan-400 transition-colors"
-                  >
-                    Apply Crop
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {activeTool === 'zoom' && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[123] flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
-            onClick={() => setActiveTool(null)}
-          >
-            <motion.div
-              initial={{ opacity: 0, y: 20, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.98 }}
-              transition={{ duration: 0.2 }}
-              className="w-[95vw] md:w-full md:max-w-md rounded-2xl border border-white/10 bg-[#0b0d1f]/95 shadow-2xl p-5"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-sm font-black uppercase tracking-widest text-white">Zoom</h3>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-1">Adjust zoom for preview and export</p>
-                </div>
-                <button
-                  onClick={() => setActiveTool(null)}
-                  className="p-2 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 md:p-1.5 flex items-center justify-center rounded-lg bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-slate-300">
-                  <span>Zoom Level</span>
-                  <span>{zoomToolAmount.toFixed(2)}x</span>
-                </div>
-                <input
-                  type="range"
-                  min={1}
-                  max={2.5}
-                  step={0.05}
-                  value={zoomToolAmount}
-                  onChange={(e) => setZoomToolAmount(Number(e.target.value))}
-                  className="w-full accent-cyan-400"
-                />
-                <button
-                  onClick={() => setZoomToolAmount(1)}
-                  className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-slate-300 text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-colors"
-                >
-                  Reset Zoom
-                </button>
-                <button
-                  onClick={() => setActiveTool(null)}
-                  className="w-full px-3 py-2 rounded-lg bg-cyan-500 text-[#0b0d1f] text-[10px] font-black uppercase tracking-widest hover:bg-cyan-400 transition-colors"
-                >
-                  Apply Zoom
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {activeTool === 'keyframe' && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[123] flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
-            onClick={() => setActiveTool(null)}
-          >
-            <motion.div
-              initial={{ opacity: 0, y: 20, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.98 }}
-              transition={{ duration: 0.2 }}
-              className="w-[95vw] md:w-full md:max-w-md rounded-2xl border border-white/10 bg-[#0b0d1f]/95 shadow-2xl p-5"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-sm font-black uppercase tracking-widest text-white">Keyframe</h3>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-1">Animate motion over clip time</p>
-                </div>
-                <button
-                  onClick={() => setActiveTool(null)}
-                  className="p-2 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 md:p-1.5 flex items-center justify-center rounded-lg bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { id: 'none', label: 'None' },
-                    { id: 'zoom-in', label: 'Zoom In' },
-                    { id: 'zoom-out', label: 'Zoom Out' },
-                    { id: 'pulse', label: 'Pulse' },
-                  ].map((preset) => (
-                    <button
-                      key={preset.id}
-                      onClick={() => setKeyframeMode(preset.id as 'none' | 'zoom-in' | 'zoom-out' | 'pulse')}
-                      className={`px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest border transition-colors ${keyframeMode === preset.id ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40' : 'bg-white/5 text-slate-300 border-white/10 hover:bg-white/10'}`}
-                    >
-                      {preset.label}
-                    </button>
-                  ))}
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-slate-300 mb-1">
-                    <span>Strength</span>
-                    <span>{keyframeAmount.toFixed(2)}x</span>
-                  </div>
-                  <input
-                    type="range"
-                    min={1.05}
-                    max={1.8}
-                    step={0.05}
-                    value={keyframeAmount}
-                    onChange={(e) => setKeyframeAmount(Number(e.target.value))}
-                    className="w-full accent-cyan-400"
-                    disabled={keyframeMode === 'none'}
-                  />
-                </div>
-
-                <button
-                  onClick={() => setActiveTool(null)}
-                  className="w-full px-3 py-2 rounded-lg bg-cyan-500 text-[#0b0d1f] text-[10px] font-black uppercase tracking-widest hover:bg-cyan-400 transition-colors"
-                >
-                  Apply Keyframe
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {activeTool === 'text-tool' && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[122] flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
-            onClick={() => {
-              setActiveTool(null);
-              setIsTextPlacementMode(false);
-            }}
-          >
-            <motion.div
-              initial={{ opacity: 0, y: 20, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.98 }}
-              transition={{ duration: 0.2 }}
-              className="w-full max-w-2xl rounded-2xl border border-white/10 bg-[#0b0d1f]/95 shadow-2xl p-5"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-sm font-black uppercase tracking-widest text-white">Text Overlay</h3>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-1">Select font and place text in preview</p>
-                </div>
-                <button
-                  onClick={() => {
-                    setActiveTool(null);
-                    setIsTextPlacementMode(false);
-                  }}
-                  className="p-2 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 md:p-1.5 flex items-center justify-center rounded-lg bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-300">Text</label>
-                  <Textarea
-                    value={overlayText}
-                    onChange={(e) => {
-                      setOverlayText(e.target.value);
-                      setAnimatedText(e.target.value);
-                    }}
-                    placeholder="Enter text"
-                    className="mt-2 bg-black/30 border-white/10 text-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-300">Font</label>
-                  <div className="mt-2 grid grid-cols-2 md:grid-cols-3 gap-2 max-h-44 overflow-y-auto custom-scrollbar pr-1">
-                    {textFontOptions.map((font) => (
-                      <button
-                        key={font.id}
-                        onClick={() => setOverlayFontId(font.id)}
-                        className={`px-3 py-2 rounded-lg text-left text-[10px] font-bold uppercase tracking-wide border transition-colors ${overlayFontId === font.id ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40' : 'bg-white/5 text-slate-300 border-white/10 hover:bg-white/10'}`}
-                        style={{ fontFamily: font.family }}
-                      >
-                        {font.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                  <div>
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-300">Size</label>
-                    <input
-                      type="range"
-                      min={18}
-                      max={96}
-                      value={overlayFontSize}
-                      onChange={(e) => setOverlayFontSize(Number(e.target.value))}
-                      className="w-full mt-2 accent-cyan-400"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-300">Color</label>
-                    <input
-                      type="color"
-                      value={overlayColor}
-                      onChange={(e) => setOverlayColor(e.target.value)}
-                      className="w-full mt-2 h-9 rounded-lg bg-transparent border border-white/10"
-                    />
-                  </div>
-                  <div className="flex items-end">
                     <button
                       onClick={() => {
-                        setIsTextPlacementMode(true);
-                        setActiveTool(null);
+                        setIsCustomFrameOpen(!isCustomFrameOpen);
+                        if (!isCustomFrameOpen) setAspectRatio('Custom');
                       }}
-                      className={`w-full px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest border transition-colors ${isTextPlacementMode ? 'bg-cyan-500 text-[#0b0d1f] border-cyan-400' : 'bg-white/5 text-slate-300 border-white/10 hover:bg-white/10'}`}
+                      className={`w-full py-2.5 rounded-lg border border-dashed transition-all text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-1.5 ${
+                        isCustomFrameOpen ? 'border-purple-500 text-purple-400 bg-purple-500/5' : 'border-white/10 text-slate-500 hover:text-slate-300'
+                      }`}
                     >
-                      {isTextPlacementMode ? 'Click Preview to Place' : 'Place on Preview'}
+                      <Maximize2 className="w-3.5 h-3.5" />
+                      Customize Frame
+                    </button>
+
+                    {isCustomFrameOpen && (
+                      <div className="space-y-3 pt-1">
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-1">
+                            <label className="text-[7px] font-black text-slate-500 uppercase">Width (px)</label>
+                            <input
+                              type="number"
+                              value={customFrame.width}
+                              onChange={(e) => setCustomFrame(prev => ({ ...prev, width: Number(e.target.value) }))}
+                              className="w-full bg-black/40 border border-white/10 rounded px-2 py-1 text-xs font-bold text-white focus:outline-none"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[7px] font-black text-slate-500 uppercase">Height (px)</label>
+                            <input
+                              type="number"
+                              value={customFrame.height}
+                              onChange={(e) => setCustomFrame(prev => ({ ...prev, height: Number(e.target.value) }))}
+                              className="w-full bg-black/40 border border-white/10 rounded px-2 py-1 text-xs font-bold text-white focus:outline-none"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex gap-1.5">
+                          {['1:1', '4:3', '4:5'].map(r => (
+                            <button
+                              key={r}
+                              onClick={() => setAspectRatio(r)}
+                              className={`flex-1 py-1 rounded border text-[8px] font-black transition-all ${aspectRatio === r ? 'border-purple-500 bg-purple-500/10 text-purple-400' : 'border-white/5 bg-white/5 text-slate-500'}`}
+                            >
+                              {r}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Dynamic tool attributes editor */}
+              {activeTool && (
+                <div className="border border-cyan-500/20 rounded-xl overflow-hidden bg-black/10 shadow-[0_0_15px_rgba(34,211,238,0.03)]">
+                  <div className="p-3 bg-cyan-500/5 border-b border-cyan-500/10 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Wand2 className="w-3.5 h-3.5 text-cyan-400" />
+                      <span className="text-[10px] font-black uppercase tracking-wider text-cyan-300">Tool Properties</span>
+                    </div>
+                    <button onClick={() => setActiveTool(null)} className="text-slate-500 hover:text-slate-300">
+                      <X className="w-3.5 h-3.5" />
                     </button>
                   </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-300">X Position</label>
-                    <input
-                      type="range"
-                      min={0}
-                      max={100}
-                      value={overlayPosX}
-                      onChange={(e) => setOverlayPosX(Number(e.target.value))}
-                      className="w-full mt-2 accent-cyan-400"
+                  <div className="p-3 bg-black/30">
+                    <ToolInspector
+                      activeTool={activeTool}
+                      setActiveTool={setActiveTool}
+                      selectedFilter={selectedFilter}
+                      setSelectedFilter={setSelectedFilter}
+                      selectedEffect={selectedEffect}
+                      setSelectedEffect={setSelectedEffect}
+                      blurAmount={blurAmount}
+                      setBlurAmount={setBlurAmount}
+                      brightness={brightness}
+                      setBrightness={setBrightness}
+                      contrast={contrast}
+                      setContrast={setContrast}
+                      saturation={saturation}
+                      setSaturation={setSaturation}
+                      slowMotionSpeed={slowMotionSpeed}
+                      setSlowMotionSpeed={setSlowMotionSpeed}
+                      glitchIntensity={glitchIntensity}
+                      setGlitchIntensity={setGlitchIntensity}
+                      animatedText={animatedText}
+                      setAnimatedText={setAnimatedText}
+                      overlayText={overlayText}
+                      setOverlayText={setOverlayText}
+                      overlayFontId={overlayFontId}
+                      setOverlayFontId={setOverlayFontId}
+                      overlayFontSize={overlayFontSize}
+                      setOverlayFontSize={setOverlayFontSize}
+                      overlayColor={overlayColor}
+                      setOverlayColor={setOverlayColor}
+                      overlayPosX={overlayPosX}
+                      setOverlayPosX={setOverlayPosX}
+                      overlayPosY={overlayPosY}
+                      setOverlayPosY={setOverlayPosY}
+                      isTextPlacementMode={isTextPlacementMode}
+                      setIsTextPlacementMode={setIsTextPlacementMode}
+                      clipTransitions={clipTransitions}
+                      applyTransitionForActiveClip={applyTransitionForActiveClip}
+                      speedValue={speedValue}
+                      setSpeedValue={setSpeedValue}
+                      activePreviewId={activePreviewId}
+                      activePreviewItem={activePreviewItem}
+                      getTrimRangeForItem={getTrimRangeForItem}
+                      clipTrimRanges={clipTrimRanges}
+                      setClipTrimRanges={setClipTrimRanges}
+                      rotationDegrees={rotationDegrees}
+                      setRotationDegrees={setRotationDegrees}
+                      volumeLevel={volumeLevel}
+                      setVolumeLevel={setVolumeLevel}
+                      isMuted={isMuted}
+                      setIsMuted={setIsMuted}
+                      cropWidthPct={cropWidthPct}
+                      setCropWidthPct={setCropWidthPct}
+                      cropHeightPct={cropHeightPct}
+                      setCropHeightPct={setCropHeightPct}
+                      cropCenterX={cropCenterX}
+                      setCropCenterX={setCropCenterX}
+                      cropCenterY={cropCenterY}
+                      setCropCenterY={setCropCenterY}
+                      zoomToolAmount={zoomToolAmount}
+                      setZoomToolAmount={setZoomToolAmount}
+                      keyframeMode={keyframeMode}
+                      setKeyframeMode={setKeyframeMode}
+                      keyframeAmount={keyframeAmount}
+                      setKeyframeAmount={setKeyframeAmount}
+                      videoRef={videoRef}
                     />
                   </div>
-                  <div>
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-300">Y Position</label>
-                    <input
-                      type="range"
-                      min={0}
-                      max={100}
-                      value={overlayPosY}
-                      onChange={(e) => setOverlayPosY(Number(e.target.value))}
-                      className="w-full mt-2 accent-cyan-400"
-                    />
-                  </div>
                 </div>
+              )}
 
-                <div className="flex items-center justify-between gap-3">
-                  <button
-                    onClick={() => {
-                      setOverlayText('');
-                      setAnimatedText('');
-                      setIsTextPlacementMode(false);
-                    }}
-                    className="px-4 py-2 rounded-lg bg-red-500/15 border border-red-500/40 text-red-300 text-[10px] font-black uppercase tracking-widest hover:bg-red-500/25 transition-colors"
-                  >
-                    Delete Text
-                  </button>
-                  <button
-                    onClick={() => {
-                      setActiveTool(null);
-                      setIsTextPlacementMode(false);
-                    }}
-                    className="px-4 py-2 rounded-lg bg-cyan-500 text-[#0b0d1f] text-[10px] font-black uppercase tracking-widest hover:bg-cyan-400 transition-colors"
-                  >
-                    Apply Text Overlay
-                  </button>
+              {/* Clip Metadata display card */}
+              {!activeTool && (
+                <div className="border border-white/5 rounded-xl overflow-hidden bg-black/10 p-3.5 space-y-3">
+                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block border-b border-white/5 pb-1.5">Clip Metadata</span>
+                  {activePreviewId && activePreviewItem ? (
+                    <div className="space-y-2 text-[9px] font-bold text-slate-400 uppercase tracking-wide">
+                      <div className="flex justify-between"><span className="text-slate-600">Format:</span><span className="text-slate-300">{activePreviewItem.type}</span></div>
+                      <div className="flex justify-between"><span className="text-slate-600">Duration:</span><span className="text-slate-300">{activePreviewItem.duration.toFixed(2)}s</span></div>
+                      <div className="flex justify-between"><span className="text-slate-600">Source:</span><span className="text-slate-300 truncate max-w-[120px]">{activePreviewItem.file ? activePreviewItem.file.name : 'Bench anime clip.mp4'}</span></div>
+                      <div className="flex justify-between"><span className="text-slate-600">Track:</span><span className="text-cyan-400">V1</span></div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-4 text-[9px] font-bold text-slate-600 uppercase tracking-widest">
+                      Select clip from timeline
+                    </div>
+                  )}
                 </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              )}
+
+            </div>
+          </aside>
+
+        </div>
+
+        {/* Bottom Panel: Multitrack Timeline lanes and Audio Mixer */}
+        <div className={`${
+          timelineSize === 'minimized' ? 'h-[120px]' : 
+          timelineSize === 'maximized' ? 'h-[460px]' : 'h-[280px]'
+        } flex-none border-t border-white/10 bg-black/25 backdrop-blur-3xl flex p-4 gap-4 overflow-hidden select-none transition-all duration-300`}>
+          {/* Timeline hub container */}
+          <div className="flex-1 overflow-hidden h-full">
+            <TimelineHub
+              mediaItems={mediaItems}
+              audioTracks={audioTracks}
+              progress={progress}
+              handleTimelineClick={handleTimelineClick}
+              activePreviewId={activePreviewId}
+              setActivePreviewId={setActivePreviewId}
+              isPlaying={isPlaying}
+              clipTrimRanges={clipTrimRanges}
+              setClipTrimRanges={setClipTrimRanges}
+              getTrimRangeForItem={getTrimRangeForItem}
+              videoRef={videoRef}
+              handleAddAudio={handleAddAudio}
+              handleAddVideo={() => mediaInputRef.current?.click()}
+              handleReorderClips={handleReorderClips}
+              getMediaDuration={getMediaDuration}
+              setMediaItems={setMediaItems}
+              saveToUndo={saveToUndo}
+              timelineSize={timelineSize}
+              setTimelineSize={setTimelineSize}
+            />
+          </div>
+
+          {/* Simulated hardware volume Mixer */}
+          <AudioMixer isPlaying={isPlaying} isMuted={isMuted} />
+        </div>
+      </main>
+
+      {/* Global Actions Footer Bar */}
+      <footer className="h-16 flex-none border-t border-white/10 bg-[#070814]/80 flex items-center justify-between px-6 z-20 select-none">
+        <div className="flex items-center">
+          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/5 text-slate-300 hover:bg-white/10 transition-all font-bold text-[9px] uppercase tracking-wider">
+            <Smartphone className="w-3.5 h-3.5 text-purple-400" />
+            <span>Format: {aspectRatio}</span>
+            <ChevronRight className="w-3 h-3 text-slate-500" />
+          </button>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate("/quick-edit/upload")}
+            className="px-5 h-9 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-white text-[10px] font-black uppercase tracking-widest transition-all"
+          >
+            Discard
+          </button>
+          <motion.button
+            whileHover={{ scale: 1.02, boxShadow: '0 0 20px rgba(34,211,238,0.2)' }}
+            whileTap={{ scale: 0.98 }}
+            onClick={handleGenerate}
+            className="relative h-9 px-6 rounded-lg flex items-center gap-2 transition-all overflow-hidden bg-gradient-to-r from-cyan-600 via-teal-500 to-cyan-400 text-[#0b0d1f] cursor-pointer"
+          >
+            <motion.div
+              animate={{ opacity: [0.2, 0.4, 0.2], scale: [1, 1.1, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              className="absolute inset-0 bg-white/15 blur-lg"
+            />
+            <Sparkles className="w-3.5 h-3.5 relative z-10" />
+            <span className="text-[10px] font-black uppercase tracking-[0.15em] relative z-10">Generate Quick Edit</span>
+          </motion.button>
+        </div>
+      </footer>
 
       <HistoryDialog
         open={activeTool === 'history'}
@@ -3413,7 +3575,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
         feature={premiumFeature}
       />
 
-      {/* Custom Styles */}
+      {/* Custom Styles overrides */}
       <style dangerouslySetInnerHTML={{
         __html: `
         .custom-scrollbar::-webkit-scrollbar {

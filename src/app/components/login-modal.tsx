@@ -228,14 +228,14 @@ export function LoginModal({ isOpen, onClose, customMessage, customTitle }: Logi
             </div>
 
             {/* Title */}
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              {customTitle || (mode === "signin" ? "Welcome back" : "Create account")}
+            <h1 className={`text-3xl font-bold mb-2 ${mode === "signin" ? "text-black" : "text-gray-900"}`}>
+              {customTitle || (mode === "signin" ? "Sign in to Vireonix" : "Create an account")}
             </h1>
-            <p className="text-base text-gray-500 mb-6">
+            <p className={`text-base mb-6 ${mode === "signin" ? "text-black" : "text-gray-500"}`}>
               {customMessage ||
                 (mode === "signin"
-                  ? "Sign in to your Vireonix account"
-                  : "Create a new Vireonix account")}
+                  ? "Sign in to access your Vireonix account."
+                  : "Create your Vireonix account to continue.")}
             </p>
 
             {/* Tabs */}
@@ -247,7 +247,7 @@ export function LoginModal({ isOpen, onClose, customMessage, customTitle }: Logi
                 }}
                 className={`flex-1 text-center py-4 text-base font-medium cursor-pointer transition-all relative ${
                   mode === "signin"
-                    ? "text-gray-900 font-semibold"
+                    ? "text-black font-semibold"
                     : "text-gray-500"
                 }`}
               >

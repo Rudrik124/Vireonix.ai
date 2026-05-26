@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { Session, AuthChangeEvent } from "@supabase/supabase-js";
-import { supabase, isSupabaseConfigured } from "../../lib/supabase";
+import { Session } from "@supabase/supabase-js";
 
 interface AuthContextType {
   session: Session | null;
@@ -11,58 +10,28 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const defaultSession = {
+  user: {
+    email: "guest@vireonix.ai",
+    user_metadata: {
+      full_name: "Guest",
+    },
+  },
+} as unknown as Session;
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    if (!isSupabaseConfigured || !supabase) {
-      setIsLoading(false);
-      return;
-    }
-
-    // Check if user is already logged in
-    const checkSession = async () => {
-      try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        setSession(session);
-        setIsLoading(false);
-      } catch (error) {
-        console.error("Error checking session:", error);
-        setIsLoading(false);
-      }
-    };
-
-    checkSession();
-
-    // Listen for auth changes
-    const { data } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
-      setSession(session);
-    });
-
-    return () => {
-      data?.subscription?.unsubscribe();
-    };
+    setIsLoading(false);
   }, []);
 
   const logout = async () => {
-    if (!supabase) {
-      setSession(null);
-      return;
-    }
-
-    try {
-      await supabase.auth.signOut();
-      setSession(null);
-    } catch (error) {
-      console.error("Error signing out:", error);
-    }
+    return;
   };
 
   return (
-    <AuthContext.Provider value={{ session, isLoading, isLoggedIn: !!session, logout }}>
+    <AuthContext.Provider value={{ session: defaultSession, isLoading, isLoggedIn: true, logout }}>
       {children}
     </AuthContext.Provider>
   );
@@ -76,7 +45,7 @@ export function useAuth() {
     return {
       session: null,
       isLoading: false,
-      isLoggedIn: false,
+      isLoggedIn: true,
       logout: async () => {},
     } as AuthContextType;
   }

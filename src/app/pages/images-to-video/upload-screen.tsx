@@ -862,7 +862,7 @@ export function ImagesToVideoUploadScreen() {
         isOpen={isLoginOpen} 
         onClose={() => setIsLoginOpen(false)} 
         customTitle="Welcome back"
-        customMessage="Sign in to your Vireonix account to create your video"
+        customMessage="Sign in to continue and create your video."
       />
 
       <LoadingModal

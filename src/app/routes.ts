@@ -26,8 +26,8 @@ export const router = createBrowserRouter([
   {
     path: "/create",
     async lazy() {
-      const { AIGenerativeVideoPage } = await import("./pages/AI-Video_Generation/ai-generative-video");
-      return { Component: AIGenerativeVideoPage };
+      const { EditorPage } = await import("./pages/editor/editor-page");
+      return { Component: EditorPage };
     }
   },
   {
