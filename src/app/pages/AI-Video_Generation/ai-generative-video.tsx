@@ -37,6 +37,7 @@ import { Label } from "../../components/ui/label";
 import { Switch } from "../../components/ui/switch";
 import { PremiumModal } from "../../components/premium-modal";
 import { generateVideo } from "../../../api/generatevideo";
+import { usePortalTestingContext } from "../../../shared/portal/testing-context";
 
 const frameStyleOptions = [
   { label: "16:9", width: 32, height: 18 },
@@ -159,6 +160,7 @@ const ParticleBackground = memo(() => {
 export function AIGenerativeVideoPage() {
   const navigate = useNavigate();
   const { isLoggedIn, session, logout } = useAuth();
+  const { isDeveloperTestMode, usageContext } = usePortalTestingContext();
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userName = session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || "User";
@@ -249,6 +251,7 @@ export function AIGenerativeVideoPage() {
         quality: exportQuality,
         fps,
         watermark,
+        usageContext,
       };
 
       console.log("📤 [FINAL REQUEST] Sending to backend with prompt:", requestPayload.prompt);
@@ -571,6 +574,11 @@ export function AIGenerativeVideoPage() {
           <p className="text-base md:text-lg text-[#94a3b8] max-w-2xl mx-auto leading-relaxed">
             Create stunning videos using AI in seconds
           </p>
+          {isDeveloperTestMode && (
+            <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-300/5 px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-200">
+              Internal testing mode active
+            </div>
+          )}
         </motion.div>
 
         {/* 3-COLUMN LAYOUT (Staggered Animation Wrapper) */}

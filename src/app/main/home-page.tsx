@@ -27,6 +27,7 @@ import { useAuth } from "../context/auth-context";
 import { SuccessToast } from "../components/success-toast";
 import { BrandLogo } from "../components/brand-logo";
 import { generateVideo } from "../../api/generatevideo";
+import { usePortalTestingContext } from "../../shared/portal/testing-context";
 
 const durations = [
 	{ value: 1, label: "1 min" },
@@ -40,6 +41,7 @@ const particles = Array.from({ length: 40 });
 export function HomePage() {
 	const navigate = useNavigate();
 	const { isLoggedIn, logout, session } = useAuth();
+	const { usageContext } = usePortalTestingContext();
 	const [prompt, setPrompt] = useState("");
 	const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
 	const [referenceVideo, setReferenceVideo] = useState<File | null>(null);
@@ -60,6 +62,12 @@ export function HomePage() {
 			localStorage.removeItem("justLoggedIn");
 		}
 	}, [isLoggedIn]);
+
+	const handleLogout = async () => {
+		await logout();
+		setIsUserMenuOpen(false);
+		navigate("/", { replace: true });
+	};
 
 	const handleDragOver = (e: React.DragEvent<HTMLDivElement>, isReference = false) => {
 		e.preventDefault();
@@ -119,6 +127,7 @@ export function HomePage() {
 				prompt: prompt.trim(),
 				duration: selectedDuration * 60,
 				frame: "16:9",
+				usageContext,
 			};
 
 			const data = await generateVideo(requestPayload);
@@ -254,8 +263,7 @@ export function HomePage() {
 										{isLoggedIn && (
 											<button 
 												onClick={() => {
-													logout();
-													setIsUserMenuOpen(false);
+													void handleLogout();
 												}}
 												className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 transition-all text-sm font-bold uppercase tracking-widest group"
 											>

@@ -1,37 +1,151 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { Session } from "@supabase/supabase-js";
-
-interface AuthContextType {
-  session: Session | null;
-  isLoading: boolean;
-  isLoggedIn: boolean;
-  logout: () => Promise<void>;
-}
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { supabase } from "../../lib/supabase";
+import { canAccessPortal } from "../../shared/auth/permissions";
+import type { AuthContextType, AppProfile, AppRole } from "../../shared/types/auth";
+import { fetchAppProfile } from "../../services/auth-profile";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const defaultSession = {
-  user: {
-    email: "guest@vireonix.ai",
-    user_metadata: {
-      full_name: "Guest",
-    },
-  },
-} as unknown as Session;
-
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [isLoading, setIsLoading] = useState(false);
+  const [session, setSession] = useState<AuthContextType["session"]>(null);
+  const [profile, setProfile] = useState<AppProfile | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    setIsLoading(false);
-  }, []);
+  const refreshProfile = async () => {
+    if (!session) {
+      setProfile(null);
+      return null;
+    }
 
-  const logout = async () => {
-    return;
+    const nextProfile = await fetchAppProfile(session);
+    setProfile(nextProfile);
+    return nextProfile;
   };
 
+  useEffect(() => {
+    let mounted = true;
+
+    const bootstrap = async () => {
+      if (!supabase) {
+        if (mounted) {
+          setIsLoading(false);
+        }
+        return;
+      }
+
+      setIsLoading(true);
+      const { data } = await supabase.auth.getSession();
+
+      if (!mounted) {
+        return;
+      }
+
+      setSession(data.session ?? null);
+
+      if (data.session) {
+        const nextProfile = await fetchAppProfile(data.session);
+        if (mounted) {
+          setProfile(nextProfile);
+        }
+      } else {
+        setProfile(null);
+      }
+
+      if (mounted) {
+        setIsLoading(false);
+      }
+    };
+
+    bootstrap();
+
+    const authListener = supabase?.auth.onAuthStateChange(async (_event, nextSession) => {
+      if (!mounted) {
+        return;
+      }
+
+      setSession(nextSession);
+      if (nextSession) {
+        const nextProfile = await fetchAppProfile(nextSession);
+        if (mounted) {
+          setProfile(nextProfile);
+        }
+      } else {
+        setProfile(null);
+      }
+
+      if (mounted) {
+        setIsLoading(false);
+      }
+    });
+
+    return () => {
+      mounted = false;
+      authListener?.data.subscription.unsubscribe();
+    };
+  }, []);
+
+  const clearStoredClientSession = () => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    localStorage.removeItem("portalIntent");
+    localStorage.removeItem("justLoggedIn");
+
+    Object.keys(localStorage).forEach((key) => {
+      if (key.startsWith("sb-") && key.endsWith("-auth-token")) {
+        localStorage.removeItem(key);
+      }
+    });
+  };
+
+  const logout = async () => {
+    clearStoredClientSession();
+
+    try {
+      if (supabase) {
+        await supabase.auth.signOut({ scope: "local" });
+      }
+    } catch (error) {
+      console.warn("Logout encountered an error, but local session was cleared.", error);
+    } finally {
+      setSession(null);
+      setProfile(null);
+      setIsLoading(false);
+    }
+  };
+
+  const hasRole = (role: AppRole | AppRole[]) => {
+    if (!profile) {
+      return false;
+    }
+
+    return Array.isArray(role) ? role.includes(profile.role) : profile.role === role;
+  };
+
+  const hasPermission = (permission: string) => {
+    return profile?.permissions.includes(permission) ?? false;
+  };
+
+  const isInternalUser = profile && (profile.role === "admin" || profile.role === "developer" || profile.role === "super_admin");
+  const portalIntent = typeof window !== "undefined" ? localStorage.getItem("portalIntent") : null;
+  const activePortal = (portalIntent === "developer" || portalIntent === "admin") && isInternalUser ? "developer" : "user";
+
   return (
-    <AuthContext.Provider value={{ session: defaultSession, isLoading, isLoggedIn: true, logout }}>
+    <AuthContext.Provider
+      value={{
+        session,
+        profile,
+        isLoading,
+        isLoggedIn: Boolean(session),
+        isInternalUser,
+        activePortal,
+        logout,
+        refreshProfile,
+        hasRole,
+        hasPermission,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -39,15 +153,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    // Return a default context instead of throwing
-    // This handles cases where the hook is called outside of AuthProvider
-    return {
-      session: null,
-      isLoading: false,
-      isLoggedIn: true,
-      logout: async () => {},
-    } as AuthContextType;
+  if (!context) {
+    throw new Error("useAuth must be used within AuthProvider.");
   }
+
   return context;
 }

@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import {
   ArrowLeft,
   AudioLines,
@@ -65,6 +65,7 @@ const getFrameType = (ratio: string) => {
 
 export function ReferenceVideoSetupScreen() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { isLoggedIn, session, logout } = useAuth();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userName = session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || "User";
@@ -593,7 +594,7 @@ export function ReferenceVideoSetupScreen() {
                     tool: 'reference-video',
                     config: config
                   });
-                  navigate("/reference-video/processing", { state: config });
+                  navigate(`${"/reference-video/processing"}${location.search}`, { state: config });
                 }}
                 disabled={!canGenerate}
                 className="w-full h-16 text-lg font-black bg-gradient-to-r from-cyan-600 via-teal-500 to-indigo-600 hover:scale-[1.02] active:scale-[0.98] text-white shadow-[0_8px_30px_rgba(34,211,238,0.3)] hover:shadow-[0_12px_40px_rgba(34,211,238,0.5)] transition-all rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed border border-cyan-400/20"

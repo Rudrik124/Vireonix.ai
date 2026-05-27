@@ -27,6 +27,8 @@ import { Switch } from "../../components/ui/switch";
 import { PremiumModal } from "../../components/premium-modal";
 import { buildApiUrl } from "../../../lib/api";
 import { buildVideoApiError, parseVideoApiResponse } from "../../../lib/video-response";
+import { usePortalTestingContext } from "../../../shared/portal/testing-context";
+import { buildPortalRequestHeaders } from "../../../lib/request-context";
 
 const EmojiIcon = ({ icon: Icon, size = "md", className = "" }: { icon: LucideIcon, size?: "sm" | "md" | "lg" | "xl", className?: string }) => {
   const sizeClasses = {
@@ -51,6 +53,7 @@ const EmojiIcon = ({ icon: Icon, size = "md", className = "" }: { icon: LucideIc
 export function ImagesToVideoUploadScreen() {
   const navigate = useNavigate();
   const { isLoggedIn, session, logout } = useAuth();
+  const { isDeveloperTestMode, usageContext } = usePortalTestingContext();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userName = session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || "User";
   const [prompt, setPrompt] = useState("");
@@ -181,6 +184,7 @@ export function ImagesToVideoUploadScreen() {
       const response = await fetch(buildApiUrl("/api/generate-from-media"), {
         method: "POST",
         body: formData,
+        headers: await buildPortalRequestHeaders(usageContext),
       });
 
       const { data, rawBody, video, message } = await parseVideoApiResponse(response);
@@ -437,6 +441,12 @@ export function ImagesToVideoUploadScreen() {
           </motion.div>
         </div>
 
+        {isDeveloperTestMode && (
+          <div className="mb-4 rounded-2xl border border-emerald-300/20 bg-emerald-300/5 px-4 py-3 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-200">
+            Internal testing mode active: this workflow will use developer test tagging.
+          </div>
+        )}
+
         <motion.div
            initial={{ opacity: 0, y: 20 }}
            animate={{ opacity: 1, y: 0 }}
@@ -680,7 +690,7 @@ export function ImagesToVideoUploadScreen() {
                 if (!isLoggedIn) {
                   setIsLoginOpen(true);
                 } else {
-                  navigate("/images-to-video/preview");
+                  void handleGenerateVideo();
                 }
               }}
               whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}

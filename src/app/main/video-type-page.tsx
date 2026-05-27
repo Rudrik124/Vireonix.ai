@@ -52,6 +52,13 @@ export function VideoTypePage() {
     }
   }, [isLoggedIn]);
 
+  const handleLogout = async () => {
+    await logout();
+    setIsUserMenuOpen(false);
+    setIsLoginOpen(false);
+    navigate("/", { replace: true });
+  };
+
   return (
     <div ref={containerRef} className="min-h-screen relative overflow-hidden font-sans selection:bg-cyan-500/30 selection:text-white pb-20">
       
@@ -226,8 +233,7 @@ export function VideoTypePage() {
                   {isLoggedIn && (
                     <button 
                       onClick={() => {
-                        logout();
-                        setIsUserMenuOpen(false);
+                        void handleLogout();
                       }}
                       className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 transition-all text-sm font-bold uppercase tracking-widest group"
                     >

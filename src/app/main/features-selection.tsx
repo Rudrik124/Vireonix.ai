@@ -1,10 +1,11 @@
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, FileVideo, Zap, Image as ImageIcon, ArrowLeft, LogOut, User, ChevronDown, Menu } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/auth-context";
 import { SuccessToast } from "../components/success-toast";
 import { BrandLogo } from "../components/brand-logo";
+import { buildPortalAwarePath, usePortalTestingContext } from "../../shared/portal/testing-context";
 
 const features = [
   {
@@ -53,7 +54,9 @@ const particles = Array.from({ length: 60 });
 
 export function FeaturesSelectionPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { isLoggedIn, logout, session } = useAuth();
+  const { isDeveloperTestMode, search } = usePortalTestingContext();
   const [mounted, setMounted] = useState(false);
   const [showLoginSuccess, setShowLoginSuccess] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -69,6 +72,12 @@ export function FeaturesSelectionPage() {
       localStorage.removeItem("justLoggedIn");
     }
   }, [isLoggedIn]);
+
+  const handleLogout = async () => {
+    await logout();
+    setIsUserMenuOpen(false);
+    navigate("/", { replace: true });
+  };
 
   return (
     <div
@@ -224,8 +233,7 @@ export function FeaturesSelectionPage() {
                     <div className="p-2">
                       <button 
                         onClick={() => {
-                          logout();
-                          setIsUserMenuOpen(false);
+                          void handleLogout();
                         }}
                         className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 transition-all text-sm font-bold uppercase tracking-widest group"
                       >
@@ -272,7 +280,7 @@ export function FeaturesSelectionPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: idx * 0.08, duration: 0.4 }}
                     whileHover={{ y: -8, scale: 1.01, boxShadow: `0 20px 80px -15px ${feature.glow}` }}
-                    onClick={() => navigate(feature.route)}
+                    onClick={() => navigate(buildPortalAwarePath(feature.route, search))}
                     className="group relative bg-gradient-to-br from-[#1e293b]/80 to-[#0f172a]/90 border border-[#3f4a67]/30 hover:border-cyan-500/50 backdrop-blur-3xl rounded-3xl p-8 cursor-pointer transition-all duration-300 overflow-hidden shadow-[0_15px_40px_rgba(0,0,0,0.4)] hover:shadow-[0_30px_100px_rgba(34,211,238,0.15)] ring-1 ring-white/5 active:scale-[0.98]"
                   >
                   {/* Internal Ambient Glow */}
@@ -317,6 +325,25 @@ export function FeaturesSelectionPage() {
               );
             })}
           </div>
+
+          {isDeveloperTestMode && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-8 rounded-[1.75rem] border border-emerald-300/20 bg-emerald-300/5 p-5 text-left"
+            >
+              <p className="text-[10px] font-black uppercase tracking-[0.25em] text-emerald-200">Developer Test Mode</p>
+              <p className="mt-2 text-sm leading-6 text-slate-300">
+                You launched this chooser from the internal portal. Opening any workflow here keeps the session in testing mode so usage can stay separate from normal users.
+              </p>
+              <button
+                onClick={() => navigate("/internal")}
+                className="mt-4 rounded-full bg-emerald-300 px-4 py-2 text-[11px] font-black uppercase tracking-[0.15em] text-slate-950"
+              >
+                Back to Internal Portal
+              </button>
+            </motion.div>
+          )}
         </div>
       </div>
 

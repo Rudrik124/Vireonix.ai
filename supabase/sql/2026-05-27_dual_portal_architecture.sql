@@ -1,0 +1,249 @@
+create extension if not exists pgcrypto;
+
+create type public.app_role as enum ('super_admin', 'admin', 'developer', 'tester', 'user');
+create type public.portal_id as enum ('user', 'internal');
+create type public.usage_type as enum ('production', 'test');
+create type public.credit_wallet_type as enum ('user_credits', 'developer_credits');
+
+create table if not exists public.app_profiles (
+  id uuid primary key references auth.users (id) on delete cascade,
+  email text not null,
+  full_name text,
+  role public.app_role not null default 'user',
+  portal_access public.portal_id[] not null default array['user']::public.portal_id[],
+  permissions text[] not null default array[]::text[],
+  bypass_credit_checks boolean not null default false,
+  testing_mode_enabled boolean not null default false,
+  user_credits integer not null default 0,
+  developer_credits integer not null default 0,
+  subscription_status text not null default 'free',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.subscriptions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.app_profiles (id) on delete cascade,
+  plan_code text not null,
+  status text not null default 'active',
+  billing_provider text,
+  renewal_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.credit_wallets (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.app_profiles (id) on delete cascade,
+  wallet_type public.credit_wallet_type not null,
+  balance integer not null default 0,
+  is_unlimited boolean not null default false,
+  updated_at timestamptz not null default now(),
+  unique (user_id, wallet_type)
+);
+
+create table if not exists public.usage_logs (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references public.app_profiles (id) on delete set null,
+  actor_role public.app_role not null default 'user',
+  portal public.portal_id not null,
+  usage_type public.usage_type not null,
+  wallet_type public.credit_wallet_type not null,
+  feature_key text not null,
+  credits_requested integer not null default 0,
+  credits_charged integer not null default 0,
+  credit_check_bypassed boolean not null default false,
+  status text not null default 'started',
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.api_logs (
+  id uuid primary key default gen_random_uuid(),
+  usage_log_id uuid references public.usage_logs (id) on delete cascade,
+  endpoint text not null,
+  request_payload jsonb not null default '{}'::jsonb,
+  response_payload jsonb not null default '{}'::jsonb,
+  status_code integer,
+  latency_ms integer,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.testing_logs (
+  id uuid primary key default gen_random_uuid(),
+  usage_log_id uuid references public.usage_logs (id) on delete cascade,
+  experiment_key text,
+  notes text,
+  log_level text not null default 'info',
+  payload jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.feature_flags (
+  id uuid primary key default gen_random_uuid(),
+  key text not null unique,
+  description text,
+  enabled boolean not null default false,
+  internal_only boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+create or replace function public.set_updated_at()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
+drop trigger if exists set_app_profiles_updated_at on public.app_profiles;
+create trigger set_app_profiles_updated_at
+before update on public.app_profiles
+for each row
+execute function public.set_updated_at();
+
+create or replace function public.current_app_role()
+returns public.app_role
+language sql
+stable
+as $$
+  select coalesce(
+    (select role from public.app_profiles where id = auth.uid()),
+    'user'::public.app_role
+  );
+$$;
+
+create or replace function public.is_internal_user()
+returns boolean
+language sql
+stable
+as $$
+  select public.current_app_role() in ('super_admin', 'admin', 'developer', 'tester');
+$$;
+
+create or replace function public.has_portal_access(target_portal public.portal_id)
+returns boolean
+language sql
+stable
+as $$
+  select exists (
+    select 1
+    from public.app_profiles
+    where id = auth.uid()
+      and target_portal = any(portal_access)
+  );
+$$;
+
+create or replace function public.consume_credits(
+  target_user uuid,
+  target_wallet public.credit_wallet_type,
+  amount integer,
+  allow_bypass boolean default false
+)
+returns integer
+language plpgsql
+security definer
+as $$
+declare
+  current_balance integer;
+  unlimited_mode boolean;
+begin
+  select balance, is_unlimited
+  into current_balance, unlimited_mode
+  from public.credit_wallets
+  where user_id = target_user
+    and wallet_type = target_wallet
+  for update;
+
+  if unlimited_mode or allow_bypass then
+    return coalesce(current_balance, 0);
+  end if;
+
+  if current_balance is null then
+    raise exception 'Credit wallet not found';
+  end if;
+
+  if current_balance < amount then
+    raise exception 'Insufficient credits';
+  end if;
+
+  update public.credit_wallets
+  set balance = balance - amount,
+      updated_at = now()
+  where user_id = target_user
+    and wallet_type = target_wallet;
+
+  return current_balance - amount;
+end;
+$$;
+
+alter table public.app_profiles enable row level security;
+alter table public.subscriptions enable row level security;
+alter table public.credit_wallets enable row level security;
+alter table public.usage_logs enable row level security;
+alter table public.api_logs enable row level security;
+alter table public.testing_logs enable row level security;
+alter table public.feature_flags enable row level security;
+
+drop policy if exists "profiles_select_self_or_internal" on public.app_profiles;
+create policy "profiles_select_self_or_internal"
+on public.app_profiles
+for select
+using (id = auth.uid() or public.is_internal_user());
+
+drop policy if exists "profiles_update_internal_only" on public.app_profiles;
+create policy "profiles_update_internal_only"
+on public.app_profiles
+for update
+using (public.current_app_role() in ('super_admin', 'admin'))
+with check (public.current_app_role() in ('super_admin', 'admin'));
+
+drop policy if exists "subscriptions_self_or_internal" on public.subscriptions;
+create policy "subscriptions_self_or_internal"
+on public.subscriptions
+for select
+using (user_id = auth.uid() or public.is_internal_user());
+
+drop policy if exists "wallets_self_or_internal" on public.credit_wallets;
+create policy "wallets_self_or_internal"
+on public.credit_wallets
+for select
+using (user_id = auth.uid() or public.is_internal_user());
+
+drop policy if exists "wallets_internal_manage" on public.credit_wallets;
+create policy "wallets_internal_manage"
+on public.credit_wallets
+for all
+using (public.current_app_role() in ('super_admin', 'admin'))
+with check (public.current_app_role() in ('super_admin', 'admin'));
+
+drop policy if exists "usage_logs_self_or_internal" on public.usage_logs;
+create policy "usage_logs_self_or_internal"
+on public.usage_logs
+for select
+using (user_id = auth.uid() or public.is_internal_user());
+
+drop policy if exists "usage_logs_insert_authenticated" on public.usage_logs;
+create policy "usage_logs_insert_authenticated"
+on public.usage_logs
+for insert
+with check (auth.uid() = user_id or public.is_internal_user());
+
+drop policy if exists "api_logs_internal_only" on public.api_logs;
+create policy "api_logs_internal_only"
+on public.api_logs
+for select
+using (public.is_internal_user());
+
+drop policy if exists "testing_logs_internal_only" on public.testing_logs;
+create policy "testing_logs_internal_only"
+on public.testing_logs
+for select
+using (public.is_internal_user());
+
+drop policy if exists "feature_flags_internal_only" on public.feature_flags;
+create policy "feature_flags_internal_only"
+on public.feature_flags
+for select
+using (public.is_internal_user());

@@ -15,10 +15,13 @@ import {
 import { Button } from "../../components/ui/button";
 import { buildApiUrl } from "../../../lib/api";
 import { buildVideoApiError, parseVideoApiResponse } from "../../../lib/video-response";
+import { usePortalTestingContext } from "../../../shared/portal/testing-context";
+import { buildPortalRequestHeaders } from "../../../lib/request-context";
 
 export function QuickEditProcessingScreen() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { usageContext } = usePortalTestingContext();
   const editConfig = location.state as any;
   
   const [progress, setProgress] = useState(0);
@@ -189,9 +192,9 @@ export function QuickEditProcessingScreen() {
         const response = await fetch(buildApiUrl("/api/generate-from-media"), {
           method: "POST",
           body: formData,
-          headers: {
+          headers: await buildPortalRequestHeaders(usageContext, {
             "x-vireonix-flow": "quick-edit",
-          },
+          }),
           signal: controller.signal,
         });
 
