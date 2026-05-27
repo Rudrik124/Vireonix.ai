@@ -76,7 +76,7 @@ export function FeaturesSelectionPage() {
   const handleLogout = async () => {
     await logout();
     setIsUserMenuOpen(false);
-    navigate("/", { replace: true });
+    navigate("/video-type", { replace: true });
   };
 
   return (
@@ -180,14 +180,14 @@ export function FeaturesSelectionPage() {
               <BrandLogo size={40} className="relative z-10" />
             </div>
             <span className="text-xl font-black tracking-tight text-white drop-shadow-[0_0_15px_rgba(34,211,238,0.3)]">
-              VIREONIX<span className="text-cyan-400">.AI</span>
+              VEYTRIX<span className="text-cyan-400">.AI</span>
             </span>
           </div>
 
           <div className="h-6 w-[1px] bg-white/10" />
 
           <button
-            onClick={() => navigate("/")}
+            onClick={() => navigate("/video-type")}
             className="flex items-center gap-2 text-cyan-100/60 hover:text-white transition-colors group"
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />

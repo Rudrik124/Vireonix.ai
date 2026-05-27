@@ -31,7 +31,7 @@ export function AuthCallbackPage() {
           return;
         }
 
-        navigate("/app", { replace: true });
+        navigate("/video-type", { replace: true });
       } catch (err) {
         console.error("Callback error:", err);
         navigate("/");

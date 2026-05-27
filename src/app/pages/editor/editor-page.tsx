@@ -8,7 +8,7 @@ export function EditorPage() {
       <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
         <div className="flex items-center gap-3">
           <BrandLogo size={40} />
-          <h1 className="text-xl font-bold">Vireonix Editor</h1>
+          <h1 className="text-xl font-bold">Veytrix Editor</h1>
         </div>
         <div className="text-sm text-white/80">Quick Export • Mixer • Timeline</div>
       </div>

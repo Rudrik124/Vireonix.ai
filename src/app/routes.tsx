@@ -22,6 +22,13 @@ const legacyUserRoutes = [
   {
     path: "/",
     async lazy() {
+      const { LandingPage } = await import("./main/landing-page");
+      return { Component: LandingPage };
+    }
+  },
+  {
+    path: "/video-type",
+    async lazy() {
       const { VideoTypePage } = await import("./main/video-type-page");
       return { Component: VideoTypePage };
     }

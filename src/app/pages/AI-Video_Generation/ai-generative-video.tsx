@@ -365,7 +365,7 @@ export function AIGenerativeVideoPage() {
             <BrandLogo size={48} className="relative z-10" />
           </div>
           <span className="text-2xl font-black tracking-tight text-white drop-shadow-[0_0_15px_rgba(34,211,238,0.3)] group-hover:text-cyan-400/80 transition-colors">
-            VIREONIX<span className="text-cyan-400">.AI</span>
+            VEYTRIX<span className="text-cyan-400">.AI</span>
           </span>
         </motion.div>
 
@@ -391,7 +391,7 @@ export function AIGenerativeVideoPage() {
                     initial={{ opacity: 0, y: 10, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    className="absolute right-0 mt-3 w-48 bg-[#0b0d1f]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-[100]"
+                    className="absolute right-0 top-full mt-2 w-48 bg-[#0b0d1f]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-[100]"
                   >
                     <div className="p-2">
                       <button 
@@ -507,7 +507,7 @@ export function AIGenerativeVideoPage() {
                       </button>
                       <div>
                         <p className="text-[10px] font-black uppercase tracking-widest text-white">Production Watermark</p>
-                        <p className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">Branded: VIREONIX</p>
+                        <p className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">Branded: VEYTRIX</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">

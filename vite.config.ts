@@ -23,8 +23,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
-        name: 'Vireonix.Ai',
-        short_name: 'Vireonix',
+        name: 'Veytrix.Ai',
+        short_name: 'Veytrix',
         description: 'AI Video Editor',
         theme_color: '#0a0a0a',
         icons: [

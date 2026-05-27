@@ -234,7 +234,7 @@ export function QuickEditUploadScreen() {
                 <BrandLogo size={48} className="relative z-10" />
               </div>
               <span className="text-xl font-black tracking-tight text-white drop-shadow-[0_0_15px_rgba(34,211,238,0.3)]">
-                VIREONIX<span className="text-cyan-400">.AI</span>
+                VEYTRIX<span className="text-cyan-400">.AI</span>
               </span>
             </div>
 
