@@ -110,6 +110,7 @@ const SUPABASE_BUCKETS = {
 const supabaseBucket = (readEnv("SUPABASE_STORAGE_BUCKET") || SUPABASE_BUCKETS.IMAGE_TO_VIDEO).trim();
 console.log("🔗 Supabase URL:", supabaseUrl);
 console.log("🔗 Supabase key prefix:", supabaseKey ? supabaseKey.slice(0, 10) + "..." : "<none>");
+console.log("🌐 Global fetch available:", typeof fetch !== "undefined");
 const supabase = createClient(supabaseUrl, supabaseKey);
 console.log("🔗 Supabase bucket configured:", supabaseBucket);
 console.log("🔗 Supabase bucket map:", SUPABASE_BUCKETS);
@@ -448,18 +449,33 @@ const uploadVideoUrlToSupabase = async (videoUrl, fileName, bucketName = supabas
 };
 
 const uploadToSupabase = async (filePath, fileName, bucketName = supabaseBucket) => {
-  const fileBuffer = fs.readFileSync(filePath);
-  const storagePath = `generated/${Date.now()}-${fileName}`;
+  if (!supabase || !supabase.storage) {
+    throw new Error("Supabase client is not initialized");
+  }
 
+  const fileStats = fs.statSync(filePath);
+  const storagePath = `generated/${Date.now()}-${fileName}`;
+  console.log("📤 [STORAGE] uploadToSupabase starting", {
+    bucketName,
+    storagePath,
+    filePath,
+    fileSize: fileStats.size,
+  });
+
+  const fileStream = fs.createReadStream(filePath);
   const { error } = await supabase.storage
     .from(bucketName)
-    .upload(storagePath, fileBuffer, {
+    .upload(storagePath, fileStream, {
       contentType: "video/mp4",
       upsert: true,
     });
 
   if (error) {
-    console.error("❌ [STORAGE] uploadToSupabase error:", error.message || error);
+    console.error(
+      "❌ [STORAGE] uploadToSupabase error:",
+      error.message || error,
+      JSON.stringify(error, null, 2),
+    );
     throw new Error(`Supabase upload failed: ${error.message || error}`);
   }
 
