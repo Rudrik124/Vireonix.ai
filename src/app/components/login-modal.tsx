@@ -351,7 +351,7 @@ export function LoginModal({ isOpen, onClose, customMessage, customTitle }: Logi
                   placeholder="Jane Smith"
                   autoComplete="name"
                   tabIndex={0}
-                  className="w-full h-12 rounded-lg border border-gray-300 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-black/10 px-4 text-sm font-normal transition-all cursor-text"
+                  className="w-full h-12 rounded-lg border border-gray-300 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-black/10 px-4 text-sm font-normal text-black transition-all cursor-text"
                 />
               </motion.div>
 
@@ -371,7 +371,7 @@ export function LoginModal({ isOpen, onClose, customMessage, customTitle }: Logi
                   placeholder="you@company.com"
                   autoComplete="email"
                   tabIndex={0}
-                  className="w-full h-12 rounded-lg border border-gray-300 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-black/10 px-4 text-sm font-normal transition-all cursor-text"
+                  className="w-full h-12 rounded-lg border border-gray-300 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-black/10 px-4 text-sm font-normal text-black transition-all cursor-text"
                 />
               </div>
 
@@ -402,7 +402,7 @@ export function LoginModal({ isOpen, onClose, customMessage, customTitle }: Logi
                     placeholder="Min. 8 characters"
                     autoComplete="current-password"
                     tabIndex={0}
-                    className="w-full h-12 rounded-lg border border-gray-300 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-black/10 px-4 text-sm font-normal transition-all pr-12 cursor-text"
+                    className="w-full h-12 rounded-lg border border-gray-300 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-black/10 px-4 text-sm font-normal text-black transition-all pr-12 cursor-text"
                   />
                   <button
                     type="button"

@@ -1,7 +1,7 @@
 import type { Session } from "@supabase/supabase-js";
 
 export const APP_ROLES = ["super_admin", "admin", "developer", "tester", "user"] as const;
-export const PORTALS = ["developer", "admin", "tester", "user"] as const;
+export const PORTALS = ["developer", "admin", "tester", "user", "internal"] as const;
 export const USAGE_TYPES = ["production", "test"] as const;
 export const CREDIT_WALLET_TYPES = ["user_credits", "developer_credits"] as const;
 export const TESTING_CREDENTIAL_TYPES = ["tester_email", "tester_password"] as const;

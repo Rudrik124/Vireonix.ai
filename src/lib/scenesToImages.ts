@@ -9,6 +9,8 @@ export type Scene = {
   duration: number;
 };
 
+declare const process: any;
+
 // Test mode: use hardcoded high-quality images if true
 const USE_STATIC_IMAGES = process.env.VITE_USE_STATIC_IMAGES === "true" || process.env.USE_STATIC_IMAGES === "true";
 

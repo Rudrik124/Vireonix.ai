@@ -1,4 +1,4 @@
-import { supabase } from "../supabase";
+import { supabase } from "../lib/supabase";
 import type { TestingCredentials } from "../shared/types/auth";
 
 export async function createTestingCredentials(

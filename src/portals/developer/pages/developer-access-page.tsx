@@ -4,7 +4,7 @@ import { supabase, isSupabaseConfigured } from "../../../lib/supabase";
 import { fetchAppProfile } from "../../../services/auth-profile";
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-const withTimeout = async <T,>(promise: Promise<T>, ms: number, message: string) => {
+const withTimeout = async <T,>(promise: Promise<T>, ms: number, message: string): Promise<T> => {
   let timeoutHandle: number | undefined;
 
   const timeoutPromise = new Promise<never>((_, reject) => {
@@ -34,11 +34,11 @@ export function DeveloperAccessPage() {
   const resolveInternalProfile = async () => {
     for (let attempt = 0; attempt < 5; attempt += 1) {
       setDebugStep(`Checking browser session (${attempt + 1}/5)`);
-      const { data: sessionData } = await withTimeout(
+      const { data: sessionData } = (await withTimeout(
         supabase!.auth.getSession(),
         5000,
         "Timed out while reading the Supabase browser session.",
-      );
+      )) as any;
       if (sessionData.session) {
         setDebugStep(`Loading app profile (${attempt + 1}/5)`);
         const profile = await withTimeout(
@@ -74,11 +74,11 @@ export function DeveloperAccessPage() {
     localStorage.setItem("portalIntent", "developer");
 
     try {
-      const { data, error: signInError } = await withTimeout(
+      const { data, error: signInError } = (await withTimeout(
         supabase.auth.signInWithPassword({ email, password }),
         10000,
         "Supabase sign-in timed out. Check your network tab or Supabase Auth settings.",
-      );
+      )) as any;
       if (signInError) {
         setError(signInError.message);
         setDebugStep("Supabase rejected credentials");

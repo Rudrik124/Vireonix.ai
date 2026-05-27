@@ -35,6 +35,7 @@ export function PortalGate({ portal, allowedRoles, children }: PortalGateProps) 
       admin: "/admin/auth",
       tester: "/tester/auth",
       user: "/user/auth",
+      internal: "/developer/auth",
     };
     const loginRoute = loginRoutes[portal] || "/user/auth";
     return <Navigate to={loginRoute} replace state={{ from: location.pathname }} />;

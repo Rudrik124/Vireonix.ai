@@ -3968,7 +3968,6 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                     </div>
                   )}
                 </div>
-              )}
 
             </div>
           </aside>
