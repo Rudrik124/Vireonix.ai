@@ -48,7 +48,14 @@ import {
   Check,
   Pause,
   Undo2,
-  Redo2
+  Redo2,
+  ScanLine,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  Bold,
+  Italic,
+  MessageSquare
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router";
 import { Button } from "../../components/ui/button";
@@ -127,6 +134,7 @@ const QUICK_TOOLS = [
   { id: 'crop', icon: Crop, label: 'Crop', color: 'text-red-300' },
   { id: 'zoom', icon: ZoomIn, label: 'Zoom', color: 'text-yellow-300' },
   { id: 'keyframe', icon: MonitorPlay, label: 'Keyframe', color: 'text-emerald-300' },
+  { id: 'captions', icon: MessageSquare, label: 'Captions', color: 'text-green-300' },
 ];
 
 const CANVAS_PREVIEW_EFFECTS = [
@@ -773,8 +781,22 @@ const ToolInspector = memo(({
   setKeyframeMode,
   keyframeAmount,
   setKeyframeAmount,
-  videoRef
+  videoRef,
+  captions,
+  setCaptions,
+  captionStyle,
+  setCaptionStyle,
+  isCaptionPlacementMode,
+  setIsCaptionPlacementMode,
+  handleAutoCaption,
+  isAutoCapturing,
+  autoCaptionStatus
 }: any) => {
+  const [captionTab, setCaptionTab] = useState<'list' | 'style'>('list');
+  const [newCaptionText, setNewCaptionText] = useState('');
+  const [newCaptionStart, setNewCaptionStart] = useState(0);
+  const [newCaptionEnd, setNewCaptionEnd] = useState(3);
+
   switch (activeTool) {
     case 'filters':
       return (
@@ -1412,6 +1434,310 @@ const ToolInspector = memo(({
           </div>
         </div>
       );
+    case 'captions':
+      return (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between border-b border-white/5 pb-1.5">
+            <span className="text-[9px] font-black uppercase tracking-widest text-slate-300">Captions</span>
+            <span className="text-[8px] text-slate-500 font-bold uppercase">Subtitles</span>
+          </div>
+
+          {/* Tab switcher */}
+          <div className="flex gap-0.5 bg-black/40 p-0.5 rounded-lg border border-white/5">
+            <button
+              onClick={() => setCaptionTab('list')}
+              className={`flex-1 py-1 rounded text-[8px] font-black uppercase tracking-wider transition-all ${
+                captionTab === 'list'
+                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+                  : 'text-slate-500 hover:text-slate-300 border border-transparent'
+              }`}
+            >
+              List
+            </button>
+            <button
+              onClick={() => setCaptionTab('style')}
+              className={`flex-1 py-1 rounded text-[8px] font-black uppercase tracking-wider transition-all ${
+                captionTab === 'style'
+                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+                  : 'text-slate-500 hover:text-slate-300 border border-transparent'
+              }`}
+            >
+              Style
+            </button>
+          </div>
+
+          {captionTab === 'list' ? (
+            <div className="space-y-2">
+              {/* Caption list */}
+              <div className="space-y-1 max-h-36 overflow-y-auto custom-scrollbar pr-0.5">
+                {captions.length === 0 ? (
+                  <div className="py-3 text-center text-[8px] font-bold uppercase tracking-widest text-slate-600">No captions yet</div>
+                ) : (
+                  captions.map((cap: any) => (
+                    <div key={cap.id} className="flex items-start gap-1.5 px-2 py-1.5 rounded-lg bg-white/5 border border-white/5 group">
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[9px] font-bold text-slate-200 truncate">{cap.text}</div>
+                        <div className="text-[7px] text-slate-500 font-mono mt-0.5">{cap.startTime.toFixed(1)}s → {cap.endTime.toFixed(1)}s</div>
+                      </div>
+                      <button
+                        onClick={() => setCaptions((prev: any) => prev.filter((c: any) => c.id !== cap.id))}
+                        className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-red-400 hover:bg-red-500/20 transition-all flex-shrink-0 mt-0.5"
+                      >
+                        <X className="w-2.5 h-2.5" />
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Add caption form */}
+              <div className="space-y-1.5 p-2.5 rounded-lg bg-white/5 border border-white/10">
+                <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400">Caption Text</label>
+                <input
+                  value={newCaptionText}
+                  onChange={(e) => setNewCaptionText(e.target.value)}
+                  placeholder="Enter caption..."
+                  className="w-full px-2.5 py-1.5 rounded bg-black/30 border border-white/10 text-white text-[10px] focus:outline-none focus:border-cyan-500/50 placeholder:text-slate-600"
+                />
+                <div className="grid grid-cols-2 gap-1.5">
+                  <div>
+                    <label className="text-[7px] font-bold uppercase text-slate-500 block mb-0.5">Start (sec)</label>
+                    <input
+                      type="number"
+                      value={newCaptionStart}
+                      onChange={(e) => setNewCaptionStart(Number(e.target.value))}
+                      step={0.1}
+                      min={0}
+                      className="w-full px-2 py-1 rounded bg-black/30 border border-white/10 text-white text-[10px] focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[7px] font-bold uppercase text-slate-500 block mb-0.5">End (sec)</label>
+                    <input
+                      type="number"
+                      value={newCaptionEnd}
+                      onChange={(e) => setNewCaptionEnd(Number(e.target.value))}
+                      step={0.1}
+                      min={0}
+                      className="w-full px-2 py-1 rounded bg-black/30 border border-white/10 text-white text-[10px] focus:outline-none"
+                    />
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    if (!newCaptionText.trim()) return;
+                    setCaptions((prev: any) => [...prev, {
+                      id: Math.random().toString(36).substr(2, 9),
+                      text: newCaptionText.trim(),
+                      startTime: newCaptionStart,
+                      endTime: Math.max(newCaptionStart + 0.1, newCaptionEnd),
+                    }]);
+                    setNewCaptionText('');
+                    setNewCaptionStart(0);
+                    setNewCaptionEnd(3);
+                  }}
+                  className="w-full py-1.5 rounded-lg bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 text-[8px] font-black uppercase hover:bg-cyan-500/30 transition-all"
+                >
+                  + Add Caption
+                </button>
+              </div>
+
+              {/* Auto-caption via Web Speech API + captureStream */}
+              {autoCaptionStatus ? (
+                <div className="px-2 py-1.5 rounded-lg bg-black/30 border border-white/10 text-[8px] font-bold text-slate-300 text-center leading-relaxed">
+                  {autoCaptionStatus}
+                </div>
+              ) : null}
+              <button
+                onClick={handleAutoCaption}
+                disabled={isAutoCapturing}
+                className={`w-full py-2 rounded-lg text-[8px] font-black uppercase flex items-center justify-center gap-1.5 transition-all ${
+                  isAutoCapturing
+                    ? 'bg-red-500/20 border border-red-500/40 text-red-300 animate-pulse cursor-not-allowed'
+                    : 'bg-purple-500/15 border border-purple-500/30 text-purple-300 hover:bg-purple-500/25'
+                }`}
+              >
+                {isAutoCapturing ? (
+                  <>
+                    <span className="inline-block w-2 h-2 rounded-full bg-red-400 animate-ping mr-1" />
+                    Capturing Audio…
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-3 h-3" />
+                    Auto-Caption from Audio
+                  </>
+                )}
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-2.5">
+              {/* Font picker */}
+              <div>
+                <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 block mb-1">Font</label>
+                <div className="grid grid-cols-2 gap-1 max-h-[68px] overflow-y-auto custom-scrollbar">
+                  {textFontOptions.map((font) => (
+                    <button
+                      key={font.id}
+                      onClick={() => setCaptionStyle((prev: any) => ({ ...prev, fontId: font.id }))}
+                      className={`px-2 py-1 rounded text-left text-[7px] font-bold uppercase border transition-colors ${
+                        captionStyle.fontId === font.id
+                          ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'
+                          : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10'
+                      }`}
+                      style={{ fontFamily: font.family }}
+                    >
+                      {font.label.split(' ')[0]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Size & Color */}
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 block">Size <span className="text-slate-600 font-mono normal-case">{captionStyle.fontSize}px</span></label>
+                  <input
+                    type="range"
+                    min={14}
+                    max={72}
+                    value={captionStyle.fontSize}
+                    onChange={(e) => setCaptionStyle((prev: any) => ({ ...prev, fontSize: Number(e.target.value) }))}
+                    className="w-full accent-cyan-400"
+                  />
+                </div>
+                <div>
+                  <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 block">Color</label>
+                  <input
+                    type="color"
+                    value={captionStyle.color}
+                    onChange={(e) => setCaptionStyle((prev: any) => ({ ...prev, color: e.target.value }))}
+                    className="w-full h-7 rounded bg-transparent border border-white/10 cursor-pointer mt-0.5"
+                  />
+                </div>
+              </div>
+
+              {/* Background box */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400">Background Box</label>
+                  <button
+                    onClick={() => setCaptionStyle((prev: any) => ({ ...prev, bgEnabled: !prev.bgEnabled }))}
+                    className={`px-2 py-0.5 rounded text-[7px] font-black uppercase border transition-all ${
+                      captionStyle.bgEnabled
+                        ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30'
+                        : 'bg-white/5 text-slate-500 border-white/10'
+                    }`}
+                  >
+                    {captionStyle.bgEnabled ? 'ON' : 'OFF'}
+                  </button>
+                </div>
+                {captionStyle.bgEnabled && (
+                  <input
+                    type="color"
+                    value={captionStyle.bgColorHex}
+                    onChange={(e) => setCaptionStyle((prev: any) => ({ ...prev, bgColorHex: e.target.value }))}
+                    className="w-full h-6 rounded bg-transparent border border-white/10 cursor-pointer"
+                  />
+                )}
+              </div>
+
+              {/* Bold / Italic / Outline */}
+              <div>
+                <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 block mb-1">Text Style</label>
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => setCaptionStyle((prev: any) => ({ ...prev, bold: !prev.bold }))}
+                    className={`flex-1 py-1.5 rounded border text-[8px] transition-all flex items-center justify-center ${
+                      captionStyle.bold ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30' : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10'
+                    }`}
+                  >
+                    <Bold className="w-3 h-3" />
+                  </button>
+                  <button
+                    onClick={() => setCaptionStyle((prev: any) => ({ ...prev, italic: !prev.italic }))}
+                    className={`flex-1 py-1.5 rounded border text-[8px] transition-all flex items-center justify-center ${
+                      captionStyle.italic ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30' : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10'
+                    }`}
+                  >
+                    <Italic className="w-3 h-3" />
+                  </button>
+                  <button
+                    onClick={() => setCaptionStyle((prev: any) => ({ ...prev, outline: !prev.outline }))}
+                    className={`flex-1 py-1.5 rounded border text-[8px] font-black uppercase transition-all ${
+                      captionStyle.outline ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30' : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10'
+                    }`}
+                    title="Text Outline"
+                  >
+                    T
+                  </button>
+                </div>
+              </div>
+
+              {/* Alignment */}
+              <div>
+                <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 block mb-1">Alignment</label>
+                <div className="flex gap-1">
+                  {(['left', 'center', 'right'] as const).map((align) => {
+                    const AlignIcon = align === 'left' ? AlignLeft : align === 'center' ? AlignCenter : AlignRight;
+                    return (
+                      <button
+                        key={align}
+                        onClick={() => setCaptionStyle((prev: any) => ({ ...prev, alignment: align }))}
+                        className={`flex-1 py-1.5 rounded border transition-all flex items-center justify-center ${
+                          captionStyle.alignment === align
+                            ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30'
+                            : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10'
+                        }`}
+                      >
+                        <AlignIcon className="w-3 h-3" />
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Position */}
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400">Pos X</label>
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    value={captionStyle.posX}
+                    onChange={(e) => setCaptionStyle((prev: any) => ({ ...prev, posX: Number(e.target.value) }))}
+                    className="w-full accent-cyan-400"
+                  />
+                </div>
+                <div>
+                  <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400">Pos Y</label>
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    value={captionStyle.posY}
+                    onChange={(e) => setCaptionStyle((prev: any) => ({ ...prev, posY: Number(e.target.value) }))}
+                    className="w-full accent-cyan-400"
+                  />
+                </div>
+              </div>
+
+              {/* Place on preview */}
+              <button
+                onClick={() => setIsCaptionPlacementMode(!isCaptionPlacementMode)}
+                className={`w-full py-1.5 rounded text-[8px] font-black uppercase border transition-colors ${
+                  isCaptionPlacementMode
+                    ? 'bg-cyan-500 text-[#0b0d1f] border-cyan-400'
+                    : 'bg-white/5 text-slate-300 border-white/10 hover:bg-white/15'
+                }`}
+              >
+                {isCaptionPlacementMode ? 'Click Preview to Place' : 'Place on Preview'}
+              </button>
+            </div>
+          )}
+        </div>
+      );
     default:
       return null;
   }
@@ -1625,8 +1951,152 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
   const [glitchIntensity, setGlitchIntensity] = useState(1);
   const [animatedText, setAnimatedText] = useState('');
 
+  // --- Caption state ---
+  const [captions, setCaptions] = useState<Array<{ id: string; text: string; startTime: number; endTime: number }>>([]);
+  const [currentCaption, setCurrentCaption] = useState<{ id: string; text: string; startTime: number; endTime: number } | null>(null);
+  const [captionStyle, setCaptionStyle] = useState({
+    fontId: 'sans',
+    fontSize: 32,
+    color: '#FFFFFF',
+    bgEnabled: true,
+    bgColorHex: '#000000',
+    alignment: 'center' as 'left' | 'center' | 'right',
+    bold: true,
+    italic: false,
+    outline: false,
+    posX: 50,
+    posY: 85,
+  });
+  const [isCaptionPlacementMode, setIsCaptionPlacementMode] = useState(false);
+  const [isAutoCapturing, setIsAutoCapturing] = useState(false);
+  const [autoCaptionStatus, setAutoCaptionStatus] = useState('');
+
+  // --- Read-line state ---
+  const [showReadLine, setShowReadLine] = useState(false);
+  const [readLineDirection, setReadLineDirection] = useState<'horizontal' | 'vertical'>('horizontal');
+
+  // --- Auto-caption: stopAutoCaptionRef lets us stop capture from outside the closure ---
+  const stopAutoCaptionRef = useRef<(() => void) | null>(null);
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const previewFrameRef = useRef<HTMLDivElement>(null);
+
+  // --- Auto-caption handler (Web Speech API + video captureStream trick) ---
+  const handleAutoCaption = useCallback(() => {
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) {
+      setAutoCaptionStatus('❌ Speech recognition not supported. Please use Chrome or Edge.');
+      return;
+    }
+    if (!videoRef.current) {
+      setAutoCaptionStatus('❌ No video loaded. Add a video clip first.');
+      return;
+    }
+
+    setIsAutoCapturing(true);
+    setAutoCaptionStatus('🎤 Starting recognition…');
+
+    const video = videoRef.current;
+
+    // Grab the video element’s live audio stream
+    const capturedStream: MediaStream | null =
+      (video as any).captureStream?.() ||
+      (video as any).mozCaptureStream?.() ||
+      null;
+    const audioTracks = capturedStream ? capturedStream.getAudioTracks() : [];
+    const audioStream = audioTracks.length > 0 ? new MediaStream(audioTracks) : null;
+
+    // Temporarily override getUserMedia so SpeechRecognition uses video audio
+    const origGUM = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+    if (audioStream) {
+      navigator.mediaDevices.getUserMedia = async (constraints: any) => {
+        if (constraints?.audio) return audioStream;
+        return origGUM(constraints);
+      };
+    }
+
+    const recognition = new SR();
+    recognition.continuous = true;
+    recognition.interimResults = false;
+    recognition.lang = 'en-US';
+
+    // Restore getUserMedia after recognition has grabbed the stream internally
+    setTimeout(() => { navigator.mediaDevices.getUserMedia = origGUM; }, 1500);
+
+    recognition.onstart = () => {
+      setAutoCaptionStatus(
+        audioStream
+          ? '🎤 Capturing video audio… (play is running)'
+          : '🎤 Listening via microphone…'
+      );
+    };
+
+    recognition.onresult = (event: any) => {
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+          const text = (event.results[i][0].transcript || '').trim();
+          if (text) {
+            const endTime = videoRef.current ? videoRef.current.currentTime : 0;
+            const wordCount = text.split(/\s+/).length;
+            const startTime = Math.max(0, endTime - wordCount * 0.45);
+            setCaptions(prev => [
+              ...prev,
+              { id: Math.random().toString(36).substr(2, 9), text, startTime, endTime },
+            ]);
+            setAutoCaptionStatus(`✅ "${text.length > 32 ? text.slice(0, 32) + '…' : text}"`);
+          }
+        }
+      }
+    };
+
+    recognition.onerror = (event: any) => {
+      if (event.error === 'no-speech') return; // ignore silence
+      setAutoCaptionStatus(`❌ Error: ${event.error}`);
+      cleanup();
+    };
+
+    recognition.onend = () => {
+      // Chrome stops recognition after ~60s — restart if video is still playing
+      if (videoRef.current && !videoRef.current.paused && !videoRef.current.ended) {
+        try { recognition.start(); } catch {}
+      } else {
+        cleanup();
+      }
+    };
+
+    const cleanup = () => {
+      navigator.mediaDevices.getUserMedia = origGUM;
+      setIsAutoCapturing(false);
+      if (videoRef.current) videoRef.current.pause();
+      setIsPlaying(false);
+      setAutoCaptionStatus(prev =>
+        prev.startsWith('❌') ? prev : '✅ Captions generated successfully!'
+      );
+      stopAutoCaptionRef.current = null;
+    };
+
+    stopAutoCaptionRef.current = () => { recognition.stop(); cleanup(); };
+
+    const onEnded = () => {
+      recognition.stop();
+      cleanup();
+      video.removeEventListener('ended', onEnded);
+    };
+    video.addEventListener('ended', onEnded);
+
+    // Seek to start and play the video
+    video.currentTime = 0;
+    setIsPlaying(true);
+    video.play().catch(() => {});
+
+    try {
+      recognition.start();
+    } catch (err: any) {
+      setAutoCaptionStatus(`❌ Could not start: ${err.message}`);
+      cleanup();
+    }
+  }, []); // setCaptions & setIsPlaying are stable state setters — no deps needed
+
   const greenScreenCanvasRef = useRef<HTMLCanvasElement>(null);
   const greenScreenAnimationRef = useRef<number | null>(null);
   const previousFrameRef = useRef<ImageData | null>(null);
@@ -1896,6 +2366,11 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
         const localTime = Math.max(0, (videoRef.current.currentTime || 0) - trim.start);
         setKeyframeProgress(Math.max(0, Math.min(1, localTime / localDuration)));
       }
+
+      // Update active caption based on current video time
+      const ct = videoRef.current.currentTime;
+      const activeCaption = captions.find(c => ct >= c.startTime && ct < c.endTime) ?? null;
+      setCurrentCaption(activeCaption);
     }
   };
 
@@ -2893,7 +3368,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                           onClick={() => setActiveTool(null)}
                           className="px-2.5 py-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-[9px] font-black uppercase tracking-wider text-slate-300 transition-all flex items-center gap-1 cursor-pointer"
                         >
-                          ← Back to Tools List
+                          ← Back to Tools
                         </button>
                         <div className="p-3 bg-black/40 rounded-xl border border-white/5 shadow-inner">
                           <ToolInspector
@@ -2961,6 +3436,15 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                             keyframeAmount={keyframeAmount}
                             setKeyframeAmount={setKeyframeAmount}
                             videoRef={videoRef}
+                            captions={captions}
+                            setCaptions={setCaptions}
+                            captionStyle={captionStyle}
+                            setCaptionStyle={setCaptionStyle}
+                            isCaptionPlacementMode={isCaptionPlacementMode}
+                            setIsCaptionPlacementMode={setIsCaptionPlacementMode}
+                            handleAutoCaption={handleAutoCaption}
+                            isAutoCapturing={isAutoCapturing}
+                            autoCaptionStatus={autoCaptionStatus}
                           />
                         </div>
                       </div>
@@ -3032,15 +3516,20 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                   maxHeight: '90%'
                 }}
                 onClick={(e) => {
-                  if (!isTextPlacementMode || !previewFrameRef.current) return;
+                  if (!previewFrameRef.current) return;
                   const rect = previewFrameRef.current.getBoundingClientRect();
                   const x = ((e.clientX - rect.left) / rect.width) * 100;
                   const y = ((e.clientY - rect.top) / rect.height) * 100;
-                  setOverlayPosX(Math.max(0, Math.min(100, x)));
-                  setOverlayPosY(Math.max(0, Math.min(100, y)));
-                  setIsTextPlacementMode(false);
+                  if (isTextPlacementMode) {
+                    setOverlayPosX(Math.max(0, Math.min(100, x)));
+                    setOverlayPosY(Math.max(0, Math.min(100, y)));
+                    setIsTextPlacementMode(false);
+                  } else if (isCaptionPlacementMode) {
+                    setCaptionStyle(prev => ({ ...prev, posX: Math.max(0, Math.min(100, x)), posY: Math.max(0, Math.min(100, y)) }));
+                    setIsCaptionPlacementMode(false);
+                  }
                 }}
-                className={`relative rounded-xl bg-slate-950 border border-white/10 shadow-2xl overflow-hidden flex items-center justify-center transition-all ${isTextPlacementMode ? 'cursor-crosshair' : 'cursor-default'}`}
+                className={`relative rounded-xl bg-slate-950 border border-white/10 shadow-2xl overflow-hidden flex items-center justify-center transition-all ${(isTextPlacementMode || isCaptionPlacementMode) ? 'cursor-crosshair' : 'cursor-default'}`}
               >
                 <AnimatePresence mode="popLayout">
                   {activePreviewId && activePreviewItem ? (
@@ -3168,6 +3657,59 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                   </div>
                 )}
 
+                {/* Read Line — sweeps across the preview in sync with video playback */}
+                {showReadLine && (
+                  <div
+                    className="absolute z-[45] pointer-events-none"
+                    style={
+                      readLineDirection === 'horizontal'
+                        ? {
+                            top: `${progress}%`,
+                            left: 0,
+                            right: 0,
+                            height: '2px',
+                            background: 'linear-gradient(90deg, transparent 0%, rgba(34,211,238,0.9) 20%, rgba(34,211,238,1) 50%, rgba(34,211,238,0.9) 80%, transparent 100%)',
+                            boxShadow: '0 0 8px rgba(34,211,238,0.7), 0 0 24px rgba(34,211,238,0.25)',
+                          }
+                        : {
+                            left: `${progress}%`,
+                            top: 0,
+                            bottom: 0,
+                            width: '2px',
+                            background: 'linear-gradient(180deg, transparent 0%, rgba(34,211,238,0.9) 20%, rgba(34,211,238,1) 50%, rgba(34,211,238,0.9) 80%, transparent 100%)',
+                            boxShadow: '0 0 8px rgba(34,211,238,0.7), 0 0 24px rgba(34,211,238,0.25)',
+                          }
+                    }
+                  />
+                )}
+
+                {/* Caption overlay — visible when a caption is active at current playback time */}
+                {currentCaption && (
+                  <div
+                    className="absolute z-[50] pointer-events-none select-none"
+                    style={{
+                      left: `${captionStyle.posX}%`,
+                      top: `${captionStyle.posY}%`,
+                      transform: 'translate(-50%, -50%)',
+                      fontFamily: textFontOptions.find((f) => f.id === captionStyle.fontId)?.family || textFontOptions[0].family,
+                      fontSize: `${captionStyle.fontSize}px`,
+                      color: captionStyle.color,
+                      background: captionStyle.bgEnabled ? `${captionStyle.bgColorHex}cc` : 'transparent',
+                      textAlign: captionStyle.alignment,
+                      fontWeight: captionStyle.bold ? 700 : 400,
+                      fontStyle: captionStyle.italic ? 'italic' : 'normal',
+                      WebkitTextStroke: captionStyle.outline ? '1px rgba(0,0,0,0.8)' : undefined,
+                      padding: captionStyle.bgEnabled ? '4px 12px' : undefined,
+                      borderRadius: captionStyle.bgEnabled ? '6px' : undefined,
+                      maxWidth: '88%',
+                      textShadow: '0 2px 10px rgba(0,0,0,0.9)',
+                      whiteSpace: 'pre-wrap',
+                    }}
+                  >
+                    {currentCaption.text}
+                  </div>
+                )}
+
                 {/* HUD Overlay Badges */}
                 <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 z-40 max-w-[80%]">
                   {Math.abs(speedValue - 1) > 0.001 && <div className="px-1.5 py-0.5 rounded bg-cyan-500/20 border border-cyan-400/30 text-[8px] font-black uppercase text-cyan-200">Speed {speedValue.toFixed(2)}x</div>}
@@ -3238,6 +3780,30 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                 >
                   <Redo2 className="w-4 h-4" />
                 </button>
+
+                <div className="w-[1px] h-4 bg-white/10 mx-1" />
+
+                {/* Read-line toggle */}
+                <button
+                  onClick={() => setShowReadLine(v => !v)}
+                  title={showReadLine ? 'Hide Read Line' : 'Show Read Line'}
+                  className={`p-1 rounded transition-all ${
+                    showReadLine ? 'text-cyan-400 bg-cyan-500/15' : 'text-slate-500 hover:text-white'
+                  }`}
+                >
+                  <ScanLine className="w-4 h-4" />
+                </button>
+
+                {/* Direction toggle — only when read-line is on */}
+                {showReadLine && (
+                  <button
+                    onClick={() => setReadLineDirection(d => d === 'horizontal' ? 'vertical' : 'horizontal')}
+                    title={`Direction: ${readLineDirection}`}
+                    className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase border border-cyan-500/30 text-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20 transition-all"
+                  >
+                    {readLineDirection === 'horizontal' ? '↔' : '↕'}
+                  </button>
+                )}
               </div>
 
               {/* FPS & Ratio status info */}
@@ -3386,92 +3952,8 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                 )}
               </div>
 
-              {/* Dynamic tool attributes editor */}
-              {activeTool && (
-                <div className="border border-cyan-500/20 rounded-xl overflow-hidden bg-black/10 shadow-[0_0_15px_rgba(34,211,238,0.03)]">
-                  <div className="p-3 bg-cyan-500/5 border-b border-cyan-500/10 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Wand2 className="w-3.5 h-3.5 text-cyan-400" />
-                      <span className="text-[10px] font-black uppercase tracking-wider text-cyan-300">Tool Properties</span>
-                    </div>
-                    <button onClick={() => setActiveTool(null)} className="text-slate-500 hover:text-slate-300">
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                  <div className="p-3 bg-black/30">
-                    <ToolInspector
-                      activeTool={activeTool}
-                      setActiveTool={setActiveTool}
-                      selectedFilter={selectedFilter}
-                      setSelectedFilter={setSelectedFilter}
-                      selectedEffect={selectedEffect}
-                      setSelectedEffect={setSelectedEffect}
-                      blurAmount={blurAmount}
-                      setBlurAmount={setBlurAmount}
-                      brightness={brightness}
-                      setBrightness={setBrightness}
-                      contrast={contrast}
-                      setContrast={setContrast}
-                      saturation={saturation}
-                      setSaturation={setSaturation}
-                      slowMotionSpeed={slowMotionSpeed}
-                      setSlowMotionSpeed={setSlowMotionSpeed}
-                      glitchIntensity={glitchIntensity}
-                      setGlitchIntensity={setGlitchIntensity}
-                      animatedText={animatedText}
-                      setAnimatedText={setAnimatedText}
-                      overlayText={overlayText}
-                      setOverlayText={setOverlayText}
-                      overlayFontId={overlayFontId}
-                      setOverlayFontId={setOverlayFontId}
-                      overlayFontSize={overlayFontSize}
-                      setOverlayFontSize={setOverlayFontSize}
-                      overlayColor={overlayColor}
-                      setOverlayColor={setOverlayColor}
-                      overlayPosX={overlayPosX}
-                      setOverlayPosX={setOverlayPosX}
-                      overlayPosY={overlayPosY}
-                      setOverlayPosY={setOverlayPosY}
-                      isTextPlacementMode={isTextPlacementMode}
-                      setIsTextPlacementMode={setIsTextPlacementMode}
-                      clipTransitions={clipTransitions}
-                      applyTransitionForActiveClip={applyTransitionForActiveClip}
-                      speedValue={speedValue}
-                      setSpeedValue={setSpeedValue}
-                      activePreviewId={activePreviewId}
-                      activePreviewItem={activePreviewItem}
-                      getTrimRangeForItem={getTrimRangeForItem}
-                      clipTrimRanges={clipTrimRanges}
-                      setClipTrimRanges={setClipTrimRanges}
-                      rotationDegrees={rotationDegrees}
-                      setRotationDegrees={setRotationDegrees}
-                      volumeLevel={volumeLevel}
-                      setVolumeLevel={setVolumeLevel}
-                      isMuted={isMuted}
-                      setIsMuted={setIsMuted}
-                      cropWidthPct={cropWidthPct}
-                      setCropWidthPct={setCropWidthPct}
-                      cropHeightPct={cropHeightPct}
-                      setCropHeightPct={setCropHeightPct}
-                      cropCenterX={cropCenterX}
-                      setCropCenterX={setCropCenterX}
-                      cropCenterY={cropCenterY}
-                      setCropCenterY={setCropCenterY}
-                      zoomToolAmount={zoomToolAmount}
-                      setZoomToolAmount={setZoomToolAmount}
-                      keyframeMode={keyframeMode}
-                      setKeyframeMode={setKeyframeMode}
-                      keyframeAmount={keyframeAmount}
-                      setKeyframeAmount={setKeyframeAmount}
-                      videoRef={videoRef}
-                    />
-                  </div>
-                </div>
-              )}
-
               {/* Clip Metadata display card */}
-              {!activeTool && (
-                <div className="border border-white/5 rounded-xl overflow-hidden bg-black/10 p-3.5 space-y-3">
+              <div className="border border-white/5 rounded-xl overflow-hidden bg-black/10 p-3.5 space-y-3">
                   <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block border-b border-white/5 pb-1.5">Clip Metadata</span>
                   {activePreviewId && activePreviewItem ? (
                     <div className="space-y-2 text-[9px] font-bold text-slate-400 uppercase tracking-wide">

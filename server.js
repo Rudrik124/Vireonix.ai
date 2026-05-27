@@ -72,7 +72,11 @@ fs.mkdirSync(tempWorkDir, { recursive: true });
 const makeTempFilePath = (suffix) => {
   const safeSuffix = String(suffix || "temp.bin").replace(/[^a-zA-Z0-9._-]/g, "_");
   const unique = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-  return path.join(tempWorkDir, `${unique}-${safeSuffix}`);
+  const filePath = path.join(tempWorkDir, `${unique}-${safeSuffix}`);
+
+  // Ensure the output parent directory exists for ffmpeg on Windows.
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  return filePath;
 };
 
 // ✅ INIT SUPABASE (env-only, no hardcoded secrets)
