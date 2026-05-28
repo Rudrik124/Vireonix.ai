@@ -195,6 +195,30 @@ const textFontOptions = [
   { id: 'vintage', label: 'VINTAGE FONT', family: 'Copperplate, Papyrus, serif' },
 ];
 
+const CAPTION_LANGUAGES = [
+  { id: 'en', label: 'English', name: 'English' },
+  { id: 'es', label: 'Spanish', name: 'Español' },
+  { id: 'fr', label: 'French', name: 'Français' },
+  { id: 'de', label: 'German', name: 'Deutsch' },
+  { id: 'it', label: 'Italian', name: 'Italiano' },
+  { id: 'pt', label: 'Portuguese', name: 'Português' },
+  { id: 'ja', label: 'Japanese', name: '日本語' },
+  { id: 'zh', label: 'Chinese', name: '中文' },
+  { id: 'ko', label: 'Korean', name: '한국어' },
+  { id: 'ru', label: 'Russian', name: 'Русский' },
+  { id: 'ar', label: 'Arabic', name: 'العربية' },
+  { id: 'hi', label: 'Hindi', name: 'हिंदी' },
+];
+
+const CAPTION_STYLE_PRESETS = [
+  { id: 'modern', label: 'Modern', description: 'Clean & Contemporary', fontId: 'sans', fontSize: 36, color: '#FFFFFF', bgEnabled: true, bgColorHex: '#000000', bold: true, italic: false, outline: false, alignment: 'center' as const },
+  { id: 'cinematic', label: 'Cinematic', description: 'Film-style subtitles', fontId: 'serif', fontSize: 42, color: '#FFFFFF', bgEnabled: true, bgColorHex: '#1a1a1a', bold: true, italic: false, outline: true, alignment: 'center' as const },
+  { id: 'neon', label: 'Neon', description: 'Vibrant & Bold', fontId: 'display', fontSize: 48, color: '#00FF00', bgEnabled: true, bgColorHex: '#000000', bold: true, italic: false, outline: true, alignment: 'center' as const },
+  { id: 'retro', label: 'Retro', description: 'Vintage style', fontId: 'vintage', fontSize: 40, color: '#FFD700', bgEnabled: true, bgColorHex: '#663300', bold: true, italic: false, outline: false, alignment: 'center' as const },
+  { id: 'comic', label: 'Comic', description: 'Fun & Playful', fontId: 'handwritten', fontSize: 38, color: '#FF00FF', bgEnabled: true, bgColorHex: '#FFFF00', bold: true, italic: true, outline: false, alignment: 'center' as const },
+  { id: 'elegant', label: 'Elegant', description: 'Sophisticated', fontId: 'calligraphy', fontSize: 44, color: '#E8D5C4', bgEnabled: false, bgColorHex: '#000000', bold: false, italic: true, outline: false, alignment: 'center' as const },
+];
+
 const QUICK_TOOLS = [
   { id: 'effects', icon: Sparkle, label: 'Effects', color: 'text-amber-300' },
   { id: 'transitions', icon: Layers, label: 'Transitions', color: 'text-cyan-300' },
@@ -227,6 +251,9 @@ const CANVAS_PREVIEW_FILTERS = [
 const TimelineHub = memo(({
   mediaItems,
   audioTracks,
+  captions,
+  currentCaption,
+  setCurrentCaption,
   progress,
   handleTimelineClick,
   activePreviewId,
@@ -245,6 +272,7 @@ const TimelineHub = memo(({
   timelineSize,
   setTimelineSize
 }: any) => {
+  const timelineScrollRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [showAudioChoiceLocal, setShowAudioChoiceLocal] = useState(false);
@@ -334,6 +362,20 @@ const TimelineHub = memo(({
 
   const playheadLeft = (progress / 100) * totalDuration * pixelsPerSecond;
 
+  useEffect(() => {
+    if (!timelineScrollRef.current || isDragging) return;
+    const container = timelineScrollRef.current;
+    const padding = 80;
+    const visibleStart = container.scrollLeft;
+    const visibleEnd = visibleStart + container.clientWidth;
+    const target = playheadLeft;
+    if (target < visibleStart + padding) {
+      container.scrollTo({ left: Math.max(0, target - padding), behavior: 'smooth' });
+    } else if (target > visibleEnd - padding) {
+      container.scrollTo({ left: Math.max(0, target - container.clientWidth + padding), behavior: 'smooth' });
+    }
+  }, [playheadLeft, isDragging]);
+
   const localHandleTimelineClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (totalDuration === 0) return;
     const rect = e.currentTarget.getBoundingClientRect();
@@ -351,7 +393,7 @@ const TimelineHub = memo(({
         <div className="flex items-center gap-4">
           <span className="text-white">Timeline 1</span>
           <div className="w-[1px] h-3 bg-white/10" />
-          <span>{mediaItems.length} Video Clips • {audioTracks.length} Audio Tracks</span>
+          <span>{mediaItems.length} Video Clips • {audioTracks.length} Audio Tracks • {captions.length} Captions</span>
         </div>
         <div className="flex items-center gap-2">
           <span className="px-1.5 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[8px] uppercase tracking-wider font-black">Edit Mode</span>
@@ -425,7 +467,7 @@ const TimelineHub = memo(({
           {[0, 1, 2, 3].map((idx) => {
             const laneName = `A${idx + 1}`;
             return (
-              <div key={idx} className="flex-1 p-2 flex flex-col justify-center min-h-[30px] border-b border-white/5 last:border-b-0 relative group/audioheader">
+              <div key={idx} className="flex-1 p-2 flex flex-col justify-center min-h-[30px] border-b border-white/5 relative group/audioheader">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-black text-slate-300">{laneName}</span>
                   <button 
@@ -444,10 +486,21 @@ const TimelineHub = memo(({
               </div>
             );
           })}
+
+          {/* Caption Track Header */}
+          <div className="flex-1 p-2 flex flex-col justify-center min-h-[30px] border-b border-white/5 last:border-b-0 relative group/captionheader">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-black text-slate-300">CC</span>
+              <div className="w-4 h-4 rounded-full bg-teal-500/20 border border-teal-500/30 text-teal-300 flex items-center justify-center cursor-default shadow-md" title="Captions">
+                <MessageSquare className="w-2.5 h-2.5" />
+              </div>
+            </div>
+            <span className="text-[7px] text-slate-600 font-bold uppercase mt-0.5">Captions</span>
+          </div>
         </div>
 
         {/* Tracks Area (Right Pane of Timeline) - Horizontally Scrollable! */}
-        <div className="flex-1 flex flex-col relative overflow-x-auto overflow-y-hidden custom-scrollbar bg-black/10 select-none">
+        <div ref={timelineScrollRef} className="flex-1 flex flex-col relative overflow-x-auto overflow-y-hidden custom-scrollbar bg-black/10 select-none">
           <div 
             style={{ width: `${Math.max(400, totalDuration * pixelsPerSecond + 100)}px`, minWidth: '100%' }} 
             className="flex-1 flex flex-col relative h-full"
@@ -571,10 +624,11 @@ const TimelineHub = memo(({
                         </span>
 
                         {/* Trimming Handles for Video Clips */}
-                        {isActive && item.type === 'video' && (
+                        {item.type === 'video' && (
                           <>
                             {/* Left Handle (Trim Start) */}
                             <div
+                              draggable={false}
                               onMouseDown={(e) => handleMouseDown(e, item.id, 'start', item.duration)}
                               className="absolute left-0 top-0 bottom-0 w-2 bg-cyan-400/90 cursor-ew-resize hover:bg-cyan-300 hover:w-2.5 z-20 flex items-center justify-center border-r border-black/40 shadow-[0_0_8px_rgba(34,211,238,0.4)] transition-all"
                               title="Trim Start"
@@ -584,6 +638,7 @@ const TimelineHub = memo(({
                             
                             {/* Right Handle (Trim End) */}
                             <div
+                              draggable={false}
                               onMouseDown={(e) => handleMouseDown(e, item.id, 'end', item.duration)}
                               className="absolute right-0 top-0 bottom-0 w-2 bg-cyan-400/90 cursor-ew-resize hover:bg-cyan-300 hover:w-2.5 z-20 flex items-center justify-center border-l border-black/40 shadow-[0_0_8px_rgba(34,211,238,0.4)] transition-all"
                               title="Trim End"
@@ -664,6 +719,47 @@ const TimelineHub = memo(({
                   </div>
                 );
               })}
+
+              {/* Caption Track Lane */}
+              <div className="flex-1 border-b border-white/5 last:border-b-0 relative flex items-center bg-white/[0.01]">
+                <div className="absolute inset-0 flex gap-0 p-0">
+                  {captions.map((caption: any) => {
+                    const captionLeft = caption.startTime * pixelsPerSecond;
+                    const captionDuration = (caption.endTime - caption.startTime);
+                    const captionWidth = Math.max(8, captionDuration * pixelsPerSecond);
+                    const isCaptionActive = currentCaption?.id === caption.id;
+                    return (
+                      <div
+                        key={caption.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCurrentCaption(caption);
+                        }}
+                        style={{ width: `${captionWidth}px`, left: `${captionLeft}px` }}
+                        className={`absolute h-full top-0 rounded-md border flex items-center px-2 cursor-pointer transition-all ${
+                          isCaptionActive
+                            ? 'bg-teal-500/30 border-teal-400 shadow-[inset_0_0_10px_rgba(20,184,166,0.2)] text-white'
+                            : 'bg-teal-950/20 border-teal-500/30 hover:border-teal-400 text-slate-300'
+                        }`}
+                        title={`${caption.text} (${captionDuration.toFixed(1)}s)`}
+                      >
+                        <MessageSquare className="w-3 h-3 mr-1 flex-shrink-0 text-teal-400/70" />
+                        <span className="text-[8px] font-black uppercase tracking-wider truncate mr-1">
+                          {caption.text}
+                        </span>
+                        <span className="text-[7px] text-slate-500 font-mono ml-auto flex-shrink-0 z-10">
+                          {captionDuration.toFixed(1)}s
+                        </span>
+                      </div>
+                    );
+                  })}
+                  {captions.length === 0 && (
+                    <div className="w-full h-full flex items-center justify-center border border-dashed border-teal-500/15 rounded-lg">
+                      <span className="text-[8px] font-bold text-slate-600 uppercase tracking-widest">No Captions</span>
+                    </div>
+                  )}
+                </div>
+              </div>
 
             </div>
           </div>
@@ -864,8 +960,14 @@ const ToolInspector = memo(({
   videoRef,
   captions,
   setCaptions,
+  currentCaption,
+  setCurrentCaption,
+  captionLanguage,
+  setCaptionLanguage,
   captionStyle,
   setCaptionStyle,
+  captionStylePreset,
+  setCaptionStylePreset,
   isCaptionPlacementMode,
   setIsCaptionPlacementMode,
   handleAutoCaption,
@@ -1519,28 +1621,36 @@ const ToolInspector = memo(({
         <div className="space-y-3">
           <div className="flex items-center justify-between border-b border-white/5 pb-1.5">
             <span className="text-[9px] font-black uppercase tracking-widest text-slate-300">Captions</span>
-            <span className="text-[8px] text-slate-500 font-bold uppercase">Subtitles</span>
+            <span className="text-[8px] text-slate-500 font-bold uppercase">Multilingual</span>
+          </div>
+
+          {/* Language Selector */}
+          <div>
+            <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 block mb-1">Language</label>
+            <select
+              value={captionLanguage}
+              onChange={(e) => setCaptionLanguage(e.target.value)}
+              className="w-full px-2.5 py-1.5 rounded bg-black/30 border border-white/10 text-white text-[9px] focus:outline-none focus:border-cyan-500/50 font-bold"
+            >
+              {CAPTION_LANGUAGES.map((lang) => (
+                <option key={lang.id} value={lang.id}>
+                  {lang.label}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Tab switcher */}
           <div className="flex gap-0.5 bg-black/40 p-0.5 rounded-lg border border-white/5">
             <button
               onClick={() => setCaptionTab('list')}
-              className={`flex-1 py-1 rounded text-[8px] font-black uppercase tracking-wider transition-all ${
-                captionTab === 'list'
-                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
-                  : 'text-slate-500 hover:text-slate-300 border border-transparent'
-              }`}
+              className={`flex-1 py-1 rounded text-[8px] font-black uppercase tracking-wider transition-all ${captionTab === 'list' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' : 'text-slate-500 hover:text-slate-300 border border-transparent'}`}
             >
               List
             </button>
             <button
               onClick={() => setCaptionTab('style')}
-              className={`flex-1 py-1 rounded text-[8px] font-black uppercase tracking-wider transition-all ${
-                captionTab === 'style'
-                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
-                  : 'text-slate-500 hover:text-slate-300 border border-transparent'
-              }`}
+              className={`flex-1 py-1 rounded text-[8px] font-black uppercase tracking-wider transition-all ${captionTab === 'style' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' : 'text-slate-500 hover:text-slate-300 border border-transparent'}`}
             >
               Style
             </button>
@@ -1554,13 +1664,27 @@ const ToolInspector = memo(({
                   <div className="py-3 text-center text-[8px] font-bold uppercase tracking-widest text-slate-600">No captions yet</div>
                 ) : (
                   captions.map((cap: any) => (
-                    <div key={cap.id} className="flex items-start gap-1.5 px-2 py-1.5 rounded-lg bg-white/5 border border-white/5 group">
+                    <div 
+                      key={cap.id} 
+                      onClick={() => setCurrentCaption(cap)}
+                      className={`flex items-start gap-1.5 px-2 py-1.5 rounded-lg border cursor-pointer transition-all group ${
+                        currentCaption?.id === cap.id
+                          ? 'bg-teal-500/20 border-teal-400 shadow-[inset_0_0_8px_rgba(20,184,166,0.1)]'
+                          : 'bg-white/5 border-white/5 hover:border-white/10'
+                      }`}
+                    >
                       <div className="flex-1 min-w-0">
                         <div className="text-[9px] font-bold text-slate-200 truncate">{cap.text}</div>
                         <div className="text-[7px] text-slate-500 font-mono mt-0.5">{cap.startTime.toFixed(1)}s → {cap.endTime.toFixed(1)}s</div>
                       </div>
                       <button
-                        onClick={() => setCaptions((prev: any) => prev.filter((c: any) => c.id !== cap.id))}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCaptions((prev: any) => prev.filter((c: any) => c.id !== cap.id));
+                          if (currentCaption?.id === cap.id) {
+                            setCurrentCaption(null);
+                          }
+                        }}
                         className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-red-400 hover:bg-red-500/20 transition-all flex-shrink-0 mt-0.5"
                       >
                         <X className="w-2.5 h-2.5" />
@@ -1652,6 +1776,36 @@ const ToolInspector = memo(({
             </div>
           ) : (
             <div className="space-y-2.5">
+              {/* Style Presets */}
+              <div>
+                <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 block mb-1">🎨 Presets</label>
+                <div className="grid grid-cols-2 gap-1 max-h-[92px] overflow-y-auto custom-scrollbar">
+                  {CAPTION_STYLE_PRESETS.map((preset) => (
+                    <button
+                      key={preset.id}
+                      onClick={() => {
+                        setCaptionStylePreset(preset.id);
+                        setCaptionStyle((prev: any) => ({
+                          ...prev,
+                          fontId: preset.fontId,
+                          fontSize: preset.fontSize,
+                          color: preset.color,
+                          bgEnabled: preset.bgEnabled,
+                          bgColorHex: preset.bgColorHex,
+                          bold: preset.bold,
+                          italic: preset.italic,
+                          outline: preset.outline,
+                          alignment: preset.alignment,
+                        }));
+                      }}
+                      className={`px-2 py-2 rounded text-left text-[7px] font-bold uppercase border transition-all ${captionStylePreset === preset.id ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40 ring-2 ring-cyan-500/30' : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10'}`}
+                    >
+                      <div>{preset.label}</div>
+                      <div className="text-[6px] text-slate-500 normal-case font-normal">{preset.description}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
               {/* Font picker */}
               <div>
                 <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 block mb-1">Font</label>
@@ -1659,7 +1813,10 @@ const ToolInspector = memo(({
                   {textFontOptions.map((font) => (
                     <button
                       key={font.id}
-                      onClick={() => setCaptionStyle((prev: any) => ({ ...prev, fontId: font.id }))}
+                      onClick={() => {
+                        setCaptionStylePreset(null);
+                        setCaptionStyle((prev: any) => ({ ...prev, fontId: font.id }));
+                      }}
                       className={`px-2 py-1 rounded text-left text-[7px] font-bold uppercase border transition-colors ${
                         captionStyle.fontId === font.id
                           ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'
@@ -2038,6 +2195,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
   // --- Caption state ---
   const [captions, setCaptions] = useState<Array<{ id: string; text: string; startTime: number; endTime: number }>>([]);
   const [currentCaption, setCurrentCaption] = useState<{ id: string; text: string; startTime: number; endTime: number } | null>(null);
+  const [captionLanguage, setCaptionLanguage] = useState('en');
   const [captionStyle, setCaptionStyle] = useState({
     fontId: 'sans',
     fontSize: 32,
@@ -2051,6 +2209,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
     posX: 50,
     posY: 85,
   });
+  const [captionStylePreset, setCaptionStylePreset] = useState<string | null>(null);
   const [isCaptionPlacementMode, setIsCaptionPlacementMode] = useState(false);
   const [isAutoCapturing, setIsAutoCapturing] = useState(false);
   const [autoCaptionStatus, setAutoCaptionStatus] = useState('');
@@ -2061,6 +2220,11 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
 
   // --- Auto-caption: stopAutoCaptionRef lets us stop capture from outside the closure ---
   const stopAutoCaptionRef = useRef<(() => void) | null>(null);
+
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [isToolboxOpen, setIsToolboxOpen] = useState(false);
+  const [timelineSize, setTimelineSize] = useState<'minimized' | 'normal' | 'maximized'>('normal');
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const previewFrameRef = useRef<HTMLDivElement>(null);
@@ -2078,9 +2242,16 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
     }
 
     setIsAutoCapturing(true);
-    setAutoCaptionStatus('🎤 Starting recognition…');
+    setAutoCaptionStatus('🎤 Initializing…');
 
     const video = videoRef.current;
+    
+    // Ensure video is loaded before capturing
+    if (!video.src) {
+      setAutoCaptionStatus('❌ Video source not ready. Please wait for video to load.');
+      setIsAutoCapturing(false);
+      return;
+    }
 
     // Grab the video element’s live audio stream
     const capturedStream: MediaStream | null =
@@ -2092,20 +2263,26 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
 
     // Temporarily override getUserMedia so SpeechRecognition uses video audio
     const origGUM = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+    let gumRestored = false;
+    
     if (audioStream) {
       navigator.mediaDevices.getUserMedia = async (constraints: any) => {
         if (constraints?.audio) return audioStream;
         return origGUM(constraints);
       };
+      
+      // Restore after giving recognition time to grab the stream
+      const restoreTimeout = setTimeout(() => {
+        if (!gumRestored) {
+          gumRestored = true;
+          navigator.mediaDevices.getUserMedia = origGUM;
+        }
+      }, 2500);
+    } else {
+      setAutoCaptionStatus('❌ Could not setup audio stream for recognition.');
+      setIsAutoCapturing(false);
+      return;
     }
-
-    const recognition = new SR();
-    recognition.continuous = true;
-    recognition.interimResults = false;
-    recognition.lang = 'en-US';
-
-    // Restore getUserMedia after recognition has grabbed the stream internally
-    setTimeout(() => { navigator.mediaDevices.getUserMedia = origGUM; }, 1500);
 
     recognition.onstart = () => {
       setAutoCaptionStatus(
@@ -2135,7 +2312,8 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
 
     recognition.onerror = (event: any) => {
       if (event.error === 'no-speech') return; // ignore silence
-      setAutoCaptionStatus(`❌ Error: ${event.error}`);
+      console.error('Speech Recognition error:', event.error);
+      setAutoCaptionStatus(`❌ Error: ${event.error || 'Unknown error'}`);
       cleanup();
     };
 
@@ -2179,17 +2357,13 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
       setAutoCaptionStatus(`❌ Could not start: ${err.message}`);
       cleanup();
     }
-  }, []); // setCaptions & setIsPlaying are stable state setters — no deps needed
+  }, [setCaptions, setIsPlaying, setIsAutoCapturing, setAutoCaptionStatus]);
 
   const greenScreenCanvasRef = useRef<HTMLCanvasElement>(null);
   const greenScreenAnimationRef = useRef<number | null>(null);
   const previousFrameRef = useRef<ImageData | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const thumbnailVideoRefs = useRef<Record<string, HTMLVideoElement | null>>({});
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [isToolboxOpen, setIsToolboxOpen] = useState(false);
-  const [timelineSize, setTimelineSize] = useState<'minimized' | 'normal' | 'maximized'>('normal');
 
   const activePreviewItem = mediaItems.find((i) => i.id === activePreviewId) || null;
 
@@ -3556,8 +3730,14 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                             videoRef={videoRef}
                             captions={captions}
                             setCaptions={setCaptions}
+                            currentCaption={currentCaption}
+                            setCurrentCaption={setCurrentCaption}
+                            captionLanguage={captionLanguage}
+                            setCaptionLanguage={setCaptionLanguage}
                             captionStyle={captionStyle}
                             setCaptionStyle={setCaptionStyle}
+                            captionStylePreset={captionStylePreset}
+                            setCaptionStylePreset={setCaptionStylePreset}
                             isCaptionPlacementMode={isCaptionPlacementMode}
                             setIsCaptionPlacementMode={setIsCaptionPlacementMode}
                             handleAutoCaption={handleAutoCaption}
@@ -4102,6 +4282,9 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
             <TimelineHub
               mediaItems={mediaItems}
               audioTracks={audioTracks}
+              captions={captions}
+              currentCaption={currentCaption}
+              setCurrentCaption={setCurrentCaption}
               progress={progress}
               handleTimelineClick={handleTimelineClick}
               activePreviewId={activePreviewId}

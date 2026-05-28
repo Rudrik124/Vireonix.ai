@@ -1,12 +1,20 @@
 import { SelectedMusic } from "../app/context/music-context";
 
 /**
- * Export utilities for video with music
+ * Export utilities for video with music and captions
  */
+
+export interface CaptionItem {
+  id: string;
+  text: string;
+  startTime: number;
+  endTime: number;
+}
 
 export interface ExportOptions {
   videoPath: string;
   music?: SelectedMusic;
+  captions?: CaptionItem[];
   format?: "mp4" | "webm" | "mov";
   quality?: "high" | "medium" | "low";
   videoDuration: number;
@@ -138,6 +146,26 @@ export function downloadVideoBlob(blob: Blob, filename: string = "video.mp4"): v
 /**
  * Upload exported video to Supabase
  */
+export async function burnCaptions(
+  videoPath: string,
+  captions: CaptionItem[]
+): Promise<Blob> {
+  const formData = new FormData();
+  formData.append("videoPath", videoPath);
+  formData.append("captions", JSON.stringify(captions));
+
+  const response = await fetch("/api/burn-captions", {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    throw new Error(`Caption burn failed: ${response.statusText}`);
+  }
+
+  return await response.blob();
+}
+
 export async function uploadExportedVideo(
   blob: Blob,
   filename: string

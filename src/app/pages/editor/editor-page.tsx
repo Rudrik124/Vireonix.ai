@@ -8,7 +8,7 @@ import { ExportModal, ExportOptionsType } from "../../components/editor/export-m
 import { Button } from "../../components/ui/button";
 import { Music, Upload, Loader2 } from "lucide-react";
 import { useMusicContext } from "../../context/music-context";
-import { exportVideoWithMusic, downloadVideoBlob } from "../../lib/export-utils";
+import { exportVideoWithMusic, downloadVideoBlob } from "../../../lib/export-utils";
 
 function EditorPageContent() {
   const [videoDuration, setVideoDuration] = useState(20); // Default 20 seconds
@@ -65,8 +65,7 @@ function EditorPageContent() {
   };
 
   return (
-    <MusicProvider>
-      <div className="min-h-screen bg-[#0b0d1f] text-white">
+    <div className="min-h-screen bg-[#0b0d1f] text-white">
       <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
         <div className="flex items-center gap-3">
           <BrandLogo size={40} />
@@ -101,7 +100,7 @@ function EditorPageContent() {
 
         {/* Center: Preview on top, Timeline bottom */}
         <main className="flex-1 flex flex-col">
-          <div className={`flex-1 p-6 ${""}`}>
+          <div className="flex-1 p-6">
             <div className="bg-black rounded-xl h-full border border-white/5 overflow-hidden flex">
               <div className="flex-1 p-4 flex items-center justify-center">
                 <div className="w-full h-full bg-gradient-to-br from-[#0b1220] to-[#111827] flex items-center justify-center">

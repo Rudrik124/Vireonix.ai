@@ -5,7 +5,7 @@ import { Card } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { Loader2, Download, Share2, FileVideo, Music, Volume2 } from "lucide-react";
 import { useMusicContext } from "../../context/music-context";
-import { estimateExportSize, formatFileSize } from "../../lib/export-utils";
+import { estimateExportSize, formatFileSize } from "../../../lib/export-utils";
 
 interface ExportModalProps {
   isOpen: boolean;

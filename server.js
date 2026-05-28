@@ -13,12 +13,17 @@ import { fal } from "@fal-ai/client";
 import fs from "fs";
 import os from "os";
 import path from "path";
+import { spawn } from "child_process";
+import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 import { generateScenesWithImages, generateScenes } from "./server-scenes.js";
 import { createVideoFromImages } from "./server-video-from-images.js";
 import { createCinematicVideo } from "./server-cinematic-video.js";
 
 dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const loadEnvFiles = () => {
   dotenv.config({ path: "./.env", override: false });
@@ -78,6 +83,32 @@ const makeTempFilePath = (suffix) => {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   return filePath;
 };
+
+const downloadRemoteFile = async (remoteUrl, defaultSuffix = "remote.mp3") => {
+  const response = await fetch(remoteUrl);
+  if (!response.ok) {
+    throw new Error(`Failed to download remote audio: ${response.status} ${response.statusText}`);
+  }
+
+  const url = new URL(remoteUrl);
+  const ext = path.extname(url.pathname) || ".mp3";
+  const outputPath = makeTempFilePath(`downloaded-audio${ext}`);
+  const buffer = Buffer.from(await response.arrayBuffer());
+  await fs.promises.writeFile(outputPath, buffer);
+  return outputPath;
+};
+
+const buildSrt = (captions) => {
+  return captions
+    .map((caption, index) => {
+      const startHms = new Date(caption.startTime * 1000).toISOString().substr(11, 12).replace('.', ',');
+      const endHms = new Date(caption.endTime * 1000).toISOString().substr(11, 12).replace('.', ',');
+      return `${index + 1}\n${startHms} --> ${endHms}\n${caption.text.replace(/\r?\n/g, ' ')}\n`;
+    })
+    .join("\n");
+};
+
+const normalizeSubtitlePath = (filePath) => filePath.replace(/\\/g, "/");
 
 // ✅ INIT SUPABASE (env-only, no hardcoded secrets)
 const supabaseUrl = readEnv("SUPABASE_URL");
@@ -2810,7 +2841,7 @@ app.post("/generate", async (req, res) => {
 // Expects multipart/form-data with fields: prompt, duration, frame
 // and files: media (one or many images/videos), audio (optional)
 app.post(
-  "/generate-from-media",
+  "/api/generate-from-media",
   upload.fields([
     { name: "media", maxCount: 20 },
     { name: "audio", maxCount: 1 },
@@ -3627,16 +3658,27 @@ app.post("/api/merge-audio", upload.fields([
     const { videoPath, volume = 80, startTime = 0, endTime, muteOriginal = "false" } = req.body;
     const musicFile = req.files?.musicFile?.[0];
 
-    if (!videoPath || !musicFile) {
+    let audioPath = null;
+    let downloadedRemoteAudioPath = null;
+
+    if (musicFile) {
+      audioPath = musicFile.path;
+    } else if (req.body.musicUrl) {
+      downloadedRemoteAudioPath = await downloadRemoteFile(String(req.body.musicUrl));
+      audioPath = downloadedRemoteAudioPath;
+    }
+
+    if (!videoPath || !audioPath) {
       return res.status(400).json({
         success: false,
-        error: "Missing videoPath or musicFile",
+        error: "Missing videoPath or audio source (musicFile or musicUrl)",
       });
     }
 
     console.log("🎵 [AUDIO] Merging audio with video", {
       videoPath,
-      musicFile: musicFile.filename,
+      musicFile: musicFile?.filename,
+      musicUrl: req.body.musicUrl,
       volume,
       startTime,
       endTime,
@@ -3647,14 +3689,12 @@ app.post("/api/merge-audio", upload.fields([
     const shouldMuteOriginal = muteOriginal === "true" || muteOriginal === true;
 
     // Trim audio if needed
-    let audioPath = musicFile.path;
     if (startTime || endTime) {
       const trimmedAudioPath = makeTempFilePath("trimmed-for-merge.mp3");
       const duration = endTime ? Number(endTime) - Number(startTime) : undefined;
 
       await new Promise((resolve, reject) => {
-        let cmd = ffmpeg(musicFile.path)
-          .setStartTime(Number(startTime) || 0);
+        let cmd = ffmpeg(audioPath).setStartTime(Number(startTime) || 0);
 
         if (duration) {
           cmd = cmd.setDuration(duration);
@@ -3673,7 +3713,7 @@ app.post("/api/merge-audio", upload.fields([
       // Just adjust volume if no trimming needed
       const volumeAdjustedPath = makeTempFilePath("volume-adjusted.mp3");
       await new Promise((resolve, reject) => {
-        ffmpeg(musicFile.path)
+        ffmpeg(audioPath)
           .audioFilters([`volume=${musicVolume}`])
           .output(volumeAdjustedPath)
           .on("end", () => resolve())
@@ -3725,6 +3765,61 @@ app.post("/api/merge-audio", upload.fields([
     res.status(500).json({
       success: false,
       error: toErrorMessage(error, "Audio merge failed"),
+    });
+  }
+});
+
+// ✅ Burn captions into video using FFmpeg subtitles
+app.post("/api/burn-captions", upload.none(), async (req, res) => {
+  try {
+    const { videoPath, captions } = req.body;
+    if (!videoPath || !captions) {
+      return res.status(400).json({
+        success: false,
+        error: "Missing videoPath or captions",
+      });
+    }
+
+    const parsedCaptions = typeof captions === "string" ? JSON.parse(captions) : captions;
+    if (!Array.isArray(parsedCaptions) || parsedCaptions.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: "Captions must be a non-empty array",
+      });
+    }
+
+    const srtPath = makeTempFilePath("captions.srt");
+    await fs.promises.writeFile(srtPath, buildSrt(parsedCaptions), "utf8");
+
+    const outputPath = makeTempFilePath("burned-captions.mp4");
+    const subtitleSource = normalizeSubtitlePath(srtPath);
+    const subtitleOptions = `subtitles=${subtitleSource}:force_style='FontName=Arial,FontSize=26,PrimaryColour=&HFFFFFF&,BackColour=&H00000080&,OutlineColour=&H00000000&,BorderStyle=3,Outline=2,Shadow=1'`;
+
+    await new Promise((resolve, reject) => {
+      ffmpeg(videoPath)
+        .videoFilters([`subtitles=${subtitleSource}:force_style='FontName=Arial,FontSize=26,PrimaryColour=&HFFFFFF&,BackColour=&H00000080&,OutlineColour=&H00000000&,BorderStyle=3,Outline=2,Shadow=1'`])
+        .outputOptions(["-c:v libx264", "-crf 23", "-preset veryfast"])
+        .outputOptions(["-c:a copy"])
+        .output(outputPath)
+        .on("end", resolve)
+        .on("error", reject)
+        .run();
+    });
+
+    res.setHeader("Content-Type", "video/mp4");
+    res.setHeader("Content-Disposition", "attachment; filename=captioned-video.mp4");
+
+    const fileStream = fs.createReadStream(outputPath);
+    fileStream.on("end", () => {
+      fs.unlink(outputPath, () => {});
+      fs.unlink(srtPath, () => {});
+    });
+    fileStream.pipe(res);
+  } catch (error) {
+    console.error("❌ [CAPTIONS] Burn error:", error);
+    res.status(500).json({
+      success: false,
+      error: toErrorMessage(error, "Burning captions failed"),
     });
   }
 });
