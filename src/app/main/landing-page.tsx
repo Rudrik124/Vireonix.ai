@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useLocation } from 'react-router';
 import { ConfigProvider, theme, Button, Modal, Row, Col, Card, Switch, Typography, Progress } from 'antd';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircleOutlined, GithubOutlined, TwitterOutlined, RocketOutlined, SearchOutlined, CloudUploadOutlined, CloudDownloadOutlined, ThunderboltOutlined, PictureOutlined, CodeOutlined, PlayCircleOutlined, ScissorOutlined, MessageOutlined, AudioOutlined, BgColorsOutlined, MobileOutlined, SoundOutlined, BulbOutlined, RobotOutlined, FieldTimeOutlined, SafetyCertificateOutlined, CloudServerOutlined, VideoCameraOutlined, CopyOutlined, FileImageOutlined, EditOutlined, CloseOutlined, SlidersOutlined, DiscordOutlined, ArrowRightOutlined } from '@ant-design/icons';
 import { LoginModal } from '../components/login-modal';
-import { Sparkles, Play, Video, Image as ImageIcon, Wand2, Music, CheckCircle2, Menu, Loader2, Star, Zap, Clapperboard, Globe, ShieldCheck, User, ChevronRight } from 'lucide-react';
+import { Sparkles, Play, Video, Image as ImageIcon, Wand2, Music, CheckCircle2, Menu, Loader2, Star, Zap, Clapperboard, Globe, ShieldCheck, User, ChevronRight, ChevronDown, LogOut } from 'lucide-react';
+import { useAuth } from '../context/auth-context';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -26,11 +27,26 @@ function useSEO(title: string, description: string) {
 
 export function LandingPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   useSEO('Lightning Fast Web Optimization | TurboSite', 'Make your site lightning fast with our 3-step optimization process. Audit, Optimize, and Deploy in seconds.');
 
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [activeWorkflowModal, setActiveWorkflowModal] = useState<number | null>(null);
+
+  const { session, isLoggedIn, logout } = useAuth();
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const userName = session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || "User";
+
+  const handleLogout = async () => {
+    setIsProcessing(true);
+    await new Promise(resolve => setTimeout(resolve, 800)); // allow animation to play
+    await logout();
+    setIsProcessing(false);
+    setIsUserMenuOpen(false);
+  };
 
   const [promptText, setPromptText] = useState("");
   const [promptPhase, setPromptPhase] = useState("typing"); // typing, loading, progress, success
@@ -46,6 +62,15 @@ export function LandingPage() {
     window.addEventListener("mousemove", handleMouseMove);
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, []);
+
+  useEffect(() => {
+    // If navigated here with { state: { openLogin: true } }, open the modal
+    if (location.state && (location.state as any).openLogin) {
+      setIsLoginOpen(true);
+      // Clear the state so it doesn't re-open on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location]);
 
   useEffect(() => {
     let timeout: ReturnType<typeof setTimeout>;
@@ -224,9 +249,33 @@ export function LandingPage() {
 
             {/* Actions */}
             <div className="hidden md:flex items-center gap-4 text-white">
-              <button onClick={() => setIsLoginOpen(true)} className="text-sm font-bold opacity-80 hover:opacity-100 transition-opacity">
-                Login
-              </button>
+              {isLoggedIn ? (
+                <div className="relative">
+                  <button onClick={() => setIsUserMenuOpen(!isUserMenuOpen)} className="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-1.5 rounded-full text-sm font-bold transition-colors">
+                    <User className="w-4 h-4" />
+                    {userName}
+                    <ChevronDown className={`w-3 h-3 opacity-50 transition-transform ${isUserMenuOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  <AnimatePresence>
+                    {isUserMenuOpen && (
+                      <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 5 }} className="absolute right-0 top-full mt-2 w-36 bg-[#130E24] border border-white/10 rounded-xl shadow-xl z-[100] p-1">
+                        <button onClick={handleLogout} disabled={isProcessing} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-red-400 hover:bg-red-500/10 text-xs font-bold transition-colors">
+                          {isProcessing ? (
+                            <div className="w-3 h-3 border-2 border-red-400/30 border-t-red-400 rounded-full animate-spin" />
+                          ) : (
+                            <LogOut className="w-3 h-3" />
+                          )}
+                          {isProcessing ? "Logging out..." : "Logout"}
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              ) : (
+                <button onClick={() => setIsLoginOpen(true)} className="text-sm font-bold opacity-80 hover:opacity-100 transition-opacity">
+                  Login
+                </button>
+              )}
               <button onClick={() => navigate('/video-type')} className="px-5 py-2.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 text-sm font-bold transition-all hover:shadow-[0_0_20px_rgba(139,92,246,0.3)]">
                 Dashboard
               </button>
@@ -374,7 +423,7 @@ export function LandingPage() {
                 initial={{ opacity: 0, rotateY: -10, z: -100 }}
                 animate={{ opacity: 1, rotateY: -5, z: 0 }}
                 transition={{ duration: 1, ease: "easeOut" }}
-                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[110%] max-w-[500px] bg-[#1A1A24]/80 backdrop-blur-2xl rounded-2xl border border-white/10 shadow-2xl overflow-hidden transform-gpu"
+                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[110%] max-w-[500px] bg-[#1A1A24]/80 backdrop-blur-2xl rounded-2xl border border-white/10 shadow-2xl overflow-hidden gpu"
               >
                 {/* Mac-style Window Header */}
                 <div className="h-8 bg-black/40 border-b border-white/10 flex items-center px-4 gap-2">
@@ -386,7 +435,7 @@ export function LandingPage() {
                 
                 {/* Video Area */}
                 <div className="relative aspect-video bg-black flex items-center justify-center overflow-hidden">
-                  <img src="https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=1000&auto=format&fit=crop" alt="Cinematic Output" className="w-full h-full object-cover opacity-80" />
+                  <img loading="lazy" decoding="async" src="https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=1000&auto=format&fit=crop" alt="Cinematic Output" className="w-full h-full object-cover opacity-80" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                   <div className="absolute w-16 h-16 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center cursor-pointer hover:scale-110 transition-transform">
                     <Play className="w-6 h-6 text-white ml-1" fill="currentColor" />

@@ -1,4 +1,4 @@
-import { useLocation, useNavigate } from "react-router";
+new_content = """import { useLocation, useNavigate } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, FileVideo, Zap, Image as ImageIcon, ArrowLeft, LogOut, User, ChevronDown, Menu, Play } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -14,10 +14,8 @@ const features = [
     description: "Text-to-Video • Cinematic",
     icon: Sparkles,
     colorTheme: "blue",
-    useCases: "Ads • Reels",
-    stats: ["4K Ready", "~20s", "AI Enhanced"],
     cta: "Launch Workspace",
-    tag: "🔥",
+    tag: "🔥 Most Used",
     route: "/create",
     previewType: "cinematic",
   },
@@ -27,10 +25,8 @@ const features = [
     description: "Style Transfer • Motion Match",
     icon: FileVideo,
     colorTheme: "purple",
-    useCases: "Style Transfer • Edits",
-    stats: ["4K Ready", "~15s", "Artistic"],
     cta: "Open Studio",
-    tag: "⚡",
+    tag: "⚡ Fastest",
     route: "/reference-video/setup",
     previewType: "split",
   },
@@ -40,23 +36,19 @@ const features = [
     description: "Image Animation • Depth",
     icon: ImageIcon,
     colorTheme: "orange",
-    useCases: "Slides • Social",
-    stats: ["HD Ready", "~10s", "Motion"],
     cta: "Create Now",
-    tag: "✨",
+    tag: "✨ Creators",
     route: "/images-to-video/upload",
     previewType: "morphing",
   },
   {
     id: "quick-edit",
     title: "Quick AI Edit",
-    description: "Prompt Editing • Smart Timeline",
+    description: "Smart Timeline • Auto Edit",
     icon: Zap,
     colorTheme: "green",
-    useCases: "YouTube • Shorts",
-    stats: ["Pro Ready", "~5s", "Beat Sync"],
     cta: "Start Edit",
-    tag: "🎬",
+    tag: "🎬 Pro Edit",
     route: "/quick-edit/upload",
     previewType: "timeline",
   },
@@ -65,7 +57,7 @@ const features = [
 const PortalPreview = ({ type, isActive }: { type: string, isActive: boolean }) => {
   if (type === "cinematic") {
     return (
-       <div className="w-full h-full relative bg-[#0B0A10] flex items-center justify-center overflow-hidden rounded-t-[14px]">
+       <div className="w-full h-[80px] relative bg-[#0B0A10] flex items-center justify-center overflow-hidden rounded-t-[12px]">
           <motion.img 
             src="https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=1000&auto=format&fit=crop"
             animate={isActive ? { scale: [1, 1.1, 1], x: [0, -10, 0] } : { scale: 1, x: 0 }}
@@ -73,23 +65,23 @@ const PortalPreview = ({ type, isActive }: { type: string, isActive: boolean }) 
             className="absolute inset-0 w-[120%] h-[120%] object-cover opacity-60"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#0B0A10] via-transparent to-transparent" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 md:w-10 md:h-10 rounded-full border border-blue-500/50 flex items-center justify-center bg-black/40 backdrop-blur-md shadow-[0_0_15px_rgba(59,130,246,0.3)]">
-             <Play className="w-3 h-3 md:w-4 md:h-4 text-blue-400 ml-0.5" fill="currentColor" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full border border-blue-500/50 flex items-center justify-center bg-black/40 backdrop-blur-md shadow-[0_0_15px_rgba(59,130,246,0.3)]">
+             <Play className="w-3 h-3 text-blue-400 ml-0.5" fill="currentColor" />
           </div>
        </div>
     );
   }
   if (type === "split") {
      return (
-       <div className="w-full h-full relative bg-black flex items-center justify-center overflow-hidden rounded-t-[14px]">
+       <div className="w-full h-[80px] relative bg-black flex items-center justify-center overflow-hidden rounded-t-[12px]">
          <div className="absolute inset-0 flex">
             <div className="w-1/2 h-full relative">
                <img src="https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=500&auto=format&fit=crop" className="w-full h-full object-cover opacity-40 grayscale" />
-               <div className="absolute top-1 left-1 text-[7px] md:text-[9px] font-black tracking-widest text-white/50 bg-black/80 px-1 rounded border border-white/10">IN</div>
+               <div className="absolute top-1 left-1 text-[7px] font-black tracking-widest text-white/50 bg-black/80 px-1 rounded border border-white/10">IN</div>
             </div>
             <div className="w-1/2 h-full relative">
                <img src="https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=500&auto=format&fit=crop" className="w-full h-full object-cover opacity-90" />
-               <div className="absolute top-1 right-1 text-[7px] md:text-[9px] font-black tracking-widest text-purple-200 bg-purple-900/80 px-1 rounded border border-purple-500/30">OUT</div>
+               <div className="absolute top-1 right-1 text-[7px] font-black tracking-widest text-purple-200 bg-purple-900/80 px-1 rounded border border-purple-500/30">OUT</div>
             </div>
          </div>
          <motion.div 
@@ -102,7 +94,7 @@ const PortalPreview = ({ type, isActive }: { type: string, isActive: boolean }) 
   }
   if (type === "morphing") {
      return (
-       <div className="w-full h-full relative bg-black flex items-center justify-center overflow-hidden rounded-t-[14px]">
+       <div className="w-full h-[80px] relative bg-black flex items-center justify-center overflow-hidden rounded-t-[12px]">
           <motion.img 
             src="https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?q=80&w=1000&auto=format&fit=crop"
             animate={isActive ? { filter: ['hue-rotate(0deg) saturate(1)', 'hue-rotate(45deg) saturate(1.5)', 'hue-rotate(0deg) saturate(1)'], scale: [1, 1.15, 1] } : { scale: 1 }}
@@ -115,8 +107,8 @@ const PortalPreview = ({ type, isActive }: { type: string, isActive: boolean }) 
   }
   if (type === "timeline") {
      return (
-       <div className="w-full h-full relative bg-[#0B0A10] p-2 md:p-3 flex flex-col justify-end overflow-hidden rounded-t-[14px]">
-          <div className="flex gap-[2px] mb-2 h-1/2 items-end px-1">
+       <div className="w-full h-[80px] relative bg-[#0B0A10] p-2 flex flex-col justify-end overflow-hidden rounded-t-[12px]">
+          <div className="flex gap-[1px] mb-2 h-1/2 items-end px-1">
             {Array.from({ length: 25 }).map((_, i) => (
                <motion.div 
                  key={i}
@@ -126,7 +118,7 @@ const PortalPreview = ({ type, isActive }: { type: string, isActive: boolean }) 
                />
             ))}
           </div>
-          <div className="w-full h-4 md:h-6 bg-white/5 rounded flex gap-0.5 p-0.5 relative border border-white/10">
+          <div className="w-full h-4 bg-white/5 rounded flex gap-0.5 p-0.5 relative border border-white/10">
              <div className="w-1/4 bg-teal-500/30 rounded border border-teal-500/20" />
              <div className="w-1/2 bg-emerald-500/30 rounded border border-emerald-500/20" />
              <div className="w-1/4 bg-cyan-500/30 rounded border border-cyan-500/20" />
@@ -153,8 +145,6 @@ export function FeaturesSelectionPage() {
   const [hoveredPortal, setHoveredPortal] = useState<string | null>(null);
   const [clickingPortal, setClickingPortal] = useState<string | null>(null);
 
-  const [isProcessing, setIsProcessing] = useState(false);
-
   const userName = session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || "User";
 
   useEffect(() => {
@@ -167,10 +157,8 @@ export function FeaturesSelectionPage() {
   }, [isLoggedIn]);
 
   const handleLogout = async () => {
-    setIsProcessing(true);
-    await new Promise(resolve => setTimeout(resolve, 800)); // allow animation to play
     await logout();
-    setIsProcessing(false);
+    setIsUserMenuOpen(false);
     navigate("/video-type", { replace: true });
   };
 
@@ -203,8 +191,8 @@ export function FeaturesSelectionPage() {
         />
       </div>
 
-      {/* HEADER NAV ROW */}
-      <div className="flex justify-between items-center w-full max-w-6xl mx-auto relative z-20 tools-nav mb-2">
+      {/* HEADER ROW - Very Compact */}
+      <div className="flex justify-between items-center w-full max-w-5xl mx-auto relative z-20 tools-nav">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.location.reload()}>
             <BrandLogo size={28} className="relative z-10" />
@@ -224,43 +212,33 @@ export function FeaturesSelectionPage() {
               <button onClick={() => setIsUserMenuOpen(!isUserMenuOpen)} className="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-1.5 rounded-full text-xs font-bold transition-colors">
                 <User className="w-3 h-3" />
                 {userName}
-                <ChevronDown className={`w-3 h-3 opacity-50 transition-transform ${isUserMenuOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className="w-3 h-3 opacity-50" />
               </button>
               <AnimatePresence>
                 {isUserMenuOpen && (
                   <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 5 }} className="absolute right-0 top-full mt-2 w-32 bg-[#130E24] border border-white/10 rounded-xl shadow-xl z-[100] p-1">
-                    <button onClick={handleLogout} disabled={isProcessing} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-red-400 hover:bg-red-500/10 text-xs font-bold transition-colors">
-                      {isProcessing ? (
-                        <div className="w-3 h-3 border-2 border-red-400/30 border-t-red-400 rounded-full animate-spin" />
-                      ) : (
-                        <LogOut className="w-3 h-3" />
-                      )}
-                      {isProcessing ? "Logging out..." : "Logout"}
+                    <button onClick={() => void handleLogout()} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-red-400 hover:bg-red-500/10 text-xs font-bold transition-colors">
+                      <LogOut className="w-3 h-3" /> Logout
                     </button>
                   </motion.div>
                 )}
               </AnimatePresence>
             </div>
-          ) : (
-            <button onClick={() => navigate("/", { state: { openLogin: true } })} className="flex items-center gap-1.5 bg-white/5 hover:bg-white/10 border border-white/10 px-4 py-1.5 rounded-full text-xs font-bold transition-colors">
-              Login
-            </button>
-          )}
+          ) : <div className="w-8" />}
         </div>
       </div>
 
-      {/* MAIN CONTENT */}
-      <div className="flex-1 flex flex-col items-center w-full max-w-5xl mx-auto relative z-10 h-full min-h-0">
-        <div className="tools-header">
+      {/* MAIN CONTENT - Grid */}
+      <div className="flex-1 flex flex-col items-center justify-center w-full max-w-4xl mx-auto relative z-10 mt-2 mb-2 h-full min-h-0">
+        <div className="tools-header mb-4">
           <h1 className="tools-title font-black tracking-tight drop-shadow-lg">See How VEYTRIX Works</h1>
           <p className="tools-subtitle font-medium">Four powerful AI workflows for creators</p>
         </div>
 
-        <div className="portals-grid w-full">
-          {features.map((feature, index) => {
+        <div className="portals-grid w-full h-full min-h-0">
+          {features.map((feature) => {
             const Icon = feature.icon;
             const isClicking = clickingPortal === feature.id;
-            const isRow1 = index < 2;
             
             return (
               <div
@@ -268,50 +246,42 @@ export function FeaturesSelectionPage() {
                 onMouseEnter={() => setHoveredPortal(feature.id)}
                 onMouseLeave={() => setHoveredPortal(null)}
                 onClick={() => handlePortalClick(feature.route, feature.id)}
-                className={`portal ${isRow1 ? 'portal-large' : 'portal-small'} ${feature.colorTheme} ${isClicking ? 'clicking' : ''}`}
+                className={`portal portal-compact ${feature.colorTheme} ${isClicking ? 'clicking' : ''}`}
               >
                 {/* Click/Loading Overlay */}
                 {isClicking && (
-                  <div className="absolute inset-0 bg-black/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center rounded-[clamp(14px,2vw,24px)]">
-                     <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin mb-2" />
-                     <div className="text-white font-bold tracking-widest text-[11px] animate-pulse">LOADING...</div>
+                  <div className="absolute inset-0 bg-black/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center rounded-[16px]">
+                     <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin mb-2" />
+                     <div className="text-white font-bold tracking-widest text-[10px] animate-pulse">LOADING...</div>
                   </div>
                 )}
 
-                <div className="portal-preview relative">
+                <div className="relative portal-preview">
                   <PortalPreview type={feature.previewType} isActive={hoveredPortal === feature.id} />
                   <div className="portal-tag">{feature.tag}</div>
                 </div>
 
-                <div className="flex-1 flex flex-col justify-between pt-2">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <Icon className="w-4 h-4 md:w-5 md:h-5 text-white" />
-                      <h3 className="portal-title font-bold text-white leading-tight">{feature.title}</h3>
-                    </div>
-                    <div className="portal-divider" />
-                    <p className="portal-cap text-white/80 font-medium">{feature.description}</p>
-                    <p className="portal-usecase">📋 Use Cases: {feature.useCases}</p>
+                <div className="flex-1 flex flex-col p-1 mt-1">
+                  <div className="flex items-center gap-2">
+                    <Icon className="w-4 h-4 text-white" />
+                    <h3 className="portal-title font-bold text-white leading-tight">{feature.title}</h3>
                   </div>
+                  <p className="portal-cap text-white/70 font-medium">{feature.description}</p>
                   
-                  <div>
-                    <div className="portal-stats">
-                      {feature.stats.map((stat, i) => (
-                        <span key={i} className="flex items-center">
-                          {stat}
-                          {i < feature.stats.length - 1 && <span className="mx-1 md:mx-2 text-white/30">•</span>}
-                        </span>
-                      ))}
-                    </div>
-                    <button className={`portal-btn ${feature.colorTheme} w-full`}>
-                       {feature.cta}
-                    </button>
-                  </div>
+                  <button className={`portal-btn ${feature.colorTheme} w-full`}>
+                     {feature.cta}
+                  </button>
                 </div>
               </div>
             );
           })}
         </div>
+        
+        {isDeveloperTestMode && (
+           <div className="mt-2 text-[10px] text-purple-300 bg-purple-500/10 px-3 py-1 rounded-full border border-purple-500/20">
+              Test Mode Active
+           </div>
+        )}
       </div>
 
       <style>{`
@@ -323,162 +293,141 @@ export function FeaturesSelectionPage() {
         }
 
         .tools-section {
-          min-height: 100vh;
           height: 100vh;
           width: 100vw;
           overflow: hidden;
           display: flex;
           flex-direction: column;
-          padding: 2vh 4% 2vh;
+          padding: 16px 4% 16px;
           box-sizing: border-box;
         }
 
         .tools-nav {
           flex-shrink: 0;
+          height: 40px;
         }
 
         .tools-header {
           text-align: center;
           flex-shrink: 0;
-          margin-bottom: 2vh;
         }
 
         .tools-title {
-          font-size: clamp(22px, 3.5vw, 36px);
-          margin-bottom: 0.5vh;
+          font-size: 26px;
+          margin-bottom: 2px;
         }
 
         .tools-subtitle {
-          font-size: clamp(12px, 1.5vw, 16px);
-          opacity: 0.7;
-          max-width: 600px;
-          margin: 0 auto;
+          font-size: 13px;
+          opacity: 0.8;
+          margin-bottom: 0;
         }
 
         /* Portals grid */
         .portals-grid {
           display: grid;
           grid-template-columns: 1fr 1fr;
-          gap: 1.5vh;
-          flex: 1;
+          gap: 16px;
+          width: 100%;
           align-content: center;
-          min-height: 0;
+          justify-content: center;
         }
 
-        /* Base portal sizing */
-        .portal {
+        /* Compact portal */
+        .portal-compact {
+          height: 180px;
           display: flex;
           flex-direction: column;
-          padding: clamp(12px, 1.5vw, 20px);
-          border-radius: clamp(14px, 2vw, 24px);
+          padding: 10px;
+          border-radius: 16px;
           background: rgba(255, 255, 255, 0.03);
-          backdrop-filter: blur(16px);
+          backdrop-filter: blur(12px);
           border: 1px solid rgba(255, 255, 255, 0.08);
-          transition: all 0.3s ease;
+          transition: all 0.2s ease;
           position: relative;
           cursor: pointer;
         }
 
-        /* Specific row heights to emulate 42% and 38% */
-        .portal-large {
-          height: clamp(260px, 38vh, 400px);
+        /* Homepage Theme Colors */
+        .portal.blue {
+          border-color: rgba(59, 130, 246, 0.2);
+          box-shadow: 0 0 20px rgba(59, 130, 246, 0.05);
         }
-        
-        .portal-small {
-          height: clamp(230px, 32vh, 340px);
+        .portal.purple {
+          border-color: rgba(139, 92, 246, 0.2);
+          box-shadow: 0 0 20px rgba(139, 92, 246, 0.05);
+        }
+        .portal.orange {
+          border-color: rgba(249, 115, 22, 0.2);
+          box-shadow: 0 0 20px rgba(249, 115, 22, 0.05);
+        }
+        .portal.green {
+          border-color: rgba(16, 185, 129, 0.2);
+          box-shadow: 0 0 20px rgba(16, 185, 129, 0.05);
+        }
+
+        /* Hover Effects */
+        .portal:hover {
+          transform: scale(1.02) translateY(-2px);
+          border-color: rgba(255, 255, 255, 0.2);
+          z-index: 10;
+        }
+        .portal.blue:hover { box-shadow: 0 10px 30px rgba(59, 130, 246, 0.2); }
+        .portal.purple:hover { box-shadow: 0 10px 30px rgba(139, 92, 246, 0.2); }
+        .portal.orange:hover { box-shadow: 0 10px 30px rgba(249, 115, 22, 0.2); }
+        .portal.green:hover { box-shadow: 0 10px 30px rgba(16, 185, 129, 0.2); }
+
+        /* Typography */
+        .portal-title {
+          font-size: 14px;
+          margin: 6px 0 2px;
+        }
+        .portal-cap {
+          font-size: 11px;
         }
 
         /* Portal preview */
         .portal-preview {
-          height: clamp(80px, 12vh, 140px);
-          width: 100%;
-          border-radius: 8px 8px 0 0;
+          height: 80px;
+          border-radius: 12px;
           flex-shrink: 0;
-          object-fit: cover;
         }
 
-        /* Typography */
-        .portal-title {
-          font-size: clamp(14px, 1.6vw, 20px);
-          margin: clamp(4px, 1vh, 8px) 0 clamp(2px, 0.5vw, 4px);
-        }
-
-        .portal-divider {
-          height: 1px;
-          background: rgba(255,255,255,0.1);
-          margin: clamp(4px, 0.8vh, 8px) 0;
-        }
-
-        .portal-cap {
-          font-size: clamp(10px, 1.1vw, 13px);
-          opacity: 0.8;
-          margin-bottom: clamp(4px, 0.5vh, 6px);
-        }
-
-        .portal-usecase {
-          font-size: clamp(9px, 1vw, 12px);
-          opacity: 0.5;
-          margin-bottom: auto;
-        }
-
-        .portal-stats {
-          font-size: clamp(9px, 1vw, 11px);
-          opacity: 0.6;
-          display: flex;
-          align-items: center;
-          margin: clamp(4px, 0.8vh, 8px) 0;
-          font-weight: 600;
-        }
-
+        /* Portal button */
         .portal-btn {
-          padding: clamp(8px, 1vh, 14px);
-          font-size: clamp(11px, 1.2vw, 14px);
+          padding: 8px;
+          font-size: 12px;
           border-radius: 8px;
+          margin-top: auto;
           font-weight: 700;
-          margin-top: clamp(6px, 1vh, 10px);
           color: white;
           text-align: center;
           transition: all 0.2s ease;
         }
-
-        /* Homepage Theme Colors */
-        .portal.blue { border-color: rgba(59, 130, 246, 0.2); box-shadow: 0 0 20px rgba(59, 130, 246, 0.05); }
-        .portal.purple { border-color: rgba(139, 92, 246, 0.2); box-shadow: 0 0 20px rgba(139, 92, 246, 0.05); }
-        .portal.orange { border-color: rgba(249, 115, 22, 0.2); box-shadow: 0 0 20px rgba(249, 115, 22, 0.05); }
-        .portal.green { border-color: rgba(16, 185, 129, 0.2); box-shadow: 0 0 20px rgba(16, 185, 129, 0.05); }
 
         .portal-btn.blue { background: linear-gradient(135deg, #3b82f6 0%, #4f46e5 100%); }
         .portal-btn.purple { background: linear-gradient(135deg, #8b5cf6 0%, #d946ef 100%); }
         .portal-btn.orange { background: linear-gradient(135deg, #f97316 0%, #ef4444 100%); }
         .portal-btn.green { background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%); }
 
-        .portal-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+        .portal-btn:hover {
+          filter: brightness(1.1);
+        }
 
         /* Tag */
         .portal-tag {
           position: absolute;
-          top: clamp(6px, 1vh, 10px);
-          right: clamp(6px, 1vh, 10px);
-          font-size: clamp(8px, 0.9vw, 11px);
-          padding: 3px 8px;
-          border-radius: 20px;
+          top: 8px;
+          right: 8px;
+          font-size: 9px;
+          padding: 3px 6px;
+          border-radius: 12px;
           background: rgba(0, 0, 0, 0.6);
           backdrop-filter: blur(4px);
           border: 1px solid rgba(255,255,255,0.15);
           color: white;
           font-weight: bold;
         }
-
-        /* Hover Effects */
-        .portal:hover {
-          transform: scale(1.02);
-          border-color: rgba(255, 255, 255, 0.2);
-          z-index: 10;
-        }
-        .portal.blue:hover { box-shadow: 0 10px 40px rgba(59, 130, 246, 0.3); }
-        .portal.purple:hover { box-shadow: 0 10px 40px rgba(139, 92, 246, 0.3); }
-        .portal.orange:hover { box-shadow: 0 10px 40px rgba(249, 115, 22, 0.3); }
-        .portal.green:hover { box-shadow: 0 10px 40px rgba(16, 185, 129, 0.3); }
 
         /* Click animation */
         .portal.clicking {
@@ -495,25 +444,25 @@ export function FeaturesSelectionPage() {
         @media (max-width: 768px) {
           .portals-grid {
             grid-template-columns: 1fr;
-            gap: 1.5vh;
-            overflow-y: auto;
+            gap: 12px;
+            overflow-y: auto; /* Allow scroll on mobile if strictly needed */
             padding-bottom: 20px;
           }
           .tools-section {
             height: 100dvh;
-            overflow: auto;
           }
-          .portal-large, .portal-small {
-            height: clamp(240px, 35vh, 300px);
+          .portal-compact {
+            height: 160px;
           }
           .portal-preview {
-            height: clamp(80px, 15vh, 120px);
-          }
-          body, html {
-            overflow: auto;
+            height: 70px;
           }
         }
       `}</style>
     </div>
   );
 }
+"""
+
+with open('src/app/main/features-selection.tsx', 'w') as f:
+    f.write(new_content)

@@ -97,8 +97,19 @@ export function DeveloperAccessPage() {
           return;
         }
 
+        let target = redirectTarget;
+        if (!location.state?.from) {
+          if (profile.portalAccess.includes("admin")) {
+            target = "/admin/dashboard";
+          } else if (profile.portalAccess.includes("developer")) {
+            target = "/developer/dashboard";
+          } else if (profile.portalAccess.includes("tester")) {
+            target = "/tester/dashboard";
+          }
+        }
+
         setDebugStep("Developer access verified, redirecting");
-        navigate(redirectTarget, { replace: true });
+        navigate(target, { replace: true });
       }
     } catch (error: any) {
       setError(error?.message || "Developer login failed. Please try again.");

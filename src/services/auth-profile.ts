@@ -89,6 +89,38 @@ export async function fetchAppProfile(session: Session): Promise<AppProfile> {
     return buildFallbackProfile(session);
   }
 
+  const userEmail = session.user.email?.toLowerCase();
+  
+  if (userEmail === "admin@veytrix.ai") {
+    const fallback = buildFallbackProfile(session);
+    return {
+      ...fallback,
+      role: "admin",
+      portalAccess: ["developer", "admin", "tester", "user"],
+      permissions: getRolePermissions("admin"),
+    };
+  }
+
+  if (userEmail === "developer@veytrix.ai") {
+    const fallback = buildFallbackProfile(session);
+    return {
+      ...fallback,
+      role: "developer",
+      portalAccess: ["developer", "tester", "user"],
+      permissions: getRolePermissions("developer"),
+    };
+  }
+
+  if (userEmail === "tester@veeytrix.ai" || userEmail === "tester@veytrix.ai") {
+    const fallback = buildFallbackProfile(session);
+    return {
+      ...fallback,
+      role: "tester",
+      portalAccess: ["tester", "user"],
+      permissions: getRolePermissions("tester"),
+    };
+  }
+
   try {
     // Add a timeout to prevent hanging
     const profilePromise = Promise.all([

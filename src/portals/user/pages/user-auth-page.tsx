@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { supabase, isSupabaseConfigured } from "../../../lib/supabase";
+import { fetchAppProfile } from "../../../services/auth-profile";
 
 export function UserAuthPage() {
   const navigate = useNavigate();
@@ -30,11 +31,29 @@ export function UserAuthPage() {
 
     try {
       if (mode === "signin") {
-        const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+        const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
         if (signInError) {
           setError(signInError.message);
         } else {
-          navigate(redirectTarget, { replace: true });
+          let target = redirectTarget;
+          if (!location.state?.from && data?.session) {
+            const profile = await fetchAppProfile(data.session);
+            const userEmail = data.session.user.email?.toLowerCase();
+            if (userEmail === "admin@veytrix.ai") {
+              target = "/admin/dashboard";
+            } else if (userEmail === "developer@veytrix.ai") {
+              target = "/developer/dashboard";
+            } else if (userEmail === "tester@veeytrix.ai" || userEmail === "tester@veytrix.ai") {
+              target = "/tester/dashboard";
+            } else if (profile.role === "admin" || profile.role === "super_admin" || profile.portalAccess.includes("admin")) {
+              target = "/admin/dashboard";
+            } else if (profile.role === "developer" || profile.portalAccess.includes("developer")) {
+              target = "/developer/dashboard";
+            } else if (profile.role === "tester" || profile.portalAccess.includes("tester")) {
+              target = "/tester/dashboard";
+            }
+          }
+          navigate(target, { replace: true });
         }
       } else {
         const { error: signUpError } = await supabase.auth.signUp({

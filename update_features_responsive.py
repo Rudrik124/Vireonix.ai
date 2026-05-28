@@ -1,4 +1,4 @@
-import { useLocation, useNavigate } from "react-router";
+new_content = """import { useLocation, useNavigate } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, FileVideo, Zap, Image as ImageIcon, ArrowLeft, LogOut, User, ChevronDown, Menu, Play } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -153,8 +153,6 @@ export function FeaturesSelectionPage() {
   const [hoveredPortal, setHoveredPortal] = useState<string | null>(null);
   const [clickingPortal, setClickingPortal] = useState<string | null>(null);
 
-  const [isProcessing, setIsProcessing] = useState(false);
-
   const userName = session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || "User";
 
   useEffect(() => {
@@ -167,10 +165,8 @@ export function FeaturesSelectionPage() {
   }, [isLoggedIn]);
 
   const handleLogout = async () => {
-    setIsProcessing(true);
-    await new Promise(resolve => setTimeout(resolve, 800)); // allow animation to play
     await logout();
-    setIsProcessing(false);
+    setIsUserMenuOpen(false);
     navigate("/video-type", { replace: true });
   };
 
@@ -224,28 +220,19 @@ export function FeaturesSelectionPage() {
               <button onClick={() => setIsUserMenuOpen(!isUserMenuOpen)} className="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-1.5 rounded-full text-xs font-bold transition-colors">
                 <User className="w-3 h-3" />
                 {userName}
-                <ChevronDown className={`w-3 h-3 opacity-50 transition-transform ${isUserMenuOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className="w-3 h-3 opacity-50" />
               </button>
               <AnimatePresence>
                 {isUserMenuOpen && (
                   <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 5 }} className="absolute right-0 top-full mt-2 w-32 bg-[#130E24] border border-white/10 rounded-xl shadow-xl z-[100] p-1">
-                    <button onClick={handleLogout} disabled={isProcessing} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-red-400 hover:bg-red-500/10 text-xs font-bold transition-colors">
-                      {isProcessing ? (
-                        <div className="w-3 h-3 border-2 border-red-400/30 border-t-red-400 rounded-full animate-spin" />
-                      ) : (
-                        <LogOut className="w-3 h-3" />
-                      )}
-                      {isProcessing ? "Logging out..." : "Logout"}
+                    <button onClick={() => void handleLogout()} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-red-400 hover:bg-red-500/10 text-xs font-bold transition-colors">
+                      <LogOut className="w-3 h-3" /> Logout
                     </button>
                   </motion.div>
                 )}
               </AnimatePresence>
             </div>
-          ) : (
-            <button onClick={() => navigate("/", { state: { openLogin: true } })} className="flex items-center gap-1.5 bg-white/5 hover:bg-white/10 border border-white/10 px-4 py-1.5 rounded-full text-xs font-bold transition-colors">
-              Login
-            </button>
-          )}
+          ) : <div className="w-8" />}
         </div>
       </div>
 
@@ -517,3 +504,7 @@ export function FeaturesSelectionPage() {
     </div>
   );
 }
+"""
+
+with open('src/app/main/features-selection.tsx', 'w') as f:
+    f.write(new_content)
