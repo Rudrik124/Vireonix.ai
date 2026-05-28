@@ -3430,6 +3430,273 @@ app.post("/api/cinematic-video", async (req, res) => {
   }
 });
 
+// ✅ AUDIO PROCESSING ENDPOINTS
+
+// ✅ Merge audio with video (with volume and trim options)
+app.post("/api/merge-audio", upload.fields([
+  { name: "videoPath", maxCount: 1 },
+  { name: "musicFile", maxCount: 1 },
+]), async (req, res) => {
+  try {
+    const { videoPath, volume = 80, startTime = 0, endTime, muteOriginal = "false" } = req.body;
+    const musicFile = req.files?.musicFile?.[0];
+
+    if (!videoPath || !musicFile) {
+      return res.status(400).json({
+        success: false,
+        error: "Missing videoPath or musicFile",
+      });
+    }
+
+    console.log("🎵 [AUDIO] Merging audio with video", {
+      videoPath,
+      musicFile: musicFile.filename,
+      volume,
+      startTime,
+      endTime,
+      muteOriginal,
+    });
+
+    const musicVolume = Math.max(0, Math.min(100, Number(volume) || 80)) / 100;
+    const shouldMuteOriginal = muteOriginal === "true" || muteOriginal === true;
+
+    // Trim audio if needed
+    let audioPath = musicFile.path;
+    if (startTime || endTime) {
+      const trimmedAudioPath = makeTempFilePath("trimmed-for-merge.mp3");
+      const duration = endTime ? Number(endTime) - Number(startTime) : undefined;
+
+      await new Promise((resolve, reject) => {
+        let cmd = ffmpeg(musicFile.path)
+          .setStartTime(Number(startTime) || 0);
+
+        if (duration) {
+          cmd = cmd.setDuration(duration);
+        }
+
+        cmd
+          .audioFilters([`volume=${musicVolume}`])
+          .output(trimmedAudioPath)
+          .on("end", () => resolve())
+          .on("error", reject)
+          .run();
+      });
+
+      audioPath = trimmedAudioPath;
+    } else if (musicVolume !== 1) {
+      // Just adjust volume if no trimming needed
+      const volumeAdjustedPath = makeTempFilePath("volume-adjusted.mp3");
+      await new Promise((resolve, reject) => {
+        ffmpeg(musicFile.path)
+          .audioFilters([`volume=${musicVolume}`])
+          .output(volumeAdjustedPath)
+          .on("end", () => resolve())
+          .on("error", reject)
+          .run();
+      });
+      audioPath = volumeAdjustedPath;
+    }
+
+    // Merge video and audio
+    const outputPath = makeTempFilePath("merged-video.mp4");
+
+    await new Promise((resolve, reject) => {
+      let cmd = ffmpeg()
+        .input(videoPath)
+        .input(audioPath);
+
+      if (shouldMuteOriginal) {
+        cmd = cmd.outputOptions(["-map", "0:v", "-map", "1:a"]);
+      } else {
+        cmd = cmd.outputOptions(["-filter_complex", "[0:a][1:a]amix=inputs=2:duration=first[a]", "-map", "0:v", "-map", "[a]"]);
+      }
+
+      cmd
+        .outputOptions(["-c:v copy", "-c:a aac"])
+        .output(outputPath)
+        .on("end", () => {
+          console.log("✅ [AUDIO] Audio merged successfully");
+          resolve();
+        })
+        .on("error", reject)
+        .run();
+    });
+
+    // Stream the result
+    res.setHeader("Content-Type", "video/mp4");
+    res.setHeader("Content-Disposition", "attachment; filename=merged-video.mp4");
+
+    const fileStream = fs.createReadStream(outputPath);
+    fileStream.on("end", () => {
+      // Cleanup
+      fs.unlink(outputPath, () => {});
+      fs.unlink(audioPath, () => {});
+    });
+
+    fileStream.pipe(res);
+  } catch (error) {
+    console.error("❌ [AUDIO] Merge error:", error);
+    res.status(500).json({
+      success: false,
+      error: toErrorMessage(error, "Audio merge failed"),
+    });
+  }
+});
+
+// ✅ Process audio (trim and adjust volume)
+app.post("/api/process-audio", upload.single("audioFile"), async (req, res) => {
+  try {
+    const { startTime = 0, endTime, volume = 80, format = "mp3" } = req.body;
+    const audioFile = req.file;
+
+    if (!audioFile) {
+      return res.status(400).json({
+        success: false,
+        error: "No audio file provided",
+      });
+    }
+
+    console.log("🎵 [AUDIO] Processing audio", {
+      startTime,
+      endTime,
+      volume,
+      format,
+    });
+
+    const outputPath = makeTempFilePath(`processed-audio.${format}`);
+    const musicVolume = Math.max(0, Math.min(100, Number(volume) || 80)) / 100;
+    const duration = endTime ? Number(endTime) - Number(startTime) : undefined;
+
+    await new Promise((resolve, reject) => {
+      let cmd = ffmpeg(audioFile.path)
+        .setStartTime(Number(startTime) || 0);
+
+      if (duration) {
+        cmd = cmd.setDuration(duration);
+      }
+
+      cmd
+        .audioFilters([`volume=${musicVolume}`])
+        .audioCodec(format === "wav" ? "pcm_s16le" : "libmp3lame")
+        .output(outputPath)
+        .on("end", () => resolve())
+        .on("error", reject)
+        .run();
+    });
+
+    // Stream the result
+    const mimeType = format === "wav" ? "audio/wav" : "audio/mpeg";
+    res.setHeader("Content-Type", mimeType);
+    res.setHeader("Content-Disposition", `attachment; filename=processed-audio.${format}`);
+
+    const fileStream = fs.createReadStream(outputPath);
+    fileStream.on("end", () => {
+      fs.unlink(outputPath, () => {});
+    });
+
+    fileStream.pipe(res);
+  } catch (error) {
+    console.error("❌ [AUDIO] Process error:", error);
+    res.status(500).json({
+      success: false,
+      error: toErrorMessage(error, "Audio processing failed"),
+    });
+  }
+});
+
+// ✅ Convert audio format
+app.post("/api/convert-audio", upload.single("audioFile"), async (req, res) => {
+  try {
+    const { format = "mp3" } = req.body;
+    const audioFile = req.file;
+
+    if (!audioFile) {
+      return res.status(400).json({
+        success: false,
+        error: "No audio file provided",
+      });
+    }
+
+    console.log("🎵 [AUDIO] Converting audio to", format);
+
+    const outputPath = makeTempFilePath(`converted-audio.${format}`);
+    const codec = format === "wav" ? "pcm_s16le" : format === "aac" ? "aac" : "libmp3lame";
+
+    await new Promise((resolve, reject) => {
+      ffmpeg(audioFile.path)
+        .audioCodec(codec)
+        .output(outputPath)
+        .on("end", () => resolve())
+        .on("error", reject)
+        .run();
+    });
+
+    // Stream the result
+    const mimeTypes = {
+      mp3: "audio/mpeg",
+      wav: "audio/wav",
+      aac: "audio/aac",
+    };
+
+    res.setHeader("Content-Type", mimeTypes[format] || "audio/mpeg");
+    res.setHeader("Content-Disposition", `attachment; filename=converted-audio.${format}`);
+
+    const fileStream = fs.createReadStream(outputPath);
+    fileStream.on("end", () => {
+      fs.unlink(outputPath, () => {});
+    });
+
+    fileStream.pipe(res);
+  } catch (error) {
+    console.error("❌ [AUDIO] Convert error:", error);
+    res.status(500).json({
+      success: false,
+      error: toErrorMessage(error, "Audio conversion failed"),
+    });
+  }
+});
+
+// ✅ GET audio metadata
+app.post("/api/audio-metadata", upload.single("audioFile"), async (req, res) => {
+  try {
+    const audioFile = req.file;
+
+    if (!audioFile) {
+      return res.status(400).json({
+        success: false,
+        error: "No audio file provided",
+      });
+    }
+
+    ffmpeg.ffprobe(audioFile.path, (err, metadata) => {
+      if (err) {
+        return res.status(400).json({
+          success: false,
+          error: "Failed to read audio metadata",
+        });
+      }
+
+      const audioStream = metadata.streams.find((s) => s.codec_type === "audio");
+      const format = metadata.format;
+
+      res.json({
+        success: true,
+        duration: Number(format.duration) || 0,
+        bitrate: audioStream?.bit_rate || 0,
+        sampleRate: audioStream?.sample_rate || 0,
+        channels: audioStream?.channels || 0,
+        codec: audioStream?.codec_name || "unknown",
+      });
+    });
+  } catch (error) {
+    console.error("❌ [AUDIO] Metadata error:", error);
+    res.status(500).json({
+      success: false,
+      error: toErrorMessage(error, "Failed to get audio metadata"),
+    });
+  }
+});
+
 // ✅ START SERVER
 app.listen(5000, () => {
   console.log("SERVER LISTENING");

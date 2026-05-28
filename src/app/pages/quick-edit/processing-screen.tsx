@@ -205,8 +205,49 @@ export function QuickEditProcessingScreen() {
         }
         
         if (data.success && !isCanceled) {
+          let finalVideo = video;
+
+          // Merge music if selected
+          if (editConfig?.selectedMusic) {
+            try {
+              setCurrentStep(4);
+              const musicData = editConfig.selectedMusic;
+              const mergeFormData = new FormData();
+              
+              // Add video file
+              const videoBlob = await fetch(video).then(r => r.blob());
+              mergeFormData.append("videoFile", videoBlob, "video.mp4");
+              
+              // Add music URL or file
+              if (musicData.source === 'device' && musicData.file) {
+                mergeFormData.append("musicFile", musicData.file);
+              } else if (musicData.url) {
+                mergeFormData.append("musicUrl", musicData.url);
+              }
+              
+              // Add audio settings
+              mergeFormData.append("volume", String(musicData.volume || 80));
+              mergeFormData.append("startTime", String(musicData.startTime || 0));
+              mergeFormData.append("endTime", String(musicData.endTime || musicData.duration || 30));
+              mergeFormData.append("muteOriginal", String(musicData.muteOriginal || false));
+
+              const mergeResponse = await fetch(buildApiUrl("/api/merge-audio"), {
+                method: "POST",
+                body: mergeFormData,
+                signal: controller.signal,
+              });
+
+              if (mergeResponse.ok) {
+                const mergeBlob = await mergeResponse.blob();
+                finalVideo = URL.createObjectURL(mergeBlob);
+              }
+            } catch (musicErr) {
+              console.error("Music merge failed, continuing with original video:", musicErr);
+            }
+          }
+
           // Persist quick-edit outputs so result screen still works after refresh/navigation.
-          localStorage.setItem("quickEditGeneratedVideo", video);
+          localStorage.setItem("quickEditGeneratedVideo", finalVideo);
           localStorage.setItem("quickEditConfig", JSON.stringify(editConfig || {}));
           localStorage.setItem(
             "quickEditMetrics",
@@ -224,7 +265,7 @@ export function QuickEditProcessingScreen() {
           setTimeout(() => {
             navigate("/quick-edit/result", { 
               state: { 
-                videoUrl: video, 
+                videoUrl: finalVideo, 
                 config: editConfig,
                 metrics: {
                   editTime: "4.2s",

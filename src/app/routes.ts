@@ -102,33 +102,42 @@ export const router = createBrowserRouter([
       return { Component: ImagesToVideoPreviewScreen };
     }
   },
-  // Quick AI Edit
+  // Quick AI Edit Layout with Music Provider
   {
-    path: "/quick-edit/upload",
+    path: "/quick-edit",
     async lazy() {
-      const { QuickEditUploadScreen } = await import("./pages/quick-edit/upload-screen");
-      return { Component: QuickEditUploadScreen };
-    }
-  },
-  {
-    path: "/quick-edit/style",
-    async lazy() {
-      const { QuickEditStyleScreen } = await import("./pages/quick-edit/style-screen");
-      return { Component: QuickEditStyleScreen };
-    }
-  },
-  {
-    path: "/quick-edit/processing",
-    async lazy() {
-      const { QuickEditProcessingScreen } = await import("./pages/quick-edit/processing-screen");
-      return { Component: QuickEditProcessingScreen };
-    }
-  },
-  {
-    path: "/quick-edit/result",
-    async lazy() {
-      const { QuickEditResultScreen } = await import("./pages/quick-edit/result-screen");
-      return { Component: QuickEditResultScreen };
-    }
+      const { QuickEditLayout } = await import("./pages/quick-edit/layout");
+      return { Component: QuickEditLayout };
+    },
+    children: [
+      {
+        path: "upload",
+        async lazy() {
+          const { QuickEditUploadScreen } = await import("./pages/quick-edit/upload-screen");
+          return { Component: QuickEditUploadScreen };
+        }
+      },
+      {
+        path: "style",
+        async lazy() {
+          const { QuickEditStyleScreen } = await import("./pages/quick-edit/style-screen");
+          return { Component: QuickEditStyleScreen };
+        }
+      },
+      {
+        path: "processing",
+        async lazy() {
+          const { QuickEditProcessingScreen } = await import("./pages/quick-edit/processing-screen");
+          return { Component: QuickEditProcessingScreen };
+        }
+      },
+      {
+        path: "result",
+        async lazy() {
+          const { QuickEditResultScreen } = await import("./pages/quick-edit/result-screen");
+          return { Component: QuickEditResultScreen };
+        }
+      }
+    ]
   }
 ]);

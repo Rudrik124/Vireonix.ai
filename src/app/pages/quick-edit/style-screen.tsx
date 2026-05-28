@@ -64,6 +64,9 @@ import { Textarea } from "../../components/ui/textarea";
 
 import { HistoryDialog, type HistoryItem, saveToHistory } from "../../components/history-dialog";
 import { PremiumModal } from "../../components/premium-modal";
+import { MusicPickerModal } from "../../components/editor/music-picker-modal";
+import { MusicStrip } from "../../components/editor/music-strip";
+import { useMusicContext } from "../../context/music-context";
 import {
   Dialog,
   DialogContent,
@@ -72,6 +75,77 @@ import {
   DialogTrigger
 } from "../../components/ui/dialog";
 import { Label } from "../../components/ui/label";
+
+async function extractAudioFromVideoFile(videoFile: File): Promise<File> {
+  if (!videoFile.type.startsWith("video/")) {
+    throw new Error("Please select a video file to extract audio from.");
+  }
+
+  const objectUrl = URL.createObjectURL(videoFile);
+  const video = document.createElement("video");
+  video.src = objectUrl;
+  video.muted = true;
+  video.playsInline = true;
+  video.preload = "metadata";
+
+  await new Promise<void>((resolve, reject) => {
+    video.onloadedmetadata = () => resolve();
+    video.onerror = () => reject(new Error("Unable to load video file for audio extraction."));
+  });
+
+  const captureStream = (video as any).captureStream || (video as any).mozCaptureStream;
+  if (!captureStream) {
+    URL.revokeObjectURL(objectUrl);
+    throw new Error("Audio extraction requires browser support for video.captureStream().");
+  }
+
+  const stream = captureStream.call(video) as MediaStream;
+  const audioTracks = stream.getAudioTracks();
+  if (audioTracks.length === 0) {
+    URL.revokeObjectURL(objectUrl);
+    throw new Error("No audio track was detected in the selected video.");
+  }
+
+  const supportsWebmOpus = typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported("audio/webm;codecs=opus");
+  const supportsWebm = typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported("audio/webm");
+  const mimeType = supportsWebmOpus ? "audio/webm;codecs=opus" : supportsWebm ? "audio/webm" : "audio/webm";
+
+  const recorder = new MediaRecorder(stream, { mimeType });
+  const chunks: BlobPart[] = [];
+  recorder.ondataavailable = (event) => {
+    if (event.data && event.data.size > 0) {
+      chunks.push(event.data);
+    }
+  };
+
+  const recordedBlobPromise = new Promise<Blob>((resolve, reject) => {
+    recorder.onstop = () => resolve(new Blob(chunks, { type: mimeType }));
+    recorder.onerror = () => reject(new Error("Audio extraction failed while recording."));
+  });
+
+  recorder.start();
+  try {
+    await video.play().catch(() => {});
+    const duration = Number.isFinite(video.duration) && video.duration > 0 ? video.duration : 0;
+    if (duration > 0) {
+      await new Promise<void>((resolve) => {
+        video.onended = () => resolve();
+        setTimeout(resolve, duration * 1000 + 500);
+      });
+    } else {
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+    }
+  } finally {
+    if (recorder.state !== "inactive") {
+      recorder.stop();
+    }
+    URL.revokeObjectURL(objectUrl);
+  }
+
+  const audioBlob = await recordedBlobPromise;
+  const outputName = `${videoFile.name.replace(/\.[^/.]+$/, "")}.webm`;
+  return new File([audioBlob], outputName, { type: audioBlob.type || "audio/webm" });
+}
 
 const editingStyles = [
   {
@@ -606,20 +680,21 @@ const TimelineHub = memo(({
             className="absolute left-20 bottom-3 z-45 flex items-center gap-3 bg-[#0c0d1ebf] border border-white/10 p-2.5 rounded-xl shadow-2xl backdrop-blur-2xl"
           >
             <button
+              disabled={extractingAudio}
               onClick={() => {
                 handleAddAudio('extracted', selectedAudioLane);
-                setShowAudioChoiceLocal(false);
               }}
-              className="flex flex-col items-center gap-1.5 p-2 rounded-lg hover:bg-white/5 text-slate-300 w-20 transition-all border border-transparent hover:border-white/5 active:scale-95"
+              className="flex flex-col items-center gap-1.5 p-2 rounded-lg hover:bg-white/5 text-slate-300 w-20 transition-all border border-transparent hover:border-white/5 active:scale-95 disabled:cursor-wait disabled:opacity-60"
             >
               <Scissors className="w-4 h-4 text-purple-400" />
-              <span className="text-[7.5px] font-black uppercase tracking-wider text-slate-300">Extract</span>
+              <span className="text-[7.5px] font-black uppercase tracking-wider text-slate-300">
+                {extractingAudio ? "Extracting..." : "Extract"}
+              </span>
             </button>
             <div className="w-[1px] h-8 bg-white/10" />
             <button
               onClick={() => {
                 handleAddAudio('direct', selectedAudioLane);
-                setShowAudioChoiceLocal(false);
               }}
               className="flex flex-col items-center gap-1.5 p-2 rounded-lg hover:bg-white/5 text-slate-300 w-20 transition-all border border-transparent hover:border-white/5 active:scale-95"
             >
@@ -632,6 +707,11 @@ const TimelineHub = memo(({
             >
               <X className="w-3 h-3" />
             </button>
+            {audioError && (
+              <div className="absolute left-full ml-3 w-64 rounded-lg bg-red-500/10 border border-red-500/20 p-2 text-[10px] font-bold text-red-200">
+                {audioError}
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
@@ -1781,6 +1861,8 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
   const [watermark, setWatermark] = useState(true);
   const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
   const [premiumFeature, setPremiumFeature] = useState<"watermark" | "4k" | "60fps" | "general">("general");
+  const [isMusicPickerOpen, setIsMusicPickerOpen] = useState(false);
+  const { selectedMusic, clearMusic } = useMusicContext();
 
   const handlePremiumIntercept = (feature: "watermark" | "4k" | "60fps") => {
     setPremiumFeature(feature);
@@ -1805,6 +1887,8 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
   const [audioTracks, setAudioTracks] = useState<Array<{ id: string, name: string, type: 'extracted' | 'direct', file?: File }>>([]);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [showAudioChoice, setShowAudioChoice] = useState(false);
+  const [audioError, setAudioError] = useState<string | null>(null);
+  const [extractingAudio, setExtractingAudio] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
   const [history, setHistory] = useState<Array<string>>([]); // Store as JSON strings for easier comparison
   const [historyIndex, setHistoryIndex] = useState(-1);
@@ -2953,9 +3037,32 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = type === 'extracted' ? 'video/*' : 'audio/*';
-    input.onchange = (e) => {
+    input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
+      if (!file) {
+        setShowAudioChoice(false);
+        return;
+      }
+
+      if (type === 'extracted') {
+        setAudioError(null);
+        setExtractingAudio(true);
+        try {
+          const extractedFile = await extractAudioFromVideoFile(file);
+          setAudioTracks(prev => [...prev, {
+            id: Math.random().toString(36).substr(2, 9),
+            name: extractedFile.name,
+            type,
+            file: extractedFile,
+            trackIndex
+          }]);
+        } catch (error: any) {
+          setAudioError(error?.message || "Failed to extract audio from the selected video.");
+        } finally {
+          setExtractingAudio(false);
+          setShowAudioChoice(false);
+        }
+      } else {
         setAudioTracks(prev => [...prev, {
           id: Math.random().toString(36).substr(2, 9),
           name: file.name,
@@ -2963,8 +3070,8 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
           file,
           trackIndex
         }]);
+        setShowAudioChoice(false);
       }
-      setShowAudioChoice(false);
     };
     input.click();
   };
@@ -3156,6 +3263,17 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
         editorSelections,
         mediaItems: mediaForProcessing,
         audioTracks: audioForProcessing,
+        selectedMusic: selectedMusic ? {
+          id: selectedMusic.id,
+          name: selectedMusic.name,
+          artist: selectedMusic.artist,
+          url: selectedMusic.url,
+          volume: selectedMusic.volume,
+          startTime: selectedMusic.startTime,
+          endTime: selectedMusic.endTime,
+          muteOriginal: selectedMusic.muteOriginal,
+          source: selectedMusic.source,
+        } : null,
       },
     });
   };
@@ -4012,6 +4130,17 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
 
       {/* Global Actions Footer Bar */}
       <footer className="h-16 flex-none border-t border-white/10 bg-[#070814]/80 flex items-center justify-between px-6 z-20 select-none">
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => setIsMusicPickerOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 hover:bg-cyan-500/20 transition-all font-bold text-[9px] uppercase tracking-wider"
+            title="Add background music"
+          >
+            <Music className="w-3.5 h-3.5" />
+            <span>{selectedMusic ? 'Music Added ✓' : 'Add Music'}</span>
+          </button>
+        </div>
+
         <div className="flex items-center">
           <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/5 text-slate-300 hover:bg-white/10 transition-all font-bold text-[9px] uppercase tracking-wider">
             <Smartphone className="w-3.5 h-3.5 text-purple-400" />
@@ -4055,6 +4184,13 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
         open={isPremiumModalOpen}
         onOpenChange={setIsPremiumModalOpen}
         feature={premiumFeature}
+      />
+
+      {/* Music Picker Modal */}
+      <MusicPickerModal
+        isOpen={isMusicPickerOpen}
+        onClose={() => setIsMusicPickerOpen(false)}
+        videoDuration={Math.max(...mediaItems.map(m => m.duration), 10)}
       />
 
       {/* Custom Styles overrides */}

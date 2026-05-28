@@ -1,10 +1,72 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { BrandLogo } from "../../components/brand-logo";
 import TimelineTrack from "../../components/editor/timeline-track";
+import { MusicProvider } from "../../context/music-context";
+import { MusicPickerModal } from "../../components/editor/music-picker-modal";
+import { MusicStrip } from "../../components/editor/music-strip";
+import { ExportModal, ExportOptionsType } from "../../components/editor/export-modal";
+import { Button } from "../../components/ui/button";
+import { Music, Upload, Loader2 } from "lucide-react";
+import { useMusicContext } from "../../context/music-context";
+import { exportVideoWithMusic, downloadVideoBlob } from "../../lib/export-utils";
 
-export function EditorPage() {
+function EditorPageContent() {
+  const [videoDuration, setVideoDuration] = useState(20); // Default 20 seconds
+  const [isMusicPickerOpen, setIsMusicPickerOpen] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportStatus, setExportStatus] = useState<string | null>(null);
+  const { selectedMusic } = useMusicContext();
+  const videoPreviewRef = useRef<HTMLDivElement>(null);
+
+  const handleExport = async (options: ExportOptionsType) => {
+    try {
+      setIsExporting(true);
+      setExportStatus("Preparing export...");
+
+      // Simulate video path (in real app, this comes from the editor)
+      const mockVideoPath = "/tmp/video.mp4";
+
+      setExportStatus("Merging audio with video...");
+
+      const result = await exportVideoWithMusic({
+        videoPath: mockVideoPath,
+        music: options.includeMusic && selectedMusic ? selectedMusic : undefined,
+        videoDuration,
+        format: options.format,
+        quality: options.quality,
+      });
+
+      if (result.success && result.downloadUrl) {
+        setExportStatus("Downloading...");
+
+        // Convert URL to blob and download
+        const response = await fetch(result.downloadUrl);
+        const blob = await response.blob();
+
+        const filename = `vireonix-${Date.now()}.${options.format}`;
+        downloadVideoBlob(blob, filename);
+
+        setExportStatus("Export complete!");
+        setTimeout(() => {
+          setIsExportModalOpen(false);
+          setExportStatus(null);
+        }, 2000);
+      } else {
+        throw new Error(result.error || "Export failed");
+      }
+    } catch (error) {
+      console.error("Export error:", error);
+      setExportStatus(null);
+      throw error;
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-[#0b0d1f] text-white">
+    <MusicProvider>
+      <div className="min-h-screen bg-[#0b0d1f] text-white">
       <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
         <div className="flex items-center gap-3">
           <BrandLogo size={40} />
@@ -93,15 +155,74 @@ export function EditorPage() {
             <div className="text-xs text-white/60">16:9 • 60FPS • H.264</div>
           </div>
 
+          {/* Music Section */}
+          <div className="mb-6 pb-6 border-b border-white/10">
+            <div className="text-sm font-medium mb-3 flex items-center gap-2">
+              <Music className="w-4 h-4 text-cyan-400" />
+              Background Music
+            </div>
+            
+            <Button
+              onClick={() => setIsMusicPickerOpen(true)}
+              className="w-full mb-3 bg-cyan-600 hover:bg-cyan-700 text-white flex items-center justify-center gap-2"
+            >
+              <Music className="w-4 h-4" />
+              Add Music
+            </Button>
+
+            {/* Music Strip */}
+            <MusicStrip videoDuration={videoDuration} />
+          </div>
+
           <div className="mb-4">
             <div className="text-sm font-medium mb-2">Export</div>
-            <button className="w-full py-2 bg-cyan-600 rounded text-sm font-semibold">Quick Export</button>
+            <button 
+              onClick={() => setIsExportModalOpen(true)}
+              disabled={isExporting}
+              className="w-full py-2 bg-cyan-600 hover:bg-cyan-700 disabled:bg-cyan-600/50 rounded text-sm font-semibold flex items-center justify-center gap-2"
+            >
+              {isExporting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  {exportStatus}
+                </>
+              ) : (
+                <>
+                  <Upload className="w-4 h-4" />
+                  Quick Export
+                </>
+              )}
+            </button>
           </div>
 
           <div className="mt-6 text-xs text-white/50">Audio tracks are now part of the Timeline below for editing.</div>
         </aside>
       </div>
+
+      {/* Music Picker Modal */}
+      <MusicPickerModal
+        isOpen={isMusicPickerOpen}
+        onClose={() => setIsMusicPickerOpen(false)}
+        videoDuration={videoDuration}
+      />
+
+      {/* Export Modal */}
+      <ExportModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        videoDuration={videoDuration}
+        onExport={handleExport}
+        isExporting={isExporting}
+      />
     </div>
+  );
+}
+
+export function EditorPage() {
+  return (
+    <MusicProvider>
+      <EditorPageContent />
+    </MusicProvider>
   );
 }
 
