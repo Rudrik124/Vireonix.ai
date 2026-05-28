@@ -3247,7 +3247,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
         editorSelections,
       }
     });
-    navigate("/quick-edit/processing", {
+    navigate(`/quick-edit/processing${location.search}`, {
       state: {
         selectedStyle,
         aspectRatio,
@@ -4086,7 +4086,6 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                     </div>
                   )}
                 </div>
-              )}
 
             </div>
           </aside>

@@ -184,3 +184,15 @@
     line-height: 1.5;
   }
 }
+
+/* Premium Modal Overrides */
+.premium-modal .ant-modal-content {
+  background-color: #130E24 !important;
+  border: 1px solid rgba(168, 85, 247, 0.2) !important;
+  border-radius: 24px !important;
+}
+
+html:not(.dark) .premium-modal .ant-modal-content {
+  background-color: #ffffff !important;
+  border: none !important;
+}

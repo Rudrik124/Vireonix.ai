@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router";
 import { supabase, isSupabaseConfigured } from "../../lib/supabase";
 
 interface LoginModalProps {
@@ -10,6 +11,7 @@ interface LoginModalProps {
 }
 
 export function LoginModal({ isOpen, onClose, customMessage, customTitle }: LoginModalProps) {
+  const navigate = useNavigate();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -156,7 +158,8 @@ export function LoginModal({ isOpen, onClose, customMessage, customTitle }: Logi
           localStorage.setItem("justLoggedIn", "true");
           showMessage("Signed in successfully!", "success");
           setTimeout(() => {
-            handleClose(); // Just close the modal, don't redirect
+            handleClose();
+            navigate('/video-type');
           }, 1500);
         }
       } else {
@@ -224,18 +227,18 @@ export function LoginModal({ isOpen, onClose, customMessage, customTitle }: Logi
               <div className="w-8 h-8 rounded-[9px] bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-sm font-bold">
                 V
               </div>
-              <div className="text-base font-semibold text-gray-900">Vireonix</div>
+              <div className="text-base font-semibold text-gray-900">Veytrix</div>
             </div>
 
             {/* Title */}
             <h1 className={`text-3xl font-bold mb-2 ${mode === "signin" ? "text-black" : "text-gray-900"}`}>
-              {customTitle || (mode === "signin" ? "Sign in to Vireonix" : "Create an account")}
+              {customTitle || (mode === "signin" ? "Sign in to Veytrix" : "Create an account")}
             </h1>
             <p className={`text-base mb-6 ${mode === "signin" ? "text-black" : "text-gray-500"}`}>
               {customMessage ||
                 (mode === "signin"
-                  ? "Sign in to access your Vireonix account."
-                  : "Create your Vireonix account to continue.")}
+                  ? "Sign in to access your Veytrix account."
+                  : "Create your Veytrix account to continue.")}
             </p>
 
             {/* Tabs */}
@@ -351,7 +354,7 @@ export function LoginModal({ isOpen, onClose, customMessage, customTitle }: Logi
                   placeholder="Jane Smith"
                   autoComplete="name"
                   tabIndex={0}
-                  className="w-full h-12 rounded-lg border border-gray-300 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-black/10 px-4 text-sm font-normal transition-all cursor-text"
+                  className="w-full h-12 rounded-lg border border-gray-300 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-black/10 px-4 text-sm font-normal text-black transition-all cursor-text"
                 />
               </motion.div>
 
@@ -371,7 +374,7 @@ export function LoginModal({ isOpen, onClose, customMessage, customTitle }: Logi
                   placeholder="you@company.com"
                   autoComplete="email"
                   tabIndex={0}
-                  className="w-full h-12 rounded-lg border border-gray-300 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-black/10 px-4 text-sm font-normal transition-all cursor-text"
+                  className="w-full h-12 rounded-lg border border-gray-300 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-black/10 px-4 text-sm font-normal text-black transition-all cursor-text"
                 />
               </div>
 
@@ -402,7 +405,7 @@ export function LoginModal({ isOpen, onClose, customMessage, customTitle }: Logi
                     placeholder="Min. 8 characters"
                     autoComplete="current-password"
                     tabIndex={0}
-                    className="w-full h-12 rounded-lg border border-gray-300 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-black/10 px-4 text-sm font-normal transition-all pr-12 cursor-text"
+                    className="w-full h-12 rounded-lg border border-gray-300 focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-black/10 px-4 text-sm font-normal text-black transition-all pr-12 cursor-text"
                   />
                   <button
                     type="button"
@@ -442,7 +445,7 @@ export function LoginModal({ isOpen, onClose, customMessage, customTitle }: Logi
 
               {/* Footnote */}
               <p className="text-xs text-gray-500 text-center mt-4">
-                By continuing, you agree to Vireonix's{" "}
+                By continuing, you agree to Veytrix's{" "}
                 <a href="#" className="text-gray-600 underline hover:text-gray-900">
                   Terms
                 </a>{" "}
@@ -454,7 +457,7 @@ export function LoginModal({ isOpen, onClose, customMessage, customTitle }: Logi
               
               {/* Footer Note */}
               <p className="text-[10px] text-gray-400 text-center mt-3 pt-3 border-t border-gray-200">
-                Secure authentication powered by Vireonix. Your data is always protected.
+                Secure authentication powered by Veytrix. Your data is always protected.
               </p>
             </form>
           </motion.div>

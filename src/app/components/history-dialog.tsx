@@ -49,7 +49,7 @@ export function HistoryDialog({ open, onOpenChange, onSelect }: HistoryDialogPro
 
   useEffect(() => {
     if (open) {
-      const saved = localStorage.getItem('vireonix_history');
+      const saved = localStorage.getItem('veytrix_history');
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
@@ -65,7 +65,7 @@ export function HistoryDialog({ open, onOpenChange, onSelect }: HistoryDialogPro
     e.stopPropagation();
     const newHistory = history.filter(item => item.id !== id);
     setHistory(newHistory);
-    localStorage.setItem('vireonix_history', JSON.stringify(newHistory));
+    localStorage.setItem('veytrix_history', JSON.stringify(newHistory));
   };
 
   const filteredHistory = history.filter(item => {
@@ -225,7 +225,7 @@ export function HistoryDialog({ open, onOpenChange, onSelect }: HistoryDialogPro
 }
 
 export function saveToHistory(item: Omit<HistoryItem, 'id' | 'timestamp'>) {
-  const saved = localStorage.getItem('vireonix_history');
+  const saved = localStorage.getItem('veytrix_history');
   let history: HistoryItem[] = [];
   if (saved) {
     try { history = JSON.parse(saved); } catch (e) {}
@@ -240,5 +240,5 @@ export function saveToHistory(item: Omit<HistoryItem, 'id' | 'timestamp'>) {
   history.unshift(newItem);
   // Keep only last 50 items
   const pruned = history.slice(0, 50);
-  localStorage.setItem('vireonix_history', JSON.stringify(pruned));
+  localStorage.setItem('veytrix_history', JSON.stringify(pruned));
 }

@@ -22,7 +22,7 @@ interface PremiumModalProps {
 const featureContent = {
   watermark: {
     title: "Remove Watermark",
-    description: "Remove the Vireonix branding and present your work with pure professional focus.",
+    description: "Remove the Veytrix branding and present your work with pure professional focus.",
     icon: Layers,
     color: "text-blue-400"
   },

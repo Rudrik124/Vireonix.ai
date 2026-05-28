@@ -114,6 +114,7 @@ console.log("🌐 Global fetch available:", typeof fetch !== "undefined");
 const supabase = createClient(supabaseUrl, supabaseKey);
 console.log("🔗 Supabase bucket configured:", supabaseBucket);
 console.log("🔗 Supabase bucket map:", SUPABASE_BUCKETS);
+const INTERNAL_ROLES = new Set(["super_admin", "admin", "developer", "tester"]);
 
 // Optional: log available buckets at startup for debugging
 supabase.storage
@@ -131,6 +132,131 @@ supabase.storage
   .catch((e) => {
     console.log("⚠️ Error listing buckets:", e?.message || e);
   });
+
+const getBearerToken = (req) => {
+  const header = String(req.headers.authorization || "");
+  if (!header.toLowerCase().startsWith("bearer ")) {
+    return "";
+  }
+
+  return header.slice(7).trim();
+};
+
+const getRequestActor = async (req) => {
+  const token = getBearerToken(req);
+  if (!token) {
+    return { user: null, role: "user", bypassCreditChecks: false };
+  }
+
+  const { data: userData, error: userError } = await supabase.auth.getUser(token);
+  if (userError || !userData?.user) {
+    console.warn("⚠️ [Auth] Unable to resolve request user:", userError?.message || "unknown auth error");
+    return { user: null, role: "user", bypassCreditChecks: false };
+  }
+
+  const { data: profileData, error: profileError } = await supabase
+    .from("app_profiles")
+    .select("role,bypass_credit_checks")
+    .eq("id", userData.user.id)
+    .maybeSingle();
+
+  if (profileError) {
+    console.warn("⚠️ [Auth] Unable to resolve app profile:", profileError.message);
+  }
+
+  return {
+    user: userData.user,
+    role: profileData?.role || "user",
+    bypassCreditChecks: Boolean(profileData?.bypass_credit_checks),
+  };
+};
+
+const normalizeUsageContext = (req, actor) => {
+  const bodyContext =
+    req.body?.usageContext && typeof req.body.usageContext === "object" ? req.body.usageContext : {};
+
+  const requestedPortal = String(req.headers["x-portal"] || bodyContext.portal || "user").toLowerCase();
+  const requestedUsageType = String(req.headers["x-usage-type"] || bodyContext.usageType || "production").toLowerCase();
+  const requestedSkip = req.headers["x-skip-credit-check"] === "true" || bodyContext.skipCreditCheck === true;
+  const internalAccess = INTERNAL_ROLES.has(actor.role);
+
+  const portal = internalAccess && requestedPortal === "internal" ? "internal" : "user";
+  const usageType = internalAccess && requestedUsageType === "test" ? "test" : "production";
+  const walletType = usageType === "test" ? "developer_credits" : "user_credits";
+
+  return {
+    portal,
+    usageType,
+    walletType,
+    skipCreditCheck: actor.bypassCreditChecks || (internalAccess && requestedSkip),
+    actorRole: actor.role,
+  };
+};
+
+const createUsageLog = async ({ req, actor, featureKey, creditsRequested = 0, metadata = {} }) => {
+  const usageContext = normalizeUsageContext(req, actor);
+
+  const { data, error } = await supabase
+    .from("usage_logs")
+    .insert({
+      user_id: actor.user?.id || null,
+      actor_role: usageContext.actorRole,
+      portal: usageContext.portal,
+      usage_type: usageContext.usageType,
+      wallet_type: usageContext.walletType,
+      feature_key: featureKey,
+      credits_requested: creditsRequested,
+      credit_check_bypassed: usageContext.skipCreditCheck,
+      status: "started",
+      metadata,
+    })
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    console.warn("⚠️ [Usage] Failed to create usage log:", error.message);
+    return { usageLogId: null, usageContext };
+  }
+
+  return {
+    usageLogId: data?.id || null,
+    usageContext,
+  };
+};
+
+const finalizeUsageLog = async (usageLogId, status, metadata = {}, creditsCharged = 0) => {
+  if (!usageLogId) {
+    return;
+  }
+
+  const { error } = await supabase
+    .from("usage_logs")
+    .update({
+      status,
+      credits_charged: creditsCharged,
+      metadata,
+    })
+    .eq("id", usageLogId);
+
+  if (error) {
+    console.warn("⚠️ [Usage] Failed to finalize usage log:", error.message);
+  }
+};
+
+const createApiLog = async ({ usageLogId, endpoint, requestPayload = {}, responsePayload = {}, statusCode = 200, latencyMs = null }) => {
+  const { error } = await supabase.from("api_logs").insert({
+    usage_log_id: usageLogId,
+    endpoint,
+    request_payload: requestPayload,
+    response_payload: responsePayload,
+    status_code: statusCode,
+    latency_ms: latencyMs,
+  });
+
+  if (error) {
+    console.warn("⚠️ [Usage] Failed to create API log:", error.message);
+  }
+};
 
 // ✅ INIT JSON2VIDEO API
 const json2VideoApiKey = readEnv("JSON2VIDEO_API_KEY") || "";
@@ -2548,6 +2674,18 @@ app.post("/search-image", async (req, res) => {
 // Accepts JSON with: { prompt, duration, frame }
 app.post("/generate", async (req, res) => {
   const { prompt, duration, frame, effects } = req.body;
+  const requestStartedAt = Date.now();
+  const actor = await getRequestActor(req);
+  const { usageLogId, usageContext } = await createUsageLog({
+    req,
+    actor,
+    featureKey: "video.generate",
+    creditsRequested: Math.max(1, Math.ceil((Number(duration) || 10) / 10)),
+    metadata: {
+      frame: frame || "16:9",
+      provider: String(req?.body?.provider || videoProvider || "json2video").toLowerCase(),
+    },
+  });
 
   try {
     console.log("📍 [API] Video generation request received");
@@ -2560,6 +2698,7 @@ app.post("/generate", async (req, res) => {
     const seconds = Math.max(3, Math.min(180, Number(duration) || 10));
     const effectPromptSnippet = buildEffectPromptSnippet(effects);
     const finalPrompt = [String(prompt || "").trim(), effectPromptSnippet].filter(Boolean).join(" ");
+    console.log("Usage context:", usageContext);
 
     console.log("📝 [API] Generation config: duration=" + seconds + "s, ratio=" + (frame || "16:9"));
     if (effects?.selectedEffect && effects.selectedEffect !== "none") {
@@ -2603,16 +2742,63 @@ app.post("/generate", async (req, res) => {
     }
 
     // 🔥 STEP 3: RETURN RESPONSE
+    await finalizeUsageLog(
+      usageLogId,
+      "completed",
+      {
+        frame: frame || "16:9",
+        provider: requestedProvider,
+        storage,
+        videoUrl,
+      },
+      0,
+    );
+    await createApiLog({
+      usageLogId,
+      endpoint: "/generate",
+      requestPayload: {
+        prompt: String(prompt || "").slice(0, 200),
+        duration: seconds,
+        frame: frame || "16:9",
+        provider: requestedProvider,
+      },
+      responsePayload: {
+        success: true,
+        storage,
+      },
+      statusCode: 200,
+      latencyMs: Date.now() - requestStartedAt,
+    });
     res.json({
       success: true,
       video: videoUrl,
       storage,
+      usageContext,
     });
 
   } catch (error) {
     const errorMessage = toErrorMessage(error, "Video generation failed. Please try again.");
     console.error("❌ [API] Error:", errorMessage);
     
+    await finalizeUsageLog(usageLogId, "failed", {
+      error: errorMessage,
+      frame: frame || "16:9",
+    });
+    await createApiLog({
+      usageLogId,
+      endpoint: "/generate",
+      requestPayload: {
+        prompt: String(prompt || "").slice(0, 200),
+        duration: Number(duration) || 10,
+        frame: frame || "16:9",
+      },
+      responsePayload: {
+        success: false,
+        error: errorMessage,
+      },
+      statusCode: 500,
+      latencyMs: Date.now() - requestStartedAt,
+    });
     res.status(500).json({
       success: false,
       error: errorMessage,

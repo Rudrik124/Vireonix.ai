@@ -45,7 +45,7 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({ className, size = 56 }) =>
   return (
     <motion.img 
       src={logoSrc} 
-      alt="Vireonix.Ai Logo"
+      alt="Veytrix.Ai Logo"
       animate={{
         y: [0, -5, 0],
       }}

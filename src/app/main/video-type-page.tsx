@@ -1,50 +1,77 @@
 import { useNavigate } from "react-router";
-import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { 
   Sparkles, 
   Rocket, 
   MonitorPlay, 
   Zap, 
-  FileVideo, 
-  Gauge,
-  Play,
-  ArrowRight,
+  CheckCircle2, 
+  Cloud,
+  Lock,
+  ChevronRight,
   LogOut,
   User,
-  ChevronDown,
-  Menu
+  Menu,
+  Wand2,
+  Music,
+  ArrowRight,
+  Camera,
+  BrainCircuit,
+  PlayCircle,
+  Activity,
+  Check,
+  Video
 } from "lucide-react";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "../components/ui/button";
 import { LoginModal } from "../components/login-modal";
 import { useAuth } from "../context/auth-context";
 import { SuccessToast } from "../components/success-toast";
 import { BrandLogo } from "../components/brand-logo";
 
-const particles = Array.from({ length: 60 }); 
+const particles = Array.from({ length: 30 }); 
+const AI_MODES = ["Cinematic", "Anime", "Realistic", "Commercial", "Viral Reel"];
 
 export function VideoTypePage() {
   const navigate = useNavigate();
-  const containerRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ["start start", "end start"]
-  });
-
-  const heroY = useTransform(scrollYProgress, [0, 1], [0, 200]);
-  const heroOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
-
   const { isLoggedIn, logout, session } = useAuth();
+  
   const [mounted, setMounted] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [showLoginSuccess, setShowLoginSuccess] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [activeMode, setActiveMode] = useState("Cinematic");
 
+  const [promptText, setPromptText] = useState("");
+  const [promptPhase, setPromptPhase] = useState("typing");
+  const [progressValue, setProgressValue] = useState(0);
+  
   const userName = session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || "User";
+  const fullPrompt = "Generate a cinematic cyberpunk travel reel with neon lights, drone shots and smooth transitions...";
+
+  // Mouse Parallax Tracking
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  const springConfig = { damping: 25, stiffness: 100 };
+  const smoothMouseX = useSpring(mouseX, springConfig);
+  const smoothMouseY = useSpring(mouseY, springConfig);
+  
+  const bgX = useTransform(smoothMouseX, [-1, 1], [-30, 30]);
+  const bgY = useTransform(smoothMouseY, [-1, 1], [-30, 30]);
+  const glowX = useTransform(smoothMouseX, [-1, 1], [-50, 50]);
+  const glowY = useTransform(smoothMouseY, [-1, 1], [-50, 50]);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      mouseX.set((e.clientX / window.innerWidth) * 2 - 1);
+      mouseY.set((e.clientY / window.innerHeight) * 2 - 1);
+    };
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, [mouseX, mouseY]);
 
   useEffect(() => {
     setMounted(true);
-    // Check if user just logged in
     const loginFlag = localStorage.getItem("justLoggedIn");
     if (loginFlag && isLoggedIn) {
       setShowLoginSuccess(true);
@@ -52,287 +79,458 @@ export function VideoTypePage() {
     }
   }, [isLoggedIn]);
 
+  useEffect(() => {
+    let timeout: ReturnType<typeof setTimeout>;
+    
+    const runSequence = () => {
+      setPromptText("");
+      setPromptPhase("typing");
+      setProgressValue(0);
+      
+      let charIndex = 0;
+      const typeInterval = setInterval(() => {
+        if (charIndex <= fullPrompt.length) {
+          setPromptText(fullPrompt.slice(0, charIndex));
+          charIndex++;
+        } else {
+          clearInterval(typeInterval);
+          timeout = setTimeout(() => {
+            setPromptPhase("loading");
+            timeout = setTimeout(() => {
+              setPromptPhase("progress");
+              let currentProgress = 0;
+              const progressInterval = setInterval(() => {
+                currentProgress += Math.floor(Math.random() * 15) + 5;
+                if (currentProgress >= 100) {
+                  currentProgress = 100;
+                  clearInterval(progressInterval);
+                  setProgressValue(100);
+                  setPromptPhase("success");
+                  timeout = setTimeout(runSequence, 4000);
+                } else {
+                  setProgressValue(currentProgress);
+                }
+              }, 300);
+            }, 2000);
+          }, 1000);
+        }
+      }, 50);
+      
+      return () => clearInterval(typeInterval);
+    };
+
+    runSequence();
+    return () => clearTimeout(timeout);
+  }, [fullPrompt]);
+
+  const handleLogout = async () => {
+    await logout();
+    setIsUserMenuOpen(false);
+    setIsLoginOpen(false);
+    navigate("/", { replace: true });
+  };
+
   return (
-    <div ref={containerRef} className="min-h-screen relative overflow-hidden font-sans selection:bg-cyan-500/30 selection:text-white pb-20">
+    <div className="h-screen w-screen overflow-hidden flex flex-col relative bg-gradient-to-b from-[#130E24] to-[#0B0815] font-sans selection:bg-cyan-500/30 selection:text-white">
+      {/* Global CSS to strictly prevent scrolling and add custom animations */}
+      <style>{`
+        html, body { overflow: hidden !important; height: 100vh !important; margin: 0; padding: 0; }
+        @keyframes wave {
+          0%, 100% { transform: scaleY(0.2); }
+          50% { transform: scaleY(1); }
+        }
+        @keyframes blink {
+          0%, 100% { opacity: 1; box-shadow: 0 0 10px rgba(34,197,94,0.6); }
+          50% { opacity: 0.4; box-shadow: 0 0 0px rgba(34,197,94,0); }
+        }
+        .glow-hover:hover {
+          transform: translateY(-4px) scale(1.02) !important;
+          box-shadow: 0 8px 30px rgba(99, 102, 241, 0.4), 0 0 20px rgba(99, 102, 241, 0.3) !important;
+        }
+      `}</style>
       
-      {/* Background with animated gradient */}
-      <motion.div 
-        className="fixed inset-0 z-0"
-        animate={{
-          background: [
-            'linear-gradient(135deg, #0b0d1f 0%, #1a1b2e 30%, #2d3142 60%, #3f4a67 85%, #1a1b2e 100%)',
-            'linear-gradient(135deg, #1a1b2e 0%, #2d3142 30%, #3f4a67 60%, #0b0d1f 85%, #2d3142 100%)',
-            'linear-gradient(135deg, #0b0d1f 0%, #1a1b2e 30%, #2d3142 60%, #3f4a67 85%, #1a1b2e 100%)',
-          ]
-        }}
-        transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-        style={{ backgroundAttachment: 'fixed' }}
-      />
-      
-      {/* Corner Vignettes */}
-      <div 
-        className="fixed inset-0 pointer-events-none z-10"
-        style={{ boxShadow: 'inset 0 0 500px rgba(11,13,31,0.95)' }}
-      />
-
-      {/* Radial Cyan Glow behind title */}
-      <div className="fixed top-[20%] left-1/2 -translate-x-1/2 w-[60%] h-[40%] bg-cyan-500/10 blur-[120px] rounded-full pointer-events-none z-0" />
-
-      {/* Subtle Animated Light Rays */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden mix-blend-screen opacity-20">
-        <motion.div
-           animate={{ opacity: [0.1, 0.25, 0.1], scale: [1, 1.1, 1] }}
-           transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-           className="absolute top-[-20%] left-[-10%] w-[80vw] h-[30vh] bg-gradient-to-r from-transparent via-cyan-500 to-transparent blur-[90px] rotate-[35deg] transform origin-top-left"
+      {/* 1. BACKGROUND ELEMENTS (LAYER 0) */}
+      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+        <div className="absolute inset-0 opacity-[0.02] bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
+        
+        {/* Glowing Blobs with Parallax */}
+        <motion.div 
+          style={{ x: glowX, y: glowY }}
+          animate={{ scale: [1, 1.1, 1] }}
+          transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute top-[10%] left-[20%] w-[40vw] h-[40vh] bg-indigo-600/10 rounded-full blur-[100px]"
         />
-        <motion.div
-           animate={{ opacity: [0.1, 0.2, 0.1], scale: [1, 1.15, 1] }}
-           transition={{ duration: 18, repeat: Infinity, ease: "easeInOut", delay: 2 }}
-           className="absolute bottom-[-20%] right-[-10%] w-[100vw] h-[25vh] bg-gradient-to-r from-transparent via-teal-500 to-transparent blur-[100px] rotate-[-25deg] transform origin-bottom-right"
+        <motion.div 
+          style={{ x: useTransform(smoothMouseX, [-1, 1], [50, -50]), y: useTransform(smoothMouseY, [-1, 1], [50, -50]) }}
+          animate={{ scale: [1, 1.1, 1] }}
+          transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute bottom-[10%] right-[20%] w-[50vw] h-[50vh] bg-cyan-600/10 rounded-full blur-[120px]"
         />
+        
+        {/* Particles with Parallax */}
+        <motion.div style={{ x: bgX, y: bgY }} className="absolute inset-0">
+          {mounted && particles.map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute rounded-full bg-cyan-400/20"
+              style={{
+                width: Math.random() * 3 + 1,
+                height: Math.random() * 3 + 1,
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+              }}
+              animate={{
+                y: [0, -100],
+                opacity: [0, 0.5, 0],
+              }}
+              transition={{
+                duration: Math.random() * 10 + 10,
+                repeat: Infinity,
+                ease: "linear",
+              }}
+            />
+          ))}
+        </motion.div>
       </div>
 
-      {/* Organic Breathing Glow Pulses */}
-      <motion.div 
-        animate={{ opacity: [0.05, 0.12, 0.05], scale: [1, 1.05, 1] }}
-        transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
-        className="fixed top-[15%] left-[20%] w-[50%] h-[50%] bg-cyan-600/20 rounded-full blur-[250px] pointer-events-none z-0 mix-blend-screen" 
-      />
-      <motion.div 
-        animate={{ opacity: [0.05, 0.1, 0.05], scale: [1, 1.08, 1] }}
-        transition={{ duration: 16, repeat: Infinity, ease: "easeInOut", delay: 3 }}
-        className="fixed bottom-[10%] right-[15%] w-[60%] h-[60%] bg-teal-600/20 rounded-full blur-[250px] pointer-events-none z-0 mix-blend-screen" 
-      />
-
-      {/* Floating Cyan Particles - Parallax Effect */}
-      {mounted && (
-        <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 perspective-[1000px]">
-          {particles.map((_, i) => {
-            const isFlare = i % 8 === 0;
-            const size = isFlare ? Math.random() * 40 + 20 : Math.random() * 2 + 1; 
-            const depth = Math.random() * 100 + 50; 
-            
-            return (
-              <motion.div
-                key={i}
-                className="absolute"
-                style={{
-                  width: isFlare ? size : size,
-                  height: isFlare ? 2 : size, 
-                  borderRadius: isFlare ? '100%' : '50%',
-                  backgroundColor: isFlare ? 'rgba(34, 211, 238, 0.15)' : `rgba(165, 243, 252, ${Math.random() * 0.4 + 0.1})`,
-                  filter: isFlare ? 'blur(3px)' : 'blur(0.5px)',
-                  boxShadow: isFlare ? '0 0 20px rgba(34, 211, 238, 0.4)' : 'none',
-                  rotate: isFlare ? Math.random() * 180 : 0
-                }}
-                initial={{
-                  x: Math.random() * window.innerWidth,
-                  y: Math.random() * window.innerHeight,
-                  opacity: 0,
-                  z: depth
-                }}
-                animate={{
-                  y: [null, Math.random() * -150 - 50],
-                  x: [null, (Math.random() - 0.5) * 60],
-                  opacity: isFlare ? [0, 0.5, 0] : [0, 0.8, 0],
-                }}
-                transition={{
-                  duration: Math.random() * 35 + 20, 
-                  repeat: Infinity,
-                  ease: "linear",
-                }}
-              />
-            );
-          })}
-        </div>
-      )}
-
-      {/* Header */}
-      <div className="pt-8 px-6 lg:px-12 flex justify-between items-center max-w-7xl mx-auto relative z-20 w-full mb-16">
-        <motion.div 
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="flex items-center gap-3 group cursor-pointer"
-          onClick={() => window.location.reload()}
-        >
-          <div className="relative">
-            {/* Theme Background Glow */}
-            <div className="absolute inset-0 bg-cyan-500/20 rounded-full blur-xl scale-150 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            
-            <BrandLogo size={56} className="relative z-10" />
-          </div>
-          <span className="text-2xl font-black tracking-tight text-white drop-shadow-[0_0_15px_rgba(34,211,238,0.3)] group-hover:text-cyan-400/80 transition-colors">
-            VIREONIX<span className="text-cyan-400">.AI</span>
+      {/* 2. NAVBAR (Fixed Top, ~10% Height - LAYER 4) */}
+      <header className="h-[10%] min-h-[60px] w-full px-6 flex items-center justify-between z-50 border-b border-white/5 bg-[#130E24]/50 backdrop-blur-md">
+        <div className="flex items-center gap-2 cursor-pointer group" onClick={() => window.location.reload()}>
+          <BrandLogo size={32} className="group-hover:scale-105 transition-transform" />
+          <span className="text-xl font-black tracking-tight text-white drop-shadow-md">
+            VEYTRIX<span className="text-cyan-400">.AI</span>
           </span>
-        </motion.div>
-        <motion.div 
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="flex items-center gap-3"
-        >
-          <button 
-            className="md:hidden p-2 text-white/70 hover:text-white"
-            onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-          >
-            <Menu className="w-6 h-6" />
+        </div>
+        
+        <nav className="hidden md:flex gap-8 text-sm font-semibold text-gray-400">
+          <a href="#" className="hover:text-cyan-400 hover:drop-shadow-[0_0_10px_rgba(34,211,238,0.5)] transition-all">Features</a>
+          <a href="#" className="hover:text-cyan-400 hover:drop-shadow-[0_0_10px_rgba(34,211,238,0.5)] transition-all">Workflow</a>
+          <a href="#" className="hover:text-cyan-400 hover:drop-shadow-[0_0_10px_rgba(34,211,238,0.5)] transition-all">Pricing</a>
+        </nav>
+
+        <div className="flex items-center gap-4">
+          <button className="md:hidden text-white/70 hover:text-white" onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}>
+            <Menu className="w-5 h-5" />
           </button>
           
           <div className="hidden md:flex items-center gap-3">
             {isLoggedIn ? (
               <div className="relative">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                <button
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  className="flex items-center gap-3 bg-white/5 hover:bg-white/10 backdrop-blur-md px-5 py-2.5 rounded-full border border-white/10 transition-all text-white group shadow-xl"
+                  className="flex items-center gap-2 bg-white/5 hover:bg-white/10 px-4 py-2 rounded-full border border-white/10 transition-all text-sm font-bold text-white group"
                 >
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center shadow-lg shadow-cyan-500/20">
-                    <User className="w-4 h-4 text-[#0b0d1f]" />
-                  </div>
-                  <span className="text-sm font-bold tracking-tight">{userName}</span>
-                  <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-300 ${isUserMenuOpen ? 'rotate-180' : ''}`} />
-                </motion.button>
+                  <User className="w-4 h-4 text-cyan-400" />
+                  {userName}
+                </button>
               </div>
             ) : (
-              <button 
-                onClick={() => setIsLoginOpen(true)}
-                className="text-sm font-semibold text-cyan-50 transition-all bg-white/5 hover:bg-white/10 px-7 py-3 rounded-full border border-cyan-500/20 backdrop-blur-xl shadow-[0_4px_30px_rgba(0,0,0,0.1)] hover:shadow-[0_8px_40px_rgba(34,211,238,0.3)] group"
-              >
-                <span className="group-hover:text-cyan-300 transition-colors">Login</span>
-              </button>
+              <>
+                <button onClick={() => setIsLoginOpen(true)} className="text-sm font-bold text-gray-300 hover:text-white transition-colors">
+                  Login
+                </button>
+                <button onClick={() => setIsLoginOpen(true)} className="px-5 py-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 text-sm font-bold text-white transition-all hover:shadow-[0_0_15px_rgba(34,211,238,0.3)]">
+                  Start Free
+                </button>
+              </>
             )}
           </div>
+        </div>
 
-          <AnimatePresence>
-            {isUserMenuOpen && (
-              <motion.div
-                initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                className="absolute right-6 top-24 md:right-0 md:top-auto md:mt-3 w-48 bg-[#0b0d1f]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-[100]"
-              >
-                <div className="p-2">
-                  {!isLoggedIn && (
-                    <button 
-                      onClick={() => {
-                        setIsLoginOpen(true);
-                        setIsUserMenuOpen(false);
-                      }}
-                      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-white hover:bg-white/10 transition-all text-sm font-bold tracking-widest group"
-                    >
-                      <span>Login</span>
-                    </button>
-                  )}
-                  {isLoggedIn && (
-                    <button 
-                      onClick={() => {
-                        logout();
-                        setIsUserMenuOpen(false);
-                      }}
-                      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 transition-all text-sm font-bold uppercase tracking-widest group"
-                    >
-                      <LogOut className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                      <span>Logout</span>
-                    </button>
-                  )}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </motion.div>
-      </div>
+        {/* User Menu Dropdown */}
+        <AnimatePresence>
+          {isUserMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              className="absolute right-6 top-[calc(100%+0.5rem)] w-48 bg-[#0b0d1f]/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden"
+            >
+              <div className="p-1">
+                {!isLoggedIn && (
+                  <button onClick={() => { setIsLoginOpen(true); setIsUserMenuOpen(false); }} className="w-full text-left px-4 py-3 rounded-lg text-white hover:bg-white/10 text-sm font-bold">
+                    Login
+                  </button>
+                )}
+                {isLoggedIn && (
+                  <button onClick={() => void handleLogout()} className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-400 hover:bg-red-500/10 text-sm font-bold uppercase tracking-widest">
+                    <LogOut className="w-4 h-4" /> Logout
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </header>
 
-      <div className="container mx-auto px-6 max-w-7xl relative z-10">
+      {/* 3. MAIN HERO CONTENT (Center, ~75% Height - LAYER 1 & 3) */}
+      <main className="flex-1 flex flex-col items-center justify-center relative z-10 w-full max-w-7xl mx-auto px-6">
         
-        {/* HERO SECTION */}
+        {/* LAYER 2: Cinematic Glow Behind Heading */}
         <motion.div 
-          style={{ y: heroY, opacity: heroOpacity }}
-          className="text-center max-w-5xl mx-auto pt-12 pb-24"
-        >
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.3 }}
-            className="inline-flex items-center gap-2 bg-[#1a1b2e]/60 backdrop-blur-3xl px-6 py-2.5 rounded-full border border-cyan-500/20 mb-8 shadow-[0_4px_30px_rgba(0,0,0,0.2)] hover:bg-[#2d3142]/60 transition-colors cursor-default"
-          >
-            <Sparkles className="w-4 h-4 text-cyan-400" />
-            <span className="text-sm font-semibold text-cyan-100 tracking-wide uppercase font-sans tracking-[0.2em]">Next-Gen Creation</span>
-          </motion.div>
-
-          <h1 className="text-[clamp(3.5rem,10vw,7.5rem)] font-black tracking-tighter mb-8 leading-[1.1] selection:bg-cyan-500/30 relative text-transparent bg-clip-text bg-gradient-to-r from-white via-cyan-100 to-teal-300 drop-shadow-[0_2px_10px_rgba(34,211,238,0.2)]">
-            AI Video Editor
-          </h1>
-
-          <p className="text-xl md:text-2xl text-[#94a3b8] font-medium mb-12 max-w-3xl mx-auto leading-relaxed">
-            Create stunning videos using AI in seconds.
-          </p>
-
-          <motion.button
-            whileHover={{ scale: 1.05, boxShadow: "0 0 80px rgba(34, 211, 238, 0.4)" }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => navigate("/features")}
-            className="relative px-14 py-5 rounded-full bg-gradient-to-r from-cyan-600 via-teal-500 to-cyan-400 text-[#0b0d1f] text-xl font-black shadow-2xl shadow-cyan-500/30 transition-all overflow-hidden group border border-cyan-300/40"
-          >
-            <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 rounded-full" />
-            <span className="relative z-10 flex items-center gap-3 drop-shadow-sm uppercase">
-              Start Creating <Rocket className="w-5 h-5 text-[#0b0d1f]" />
-            </span>
-          </motion.button>
-        </motion.div>
-
-        {/* VIDEO PREVIEW TEXT ONLY */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-          className="text-center mb-24"
-        >
-          <p className="text-gray-400 font-medium italic text-lg lg:text-xl opacity-60">
-            “Watch AI turn prompts into videos”
-          </p>
-        </motion.div>
-
-        {/* TRUST BAR */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-          className="flex flex-wrap justify-center items-center gap-8 md:gap-16 py-8 px-12 rounded-[2rem] bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl max-w-4xl mx-auto mb-32"
-        >
-          {[
-            { icon: MonitorPlay, text: "4K Export" },
-            { icon: Zap, text: "60+ Effects" },
-            { icon: FileVideo, text: "No Watermark" },
-            { icon: Gauge, text: "Lightning Fast" }
-          ].map((item, i) => (
-            <div key={i} className="flex items-center gap-3 group cursor-default">
-              <item.icon className="w-5 h-5 text-cyan-400 group-hover:scale-110 transition-transform duration-300" />
-              <span className="text-sm font-bold text-gray-400 group-hover:text-cyan-100 transition-colors">{item.text}</span>
-            </div>
-          ))}
-        </motion.div>
-      </div>
-
-      <style>{`
-        @keyframes shimmer {
-          100% {
-            transform: translateX(100%);
-          }
-        }
-      `}</style>
-
-      {/* Success Toast */}
-      {showLoginSuccess && (
-        <SuccessToast
-          message="Login successful! Welcome back!"
-          onDismiss={() => setShowLoginSuccess(false)}
+          style={{ x: glowX, y: glowY }}
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[70%] h-[50%] bg-gradient-to-r from-indigo-500/30 to-purple-600/30 blur-[120px] rounded-full pointer-events-none -z-10 mix-blend-screen"
         />
-      )}
 
-      {/* Login Modal */}
+        {/* --- LAYER 3: FLOATING WIDGETS --- */}
+        
+        {/* Mini Window 1: Timeline UI */}
+        <motion.div 
+          animate={{ y: [0, -10, 0] }} transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
+          className="hidden lg:flex flex-col absolute top-[12%] left-[4%] w-48 bg-white/[0.03] backdrop-blur-[12px] border border-white/10 p-3 rounded-xl shadow-xl glow-hover z-30"
+        >
+          <div className="flex justify-between text-[10px] font-bold text-gray-400 mb-1">
+            <span>00:14</span><span>00:48</span>
+          </div>
+          <div className="w-full h-1 bg-black/50 rounded-full overflow-hidden mb-2">
+            <div className="h-full bg-indigo-500 w-[35%] rounded-full" />
+          </div>
+          <div className="flex items-center gap-1.5 text-[10px] font-bold text-pink-400">
+            <Music className="w-3 h-3" /> Beat Sync: Enabled
+          </div>
+        </motion.div>
+
+        {/* Mini Window 2: Camera Motion */}
+        <motion.div 
+          animate={{ y: [0, 8, 0] }} transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+          className="hidden lg:flex flex-col absolute bottom-[25%] left-[6%] w-48 bg-white/[0.03] backdrop-blur-[12px] border border-white/10 p-3 rounded-xl shadow-xl glow-hover z-30"
+        >
+          <div className="flex items-center gap-1.5 text-[10px] font-bold text-cyan-400 mb-2">
+            <Camera className="w-3 h-3" /> Dynamic Camera
+          </div>
+          <div className="w-full h-1 bg-gradient-to-r from-transparent via-cyan-500 to-transparent mb-2 relative">
+            <div className="absolute right-[20%] -top-1 w-3 h-3 rounded-full bg-cyan-400 shadow-[0_0_10px_#22d3ee]" />
+          </div>
+          <div className="text-[10px] text-gray-400 font-semibold tracking-wider text-center">
+            Pan • Zoom • Tilt
+          </div>
+        </motion.div>
+
+        {/* Mini Window 3: Video Preview */}
+        <motion.div 
+          animate={{ y: [0, -12, 0] }} transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+          className="hidden xl:flex flex-col absolute top-[18%] right-[4%] w-56 bg-white/[0.03] backdrop-blur-[12px] border border-white/10 p-2 rounded-xl shadow-xl glow-hover z-30"
+        >
+          <div className="relative w-full h-28 bg-[#0B0815] rounded-lg mb-2 overflow-hidden flex items-center justify-center border border-white/5">
+            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/20 to-purple-500/20" />
+            <PlayCircle className="w-8 h-8 text-white/50" />
+            <div className="absolute bottom-1 left-1 right-1 h-1 bg-black/60 rounded-full overflow-hidden">
+              <div className="h-full bg-cyan-400 w-[67%]" />
+            </div>
+            <div className="absolute top-2 left-2 text-[8px] font-bold bg-black/60 px-1.5 py-0.5 rounded text-white backdrop-blur-md">
+              PREVIEW
+            </div>
+          </div>
+          <div className="flex justify-between items-center text-[9px] font-bold text-gray-400 px-1">
+            <span className="flex items-center gap-1"><MonitorPlay className="w-3 h-3 text-cyan-400" /> 4K</span>
+            <span>60fps</span>
+            <span>Vol.</span>
+          </div>
+        </motion.div>
+
+        {/* Mini Window 4: AI Processing */}
+        <motion.div 
+          animate={{ y: [0, 12, 0] }} transition={{ duration: 4.8, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
+          className="hidden lg:flex flex-col absolute bottom-[28%] right-[6%] w-48 bg-white/[0.03] backdrop-blur-[12px] border border-white/10 p-3 rounded-xl shadow-xl glow-hover z-30"
+        >
+          <div className="flex items-center gap-1.5 text-[10px] font-bold text-purple-400 mb-2">
+            <BrainCircuit className="w-3 h-3" /> AI Engine Active
+          </div>
+          <div className="text-[10px] text-gray-300 font-semibold mb-1">
+            Neural Networks: <span className="text-white">12 Active</span>
+          </div>
+          <div className="text-[9px] text-gray-500 flex items-center gap-1">
+            <Activity className="w-3 h-3 animate-pulse text-indigo-400" /> Processing Frames...
+          </div>
+        </motion.div>
+
+        {/* Recent Activity Cards (Floating below prompt box) */}
+        <div className="hidden md:flex absolute bottom-[12%] left-[25%] flex-col gap-2 z-20">
+          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 2 }} className="bg-white/[0.02] backdrop-blur-md border border-white/5 px-3 py-1.5 rounded-lg flex items-center gap-2 glow-hover shadow-lg">
+            <Check className="w-3 h-3 text-green-400" />
+            <div>
+              <div className="text-[10px] font-bold text-gray-200">Fashion Ad Generated</div>
+              <div className="text-[8px] text-gray-500">2 seconds ago</div>
+            </div>
+          </motion.div>
+        </div>
+        <div className="hidden md:flex absolute bottom-[15%] right-[25%] flex-col gap-2 z-20">
+          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 4 }} className="bg-white/[0.02] backdrop-blur-md border border-white/5 px-3 py-1.5 rounded-lg flex items-center gap-2 glow-hover shadow-lg">
+            <Check className="w-3 h-3 text-green-400" />
+            <div>
+              <div className="text-[10px] font-bold text-gray-200">Travel Reel Exported</div>
+              <div className="text-[8px] text-gray-500">5 seconds ago</div>
+            </div>
+          </motion.div>
+        </div>
+
+
+        {/* --- LAYER 1: CENTER CONTENT --- */}
+        <div className="text-center w-full max-w-4xl mx-auto flex flex-col items-center z-40">
+          
+          {/* AI Modes Toggle */}
+          <div className="flex flex-wrap justify-center gap-2 mb-4">
+            {AI_MODES.map((mode) => (
+              <button
+                key={mode}
+                onClick={() => setActiveMode(mode)}
+                className={`text-[10px] md:text-xs font-bold px-3 py-1.5 rounded-full transition-all duration-200 ${
+                  activeMode === mode
+                    ? 'bg-indigo-500 text-white shadow-[0_0_15px_rgba(99,102,241,0.5)] border border-indigo-400'
+                    : 'bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10 hover:text-indigo-300 hover:shadow-[0_0_10px_rgba(99,102,241,0.3)]'
+                }`}
+              >
+                {mode}
+              </button>
+            ))}
+          </div>
+
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-indigo-500/30 bg-indigo-500/10 text-indigo-300 text-xs font-bold tracking-widest uppercase mb-3 shadow-[0_0_15px_rgba(99,102,241,0.2)] glow-hover">
+            <Sparkles className="w-3 h-3 animate-pulse" /> AI-Powered Video Creation
+          </div>
+          
+          <h1 className="text-[clamp(2.5rem,5vw,4.5rem)] font-black leading-[1.05] tracking-tighter text-white mb-3 drop-shadow-2xl">
+            From Prompt To <br className="hidden md:block" />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400 drop-shadow-[0_0_20px_rgba(34,211,238,0.3)]">Professional Video</span>
+          </h1>
+          
+          <p className="text-xs md:text-base text-gray-400 font-medium mb-6 max-w-2xl drop-shadow-md">
+            Generate cinematic AI videos, animate images, and edit content professionally.
+          </p>
+
+          {/* Interactive Prompt Box */}
+          <div className="w-full max-w-2xl bg-[#130E24]/80 backdrop-blur-xl border border-indigo-500/30 rounded-2xl p-4 md:p-5 shadow-[0_10px_40px_rgba(0,0,0,0.5)] glow-hover transition-all mb-6 text-left relative overflow-hidden">
+            
+            {/* Live Indicator inside prompt box (Top Right) */}
+            <div className="absolute top-4 right-4 flex items-center gap-1.5 bg-black/40 px-2 py-1 rounded border border-white/5">
+              <div className="w-2 h-2 rounded-full bg-green-500 live-dot" />
+              <span className="text-[8px] font-bold tracking-widest text-green-400 uppercase">Live</span>
+            </div>
+
+            <div className="flex items-center gap-2 mb-2">
+              <div className={`w-2 h-2 rounded-full ${promptPhase === 'success' ? 'bg-green-400' : 'bg-indigo-400'} animate-pulse`} />
+              <span className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-indigo-300/70">
+                {promptPhase === 'typing' && "AI Vision Input"}
+                {promptPhase === 'loading' && "Neural Processing..."}
+                {promptPhase === 'progress' && "Generating Cinematic Video..."}
+                {promptPhase === 'success' && "✔ Cinematic Render Complete"}
+              </span>
+            </div>
+            
+            <div className="h-12 md:h-14 flex flex-col justify-center">
+              {promptPhase === 'typing' && (
+                <p className="text-sm md:text-base font-mono text-indigo-100 leading-snug">
+                  {promptText}
+                  <span className="inline-block w-2 h-4 ml-1 bg-indigo-400 animate-pulse align-middle" />
+                </p>
+              )}
+              {promptPhase === 'loading' && (
+                <div className="flex items-center gap-3 text-indigo-200">
+                  <div className="flex gap-1">
+                    <span className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                    <span className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                    <span className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce" />
+                  </div>
+                  <span className="font-semibold text-sm md:text-base">Analyzing Prompt & Style...</span>
+                </div>
+              )}
+              {promptPhase === 'progress' && (
+                <div className="w-full flex items-center gap-4">
+                  <div className="flex-1">
+                    <div className="flex justify-between text-xs font-bold mb-1">
+                      <span className="text-indigo-300">Rendering Assets...</span>
+                      <span className="text-white">{progressValue}%</span>
+                    </div>
+                    <div className="w-full h-1.5 bg-black/50 rounded-full overflow-hidden">
+                      <motion.div 
+                        className="h-full bg-gradient-to-r from-indigo-500 to-cyan-400 rounded-full"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${progressValue}%` }}
+                        transition={{ duration: 0.3 }}
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Audio Waveform Animation */}
+                  <div className="flex items-end gap-[2px] h-6 w-8">
+                    {[1,2,3,4,5].map(i => (
+                      <div 
+                        key={i} 
+                        className="w-1 bg-cyan-400 rounded-t-sm"
+                        style={{
+                          animation: `wave ${0.5 + Math.random() * 0.5}s ease-in-out infinite alternate`,
+                          animationDelay: `${i * 0.1}s`,
+                          transformOrigin: 'bottom'
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+              {promptPhase === 'success' && (
+                <div className="flex items-center gap-2 text-green-400">
+                  <CheckCircle2 className="w-5 h-5 md:w-6 md:h-6" />
+                  <span className="font-bold text-sm md:text-base">Cinematic Render Complete</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* CTA Buttons */}
+          <div className="flex flex-row gap-4 justify-center items-center mb-3">
+            <Button 
+              onClick={() => navigate('/features')} 
+              className="h-10 md:h-12 px-6 md:px-8 rounded-full bg-gradient-to-r from-indigo-600 to-cyan-600 border-0 shadow-[0_0_20px_rgba(99,102,241,0.4)] hover:shadow-[0_0_30px_rgba(99,102,241,0.7)] hover:-translate-y-1 transition-all text-white font-bold text-sm group"
+            >
+              Start Creating <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+            </Button>
+            <Button 
+              className="h-10 md:h-12 px-6 md:px-8 rounded-full bg-white/5 border border-white/20 hover:bg-white/10 hover:border-indigo-400 hover:shadow-[0_0_20px_rgba(99,102,241,0.3)] transition-all text-white font-bold text-sm glow-hover"
+            >
+              Watch Demo
+            </Button>
+          </div>
+
+          {/* Trust Text */}
+          <div className="text-[10px] md:text-xs font-semibold text-gray-500">
+            Trusted by 500K+ creators, editors & agencies
+          </div>
+          
+        </div>
+      </main>
+
+      {/* 4. BOTTOM AREA (Showcase & Feature Strip, ~15% Height) */}
+      <div className="w-full flex flex-col justify-end z-40 relative">
+        
+        {/* Showcase Text */}
+        <div className="flex justify-center items-center gap-2 md:gap-4 mb-3 md:mb-5 text-[9px] md:text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+          <span className="hover:text-white transition-colors cursor-default">Prompt</span>
+          <ArrowRight className="w-3 h-3 text-indigo-500 animate-pulse" />
+          <span className="hover:text-indigo-400 transition-colors cursor-default flex items-center gap-1"><Zap className="w-3 h-3" /> AI</span>
+          <ArrowRight className="w-3 h-3 text-cyan-500 animate-pulse [animation-delay:0.2s]" />
+          <span className="hover:text-cyan-400 transition-colors cursor-default flex items-center gap-1"><MonitorPlay className="w-3 h-3" /> Render</span>
+          <ArrowRight className="w-3 h-3 text-green-500 animate-pulse [animation-delay:0.4s]" />
+          <span className="hover:text-green-400 transition-colors cursor-default flex items-center gap-1"><Rocket className="w-3 h-3" /> Export</span>
+        </div>
+
+        {/* Bottom Feature Strip */}
+        <div className="w-full border-t border-white/10 bg-[#0B0815]/80 backdrop-blur-md flex flex-wrap justify-center md:justify-between items-center px-4 md:px-10 py-3 md:py-4 gap-2 md:gap-4">
+          <div className="flex items-center gap-1.5 text-[9px] md:text-xs font-bold text-gray-300 glow-hover cursor-default px-2 py-1 rounded-full"><Zap className="w-3 h-3 text-indigo-400" /> AI Powered</div>
+          <div className="flex items-center gap-1.5 text-[9px] md:text-xs font-bold text-gray-300 glow-hover cursor-default px-2 py-1 rounded-full"><MonitorPlay className="w-3 h-3 text-cyan-400" /> 4K Export</div>
+          <div className="flex items-center gap-1.5 text-[9px] md:text-xs font-bold text-gray-300 glow-hover cursor-default px-2 py-1 rounded-full"><Rocket className="w-3 h-3 text-blue-400" /> Fast Render</div>
+          <div className="flex items-center gap-1.5 text-[9px] md:text-xs font-bold text-gray-300 glow-hover cursor-default px-2 py-1 rounded-full"><Sparkles className="w-3 h-3 text-pink-400" /> 60+ Effects</div>
+          <div className="flex items-center gap-1.5 text-[9px] md:text-xs font-bold text-gray-300 glow-hover cursor-default px-2 py-1 rounded-full"><Cloud className="w-3 h-3 text-teal-400" /> Cloud</div>
+          <div className="flex items-center gap-1.5 text-[9px] md:text-xs font-bold text-gray-300 glow-hover cursor-default px-2 py-1 rounded-full"><Lock className="w-3 h-3 text-green-400" /> No Watermark</div>
+        </div>
+      </div>
+      
       <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
+      
+      <AnimatePresence>
+        {showLoginSuccess && (
+          <SuccessToast message="Login successful! Welcome back!" onDismiss={() => setShowLoginSuccess(false)} />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

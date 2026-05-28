@@ -8,6 +8,7 @@
     "dev": "vite"
   },
   "dependencies": {
+    "@ant-design/icons": "^6.2.3",
     "@emotion/react": "11.14.0",
     "@emotion/styled": "11.14.1",
     "@fal-ai/client": "^1.9.5",
@@ -41,6 +42,7 @@
     "@radix-ui/react-toggle-group": "1.1.2",
     "@radix-ui/react-tooltip": "1.1.8",
     "@supabase/supabase-js": "^2.100.0",
+    "antd": "^6.4.3",
     "canvas": "^3.2.3",
     "canvas-confetti": "1.9.4",
     "class-variance-authority": "0.7.1",

@@ -4,6 +4,8 @@ import { useLocation, useNavigate } from "react-router";
 import { Film, Wand2 } from "lucide-react";
 import { buildApiUrl } from "../../../lib/api";
 import { buildVideoApiError, parseVideoApiResponse } from "../../../lib/video-response";
+import { usePortalTestingContext } from "../../../shared/portal/testing-context";
+import { buildPortalRequestHeaders } from "../../../lib/request-context";
 
 type ReferenceVideoConfig = {
   prompt: string;
@@ -17,6 +19,7 @@ type ReferenceVideoConfig = {
 export function ReferenceVideoProcessingScreen() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { usageContext } = usePortalTestingContext();
   const state = location.state as ReferenceVideoConfig | undefined;
 
   useEffect(() => {
@@ -55,6 +58,7 @@ export function ReferenceVideoProcessingScreen() {
         const response = await fetch(buildApiUrl("/api/generate-from-media"), {
           method: "POST",
           body: formData,
+          headers: await buildPortalRequestHeaders(usageContext),
         });
 
         const { data, rawBody, video, message } = await parseVideoApiResponse(response);

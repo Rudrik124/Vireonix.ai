@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import {
   ArrowLeft,
   AudioLines,
@@ -65,6 +65,7 @@ const getFrameType = (ratio: string) => {
 
 export function ReferenceVideoSetupScreen() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { isLoggedIn, session, logout } = useAuth();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userName = session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || "User";
@@ -183,11 +184,11 @@ export function ReferenceVideoSetupScreen() {
             animate={{ opacity: 1, x: 0 }}
             className="flex items-center gap-6"
           >
-            <div className="flex items-center gap-3 group cursor-pointer" onClick={() => navigate("/")}>
+            <div className="flex items-center gap-3 group cursor-pointer" onClick={() => navigate("/video-type")}>
               <BrandLogo size={42} className="relative z-10" />
               <div className="flex flex-col">
                 <span className="text-xl font-black tracking-tighter text-white">
-                  VIREONIX<span className="text-cyan-400">.AI</span>
+                  VEYTRIX<span className="text-cyan-400">.AI</span>
                 </span>
                 <span className="text-[10px] font-bold text-cyan-500/60 tracking-[0.3em] uppercase">Studio</span>
               </div>
@@ -224,7 +225,7 @@ export function ReferenceVideoSetupScreen() {
                       initial={{ opacity: 0, y: 10, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      className="absolute right-0 mt-3 w-48 bg-[#0b0d1f]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-[100]"
+                      className="absolute right-0 top-full mt-2 w-48 bg-[#0b0d1f]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-[100]"
                     >
                       <div className="p-2">
                         <button 
@@ -342,7 +343,7 @@ export function ReferenceVideoSetupScreen() {
                         </div>
                         <div>
                           <p className="text-[10px] font-black uppercase tracking-widest text-white">Production Watermark</p>
-                          <p className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">Branded: VIREONIX</p>
+                          <p className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">Branded: VEYTRIX</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
@@ -593,7 +594,7 @@ export function ReferenceVideoSetupScreen() {
                     tool: 'reference-video',
                     config: config
                   });
-                  navigate("/reference-video/processing", { state: config });
+                  navigate(`${"/reference-video/processing"}${location.search}`, { state: config });
                 }}
                 disabled={!canGenerate}
                 className="w-full h-16 text-lg font-black bg-gradient-to-r from-cyan-600 via-teal-500 to-indigo-600 hover:scale-[1.02] active:scale-[0.98] text-white shadow-[0_8px_30px_rgba(34,211,238,0.3)] hover:shadow-[0_12px_40px_rgba(34,211,238,0.5)] transition-all rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed border border-cyan-400/20"
@@ -621,7 +622,7 @@ export function ReferenceVideoSetupScreen() {
           <div className="flex items-center gap-4">
             <div className="h-1 w-1 rounded-full bg-cyan-500/40" />
             <p className="text-[10px] font-extrabold text-[#475569] uppercase tracking-[0.25em]">
-              © 2026 VIREONIX.AI • PROFESSIONAL PRODUCTION ENGINE
+              © 2026 VEYTRIX.AI • PROFESSIONAL PRODUCTION ENGINE
             </p>
           </div>
         </footer>
