@@ -10,7 +10,7 @@ export function TesterTestEnvironmentPage() {
   }
 
   if (!profile) {
-    navigate("/tester/auth");
+    navigate("/");
     return null;
   }
 

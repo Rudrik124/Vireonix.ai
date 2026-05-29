@@ -11,11 +11,9 @@ import { AdminAuthPage } from "../portals/admin/pages/admin-auth-page";
 import { AdminDashboardPage } from "../portals/admin/pages/admin-dashboard-page";
 import { TestingCredentialsPage } from "../portals/admin/pages/testing-credentials-page";
 // Tester Portal
-import { TesterAuthPage } from "../portals/tester/pages/tester-auth-page";
 import { TesterDashboardPage } from "../portals/tester/pages/tester-dashboard-page";
 import { TesterTestEnvironmentPage } from "../portals/tester/pages/tester-test-environment-page";
 // User Portal
-import { UserAuthPage } from "../portals/user/pages/user-auth-page";
 import { UserDashboardPage } from "../portals/user/pages/user-dashboard-page";
 
 const legacyUserRoutes = [
@@ -164,10 +162,6 @@ export const router = createBrowserRouter([
   },
   // User Portal Routes
   {
-    path: "/user/auth",
-    Component: UserAuthPage,
-  },
-  {
     path: "/user/dashboard",
     element: (
       <PortalGate portal="user">
@@ -176,10 +170,6 @@ export const router = createBrowserRouter([
     ),
   },
   // Legacy routes for backward compatibility
-  {
-    path: "/login",
-    Component: UserAuthPage,
-  },
   {
     path: "/app",
     element: (
@@ -284,10 +274,6 @@ export const router = createBrowserRouter([
     ),
   },
   // Tester Portal Routes
-  {
-    path: "/tester/auth",
-    Component: TesterAuthPage,
-  },
   {
     path: "/tester/dashboard",
     element: (

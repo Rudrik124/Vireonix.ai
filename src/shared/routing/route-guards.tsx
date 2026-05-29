@@ -33,8 +33,8 @@ export function PortalGate({ portal, allowedRoles, children }: PortalGateProps) 
     const loginRoutes: Record<PortalId, string> = {
       developer: "/developer/auth",
       admin: "/admin/auth",
-      tester: "/tester/auth",
-      user: "/user/auth",
+      tester: "/",
+      user: "/",
       internal: "/developer/auth",
     };
     const loginRoute = loginRoutes[portal] || "/user/auth";

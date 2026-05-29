@@ -6,7 +6,7 @@ export function AdminAuthPage() {
 
   useEffect(() => {
     // Redirect to user auth for now - admins use user portal to login first
-    navigate("/user/auth", { replace: true });
+    navigate("/", { replace: true });
   }, [navigate]);
 
   return (
