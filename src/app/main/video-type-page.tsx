@@ -127,7 +127,15 @@ export function VideoTypePage() {
     await logout();
     setIsUserMenuOpen(false);
     setIsLoginOpen(false);
-    navigate("/", { replace: true });
+  };
+
+  const handleStartCreating = () => {
+    if (isLoggedIn) {
+      navigate('/features');
+    } else {
+      localStorage.setItem("authRedirectUrl", "/features");
+      setIsLoginOpen(true);
+    }
   };
 
   return (
@@ -479,7 +487,7 @@ export function VideoTypePage() {
           {/* CTA Buttons */}
           <div className="flex flex-row gap-4 justify-center items-center mb-3">
             <Button 
-              onClick={() => navigate('/features')} 
+              onClick={handleStartCreating} 
               className="h-10 md:h-12 px-6 md:px-8 rounded-full bg-gradient-to-r from-indigo-600 to-cyan-600 border-0 shadow-[0_0_20px_rgba(99,102,241,0.4)] hover:shadow-[0_0_30px_rgba(99,102,241,0.7)] hover:-translate-y-1 transition-all text-white font-bold text-sm group"
             >
               Start Creating <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />

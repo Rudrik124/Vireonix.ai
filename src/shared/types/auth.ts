@@ -21,6 +21,8 @@ export interface AppProfile {
   id: string;
   email: string;
   fullName: string;
+  name?: string;
+  timezone?: string;
   role: AppRole;
   portalAccess: PortalId[];
   permissions: string[];

@@ -12,6 +12,7 @@ interface User {
   credits: number;
   videos: number;
   joinDate: string;
+  lastLogin?: string;
 }
 
 export function DeveloperUsersPage() {
@@ -151,7 +152,7 @@ export function DeveloperUsersPage() {
               </div>
               <div>
                 <p className="text-sm text-slate-400">Videos Generated</p>
-                <p className="text-lg font-bold">{selectedUser.videosGenerated}</p>
+                <p className="text-lg font-bold">{selectedUser.videos}</p>
               </div>
             </div>
 
@@ -208,7 +209,7 @@ export function DeveloperUsersPage() {
                       </span>
                     </td>
                     <td className="px-6 py-3 text-sm">{user.credits.toLocaleString()}</td>
-                    <td className="px-6 py-3 text-sm">{user.videosGenerated}</td>
+                    <td className="px-6 py-3 text-sm">{user.videos}</td>
                     <td className="px-6 py-3 text-sm">{user.joinDate}</td>
                     <td className="px-6 py-3 text-sm">
                       <button

@@ -6,6 +6,7 @@ import { useAuth } from "../context/auth-context";
 import { SuccessToast } from "../components/success-toast";
 import { BrandLogo } from "../components/brand-logo";
 import { buildPortalAwarePath, usePortalTestingContext } from "../../shared/portal/testing-context";
+import { LoginModal } from "../components/login-modal";
 
 const features = [
   {
@@ -152,6 +153,7 @@ export function FeaturesSelectionPage() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [hoveredPortal, setHoveredPortal] = useState<string | null>(null);
   const [clickingPortal, setClickingPortal] = useState<string | null>(null);
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
 
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -175,10 +177,15 @@ export function FeaturesSelectionPage() {
   };
 
   const handlePortalClick = (route: string, id: string) => {
-    setClickingPortal(id);
-    setTimeout(() => {
-      navigate(buildPortalAwarePath(route, search));
-    }, 500);
+    if (isLoggedIn) {
+      setClickingPortal(id);
+      setTimeout(() => {
+        navigate(buildPortalAwarePath(route, search));
+      }, 500);
+    } else {
+      localStorage.setItem("authRedirectUrl", buildPortalAwarePath(route, search));
+      setIsLoginOpen(true);
+    }
   };
 
   return (
@@ -242,7 +249,7 @@ export function FeaturesSelectionPage() {
               </AnimatePresence>
             </div>
           ) : (
-            <button onClick={() => navigate("/", { state: { openLogin: true } })} className="flex items-center gap-1.5 bg-white/5 hover:bg-white/10 border border-white/10 px-4 py-1.5 rounded-full text-xs font-bold transition-colors">
+            <button onClick={() => setIsLoginOpen(true)} className="flex items-center gap-1.5 bg-white/5 hover:bg-white/10 border border-white/10 px-4 py-1.5 rounded-full text-xs font-bold transition-colors">
               Login
             </button>
           )}
@@ -514,6 +521,7 @@ export function FeaturesSelectionPage() {
           }
         }
       `}</style>
+      <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
     </div>
   );
 }

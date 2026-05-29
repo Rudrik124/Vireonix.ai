@@ -269,12 +269,15 @@ const TimelineHub = memo(({
   timelineSize,
   setTimelineSize,
   overlayTextStylePreset,
-  overlayTextStylePresetCss,
+  getOverlayTextStylePresetCss,
+  extractingAudio,
+  audioError,
+  recognition,
 }: any) => {
   const timelineScrollRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [showAudioChoiceLocal, setShowAudioChoiceLocal] = useState(false);
+  const [showAudioChoiceLocal, setShowAudioChoice] = useState(false);
   const [selectedAudioLane, setSelectedAudioLane] = useState(0);
 
   const pixelsPerSecond = 20; // 20px represents 1 second on the timeline
@@ -486,7 +489,7 @@ const TimelineHub = memo(({
                     onClick={(e) => {
                       e.stopPropagation();
                       setSelectedAudioLane(idx);
-                      setShowAudioChoiceLocal(true);
+                      setShowAudioChoice(true);
                     }}
                     className="w-4 h-4 rounded-full bg-purple-500/20 border border-purple-500/30 text-purple-300 hover:bg-purple-500 hover:text-[#0b0d1f] hover:border-purple-400 transition-all flex items-center justify-center cursor-pointer shadow-md"
                     title={`Add Audio to ${laneName}`}
@@ -600,12 +603,12 @@ const TimelineHub = memo(({
                           setActivePreviewId(item.id);
                         }}
                         draggable="true"
-                        onDragStart={(e) => {
+                        onDragStart={(e: any) => {
                           e.dataTransfer.setData('clipId', item.id);
                           e.dataTransfer.setData('dragIndex', String(i));
                         }}
                         onDragOver={(e) => e.preventDefault()}
-                        onDrop={(e) => {
+                        onDrop={(e: any) => {
                           e.stopPropagation();
                           e.preventDefault();
                           const draggedId = e.dataTransfer.getData('clipId');
@@ -760,7 +763,7 @@ const TimelineHub = memo(({
                           onClick={(e) => {
                             e.stopPropagation();
                             setSelectedAudioLane(idx);
-                            setShowAudioChoiceLocal(!showAudioChoiceLocal);
+                            setShowAudioChoice(!showAudioChoiceLocal);
                           }}
                           className="w-full h-full flex flex-col items-center justify-center border border-dashed border-purple-500/15 hover:border-purple-500/40 hover:bg-purple-500/[0.02] cursor-pointer rounded-lg transition-all group relative"
                         >
@@ -862,7 +865,7 @@ const TimelineHub = memo(({
               <span className="text-[7.5px] font-black uppercase tracking-wider text-slate-300">Upload</span>
             </button>
             <button 
-              onClick={() => setShowAudioChoiceLocal(false)} 
+              onClick={() => setShowAudioChoice(false)} 
               className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-slate-950 border border-white/10 flex items-center justify-center text-slate-500 hover:text-white transition-colors cursor-pointer"
             >
               <X className="w-3 h-3" />
@@ -958,6 +961,23 @@ const QuickToolsGrid = memo(({ QUICK_TOOLS, activeTool, setActiveTool, copyActiv
 ));
 
 const ToolInspector = memo(({
+  velocitySpeed,
+  setVelocitySpeed,
+  motionBlurAmount,
+  setMotionBlurAmount,
+  shakeStrength,
+  setShakeStrength,
+  flashIntensity,
+  setFlashIntensity,
+  rgbSplitAmount,
+  setRgbSplitAmount,
+  smoothZoomAmount,
+  setSmoothZoomAmount,
+  filmGrainOpacity,
+  setFilmGrainOpacity,
+  overlayTextStylePreset,
+  setOverlayTextStylePreset,
+  getOverlayTextEffectForPreset,
   activeTool,
   setActiveTool,
   selectedFilter,
@@ -2421,7 +2441,12 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
     | 'flash-transition'
     | 'camera-shake-transition'
     | 'match-cut-transition'
-    | 'speed-ramp-transition';
+    | 'speed-ramp-transition'
+    | 'cross-dissolve'
+    | 'slide-left'
+    | 'slide-right'
+    | 'dip-black'
+    | 'dip-white';
 
   const [clipTransitions, setClipTransitions] = useState<Record<string, TransitionType>>({});
   const [transitionOverlay, setTransitionOverlay] = useState<{
@@ -2678,6 +2703,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
     const audioStream = audioTracks.length > 0 ? new MediaStream(audioTracks) : null;
 
     // Temporarily override getUserMedia so SpeechRecognition uses video audio
+    const recognition = new SR();
     const origGUM = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
     let gumRestored = false;
     
@@ -3685,7 +3711,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
     input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) {
-        setShowAudioChoiceLocal(false);
+        setShowAudioChoice(false);
         return;
       }
 
@@ -3705,7 +3731,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
           setAudioError(error?.message || "Failed to extract audio from the selected video.");
         } finally {
           setExtractingAudio(false);
-          setShowAudioChoiceLocal(false);
+          setShowAudioChoice(false);
         }
       } else {
         setAudioTracks(prev => [...prev, {
@@ -3715,7 +3741,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
           file,
           trackIndex
         }]);
-        setShowAudioChoiceLocal(false);
+        setShowAudioChoice(false);
       }
     };
     input.click();
@@ -4069,7 +4095,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                     key={item.id}
                     onClick={() => triggerClipTransition(item.id)}
                     draggable="true"
-                    onDragStart={(e) => {
+                    onDragStart={(e: any) => {
                       e.dataTransfer.setData('clipId', item.id);
                     }}
                     className={`group relative aspect-video rounded-lg border transition-all cursor-pointer overflow-hidden bg-slate-900 ${
@@ -4161,7 +4187,16 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                         </button>
                         <div className="p-3 bg-black/40 rounded-xl border border-white/5 shadow-inner">
                           <ToolInspector
-                            activeTool={activeTool}
+                      velocitySpeed={velocitySpeed} setVelocitySpeed={setVelocitySpeed}
+                      motionBlurAmount={motionBlurAmount} setMotionBlurAmount={setMotionBlurAmount}
+                      shakeStrength={shakeStrength} setShakeStrength={setShakeStrength}
+                      flashIntensity={flashIntensity} setFlashIntensity={setFlashIntensity}
+                      rgbSplitAmount={rgbSplitAmount} setRgbSplitAmount={setRgbSplitAmount}
+                      smoothZoomAmount={smoothZoomAmount} setSmoothZoomAmount={setSmoothZoomAmount}
+                      filmGrainOpacity={filmGrainOpacity} setFilmGrainOpacity={setFilmGrainOpacity}
+                      overlayTextStylePreset={overlayTextStylePreset} setOverlayTextStylePreset={setOverlayTextStylePreset}
+                      getOverlayTextEffectForPreset={getOverlayTextEffectForPreset}
+                      activeTool={activeTool}
                             setActiveTool={setActiveTool}
                             selectedFilter={selectedFilter}
                             setSelectedFilter={setSelectedFilter}
@@ -4412,10 +4447,10 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                         <div
                           className="absolute left-1/2 bottom-10 -translate-x-1/2 px-4 py-2 rounded-2xl text-center text-white pointer-events-none"
                           style={{
-                            ...overlayTextStylePresetCss,
-                            background: overlayTextStylePresetCss.background || 'rgba(15,23,42,0.7)',
-                            border: overlayTextStylePresetCss.border || '1px solid rgba(255,255,255,0.08)',
-                            boxShadow: overlayTextStylePresetCss.boxShadow || '0 16px 40px rgba(0,0,0,0.24)',
+                            ...getOverlayTextStylePresetCss(overlayTextStylePreset),
+                            background: getOverlayTextStylePresetCss(overlayTextStylePreset).background || 'rgba(15,23,42,0.7)',
+                            border: getOverlayTextStylePresetCss(overlayTextStylePreset).border || '1px solid rgba(255,255,255,0.08)',
+                            boxShadow: getOverlayTextStylePresetCss(overlayTextStylePreset).boxShadow || '0 16px 40px rgba(0,0,0,0.24)',
                             transform: `translateX(-50%) translateY(${Math.sin((progress / 100) * Math.PI * 2) * 6}px)`,
                             opacity: 0.95,
                           }}
@@ -4855,7 +4890,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
               timelineSize={timelineSize}
               setTimelineSize={setTimelineSize}
               overlayTextStylePreset={overlayTextStylePreset}
-              overlayTextStylePresetCss={getOverlayTextStylePresetCss(overlayTextStylePreset)}
+              getOverlayTextStylePresetCss={getOverlayTextStylePresetCss(overlayTextStylePreset)}
             />
           </div>
 

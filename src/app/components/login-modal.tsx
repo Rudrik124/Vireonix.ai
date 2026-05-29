@@ -199,7 +199,12 @@ export function LoginModal({ isOpen, onClose, customMessage, customTitle }: Logi
           localStorage.setItem("justLoggedIn", "true");
           
           let nextRoute = '/video-type';
-          if (data.session) {
+          const authRedirectUrl = localStorage.getItem("authRedirectUrl");
+          
+          if (authRedirectUrl) {
+            nextRoute = authRedirectUrl;
+            localStorage.removeItem("authRedirectUrl");
+          } else if (data.session) {
             const profile = await fetchAppProfile(data.session);
             
             if (profile.role === "admin" || profile.role === "super_admin") {

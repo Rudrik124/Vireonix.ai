@@ -126,6 +126,8 @@ export function VideoTimelineEditor() {
         preview,
         trimStart: 0,
         trimEnd: Math.max(0.1, duration),
+        duration: Math.max(0.1, duration),
+        trackIndex: 0,
         transition: 'none' as TransitionType,
       };
     }));
@@ -355,12 +357,12 @@ export function VideoTimelineEditor() {
                               key={clip.id}
                               layout
                               draggable="true"
-                              onDragStart={(event) => {
+                              onDragStart={(event: any) => {
                                 event.dataTransfer.setData('clipId', clip.id);
                                 setDraggingClipId(clip.id);
                               }}
                               onDragEnd={() => setDraggingClipId(null)}
-                              onDrop={(event) => {
+                              onDrop={(event: any) => {
                                 event.preventDefault();
                                 const draggedId = event.dataTransfer.getData('clipId');
                                 if (draggedId && draggedId !== clip.id) {

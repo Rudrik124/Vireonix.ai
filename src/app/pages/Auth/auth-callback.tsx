@@ -41,6 +41,13 @@ export function AuthCallbackPage() {
           return;
         }
 
+        const authRedirectUrl = localStorage.getItem("authRedirectUrl");
+        if (authRedirectUrl) {
+          localStorage.removeItem("authRedirectUrl");
+          navigate(authRedirectUrl, { replace: true });
+          return;
+        }
+
         // First priority: Respect explicit portal intent if they have the role or access
         if (portalIntent === "admin" && (profile.role === "admin" || profile.role === "super_admin" || profile.portalAccess.includes("admin"))) {
           navigate("/admin/dashboard", { replace: true });

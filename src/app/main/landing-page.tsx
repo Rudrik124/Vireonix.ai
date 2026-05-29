@@ -72,6 +72,15 @@ export function LandingPage() {
     }
   }, [location]);
 
+  const handleStartCreating = () => {
+    if (isLoggedIn) {
+      navigate('/video-type');
+    } else {
+      localStorage.setItem("authRedirectUrl", "/video-type");
+      setIsLoginOpen(true);
+    }
+  };
+
   useEffect(() => {
     let timeout: ReturnType<typeof setTimeout>;
     
@@ -276,7 +285,7 @@ export function LandingPage() {
                   Login
                 </button>
               )}
-              <button onClick={() => navigate('/video-type')} className="px-5 py-2.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 text-sm font-bold transition-all hover:shadow-[0_0_20px_rgba(139,92,246,0.3)]">
+              <button onClick={handleStartCreating} className="px-5 py-2.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 text-sm font-bold transition-all hover:shadow-[0_0_20px_rgba(139,92,246,0.3)]">
                 Dashboard
               </button>
             </div>
@@ -378,7 +387,7 @@ export function LandingPage() {
               {/* CTAs */}
               <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
                 <Button 
-                  onClick={() => navigate('/video-type')} 
+                  onClick={handleStartCreating} 
                   type="primary" 
                   size="large" 
                   shape="round" 
