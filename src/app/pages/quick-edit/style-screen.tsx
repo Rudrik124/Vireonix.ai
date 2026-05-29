@@ -242,11 +242,7 @@ const CANVAS_PREVIEW_EFFECTS = [
   'motion-tracking',
 ];
 
-const CANVAS_PREVIEW_FILTERS = [
-  'vintage',
-  'soft-glow',
-  'retro-film',
-];
+const CANVAS_PREVIEW_FILTERS: string[] = [];
 
 const TimelineHub = memo(({
   mediaItems,
@@ -266,11 +262,14 @@ const TimelineHub = memo(({
   handleAddAudio,
   handleAddVideo,
   handleReorderClips,
+  handleDeleteClip,
   getMediaDuration,
   setMediaItems,
   saveToUndo,
   timelineSize,
-  setTimelineSize
+  setTimelineSize,
+  overlayTextStylePreset,
+  overlayTextStylePresetCss,
 }: any) => {
   const timelineScrollRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
@@ -447,18 +446,31 @@ const TimelineHub = memo(({
           
           {/* Video track header */}
           <div className="flex-1 border-b border-white/5 p-2 flex flex-col justify-center min-h-[44px]">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-1">
               <span className="text-[10px] font-black text-slate-300">V1</span>
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleAddVideo();
-                }}
-                className="w-4 h-4 rounded-full bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 hover:bg-cyan-500 hover:text-[#0b0d1f] hover:border-cyan-400 transition-all flex items-center justify-center cursor-pointer shadow-md"
-                title="Add Video/Image"
-              >
-                <Plus className="w-2.5 h-2.5" />
-              </button>
+              <div className="flex items-center gap-1">
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleAddVideo();
+                  }}
+                  className="w-4 h-4 rounded-full bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 hover:bg-cyan-500 hover:text-[#0b0d1f] hover:border-cyan-400 transition-all flex items-center justify-center cursor-pointer shadow-md"
+                  title="Add Video/Image"
+                >
+                  <Plus className="w-2.5 h-2.5" />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (activePreviewId) handleDeleteClip(activePreviewId);
+                  }}
+                  disabled={!activePreviewId}
+                  className="w-4 h-4 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-300 hover:bg-rose-500 hover:text-[#0b0d1f] hover:border-rose-400 transition-all flex items-center justify-center cursor-pointer shadow-md disabled:opacity-30 disabled:cursor-not-allowed"
+                  title="Delete Active Clip"
+                >
+                  <Trash2 className="w-2.5 h-2.5" />
+                </button>
+              </div>
             </div>
             <span className="text-[7px] text-slate-600 font-bold uppercase mt-0.5">Video</span>
           </div>
@@ -522,7 +534,7 @@ const TimelineHub = memo(({
               </div>
             </div>
 
-            <div className="flex-1 flex flex-col relative" onClick={localHandleTimelineClick}>
+            <div className="flex-1 flex flex-col relative space-y-2" onClick={localHandleTimelineClick}>
               
               {/* Playhead (Red line) */}
               <motion.div
@@ -569,15 +581,20 @@ const TimelineHub = memo(({
                 }}
                 className="flex-1 border-b border-white/5 relative flex items-center bg-white/[0.01]"
               >
-                <div ref={trackRef} className="absolute inset-0 flex gap-0 p-0">
+                <div ref={trackRef} className="absolute inset-0 flex gap-1 p-0">
                   {mediaItems.map((item: any, i: number) => {
                     const trim = getTrimRangeForItem(item.id, item.duration);
                     const effectiveDuration = item.type === 'video' ? (trim.end - trim.start) : item.duration;
                     const widthPx = effectiveDuration * pixelsPerSecond;
+                    const trimStartPercent = item.type === 'video' ? (trim.start / item.duration) * 100 : 0;
+                    const trimEndRemovedPercent = item.type === 'video' ? ((item.duration - trim.end) / item.duration) * 100 : 0;
                     const isActive = activePreviewId === item.id;
                     return (
-                      <div
+                      <motion.div
                         key={item.id}
+                        layout
+                        whileHover={{ scale: 1.01 }}
+                        transition={{ type: 'spring', stiffness: 220, damping: 26 }}
                         onClick={(e) => {
                           e.stopPropagation();
                           setActivePreviewId(item.id);
@@ -603,25 +620,72 @@ const TimelineHub = memo(({
                             handleReorderClips(draggedId, i);
                           }
                         }}
-                        style={{ width: `${widthPx}px` }}
-                        className={`h-full relative overflow-hidden rounded-md border flex items-center px-2 cursor-pointer ${
-                          isDragging && dragRef.current?.itemId === item.id ? '' : 'transition-all duration-300'
+                        style={{
+                          width: `${widthPx}px`,
+                          backgroundColor: item.type === 'video' ? '#09101d' : undefined,
+                          backgroundImage: item.type === 'image' && item.preview
+                            ? `linear-gradient(180deg, rgba(15,23,42,0.72), rgba(15,23,42,0.35)), url("${item.preview}")`
+                            : undefined,
+                          backgroundSize: 'cover',
+                          backgroundPosition: 'center',
+                        }}
+                        className={`group h-full relative overflow-hidden rounded-xl border flex items-center px-2 cursor-pointer ${
+                          isDragging && dragRef.current?.itemId === item.id ? '' : 'transition-all duration-300 ease-out'
                         } ${isActive
                           ? 'bg-cyan-500/20 border-cyan-400 shadow-[inset_0_0_10px_rgba(34,211,238,0.2)] text-white'
                           : 'bg-cyan-950/20 border-white/5 hover:border-white/20 text-slate-400'
                           }`}
                       >
-                        {item.type === 'video' ? (
-                          <Video className="w-3.5 h-3.5 mr-1 flex-shrink-0 text-cyan-400/70" />
-                        ) : (
-                          <ImageIcon className="w-3.5 h-3.5 mr-1 flex-shrink-0 text-cyan-400/70" />
+                        {item.type === 'video' && item.preview && (
+                          <video
+                            src={item.preview}
+                            muted
+                            playsInline
+                            loop
+                            autoPlay
+                            preload="metadata"
+                            className="absolute inset-0 w-full h-full object-cover opacity-90"
+                          />
                         )}
-                        <span className="text-[8px] font-black uppercase tracking-wider truncate mr-1">
+                        <div className="absolute inset-0 bg-black/40 pointer-events-none" />
+                        {item.type === 'video' ? (
+                          <Video className="w-3.5 h-3.5 mr-1 flex-shrink-0 text-cyan-200/90 z-10" />
+                        ) : (
+                          <ImageIcon className="w-3.5 h-3.5 mr-1 flex-shrink-0 text-cyan-400/70 z-10" />
+                        )}
+                        <span className="text-[8px] font-black uppercase tracking-wider truncate mr-1 z-10">
                           {item.file ? item.file.name : `Clip ${i + 1}`}
                         </span>
                         <span className="text-[7px] text-slate-500 font-mono ml-auto flex-shrink-0 z-10">
                           {effectiveDuration.toFixed(1)}s
                         </span>
+
+                        {item.type === 'video' && (
+                          <>
+                            <div
+                              className="absolute inset-y-0 left-0 bg-emerald-500/20 pointer-events-none"
+                              style={{ width: `${trimStartPercent}%` }}
+                            />
+                            <div
+                              className="absolute inset-y-0 right-0 bg-rose-500/20 pointer-events-none"
+                              style={{ width: `${trimEndRemovedPercent}%` }}
+                            />
+                            <div className="absolute inset-x-0 top-0 h-px bg-white/20 pointer-events-none" />
+                          </>
+                        )}
+
+                        {isActive && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteClip(item.id);
+                            }}
+                            className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/50 border border-white/10 text-white flex items-center justify-center opacity-100 transition-opacity"
+                            title="Delete this clip"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        )}
 
                         {/* Trimming Handles for Video Clips */}
                         {item.type === 'video' && (
@@ -631,7 +695,7 @@ const TimelineHub = memo(({
                               draggable={false}
                               onMouseDown={(e) => handleMouseDown(e, item.id, 'start', item.duration)}
                               className="absolute left-0 top-0 bottom-0 w-2 bg-cyan-400/90 cursor-ew-resize hover:bg-cyan-300 hover:w-2.5 z-20 flex items-center justify-center border-r border-black/40 shadow-[0_0_8px_rgba(34,211,238,0.4)] transition-all"
-                              title="Trim Start"
+                              title={`Trim Start: ${trim.start.toFixed(2)}s`}
                             >
                               <div className="w-[1px] h-3 bg-black/60 rounded" />
                             </div>
@@ -641,13 +705,13 @@ const TimelineHub = memo(({
                               draggable={false}
                               onMouseDown={(e) => handleMouseDown(e, item.id, 'end', item.duration)}
                               className="absolute right-0 top-0 bottom-0 w-2 bg-cyan-400/90 cursor-ew-resize hover:bg-cyan-300 hover:w-2.5 z-20 flex items-center justify-center border-l border-black/40 shadow-[0_0_8px_rgba(34,211,238,0.4)] transition-all"
-                              title="Trim End"
+                              title={`Trim End: ${trim.end.toFixed(2)}s`}
                             >
                               <div className="w-[1px] h-3 bg-black/60 rounded" />
                             </div>
                           </>
                         )}
-                      </div>
+                      </motion.div>
                     );
                   })}
                   {mediaItems.length === 0 && (
@@ -662,8 +726,8 @@ const TimelineHub = memo(({
               {[0, 1, 2, 3].map((idx) => {
                 const laneAudios = audioTracks.filter((t: any) => (t.trackIndex ?? 0) === idx);
                 return (
-                  <div key={idx} className="flex-1 border-b border-white/5 last:border-b-0 relative flex items-center bg-white/[0.01]">
-                    <div className="absolute inset-0 flex gap-0 p-0">
+                  <div key={idx} className="flex-1 border-b border-white/5 last:border-b-0 relative flex items-center bg-white/[0.01] rounded-2xl overflow-hidden">
+                    <div className="absolute inset-0 flex gap-1 p-0">
                       {laneAudios.map((track: any) => {
                         return (
                           <div
@@ -721,8 +785,8 @@ const TimelineHub = memo(({
               })}
 
               {/* Caption Track Lane */}
-              <div className="flex-1 border-b border-white/5 last:border-b-0 relative flex items-center bg-white/[0.01]">
-                <div className="absolute inset-0 flex gap-0 p-0">
+              <div className="flex-1 border-b border-white/5 last:border-b-0 relative flex items-center bg-white/[0.01] rounded-2xl overflow-hidden">
+                <div className="absolute inset-0 flex gap-1 p-0">
                   {captions.map((caption: any) => {
                     const captionLeft = caption.startTime * pixelsPerSecond;
                     const captionDuration = (caption.endTime - caption.startTime);
@@ -995,16 +1059,19 @@ const ToolInspector = memo(({
               No Filter
             </button>
             {[
-              { id: 'vintage', label: 'Vintage (Old Film)' },
-              { id: 'black-white', label: 'Black and White' },
               { id: 'cinematic', label: 'Cinematic' },
-              { id: 'warm', label: 'Warm' },
-              { id: 'cool', label: 'Cool' },
-              { id: 'sepia', label: 'Sepia' },
-              { id: 'hdr', label: 'HDR' },
-              { id: 'vivid', label: 'Vivid' },
-              { id: 'soft-glow', label: 'Soft Glow' },
-              { id: 'retro-film', label: 'Retro Film (VHS)' },
+              { id: 'moody', label: 'Moody' },
+              { id: 'warm-tone', label: 'Warm Tone' },
+              { id: 'cool-tone', label: 'Cool Tone' },
+              { id: 'vintage', label: 'Vintage' },
+              { id: 'black-white', label: 'Black & White' },
+              { id: 'teal-orange', label: 'Teal & Orange' },
+              { id: 'dreamy-glow', label: 'Dreamy Glow' },
+              { id: 'film-look', label: 'Film Look' },
+              { id: 'vhs', label: 'VHS' },
+              { id: 'soft-skin', label: 'Soft Skin' },
+              { id: 'neon-glow', label: 'Neon Glow' },
+              { id: 'hdr-pop', label: 'HDR Pop' },
             ].map((f) => (
               <button
                 key={f.id}
@@ -1033,13 +1100,16 @@ const ToolInspector = memo(({
             </button>
             {[
               { id: 'fade-in', label: 'Fade In' },
-              { id: 'blur', label: 'Blur' },
-              { id: 'zoom', label: 'Zoom' },
-              { id: 'color-correction', label: 'Color Correction' },
-              { id: 'green-screen', label: 'Green Screen' },
+              { id: 'velocity', label: 'Velocity Edit' },
+              { id: 'motion-blur', label: 'Motion Blur' },
+              { id: 'shake', label: 'Shake' },
+              { id: 'flash-effect', label: 'Flash Transition' },
+              { id: 'rgb-split', label: 'RGB Split / Glitch' },
               { id: 'slow-motion', label: 'Slow Motion' },
+              { id: 'smooth-zoom', label: 'Smooth Zoom' },
+              { id: 'film-grain', label: 'Film Grain' },
+              { id: 'animated-captions', label: 'Animated Captions' },
               { id: 'glitch', label: 'Glitch' },
-              { id: 'transition', label: 'Transition' },
               { id: 'text-animation', label: 'Text Animation' },
               { id: 'motion-tracking', label: 'Motion Tracking' },
             ].map((eff) => (
@@ -1156,6 +1226,147 @@ const ToolInspector = memo(({
             </div>
           )}
 
+          {selectedEffect === 'velocity' && (
+            <div className="mt-2 p-2.5 rounded-lg bg-white/5 border border-white/10 space-y-1.5">
+              <div className="flex items-center justify-between text-[8px] font-bold uppercase tracking-widest text-slate-300">
+                <span>Velocity Ramp</span>
+                <span>{velocitySpeed.toFixed(2)}x</span>
+              </div>
+              <input
+                type="range"
+                min={0.5}
+                max={3}
+                step={0.05}
+                value={velocitySpeed}
+                onChange={(e) => setVelocitySpeed(Number(e.target.value))}
+                className="w-full accent-cyan-400"
+              />
+            </div>
+          )}
+
+          {selectedEffect === 'motion-blur' && (
+            <div className="mt-2 p-2.5 rounded-lg bg-white/5 border border-white/10 space-y-1.5">
+              <div className="flex items-center justify-between text-[8px] font-bold uppercase tracking-widest text-slate-300">
+                <span>Motion Blur</span>
+                <span>{motionBlurAmount.toFixed(0)}px</span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={12}
+                step={1}
+                value={motionBlurAmount}
+                onChange={(e) => setMotionBlurAmount(Number(e.target.value))}
+                className="w-full accent-cyan-400"
+              />
+            </div>
+          )}
+
+          {selectedEffect === 'shake' && (
+            <div className="mt-2 p-2.5 rounded-lg bg-white/5 border border-white/10 space-y-1.5">
+              <div className="flex items-center justify-between text-[8px] font-bold uppercase tracking-widest text-slate-300">
+                <span>Shake Strength</span>
+                <span>{shakeStrength.toFixed(1)}</span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={4}
+                step={0.1}
+                value={shakeStrength}
+                onChange={(e) => setShakeStrength(Number(e.target.value))}
+                className="w-full accent-cyan-400"
+              />
+            </div>
+          )}
+
+          {selectedEffect === 'flash-effect' && (
+            <div className="mt-2 p-2.5 rounded-lg bg-white/5 border border-white/10 space-y-1.5">
+              <div className="flex items-center justify-between text-[8px] font-bold uppercase tracking-widest text-slate-300">
+                <span>Flash Strength</span>
+                <span>{flashIntensity.toFixed(2)}</span>
+              </div>
+              <input
+                type="range"
+                min={0.1}
+                max={1}
+                step={0.05}
+                value={flashIntensity}
+                onChange={(e) => setFlashIntensity(Number(e.target.value))}
+                className="w-full accent-cyan-400"
+              />
+            </div>
+          )}
+
+          {selectedEffect === 'rgb-split' && (
+            <div className="mt-2 p-2.5 rounded-lg bg-white/5 border border-white/10 space-y-1.5">
+              <div className="flex items-center justify-between text-[8px] font-bold uppercase tracking-widest text-slate-300">
+                <span>RGB Split</span>
+                <span>{rgbSplitAmount.toFixed(0)}px</span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={28}
+                step={1}
+                value={rgbSplitAmount}
+                onChange={(e) => setRgbSplitAmount(Number(e.target.value))}
+                className="w-full accent-cyan-400"
+              />
+            </div>
+          )}
+
+          {selectedEffect === 'smooth-zoom' && (
+            <div className="mt-2 p-2.5 rounded-lg bg-white/5 border border-white/10 space-y-1.5">
+              <div className="flex items-center justify-between text-[8px] font-bold uppercase tracking-widest text-slate-300">
+                <span>Smooth Zoom</span>
+                <span>{(smoothZoomAmount * 100).toFixed(0)}%</span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={0.7}
+                step={0.05}
+                value={smoothZoomAmount}
+                onChange={(e) => setSmoothZoomAmount(Number(e.target.value))}
+                className="w-full accent-cyan-400"
+              />
+            </div>
+          )}
+
+          {selectedEffect === 'film-grain' && (
+            <div className="mt-2 p-2.5 rounded-lg bg-white/5 border border-white/10 space-y-1.5">
+              <div className="flex items-center justify-between text-[8px] font-bold uppercase tracking-widest text-slate-300">
+                <span>Grain Opacity</span>
+                <span>{filmGrainOpacity.toFixed(2)}</span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.05}
+                value={filmGrainOpacity}
+                onChange={(e) => setFilmGrainOpacity(Number(e.target.value))}
+                className="w-full accent-cyan-400"
+              />
+            </div>
+          )}
+
+          {selectedEffect === 'animated-captions' && (
+            <div className="mt-2 p-2.5 rounded-lg bg-white/5 border border-white/10 space-y-1.5">
+              <label className="text-[8px] font-bold uppercase tracking-widest text-slate-300">Animated Caption</label>
+              <input
+                value={animatedText}
+                onChange={(e) => {
+                  setAnimatedText(e.target.value);
+                  setOverlayText(e.target.value);
+                }}
+                placeholder="Type caption"
+                className="w-full px-2.5 py-1.5 rounded bg-black/30 border border-white/10 text-white text-xs focus:outline-none"
+              />
+            </div>
+          )}
+
           {selectedEffect === 'text-animation' && (
             <div className="mt-2 p-2.5 rounded-lg bg-white/5 border border-white/10 space-y-1.5">
               <label className="text-[8px] font-bold uppercase tracking-widest text-slate-300">Overlay Text</label>
@@ -1186,16 +1397,18 @@ const ToolInspector = memo(({
           </div>
           <div className="space-y-1.5 max-h-48 overflow-y-auto custom-scrollbar pr-1">
             {[
-              { id: 'cross-dissolve', label: 'Cross Dissolve' },
-              { id: 'slide-left', label: 'Slide Left' },
-              { id: 'slide-right', label: 'Slide Right' },
-              { id: 'dip-black', label: 'Dip to Black' },
-              { id: 'dip-white', label: 'Dip to White' },
+              { id: 'fade-transition', label: 'Fade Transition' },
               { id: 'zoom-transition', label: 'Zoom Transition' },
               { id: 'blur-transition', label: 'Blur Transition' },
+              { id: 'swipe-transition', label: 'Swipe Transition' },
               { id: 'spin-transition', label: 'Spin Transition' },
+              { id: 'whip-pan-transition', label: 'Whip Pan Transition' },
               { id: 'glitch-transition', label: 'Glitch Transition' },
+              { id: 'mask-transition', label: 'Mask Transition' },
               { id: 'flash-transition', label: 'Flash Transition' },
+              { id: 'camera-shake-transition', label: 'Camera Shake Transition' },
+              { id: 'match-cut-transition', label: 'Match Cut Transition' },
+              { id: 'speed-ramp-transition', label: 'Speed Ramp Transition' },
             ].map((tr) => (
               <button
                 key={tr.id}
@@ -1547,6 +1760,39 @@ const ToolInspector = memo(({
                     style={{ fontFamily: font.family }}
                   >
                     {font.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 block mb-1">Text Style</label>
+              <div className="grid grid-cols-2 gap-1 max-h-40 overflow-y-auto custom-scrollbar pr-0.5">
+                {[
+                  { id: 'cinematic-title', label: 'Cinematic Title' },
+                  { id: 'animated-captions', label: 'Animated Captions' },
+                  { id: 'kinetic-typography', label: 'Kinetic Typography' },
+                  { id: 'neon-glow-text', label: 'Neon Glow Text' },
+                  { id: 'glitch-text', label: 'Glitch Text' },
+                  { id: 'typewriter-text', label: 'Typewriter Text' },
+                  { id: 'bold-hype-text', label: 'Bold Hype Text' },
+                  { id: 'lyrics-text', label: 'Lyrics Text' },
+                  { id: 'minimal-clean-text', label: 'Minimal Clean Text' },
+                  { id: '3d-text', label: '3D Text' },
+                  { id: 'subtitle-style-text', label: 'Subtitle Style Text' },
+                  { id: 'motion-tracking-text', label: 'Motion Tracking Text' },
+                ].map((style) => (
+                  <button
+                    key={style.id}
+                    onClick={() => {
+                      setOverlayTextStylePreset(style.id);
+                      setSelectedEffect(getOverlayTextEffectForPreset(style.id));
+                      if (style.id === 'animated-captions') {
+                        setAnimatedText(overlayText);
+                      }
+                    }}
+                    className={`px-2 py-2 rounded-lg text-left text-[8px] font-bold uppercase tracking-wider transition-colors ${overlayTextStylePreset === style.id ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10'}`}
+                  >
+                    {style.label}
                   </button>
                 ))}
               </div>
@@ -1983,16 +2229,19 @@ const ToolInspector = memo(({
 export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
     type FilterType =
       | 'none'
+      | 'cinematic'
+      | 'moody'
+      | 'warm-tone'
+      | 'cool-tone'
       | 'vintage'
       | 'black-white'
-      | 'cinematic'
-      | 'warm'
-      | 'cool'
-      | 'sepia'
-      | 'hdr'
-      | 'vivid'
-      | 'soft-glow'
-      | 'retro-film';
+      | 'teal-orange'
+      | 'dreamy-glow'
+      | 'film-look'
+      | 'vhs'
+      | 'soft-skin'
+      | 'neon-glow'
+      | 'hdr-pop';
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -2142,6 +2391,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
   const [overlayFontId, setOverlayFontId] = useState('serif');
   const [overlayFontSize, setOverlayFontSize] = useState(48);
   const [overlayColor, setOverlayColor] = useState('#FFFFFF');
+  const [overlayTextStylePreset, setOverlayTextStylePreset] = useState<string | null>(null);
   const [overlayPosX, setOverlayPosX] = useState(50);
   const [overlayPosY, setOverlayPosY] = useState(50);
   const [speedValue, setSpeedValue] = useState(1);
@@ -2160,16 +2410,18 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
 
   type TransitionType =
     | 'none'
-    | 'cross-dissolve'
-    | 'slide-left'
-    | 'slide-right'
-    | 'dip-black'
-    | 'dip-white'
+    | 'fade-transition'
     | 'zoom-transition'
     | 'blur-transition'
+    | 'swipe-transition'
     | 'spin-transition'
+    | 'whip-pan-transition'
     | 'glitch-transition'
-    | 'flash-transition';
+    | 'mask-transition'
+    | 'flash-transition'
+    | 'camera-shake-transition'
+    | 'match-cut-transition'
+    | 'speed-ramp-transition';
 
   const [clipTransitions, setClipTransitions] = useState<Record<string, TransitionType>>({});
   const [transitionOverlay, setTransitionOverlay] = useState<{
@@ -2180,9 +2432,9 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
     durationMs: number;
   } | null>(null);
   const [transitionProgress, setTransitionProgress] = useState(0);
-  const [selectedEffect, setSelectedEffect] = useState<'none' | 'fade-in' | 'blur' | 'zoom' | 'color-correction' | 'vintage' | 'black-white' | 'cinematic' | 'warm' | 'cool' | 'sepia' | 'hdr' | 'vivid' | 'soft-glow' | 'retro-film' | 'green-screen' | 'slow-motion' | 'glitch' | 'transition' | 'slide-left' | 'slide-right' | 'text-animation' | 'motion-tracking'>('none');
   const [selectedFilter, setSelectedFilter] = useState<FilterType>('none');
   const [blurAmount, setBlurAmount] = useState(10);
+  const [selectedEffect, setSelectedEffect] = useState<'none' | 'fade-in' | 'blur' | 'zoom' | 'color-correction' | 'vintage' | 'black-white' | 'cinematic' | 'warm' | 'cool' | 'sepia' | 'hdr' | 'vivid' | 'soft-glow' | 'retro-film' | 'green-screen' | 'slow-motion' | 'glitch' | 'slide-left' | 'slide-right' | 'text-animation' | 'motion-tracking' | 'velocity' | 'motion-blur' | 'shake' | 'flash-effect' | 'rgb-split' | 'smooth-zoom' | 'film-grain' | 'animated-captions'>('none');
   const [previewOpacity, setPreviewOpacity] = useState(1);
   const [previewZoom, setPreviewZoom] = useState(1);
   const [brightness, setBrightness] = useState(1);
@@ -2190,6 +2442,13 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
   const [saturation, setSaturation] = useState(1);
   const [slowMotionSpeed, setSlowMotionSpeed] = useState(0.25);
   const [glitchIntensity, setGlitchIntensity] = useState(1);
+  const [velocitySpeed, setVelocitySpeed] = useState(1.5);
+  const [motionBlurAmount, setMotionBlurAmount] = useState(3);
+  const [shakeStrength, setShakeStrength] = useState(1.5);
+  const [flashIntensity, setFlashIntensity] = useState(0.75);
+  const [rgbSplitAmount, setRgbSplitAmount] = useState(12);
+  const [smoothZoomAmount, setSmoothZoomAmount] = useState(0.35);
+  const [filmGrainOpacity, setFilmGrainOpacity] = useState(0.4);
   const [animatedText, setAnimatedText] = useState('');
 
   // --- Caption state ---
@@ -2210,6 +2469,162 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
     posY: 85,
   });
   const [captionStylePreset, setCaptionStylePreset] = useState<string | null>(null);
+  const getOverlayTextStylePresetCss = useCallback((preset: string | null) => {
+    const baseStyle: any = {
+      fontFamily: textFontOptions.find((f) => f.id === overlayFontId)?.family || textFontOptions[0].family,
+      fontSize: `${overlayFontSize}px`,
+      color: overlayColor,
+      fontWeight: 700,
+      letterSpacing: 'normal',
+      textTransform: 'none',
+      textShadow: '0 4px 14px rgba(0,0,0,0.75)',
+      background: 'transparent',
+      padding: undefined,
+      borderRadius: undefined,
+      border: undefined,
+      lineHeight: 1.05,
+      whiteSpace: 'pre-wrap',
+    };
+
+    switch (preset) {
+      case 'cinematic-title':
+        return {
+          ...baseStyle,
+          fontSize: `${Math.max(overlayFontSize, 60)}px`,
+          color: '#F8F3E8',
+          textTransform: 'uppercase',
+          letterSpacing: '0.15em',
+          textShadow: '0 20px 48px rgba(0,0,0,0.55)',
+          background: 'rgba(0,0,0,0.15)',
+          padding: '6px 12px',
+          borderRadius: '18px',
+        };
+      case 'animated-captions':
+        return {
+          ...baseStyle,
+          fontSize: `${Math.max(overlayFontSize, 42)}px`,
+          textShadow: '0 8px 20px rgba(0,0,0,0.45)',
+          background: 'rgba(15,23,42,0.7)',
+          padding: '10px 16px',
+          borderRadius: '24px',
+          letterSpacing: '0.04em',
+        };
+      case 'kinetic-typography':
+        return {
+          ...baseStyle,
+          fontSize: `${Math.max(overlayFontSize, 54)}px`,
+          fontWeight: 900,
+          letterSpacing: '0.14em',
+          textTransform: 'uppercase',
+          textShadow: '0 10px 34px rgba(0,0,0,0.35)',
+          background: 'rgba(255,255,255,0.04)',
+          padding: '8px 14px',
+          borderRadius: '14px',
+        };
+      case 'neon-glow-text':
+        return {
+          ...baseStyle,
+          color: '#7CFC00',
+          textShadow: '0 0 12px rgba(124,252,0,0.8), 0 0 28px rgba(124,252,0,0.4), 0 0 48px rgba(124,252,0,0.2)',
+          fontWeight: 800,
+        };
+      case 'glitch-text':
+        return {
+          ...baseStyle,
+          color: '#FFFFFF',
+          letterSpacing: '0.06em',
+          textShadow: '0 0 4px rgba(255,0,120,0.8), 0 0 8px rgba(0,220,255,0.65)',
+          fontWeight: 900,
+          background: 'rgba(0,0,0,0.2)',
+          padding: '8px 12px',
+          borderRadius: '12px',
+        };
+      case 'typewriter-text':
+        return {
+          ...baseStyle,
+          fontFamily: 'monospace, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+          letterSpacing: '0.12em',
+          color: '#E2E8F0',
+          background: 'rgba(3,7,18,0.85)',
+          border: '1px solid rgba(255,255,255,0.12)',
+          padding: '10px 16px',
+          borderRadius: '10px',
+          textShadow: '0 3px 12px rgba(0,0,0,0.45)',
+        };
+      case 'bold-hype-text':
+        return {
+          ...baseStyle,
+          color: '#FFD166',
+          fontWeight: 900,
+          letterSpacing: '0.18em',
+          textTransform: 'uppercase',
+          textShadow: '0 0 20px rgba(255,209,102,0.65)',
+          background: 'rgba(20,20,30,0.55)',
+          padding: '8px 14px',
+          borderRadius: '18px',
+        };
+      case 'lyrics-text':
+        return {
+          ...baseStyle,
+          fontSize: `${Math.max(overlayFontSize, 36)}px`,
+          color: '#F8FAFC',
+          fontStyle: 'italic',
+          letterSpacing: '0.04em',
+          textShadow: '0 18px 36px rgba(0,0,0,0.3)',
+          lineHeight: 1.2,
+        };
+      case 'minimal-clean-text':
+        return {
+          ...baseStyle,
+          color: '#FFFFFF',
+          fontWeight: 600,
+          letterSpacing: '0.04em',
+          textShadow: 'none',
+          background: 'rgba(255,255,255,0.08)',
+          padding: '6px 10px',
+          borderRadius: '10px',
+        };
+      case '3d-text':
+        return {
+          ...baseStyle,
+          color: '#F8FAFC',
+          textShadow: '2px 2px 0 rgba(15,23,42,0.95), 6px 6px 16px rgba(0,0,0,0.35)',
+          letterSpacing: '0.05em',
+          fontWeight: 900,
+        };
+      case 'subtitle-style-text':
+        return {
+          ...baseStyle,
+          fontSize: `${Math.max(overlayFontSize * 0.75, 24)}px`,
+          letterSpacing: '0.04em',
+          color: '#FFFFFF',
+          background: 'rgba(0,0,0,0.78)',
+          padding: '8px 14px',
+          borderRadius: '12px',
+          textTransform: 'none',
+          lineHeight: 1.2,
+        };
+      case 'motion-tracking-text':
+        return {
+          ...baseStyle,
+          color: '#FFFFFF',
+          letterSpacing: '0.16em',
+          textShadow: '0 14px 28px rgba(0,0,0,0.35)',
+          background: 'rgba(0,0,0,0.24)',
+          padding: '10px 16px',
+          borderRadius: '999px',
+          fontWeight: 800,
+        };
+      default:
+        return baseStyle;
+    }
+  }, [overlayFontId, overlayFontSize, overlayColor]);
+
+  const getOverlayTextEffectForPreset = useCallback((preset: string | null) => {
+    if (preset === 'animated-captions') return 'text-animation';
+    if (preset === 'motion-tracking-text') return 'motion-tracking';
+    return 'none';
+  }, []);
   const [isCaptionPlacementMode, setIsCaptionPlacementMode] = useState(false);
   const [isAutoCapturing, setIsAutoCapturing] = useState(false);
   const [autoCaptionStatus, setAutoCaptionStatus] = useState('');
@@ -2217,6 +2632,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
   // --- Read-line state ---
   const [showReadLine, setShowReadLine] = useState(false);
   const [readLineDirection, setReadLineDirection] = useState<'horizontal' | 'vertical'>('horizontal');
+  const [readLinePosition, setReadLinePosition] = useState<number>(0);
 
   // --- Auto-caption: stopAutoCaptionRef lets us stop capture from outside the closure ---
   const stopAutoCaptionRef = useRef<(() => void) | null>(null);
@@ -2658,18 +3074,36 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
       accumulated += itemEffectiveDuration;
     }
     setProgress(pos);
+    setReadLinePosition(pos);
   }, [mediaItems, getEffectiveDurationForItem, getTotalEffectiveDuration, triggerClipTransition, getTrimRangeForItem]);
+
+  const moveReadLine = (deltaSeconds: number) => {
+    const totalDuration = getTotalEffectiveDuration();
+    if (totalDuration === 0) return;
+    const currentTime = (progress / 100) * totalDuration;
+    const nextTime = Math.max(0, Math.min(totalDuration, currentTime + deltaSeconds));
+    handleTimelineClick(nextTime);
+    const nextPos = (nextTime / totalDuration) * 100;
+    setReadLinePosition(nextPos);
+    setProgress(nextPos);
+  };
+
+  useEffect(() => {
+    if (showReadLine) {
+      setReadLinePosition(progress);
+    }
+  }, [showReadLine, progress]);
 
   // Sync background audio with main playback
   useEffect(() => {
-    if (audioRef.current && audioTracks.length > 0) {
+    if (audioRef.current && audioUrl) {
       if (isPlaying) {
         audioRef.current.play().catch(e => console.log("Audio play blocked", e));
       } else {
         audioRef.current.pause();
       }
     }
-  }, [isPlaying, audioTracks.length]);
+  }, [isPlaying, audioTracks.length, audioUrl]);
 
   useEffect(() => {
     if (audioRef.current) {
@@ -2718,11 +3152,13 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
 
   useEffect(() => {
     if (!videoRef.current) return;
-    const effectSpeed = selectedEffect === 'slow-motion' ? slowMotionSpeed : 1;
+    let effectSpeed = 1;
+    if (selectedEffect === 'slow-motion') effectSpeed = slowMotionSpeed;
+    if (selectedEffect === 'velocity') effectSpeed = velocitySpeed;
     const manualSpeed = Math.abs(speedValue - 1) > 0.001 ? speedValue : effectSpeed;
     const resolvedSpeed = Math.max(0.1, Math.min(3, manualSpeed));
     videoRef.current.playbackRate = resolvedSpeed;
-  }, [selectedEffect, slowMotionSpeed, speedValue, activePreviewId]);
+  }, [selectedEffect, slowMotionSpeed, velocitySpeed, speedValue, activePreviewId]);
 
   useEffect(() => {
     const activeItem = mediaItems.find((i) => i.id === activePreviewId);
@@ -3040,6 +3476,13 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
   const getPreviewCssFilter = () => {
     if (selectedEffect === 'blur') return `blur(${blurAmount}px)`;
     if (selectedEffect === 'color-correction') return `brightness(${brightness}) contrast(${contrast}) saturate(${saturation})`;
+    if (selectedEffect === 'motion-blur') return `blur(${motionBlurAmount}px) brightness(1.05)`;
+    if (selectedEffect === 'rgb-split') return `contrast(1.2) saturate(1.3)`;
+    if (selectedEffect === 'film-grain') return 'contrast(1.05) saturate(1.1)';
+    if (selectedEffect === 'flash-effect') return 'brightness(1.4) contrast(1.15)';
+    if (selectedEffect === 'smooth-zoom') return 'contrast(1.1)';
+    if (selectedEffect === 'velocity') return 'saturate(1.1)';
+    if (selectedEffect === 'animated-captions') return 'contrast(1.05)';
     return 'none';
   };
 
@@ -3052,13 +3495,19 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
     if (selectedEffect === 'hdr') return 'contrast(1.6) brightness(1.2) saturate(1.4)';
     if (selectedEffect === 'vivid') return 'contrast(1.3) brightness(1.1) saturate(2.5)';
 
-    if (selectedFilter === 'black-white') return 'grayscale(1)';
-    if (selectedFilter === 'cinematic') return 'contrast(1.4) brightness(1.1) saturate(1.2)';
-    if (selectedFilter === 'warm') return 'sepia(0.22) saturate(1.15) hue-rotate(-10deg)';
-    if (selectedFilter === 'cool') return 'saturate(1.08) hue-rotate(18deg)';
-    if (selectedFilter === 'sepia') return 'sepia(1)';
-    if (selectedFilter === 'hdr') return 'contrast(1.6) brightness(1.2) saturate(1.4)';
-    if (selectedFilter === 'vivid') return 'contrast(1.3) brightness(1.1) saturate(2.5)';
+    if (selectedFilter === 'black-white') return 'grayscale(1) contrast(1.15)';
+    if (selectedFilter === 'cinematic') return 'contrast(1.45) brightness(1.1) saturate(1.25)';
+    if (selectedFilter === 'moody') return 'contrast(1.2) brightness(0.95) saturate(0.95) sepia(0.08)';
+    if (selectedFilter === 'warm-tone') return 'sepia(0.2) saturate(1.25) hue-rotate(-8deg) brightness(1.05)';
+    if (selectedFilter === 'cool-tone') return 'saturate(1.1) hue-rotate(14deg) brightness(0.98)';
+    if (selectedFilter === 'vintage') return 'sepia(0.35) contrast(0.95) brightness(1.05) saturate(0.9)';
+    if (selectedFilter === 'teal-orange') return 'contrast(1.3) saturate(1.25) hue-rotate(-7deg) brightness(1.02)';
+    if (selectedFilter === 'dreamy-glow') return 'contrast(0.95) saturate(1.15) brightness(1.05)';
+    if (selectedFilter === 'film-look') return 'contrast(1.2) brightness(1.05) saturate(1.15)';
+    if (selectedFilter === 'vhs') return 'contrast(1.15) saturate(1.2) hue-rotate(2deg) sepia(0.05)';
+    if (selectedFilter === 'soft-skin') return 'brightness(1.05) saturate(1.15) contrast(0.95)';
+    if (selectedFilter === 'neon-glow') return 'saturate(1.4) brightness(1.05) contrast(1.2) hue-rotate(10deg)';
+    if (selectedFilter === 'hdr-pop') return 'contrast(1.55) brightness(1.15) saturate(1.45)';
 
     return 'none';
   };
@@ -3096,7 +3545,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
   };
 
   const getPreviewTransform = () => {
-    const zoomScale = selectedEffect === 'zoom' ? previewZoom : 1;
+    const zoomScale = selectedEffect === 'zoom' ? previewZoom : selectedEffect === 'smooth-zoom' ? 1 + smoothZoomAmount * Math.sin((progress / 100) * Math.PI) : 1;
     let keyframeScale = 1;
     if (keyframeMode === 'zoom-in') {
       keyframeScale = 1 + (keyframeAmount - 1) * keyframeProgress;
@@ -3105,7 +3554,24 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
     } else if (keyframeMode === 'pulse') {
       keyframeScale = 1 + (keyframeAmount - 1) * Math.sin(keyframeProgress * Math.PI);
     }
-    return `scale(${zoomScale * zoomToolAmount * keyframeScale}) rotate(${rotationDegrees}deg)`;
+
+    let shakeOffset = '';
+    if (selectedEffect === 'shake') {
+      const t = performance.now() / 1000;
+      const strength = typeof shakeStrength !== 'undefined' ? shakeStrength : 1.5;
+      const x = Math.sin(t * 18) * strength * 1.2;
+      const y = Math.cos(t * 14) * strength * 0.9;
+      shakeOffset = ` translate(${x}px, ${y}px)`;
+    }
+
+    let rgbOffset = '';
+    if (selectedEffect === 'rgb-split') {
+      const offset = rgbSplitAmount;
+      rgbOffset = ` translate(${Math.sin(performance.now() / 150) * offset * 0.4}px, ${Math.cos(performance.now() / 180) * offset * 0.25}px)`;
+    }
+
+    const baseTransform = `scale(${zoomScale * zoomToolAmount * keyframeScale}) rotate(${rotationDegrees}deg)`;
+    return `${baseTransform}${shakeOffset}${rgbOffset}`;
   };
 
   const activeTrim = activePreviewItem && activePreviewItem.type === 'video'
@@ -3182,7 +3648,12 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
     setMediaItems(prev => {
       const item = prev.find(i => i.id === id);
       if (item) URL.revokeObjectURL(item.preview);
-      return prev.filter(i => i.id !== id);
+      const nextItems = prev.filter(i => i.id !== id);
+      if (activePreviewId === id) {
+        setActivePreviewId(nextItems[0]?.id || null);
+      }
+      saveToUndo(nextItems);
+      return nextItems;
     });
   };
 
@@ -3214,7 +3685,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
     input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) {
-        setShowAudioChoice(false);
+        setShowAudioChoiceLocal(false);
         return;
       }
 
@@ -3234,7 +3705,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
           setAudioError(error?.message || "Failed to extract audio from the selected video.");
         } finally {
           setExtractingAudio(false);
-          setShowAudioChoice(false);
+          setShowAudioChoiceLocal(false);
         }
       } else {
         setAudioTracks(prev => [...prev, {
@@ -3244,7 +3715,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
           file,
           trackIndex
         }]);
-        setShowAudioChoice(false);
+        setShowAudioChoiceLocal(false);
       }
     };
     input.click();
@@ -3480,6 +3951,32 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
       base.opacity = isFrom ? 1 - p : p;
       base.transform = `translateX(${jitter}px)`;
       base.filter = `contrast(${1.2 + p}) saturate(${1.1 + p * 0.7}) hue-rotate(${isFrom ? p * 45 : (1 - p) * 45}deg)`;
+    } else if (type === 'fade-transition') {
+      base.opacity = isFrom ? 1 - p : p;
+    } else if (type === 'swipe-transition') {
+      base.opacity = isFrom ? 1 - p : p;
+      base.transform = isFrom ? `translateX(${-p * 120}%)` : `translateX(${(1 - p) * 120}%)`;
+    } else if (type === 'whip-pan-transition') {
+      base.opacity = isFrom ? 1 - p : p;
+      base.transform = isFrom
+        ? `translateX(${-200 * p}%) skewX(${p * 10}deg) scale(${1 - p * 0.12})`
+        : `translateX(${200 * (1 - p)}%) skewX(${-(1 - p) * 10}deg) scale(${0.88 + p * 0.12})`;
+    } else if (type === 'mask-transition') {
+      const clipValue = isFrom ? `inset(0 ${p * 100}% 0 0)` : `inset(0 0 0 ${(1 - p) * 100}%)`;
+      base.clipPath = clipValue;
+      base.opacity = isFrom ? 1 - p * 0.5 : p;
+    } else if (type === 'camera-shake-transition') {
+      const shake = isFrom ? Math.sin(p * 40) * 8 * p : Math.sin((1 - p) * 40) * 8 * (1 - p);
+      base.opacity = isFrom ? 1 - p : p;
+      base.transform = `translate(${shake}px, ${shake / 2}px) rotate(${shake * 0.12}deg)`;
+      base.filter = `contrast(${1.1 + p * 0.2})`;
+    } else if (type === 'match-cut-transition') {
+      base.opacity = isFrom ? 1 - p * 0.9 : p * 0.9;
+      base.transform = isFrom ? 'none' : 'none';
+    } else if (type === 'speed-ramp-transition') {
+      base.opacity = isFrom ? 1 - p : p;
+      base.transform = isFrom ? `scale(${1 + p * 0.15})` : `scale(${0.85 + p * 0.15})`;
+      base.filter = `blur(${p * 4}px)`;
     } else if (type === 'flash-transition') {
       base.opacity = isFrom ? 1 - p : p;
     } else if (type === 'dip-black' || type === 'dip-white') {
@@ -3857,14 +4354,14 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                               filter: getCombinedPreviewFilterCss(),
                               transform: getPreviewTransform(),
                               clipPath: getPreviewClipPath(),
-                              transformOrigin: 'center center'
+                              transformOrigin: 'center center',
                             }}
                             muted={isMuted}
                             playsInline
                           />
                           {(CANVAS_PREVIEW_EFFECTS.includes(selectedEffect) || CANVAS_PREVIEW_FILTERS.includes(selectedFilter)) && (
                             <canvas ref={greenScreenCanvasRef} className="w-full h-full object-contain" />
-                       )}
+                          )}
                         </>
                       ) : (
                         <>
@@ -3876,12 +4373,55 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                               filter: getCombinedPreviewFilterCss(),
                               transform: getPreviewTransform(),
                               clipPath: getPreviewClipPath(),
-                              transformOrigin: 'center center'
+                              transformOrigin: 'center center',
                             }}
                             alt="Preview"
                           />
-                          {audioUrl && <audio ref={audioRef} src={audioUrl} muted={isMuted} className="hidden" />}
                         </>
+                      )}
+                      {audioUrl && <audio ref={audioRef} src={audioUrl} muted={isMuted} className="hidden" />}
+                      {selectedEffect === 'flash-effect' && (
+                        <div
+                          className="absolute inset-0 pointer-events-none bg-white"
+                          style={{
+                            opacity: Math.min(0.5, Math.max(0, Math.sin((progress / 100) * Math.PI * 10) * 0.24 + 0.18)),
+                            mixBlendMode: 'screen',
+                          }}
+                        />
+                      )}
+                      {selectedEffect === 'film-grain' && (
+                        <div
+                          className="absolute inset-0 pointer-events-none"
+                          style={{
+                            backgroundImage: 'linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)',
+                            backgroundSize: '2px 2px, 2px 2px',
+                            opacity: 0.18,
+                            pointerEvents: 'none',
+                          }}
+                        />
+                      )}
+                      {selectedEffect === 'rgb-split' && (
+                        <div
+                          className="absolute inset-0 pointer-events-none"
+                          style={{
+                            boxShadow: `inset 0 0 0 ${rgbSplitAmount / 5}px rgba(255,0,100,0.12), inset 0 0 0 ${rgbSplitAmount / 8}px rgba(0,255,255,0.08)`,
+                          }}
+                        />
+                      )}
+                      {selectedEffect === 'animated-captions' && animatedText.trim() !== '' && (
+                        <div
+                          className="absolute left-1/2 bottom-10 -translate-x-1/2 px-4 py-2 rounded-2xl text-center text-white pointer-events-none"
+                          style={{
+                            ...overlayTextStylePresetCss,
+                            background: overlayTextStylePresetCss.background || 'rgba(15,23,42,0.7)',
+                            border: overlayTextStylePresetCss.border || '1px solid rgba(255,255,255,0.08)',
+                            boxShadow: overlayTextStylePresetCss.boxShadow || '0 16px 40px rgba(0,0,0,0.24)',
+                            transform: `translateX(-50%) translateY(${Math.sin((progress / 100) * Math.PI * 2) * 6}px)`,
+                            opacity: 0.95,
+                          }}
+                        >
+                          {animatedText}
+                        </div>
                       )}
                     </motion.div>
                   ) : (
@@ -3941,14 +4481,11 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                     style={{
                       left: `${overlayPosX}%`,
                       top: `${overlayPosY}%`,
-                      transform: 'translate(-50%, -50%)',
-                      fontFamily: textFontOptions.find((f) => f.id === overlayFontId)?.family || textFontOptions[0].family,
-                      fontSize: `${overlayFontSize}px`,
-                      color: overlayColor,
-                      textShadow: '0 4px 14px rgba(0,0,0,0.8)',
-                      fontWeight: 700,
-                      whiteSpace: 'pre-wrap',
+                      transform: overlayTextStylePreset === 'motion-tracking-text'
+                        ? `translate(-50%, -50%) translateX(${Math.sin((progress / 100) * Math.PI * 2) * 12}px)`
+                        : 'translate(-50%, -50%)',
                       maxWidth: '88%',
+                      ...getOverlayTextStylePresetCss(overlayTextStylePreset),
                     }}
                   >
                     {overlayText}
@@ -3962,7 +4499,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                     style={
                       readLineDirection === 'horizontal'
                         ? {
-                            top: `${progress}%`,
+                            top: `${readLinePosition}%`,
                             left: 0,
                             right: 0,
                             height: '2px',
@@ -3970,7 +4507,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                             boxShadow: '0 0 8px rgba(34,211,238,0.7), 0 0 24px rgba(34,211,238,0.25)',
                           }
                         : {
-                            left: `${progress}%`,
+                            left: `${readLinePosition}%`,
                             top: 0,
                             bottom: 0,
                             width: '2px',
@@ -4092,15 +4629,30 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                   <ScanLine className="w-4 h-4" />
                 </button>
 
-                {/* Direction toggle — only when read-line is on */}
                 {showReadLine && (
-                  <button
-                    onClick={() => setReadLineDirection(d => d === 'horizontal' ? 'vertical' : 'horizontal')}
-                    title={`Direction: ${readLineDirection}`}
-                    className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase border border-cyan-500/30 text-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20 transition-all"
-                  >
-                    {readLineDirection === 'horizontal' ? '↔' : '↕'}
-                  </button>
+                  <>
+                    <button
+                      onClick={() => moveReadLine(-1)}
+                      title="Move Read Line Left"
+                      className="p-1 rounded transition-all text-slate-400 hover:text-white hover:bg-white/5"
+                    >
+                      <ArrowLeft className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => moveReadLine(1)}
+                      title="Move Read Line Right"
+                      className="p-1 rounded transition-all text-slate-400 hover:text-white hover:bg-white/5"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setReadLineDirection(d => d === 'horizontal' ? 'vertical' : 'horizontal')}
+                      title={`Direction: ${readLineDirection}`}
+                      className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase border border-cyan-500/30 text-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20 transition-all"
+                    >
+                      {readLineDirection === 'horizontal' ? '↔' : '↕'}
+                    </button>
+                  </>
                 )}
               </div>
 
@@ -4302,6 +4854,8 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
               saveToUndo={saveToUndo}
               timelineSize={timelineSize}
               setTimelineSize={setTimelineSize}
+              overlayTextStylePreset={overlayTextStylePreset}
+              overlayTextStylePresetCss={getOverlayTextStylePresetCss(overlayTextStylePreset)}
             />
           </div>
 

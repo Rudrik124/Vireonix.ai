@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from "react-router";
+import { createBrowserRouter, Navigate, useRouteError } from "react-router";
 import { PortalGate } from "../shared/routing/route-guards";
 // Developer Portal
 import { DeveloperDashboardPage } from "../portals/developer/pages/developer-dashboard-page";
@@ -20,6 +20,26 @@ import { TesterDashboardPage } from "../portals/tester/pages/tester-dashboard-pa
 import { TesterTestEnvironmentPage } from "../portals/tester/pages/tester-test-environment-page";
 // User Portal
 import { UserDashboardPage } from "../portals/user/pages/user-dashboard-page";
+
+function RouteErrorBoundary() {
+  const error = useRouteError();
+
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-100 p-8">
+      <div className="mx-auto max-w-3xl rounded-3xl border border-white/10 bg-slate-900/90 p-8 shadow-2xl shadow-cyan-500/10">
+        <h1 className="text-3xl font-black tracking-tight text-white">Something went wrong</h1>
+        <p className="mt-3 text-sm leading-6 text-slate-400">We were unable to load this part of the editor. Please try refreshing or return to the quick edit home page.</p>
+        <pre className="mt-6 overflow-auto rounded-2xl bg-slate-950/80 p-4 text-xs text-slate-300 border border-white/10">
+          {String(error ?? 'Unknown error')}
+        </pre>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <a href="/quick-edit/upload" className="inline-flex items-center justify-center rounded-full bg-cyan-500 px-4 py-2 text-sm font-bold text-slate-950 transition hover:bg-cyan-400">Back to Quick Edit</a>
+          <a href="/" className="inline-flex items-center justify-center rounded-full border border-white/10 bg-transparent px-4 py-2 text-sm font-bold text-slate-200 transition hover:border-cyan-500/40">Go Home</a>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 const legacyUserRoutes = [
   {
@@ -128,32 +148,43 @@ const legacyUserRoutes = [
     }
   },
   {
-    path: "/quick-edit/upload",
+    path: "/quick-edit",
+    errorElement: <RouteErrorBoundary />,
     async lazy() {
-      const { QuickEditUploadScreen } = await import("./pages/quick-edit/upload-screen");
-      return { Component: QuickEditUploadScreen };
-    }
-  },
-  {
-    path: "/quick-edit/style",
-    async lazy() {
-      const { QuickEditStyleScreen } = await import("./pages/quick-edit/style-screen");
-      return { Component: QuickEditStyleScreen };
-    }
-  },
-  {
-    path: "/quick-edit/processing",
-    async lazy() {
-      const { QuickEditProcessingScreen } = await import("./pages/quick-edit/processing-screen");
-      return { Component: QuickEditProcessingScreen };
-    }
-  },
-  {
-    path: "/quick-edit/result",
-    async lazy() {
-      const { QuickEditResultScreen } = await import("./pages/quick-edit/result-screen");
-      return { Component: QuickEditResultScreen };
-    }
+      const { QuickEditLayout } = await import("./pages/quick-edit/layout");
+      return { Component: QuickEditLayout };
+    },
+    children: [
+      {
+        path: "upload",
+        async lazy() {
+          const { QuickEditUploadScreen } = await import("./pages/quick-edit/upload-screen");
+          return { Component: QuickEditUploadScreen };
+        }
+      },
+      {
+        path: "style",
+        errorElement: <RouteErrorBoundary />,
+        async lazy() {
+          const { QuickEditStyleScreen } = await import("./pages/quick-edit/style-screen");
+          return { Component: QuickEditStyleScreen };
+        }
+      },
+      {
+        path: "processing",
+        async lazy() {
+          const { QuickEditProcessingScreen } = await import("./pages/quick-edit/processing-screen");
+          return { Component: QuickEditProcessingScreen };
+        }
+      },
+      {
+        path: "result",
+        async lazy() {
+          const { QuickEditResultScreen } = await import("./pages/quick-edit/result-screen");
+          return { Component: QuickEditResultScreen };
+        }
+      },
+    ],
   },
 ];
 
