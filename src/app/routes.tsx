@@ -4,6 +4,7 @@ import { PortalGate } from "../shared/routing/route-guards";
 import { DeveloperDashboardPage } from "../portals/developer/pages/developer-dashboard-page";
 import { DeveloperUsersPage } from "../portals/developer/pages/developer-users-page";
 import { DeveloperCreditsPage } from "../portals/developer/pages/developer-credits-page";
+import { DeveloperTesterCreditsPage } from "../portals/developer/pages/developer-tester-credits-page";
 import { DeveloperTestingLabPage } from "../portals/developer/pages/developer-testing-lab-page";
 import { DeveloperErrorLogsPage } from "../portals/developer/pages/developer-error-logs-page";
 import { DeveloperAnalyticsPage } from "../portals/developer/pages/developer-analytics-page";
@@ -18,6 +19,15 @@ import { TestingCredentialsPage } from "../portals/admin/pages/testing-credentia
 // Tester Portal
 import { TesterDashboardPage } from "../portals/tester/pages/tester-dashboard-page";
 import { TesterTestEnvironmentPage } from "../portals/tester/pages/tester-test-environment-page";
+import { TesterBugReportsPage } from "../portals/tester/pages/tester-bug-reports-page";
+import { TesterTestCasesPage } from "../portals/tester/pages/tester-test-cases-page";
+import { TesterCreditsPage } from "../portals/tester/pages/tester-credits-page";
+import { TesterVideoGeneratorPage } from "../portals/tester/pages/tester-video-generator-page";
+import { TesterDocumentationPage } from "../portals/tester/pages/tester-documentation-page";
+import { TesterProfilePage } from "../portals/tester/pages/tester-profile-page";
+import { TesterNotificationsPage } from "../portals/tester/pages/tester-notifications-page";
+import { TesterAnalyticsPage } from "../portals/tester/pages/tester-analytics-page";
+import { TesterFeedbackPage } from "../portals/tester/pages/tester-feedback-page";
 // User Portal
 import { UserDashboardPage } from "../portals/user/pages/user-dashboard-page";
 
@@ -240,6 +250,14 @@ export const router = createBrowserRouter([
     ),
   },
   {
+    path: "/developer/tester-credits",
+    element: (
+      <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+        <DeveloperTesterCreditsPage />
+      </PortalGate>
+    ),
+  },
+  {
     path: "/developer/testing-lab",
     element: (
       <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
@@ -367,6 +385,78 @@ export const router = createBrowserRouter([
     element: (
       <PortalGate portal="tester" allowedRoles={["super_admin", "admin", "developer", "tester"]}>
         <TesterTestEnvironmentPage />
+      </PortalGate>
+    ),
+  },
+  {
+    path: "/tester/bug-reports",
+    element: (
+      <PortalGate portal="tester" allowedRoles={["super_admin", "admin", "developer", "tester"]}>
+        <TesterBugReportsPage />
+      </PortalGate>
+    ),
+  },
+  {
+    path: "/tester/test-cases",
+    element: (
+      <PortalGate portal="tester" allowedRoles={["super_admin", "admin", "developer", "tester"]}>
+        <TesterTestCasesPage />
+      </PortalGate>
+    ),
+  },
+  {
+    path: "/tester/credits",
+    element: (
+      <PortalGate portal="tester" allowedRoles={["super_admin", "admin", "developer", "tester"]}>
+        <TesterCreditsPage />
+      </PortalGate>
+    ),
+  },
+  {
+    path: "/tester/video-generator",
+    element: (
+      <PortalGate portal="tester" allowedRoles={["super_admin", "admin", "developer", "tester"]}>
+        <TesterVideoGeneratorPage />
+      </PortalGate>
+    ),
+  },
+  {
+    path: "/tester/documentation",
+    element: (
+      <PortalGate portal="tester" allowedRoles={["super_admin", "admin", "developer", "tester"]}>
+        <TesterDocumentationPage />
+      </PortalGate>
+    ),
+  },
+  {
+    path: "/tester/profile",
+    element: (
+      <PortalGate portal="tester" allowedRoles={["super_admin", "admin", "developer", "tester"]}>
+        <TesterProfilePage />
+      </PortalGate>
+    ),
+  },
+  {
+    path: "/tester/notifications",
+    element: (
+      <PortalGate portal="tester" allowedRoles={["super_admin", "admin", "developer", "tester"]}>
+        <TesterNotificationsPage />
+      </PortalGate>
+    ),
+  },
+  {
+    path: "/tester/analytics",
+    element: (
+      <PortalGate portal="tester" allowedRoles={["super_admin", "admin", "developer", "tester"]}>
+        <TesterAnalyticsPage />
+      </PortalGate>
+    ),
+  },
+  {
+    path: "/tester/feedback",
+    element: (
+      <PortalGate portal="tester" allowedRoles={["super_admin", "admin", "developer", "tester"]}>
+        <TesterFeedbackPage />
       </PortalGate>
     ),
   },

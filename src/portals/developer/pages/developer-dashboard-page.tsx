@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router";
 import { useEffect, useState } from "react";
 import { useAuth } from "../../../app/context/auth-context";
-import { Users, Zap, AlertCircle, BarChart3, LogOut } from "lucide-react";
+import { Users, Zap, AlertCircle, BarChart3, LogOut, Wallet } from "lucide-react";
 import { fetchDashboardStats } from "../../../services/developer-portal-api.service";
 
 export function DeveloperDashboardPage() {
@@ -40,6 +40,7 @@ export function DeveloperDashboardPage() {
   const menuItems = [
     { label: "Users", path: "/developer/users", icon: Users },
     { label: "Credits", path: "/developer/credits", icon: Zap },
+    { label: "Tester Credits", path: "/developer/tester-credits", icon: Wallet },
     { label: "AI Testing Lab", path: "/developer/testing-lab", icon: "⚗️" },
     { label: "Error Logs", path: "/developer/error-logs", icon: AlertCircle },
     { label: "Analytics", path: "/developer/analytics", icon: BarChart3 },

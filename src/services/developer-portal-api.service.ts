@@ -104,6 +104,31 @@ export async function saveDeveloperSettings(settings: any) {
   });
 }
 
+// ============ TESTER CREDIT MANAGEMENT ============
+
+export async function fetchTesters() {
+  return callDeveloperAPI('/testers');
+}
+
+export async function fetchTesterCredits(testerId: string) {
+  return callDeveloperAPI(`/testers/${testerId}/credits`);
+}
+
+export async function assignCreditsToTester(testerId: string, amount: number, reason: string) {
+  return callDeveloperAPI(`/testers/${testerId}/credits/assign`, {
+    method: 'POST',
+    body: JSON.stringify({ amount, reason }),
+  });
+}
+
+export async function fetchTesterCreditHistory(testerId: string) {
+  return callDeveloperAPI(`/testers/${testerId}/credits/history`);
+}
+
+export async function fetchDeveloperTesterAssignments() {
+  return callDeveloperAPI('/developer/tester-assignments');
+}
+
 /**
  * Hook to get the auth token from localStorage
  */

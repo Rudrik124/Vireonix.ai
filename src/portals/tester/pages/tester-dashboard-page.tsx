@@ -1,7 +1,7 @@
 import { useAuth } from "../../../app/context/auth-context";
 import { useNavigate } from "react-router";
 import { useEffect } from "react";
-import { LogOut } from "lucide-react";
+import { LogOut, Bell, User } from "lucide-react";
 
 export function TesterDashboardPage() {
   const { profile, isLoading, logout } = useAuth();
@@ -39,21 +39,38 @@ export function TesterDashboardPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 to-purple-800">
       <div className="container mx-auto px-4 py-8">
+        {/* Top Navigation */}
         <div className="mb-8 flex justify-between items-center">
           <div>
             <h1 className="text-4xl font-bold text-white mb-2">Tester Dashboard</h1>
-            <p className="text-purple-200">Test features and report bugs</p>
+            <p className="text-purple-200">Welcome back, {profile.name || profile.email}</p>
           </div>
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition"
-          >
-            <LogOut className="w-5 h-5" />
-            Logout
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={() => navigate("/tester/notifications")}
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition"
+            >
+              <Bell className="w-5 h-5" />
+              Notifications
+            </button>
+            <button
+              onClick={() => navigate("/tester/profile")}
+              className="flex items-center gap-2 bg-purple-700 hover:bg-purple-600 text-white px-4 py-2 rounded-lg transition"
+            >
+              <User className="w-5 h-5" />
+              Profile
+            </button>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition"
+            >
+              <LogOut className="w-5 h-5" />
+              Logout
+            </button>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           {/* Test Environment Card */}
           <div
             onClick={() => navigate("/tester/test-environment")}
@@ -106,6 +123,33 @@ export function TesterDashboardPage() {
           >
             <h3 className="text-xl font-semibold text-white mb-2">Documentation</h3>
             <p className="text-purple-200 text-sm">Testing guidelines and documentation</p>
+          </div>
+
+          {/* Analytics Card */}
+          <div
+            onClick={() => navigate("/tester/analytics")}
+            className="bg-purple-700 hover:bg-purple-600 cursor-pointer p-6 rounded-lg transition transform hover:scale-105"
+          >
+            <h3 className="text-xl font-semibold text-white mb-2">Analytics</h3>
+            <p className="text-purple-200 text-sm">Track your testing performance metrics</p>
+          </div>
+
+          {/* Feedback Card */}
+          <div
+            onClick={() => navigate("/tester/feedback")}
+            className="bg-purple-700 hover:bg-purple-600 cursor-pointer p-6 rounded-lg transition transform hover:scale-105"
+          >
+            <h3 className="text-xl font-semibold text-white mb-2">Feedback</h3>
+            <p className="text-purple-200 text-sm">Share ideas and feature requests</p>
+          </div>
+
+          {/* Notifications Card */}
+          <div
+            onClick={() => navigate("/tester/notifications")}
+            className="bg-purple-700 hover:bg-purple-600 cursor-pointer p-6 rounded-lg transition transform hover:scale-105"
+          >
+            <h3 className="text-xl font-semibold text-white mb-2">Notifications</h3>
+            <p className="text-purple-200 text-sm">View all alerts and updates</p>
           </div>
         </div>
 
