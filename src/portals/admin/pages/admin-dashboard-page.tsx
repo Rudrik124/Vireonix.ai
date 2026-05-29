@@ -10,7 +10,7 @@ export function AdminDashboardPage() {
   }
 
   if (!profile) {
-    navigate("/admin/auth");
+    navigate("/");
     return null;
   }
 

@@ -201,19 +201,12 @@ export function LoginModal({ isOpen, onClose, customMessage, customTitle }: Logi
           let nextRoute = '/video-type';
           if (data.session) {
             const profile = await fetchAppProfile(data.session);
-            const userEmail = data.session.user.email?.toLowerCase();
             
-            if (userEmail === "admin@veytrix.ai") {
+            if (profile.role === "admin" || profile.role === "super_admin") {
               nextRoute = "/admin/dashboard";
-            } else if (userEmail === "developer@veytrix.ai") {
+            } else if (profile.role === "developer") {
               nextRoute = "/developer/dashboard";
-            } else if (userEmail === "tester@veeytrix.ai" || userEmail === "tester@veytrix.ai") {
-              nextRoute = "/tester/dashboard";
-            } else if (profile.role === "admin" || profile.role === "super_admin" || profile.portalAccess.includes("admin")) {
-              nextRoute = "/admin/dashboard";
-            } else if (profile.role === "developer" || profile.portalAccess.includes("developer")) {
-              nextRoute = "/developer/dashboard";
-            } else if (profile.role === "tester" || profile.portalAccess.includes("tester")) {
+            } else if (profile.role === "tester") {
               nextRoute = "/tester/dashboard";
             }
           }

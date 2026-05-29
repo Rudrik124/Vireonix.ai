@@ -19,6 +19,7 @@ import dotenv from "dotenv";
 import { generateScenesWithImages, generateScenes } from "./server-scenes.js";
 import { createVideoFromImages } from "./server-video-from-images.js";
 import { createCinematicVideo } from "./server-cinematic-video.js";
+import developerPortalAPI from "./developer-portal-api.js";
 
 dotenv.config();
 
@@ -3453,7 +3454,7 @@ app.post("/api/scene-images", async (req, res) => {
 // Takes { images: [...], options: {...} } as input
 // Returns { success: true, video: "url_or_path" }
 app.post("/api/video-from-images", async (req, res) => {
-  const { images, options = {} } = req.body;
+  const { images, options = {}, userId = null } = req.body;
 
   try {
     if (!images || !Array.isArray(images) || images.length < 2) {
@@ -3525,6 +3526,33 @@ app.post("/api/video-from-images", async (req, res) => {
       console.warn("⚠️ [VIDEO-FROM-IMAGES] Storage upload skipped, using local path");
     }
 
+    // Log usage if user_id provided
+    if (userId) {
+      try {
+        const duration = (videoOptions.imageDuration + videoOptions.transitionDuration) * validImages.length;
+        const creditsCharged = Math.ceil(duration * 0.1); // 0.1 credits per second as example
+        
+        await supabase.from("usage_logs").insert({
+          user_id: userId,
+          portal: "user",
+          usage_type: "production",
+          wallet_type: "user_credits",
+          feature_key: "video_from_images",
+          credits_requested: creditsCharged,
+          credits_charged: creditsCharged,
+          status: "completed",
+          metadata: {
+            imageCount: validImages.length,
+            videoDuration: duration,
+            fileName: fileName,
+          },
+        });
+        console.log("📊 [VIDEO-FROM-IMAGES] Usage logged for user:", userId);
+      } catch (logError) {
+        console.warn("⚠️ [VIDEO-FROM-IMAGES] Failed to log usage:", logError.message);
+      }
+    }
+
     res.json({
       success: true,
       video: publicUrl,
@@ -3548,10 +3576,10 @@ app.post("/api/video-from-images", async (req, res) => {
 });
 
 // ✅ CINEMATIC VIDEO CREATION ENDPOINT
-// Takes { images: [...], options: {...} } as input with motion effects
+// Takes { images: [...], options: {...}, userId: "user-uuid" } as input with motion effects
 // Returns { success: true, video: "url_or_path" }
 app.post("/api/cinematic-video", async (req, res) => {
-  const { images, options = {} } = req.body;
+  const { images, options = {}, userId = null } = req.body;
 
   try {
     if (!images || !Array.isArray(images) || images.length < 2) {
@@ -3622,6 +3650,38 @@ app.post("/api/cinematic-video", async (req, res) => {
       fs.unlink(videoPath, () => {});
     } catch (storageError) {
       console.warn("⚠️ [CINEMATIC] Storage upload skipped, using local path");
+    }
+
+    // Log usage if user_id provided
+    if (userId) {
+      try {
+        const duration = (videoOptions.imageDuration + videoOptions.transitionDuration) * validImages.length;
+        const creditsCharged = Math.ceil(duration * 0.15); // 0.15 credits per second for cinematic (more expensive)
+        
+        await supabase.from("usage_logs").insert({
+          user_id: userId,
+          portal: "user",
+          usage_type: "production",
+          wallet_type: "user_credits",
+          feature_key: "cinematic_video",
+          credits_requested: creditsCharged,
+          credits_charged: creditsCharged,
+          status: "completed",
+          metadata: {
+            imageCount: validImages.length,
+            videoDuration: duration,
+            fileName: fileName,
+            motionEffects: {
+              zoom: `${videoOptions.scaleStart} → ${videoOptions.scaleEnd}`,
+              pan: videoOptions.enablePan,
+              fade: videoOptions.enableFade,
+            },
+          },
+        });
+        console.log("📊 [CINEMATIC] Usage logged for user:", userId);
+      } catch (logError) {
+        console.warn("⚠️ [CINEMATIC] Failed to log usage:", logError.message);
+      }
     }
 
     res.json({
@@ -3977,6 +4037,9 @@ app.post("/api/audio-metadata", upload.single("audioFile"), async (req, res) => 
     });
   }
 });
+
+// ✅ DEVELOPER PORTAL API
+app.use(developerPortalAPI);
 
 // ✅ START SERVER
 app.listen(5000, () => {

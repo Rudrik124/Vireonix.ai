@@ -1,155 +1,148 @@
-import { Link } from "react-router";
-import { Activity, ArrowRight, Bug, ExternalLink, FlaskConical, ShieldCheck, ToggleRight, Users, Wand2 } from "lucide-react";
+import { useNavigate } from "react-router";
+import { useEffect, useState } from "react";
 import { useAuth } from "../../../app/context/auth-context";
-import { buildPortalAwarePath } from "../../../shared/portal/testing-context";
-
-const internalCards = [
-  {
-    title: "Workflow Lab",
-    description: "Trigger AI functions with `test` usage tags and optional credit bypass.",
-    href: "/internal/workflows",
-    icon: FlaskConical,
-  },
-  {
-    title: "Logs & Monitoring",
-    description: "Inspect usage logs, API logs, and testing traces without exposing them to users.",
-    href: "/internal/logs",
-    icon: Activity,
-  },
-  {
-    title: "Operations",
-    description: "Manage users, subscriptions, role assignments, and internal toggles.",
-    href: "/internal/operations",
-    icon: Users,
-  },
-];
+import { Users, Zap, AlertCircle, BarChart3, LogOut } from "lucide-react";
+import { fetchDashboardStats } from "../../../services/developer-portal-api.service";
 
 export function DeveloperDashboardPage() {
-  const { profile } = useAuth();
-  const internalToolLinks = [
-    {
-      title: "Test AI Generated Video",
-      description: "Launch prompt-to-video with internal credits and test analytics.",
-      href: buildPortalAwarePath("/create", "?portal=internal&usageType=test"),
-    },
-    {
-      title: "Test Reference Video",
-      description: "Open the reference-video studio in developer testing mode.",
-      href: buildPortalAwarePath("/reference-video/setup", "?portal=internal&usageType=test"),
-    },
-    {
-      title: "Test Images to Video",
-      description: "Run image and media generation without affecting production billing.",
-      href: buildPortalAwarePath("/images-to-video/upload", "?portal=internal&usageType=test"),
-    },
-    {
-      title: "Test Quick Edit",
-      description: "Use the quick-edit pipeline with internal test tagging.",
-      href: buildPortalAwarePath("/quick-edit/upload", "?portal=internal&usageType=test"),
-    },
+  const { profile, logout } = useAuth();
+  const navigate = useNavigate();
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    activeUsers: 0,
+    newUsers: 0,
+    creditsConsumed: 0,
+    aiRequests: 0,
+    revenue: 0,
+  });
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    loadStats();
+  }, []);
+
+  const loadStats = async () => {
+    try {
+      const data = await fetchDashboardStats();
+      setStats(data);
+    } catch (error) {
+      console.error("Failed to load dashboard stats:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/", { replace: true });
+  };
+
+  const menuItems = [
+    { label: "Users", path: "/developer/users", icon: Users },
+    { label: "Credits", path: "/developer/credits", icon: Zap },
+    { label: "AI Testing Lab", path: "/developer/testing-lab", icon: "⚗️" },
+    { label: "Error Logs", path: "/developer/error-logs", icon: AlertCircle },
+    { label: "Analytics", path: "/developer/analytics", icon: BarChart3 },
+    { label: "Feedback", path: "/developer/feedback", icon: "💬" },
+    { label: "Settings", path: "/developer/settings", icon: "⚙️" },
   ];
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#264d39_0%,#0f172a_45%,#020617_100%)] text-white">
-      <div className="mx-auto max-w-7xl px-6 py-12">
-        <section className="rounded-[2rem] border border-emerald-400/20 bg-white/5 p-8 backdrop-blur-2xl">
-          <div className="flex flex-wrap items-start justify-between gap-6">
+    <div className="min-h-screen bg-slate-900 text-white">
+      {/* Header */}
+      <div className="border-b border-slate-700 bg-slate-800">
+        <div className="mx-auto max-w-7xl px-6 py-6">
+          <div className="flex justify-between items-center">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.35em] text-emerald-200">Developer Portal</p>
-              <h1 className="mt-4 text-4xl font-black tracking-tight">Internal testing and admin control plane.</h1>
-              <p className="mt-4 max-w-3xl text-slate-300">
-                Team workflows are isolated here with separate permissions, hidden features, and dedicated `developer_credits` or bypassed billing flows.
-              </p>
+              <h1 className="text-3xl font-bold">Developer Portal</h1>
+              <p className="text-sm text-slate-400 mt-1">Admin & Analytics Dashboard</p>
             </div>
-            <div className="rounded-[1.5rem] border border-white/10 bg-black/20 px-5 py-4">
-              <p className="text-sm text-slate-400">Signed in as</p>
-              <p className="text-xl font-black capitalize">{profile?.role?.replace("_", " ") || "internal user"}</p>
-            </div>
-          </div>
-
-          <div className="mt-8 grid gap-4 md:grid-cols-4">
-            <MetricCard icon={ShieldCheck} label="Portal Access" value="Protected" />
-            <MetricCard icon={Bug} label="Testing Mode" value={profile?.testingModeEnabled ? "Enabled" : "Controlled"} />
-            <MetricCard icon={ToggleRight} label="Credit Strategy" value={profile?.bypassCreditChecks ? "Bypass" : "Developer Wallet"} />
-            <MetricCard icon={Users} label="Data Isolation" value="Separate" />
-          </div>
-        </section>
-
-        <section className="mt-8 grid gap-5 md:grid-cols-3">
-          {internalCards.map((card) => (
-            <Link
-              key={card.title}
-              to={card.href}
-              className="rounded-[1.75rem] border border-white/10 bg-white/5 p-6 backdrop-blur-xl transition hover:-translate-y-1 hover:border-emerald-300/40 hover:bg-white/10"
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 bg-red-600 hover:bg-red-700 px-4 py-2 rounded transition"
             >
-              <card.icon className="h-10 w-10 rounded-2xl bg-emerald-300/10 p-2.5 text-emerald-200" />
-              <h2 className="mt-5 text-xl font-black">{card.title}</h2>
-              <p className="mt-2 text-sm leading-6 text-slate-300">{card.description}</p>
-            </Link>
-          ))}
-        </section>
+              <LogOut className="w-4 h-4" />
+              Logout
+            </button>
+          </div>
+        </div>
+      </div>
 
-        <section className="mt-8 grid gap-6 lg:grid-cols-[1.4fr,0.8fr]">
-          <div className="rounded-[2rem] border border-cyan-400/20 bg-cyan-400/5 p-6">
-            <div className="flex items-center gap-3">
-              <Wand2 className="h-5 w-5 text-cyan-300" />
-              <h2 className="text-xl font-black">Developer Testing Launchpad</h2>
+      <div className="mx-auto max-w-7xl px-6 py-8">
+        {/* User Info */}
+        <div className="mb-8 p-4 bg-slate-800 rounded border border-slate-700">
+          <p className="text-sm text-slate-400">Signed in as</p>
+          <p className="text-lg font-bold">{profile?.email}</p>
+          <p className="text-sm text-slate-400 mt-1">Role: {profile?.role?.replace("_", " ") || "Developer"}</p>
+        </div>
+
+        {/* Stats Grid */}
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="h-24 bg-slate-800 rounded border border-slate-700 animate-pulse"></div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+            <StatCard label="Total Users" value={stats.totalUsers.toLocaleString()} />
+            <StatCard label="Active Users" value={stats.activeUsers.toLocaleString()} />
+            <StatCard label="New Users (7d)" value={stats.newUsers} />
+            <StatCard label="AI Requests" value={stats.aiRequests.toLocaleString()} />
+            <StatCard label="Credits Consumed" value={stats.creditsConsumed.toLocaleString()} />
+            <StatCard label="Revenue" value={`$${stats.revenue.toLocaleString()}`} />
+          </div>
+        )}
+
+        {/* Recent Activity */}
+        <div className="mb-8 p-4 bg-slate-800 rounded border border-slate-700">
+          <h2 className="text-lg font-bold mb-4">System Status</h2>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-slate-400">API Health</span>
+              <span className="text-green-400">✓ Operational</span>
             </div>
-            <p className="mt-3 text-sm leading-6 text-slate-300">
-              These links open the same product workflows in internal test mode so the requests can be tagged separately from normal users.
-            </p>
-            <div className="mt-6 grid gap-3 md:grid-cols-2">
-              {internalToolLinks.map((link) => (
-                <Link
-                  key={link.title}
-                  to={link.href}
-                  className="rounded-[1.5rem] border border-white/10 bg-black/20 p-5 transition hover:-translate-y-1 hover:border-cyan-300/40"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <h3 className="text-sm font-black uppercase tracking-[0.15em] text-cyan-100">{link.title}</h3>
-                    <ArrowRight className="h-4 w-4 text-cyan-300" />
-                  </div>
-                  <p className="mt-3 text-sm leading-6 text-slate-300">{link.description}</p>
-                </Link>
-              ))}
+            <div className="flex justify-between">
+              <span className="text-slate-400">Database</span>
+              <span className="text-green-400">✓ Operational</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-400">Storage</span>
+              <span className="text-green-400">✓ Operational</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-400">Queue</span>
+              <span className="text-green-400">✓ Operational</span>
             </div>
           </div>
+        </div>
 
-          <div className="rounded-[2rem] border border-white/10 bg-white/5 p-6">
-            <div className="flex items-center gap-3">
-              <ExternalLink className="h-5 w-5 text-emerald-200" />
-              <h2 className="text-xl font-black">Portal Switch</h2>
-            </div>
-            <p className="mt-3 text-sm leading-6 text-slate-300">
-              Jump back to the production-facing user experience whenever you want to compare internal testing against the normal customer portal.
-            </p>
-            <div className="mt-6 flex flex-col gap-3">
-              <Link
-                to="/app"
-                className="rounded-full bg-white px-5 py-3 text-center text-sm font-black text-slate-950 transition hover:bg-cyan-100"
+        {/* Navigation */}
+        <div className="mb-8">
+          <h2 className="text-lg font-bold mb-4">Portal Sections</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+            {menuItems.map((item) => (
+              <button
+                key={item.path}
+                onClick={() => navigate(item.path)}
+                className="p-4 bg-slate-800 hover:bg-slate-700 rounded border border-slate-700 hover:border-slate-600 transition text-left"
               >
-                Open Normal User Portal
-              </Link>
-              <Link
-                to="/features"
-                className="rounded-full border border-white/10 bg-black/20 px-5 py-3 text-center text-sm font-black text-white transition hover:bg-white/10"
-              >
-                Open Public Feature Chooser
-              </Link>
-            </div>
+                <p className="text-sm font-bold">{item.label}</p>
+                <p className="text-xs text-slate-400 mt-1">Manage {item.label.toLowerCase()}</p>
+              </button>
+            ))}
           </div>
-        </section>
+        </div>
       </div>
     </div>
   );
 }
 
-function MetricCard({ icon: Icon, label, value }: { icon: typeof ShieldCheck; label: string; value: string }) {
+function StatCard({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-3xl border border-white/10 bg-black/20 p-5">
-      <Icon className="h-5 w-5 text-emerald-200" />
-      <p className="mt-4 text-sm text-slate-400">{label}</p>
-      <p className="mt-1 text-2xl font-black">{value}</p>
+    <div className="p-4 bg-slate-800 rounded border border-slate-700">
+      <p className="text-sm text-slate-400">{label}</p>
+      <p className="text-2xl font-bold mt-2">{value}</p>
     </div>
   );
 }

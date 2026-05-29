@@ -1,13 +1,18 @@
 import { createBrowserRouter, Navigate } from "react-router";
 import { PortalGate } from "../shared/routing/route-guards";
 // Developer Portal
-import { DeveloperAccessPage } from "../portals/developer/pages/developer-access-page";
 import { DeveloperDashboardPage } from "../portals/developer/pages/developer-dashboard-page";
+import { DeveloperUsersPage } from "../portals/developer/pages/developer-users-page";
+import { DeveloperCreditsPage } from "../portals/developer/pages/developer-credits-page";
+import { DeveloperTestingLabPage } from "../portals/developer/pages/developer-testing-lab-page";
+import { DeveloperErrorLogsPage } from "../portals/developer/pages/developer-error-logs-page";
+import { DeveloperAnalyticsPage } from "../portals/developer/pages/developer-analytics-page";
+import { DeveloperFeedbackPage } from "../portals/developer/pages/developer-feedback-page";
+import { DeveloperSettingsPage } from "../portals/developer/pages/developer-settings-page";
 import { DeveloperLogsPage } from "../portals/developer/pages/developer-logs-page";
 import { DeveloperOperationsPage } from "../portals/developer/pages/developer-operations-page";
 import { DeveloperWorkflowLabPage } from "../portals/developer/pages/developer-workflow-lab-page";
 // Admin Portal
-import { AdminAuthPage } from "../portals/admin/pages/admin-auth-page";
 import { AdminDashboardPage } from "../portals/admin/pages/admin-dashboard-page";
 import { TestingCredentialsPage } from "../portals/admin/pages/testing-credentials-page";
 // Tester Portal
@@ -180,14 +185,66 @@ export const router = createBrowserRouter([
   },
   // Developer Portal Routes
   {
-    path: "/developer/auth",
-    Component: DeveloperAccessPage,
-  },
-  {
     path: "/developer/dashboard",
     element: (
       <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
         <DeveloperDashboardPage />
+      </PortalGate>
+    ),
+  },
+  {
+    path: "/developer/users",
+    element: (
+      <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+        <DeveloperUsersPage />
+      </PortalGate>
+    ),
+  },
+  {
+    path: "/developer/credits",
+    element: (
+      <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+        <DeveloperCreditsPage />
+      </PortalGate>
+    ),
+  },
+  {
+    path: "/developer/testing-lab",
+    element: (
+      <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+        <DeveloperTestingLabPage />
+      </PortalGate>
+    ),
+  },
+  {
+    path: "/developer/error-logs",
+    element: (
+      <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+        <DeveloperErrorLogsPage />
+      </PortalGate>
+    ),
+  },
+  {
+    path: "/developer/analytics",
+    element: (
+      <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+        <DeveloperAnalyticsPage />
+      </PortalGate>
+    ),
+  },
+  {
+    path: "/developer/feedback",
+    element: (
+      <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+        <DeveloperFeedbackPage />
+      </PortalGate>
+    ),
+  },
+  {
+    path: "/developer/settings",
+    element: (
+      <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+        <DeveloperSettingsPage />
       </PortalGate>
     ),
   },
@@ -216,10 +273,6 @@ export const router = createBrowserRouter([
     ),
   },
   // Legacy internal routes for backward compatibility
-  {
-    path: "/internal/login",
-    Component: DeveloperAccessPage,
-  },
   {
     path: "/internal",
     element: (
@@ -253,10 +306,6 @@ export const router = createBrowserRouter([
     ),
   },
   // Admin Portal Routes
-  {
-    path: "/admin/auth",
-    Component: AdminAuthPage,
-  },
   {
     path: "/admin/dashboard",
     element: (

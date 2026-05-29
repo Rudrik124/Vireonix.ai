@@ -87,6 +87,28 @@ create table if not exists public.feature_flags (
   created_at timestamptz not null default now()
 );
 
+create type public.error_severity as enum ('critical', 'high', 'medium', 'low');
+create type public.error_status as enum ('open', 'resolved');
+
+create table if not exists public.error_logs (
+  id uuid primary key default gen_random_uuid(),
+  timestamp timestamptz not null default now(),
+  module text not null,
+  route text not null,
+  user_id uuid references public.app_profiles (id) on delete set null,
+  error_message text not null,
+  stack_trace text,
+  severity public.error_severity not null default 'medium',
+  browser text,
+  device text,
+  status public.error_status not null default 'open',
+  resolved_at timestamptz,
+  resolved_by uuid references public.app_profiles (id) on delete set null,
+  additional_context jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create or replace function public.set_updated_at()
 returns trigger
 language plpgsql
@@ -185,6 +207,7 @@ alter table public.usage_logs enable row level security;
 alter table public.api_logs enable row level security;
 alter table public.testing_logs enable row level security;
 alter table public.feature_flags enable row level security;
+alter table public.error_logs enable row level security;
 
 drop policy if exists "profiles_select_self_or_internal" on public.app_profiles;
 create policy "profiles_select_self_or_internal"
@@ -247,3 +270,28 @@ create policy "feature_flags_internal_only"
 on public.feature_flags
 for select
 using (public.is_internal_user());
+
+drop trigger if exists set_error_logs_updated_at on public.error_logs;
+create trigger set_error_logs_updated_at
+before update on public.error_logs
+for each row
+execute function public.set_updated_at();
+
+drop policy if exists "error_logs_authenticated_insert" on public.error_logs;
+create policy "error_logs_authenticated_insert"
+on public.error_logs
+for insert
+with check (auth.uid() = user_id or public.is_internal_user() or auth.jwt() ->> 'role' = 'authenticated');
+
+drop policy if exists "error_logs_internal_view_all" on public.error_logs;
+create policy "error_logs_internal_view_all"
+on public.error_logs
+for select
+using (public.is_internal_user());
+
+drop policy if exists "error_logs_internal_update" on public.error_logs;
+create policy "error_logs_internal_update"
+on public.error_logs
+for update
+using (public.current_app_role() in ('super_admin', 'admin'))
+with check (public.current_app_role() in ('super_admin', 'admin'));
