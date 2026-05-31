@@ -269,10 +269,20 @@ const TimelineHub = memo(({
   timelineSize,
   setTimelineSize,
   overlayTextStylePreset,
+<<<<<<< HEAD
   getOverlayTextStylePresetCss,
   extractingAudio,
   audioError,
   recognition,
+=======
+  overlayTextStylePresetCss,
+  extractingAudio,
+  setExtractingAudio,
+  audioError,
+  setAudioError,
+  showReadLine,
+  setShowReadLine,
+>>>>>>> 47ea0c2 (working on features)
 }: any) => {
   const timelineScrollRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
@@ -576,8 +586,8 @@ const TimelineHub = memo(({
                     const fromIndexStr = e.dataTransfer.getData('dragIndex');
                     if (clipId && !fromIndexStr) {
                       const item = mediaItems.find((m: any) => m.id === clipId);
-                      if (item) {
-                        setActivePreviewId(item.id);
+                    if (item) {
+                        selectPreviewWithTransition(item.id);
                       }
                     }
                   }
@@ -600,7 +610,7 @@ const TimelineHub = memo(({
                         transition={{ type: 'spring', stiffness: 220, damping: 26 }}
                         onClick={(e) => {
                           e.stopPropagation();
-                          setActivePreviewId(item.id);
+                          selectPreviewWithTransition(item.id);
                         }}
                         draggable="true"
                         onDragStart={(e: any) => {
@@ -996,6 +1006,20 @@ const ToolInspector = memo(({
   setSlowMotionSpeed,
   glitchIntensity,
   setGlitchIntensity,
+  velocitySpeed,
+  setVelocitySpeed,
+  motionBlurAmount,
+  setMotionBlurAmount,
+  shakeStrength,
+  setShakeStrength,
+  flashIntensity,
+  setFlashIntensity,
+  rgbSplitAmount,
+  setRgbSplitAmount,
+  smoothZoomAmount,
+  setSmoothZoomAmount,
+  filmGrainOpacity,
+  setFilmGrainOpacity,
   animatedText,
   setAnimatedText,
   overlayText,
@@ -1010,6 +1034,8 @@ const ToolInspector = memo(({
   setOverlayPosX,
   overlayPosY,
   setOverlayPosY,
+  overlayTextStylePreset,
+  setOverlayTextStylePreset,
   isTextPlacementMode,
   setIsTextPlacementMode,
   clipTransitions,
@@ -1246,23 +1272,26 @@ const ToolInspector = memo(({
             </div>
           )}
 
-          {selectedEffect === 'velocity' && (
-            <div className="mt-2 p-2.5 rounded-lg bg-white/5 border border-white/10 space-y-1.5">
-              <div className="flex items-center justify-between text-[8px] font-bold uppercase tracking-widest text-slate-300">
-                <span>Velocity Ramp</span>
-                <span>{velocitySpeed.toFixed(2)}x</span>
+          {selectedEffect === 'velocity' && (() => {
+            const safeVelocitySpeed = typeof velocitySpeed === 'number' ? velocitySpeed : 1.5;
+            return (
+              <div className="mt-2 p-2.5 rounded-lg bg-white/5 border border-white/10 space-y-1.5">
+                <div className="flex items-center justify-between text-[8px] font-bold uppercase tracking-widest text-slate-300">
+                  <span>Velocity Ramp</span>
+                  <span>{safeVelocitySpeed.toFixed(2)}x</span>
+                </div>
+                <input
+                  type="range"
+                  min={0.5}
+                  max={3}
+                  step={0.05}
+                  value={safeVelocitySpeed}
+                  onChange={(e) => setVelocitySpeed(Number(e.target.value))}
+                  className="w-full accent-cyan-400"
+                />
               </div>
-              <input
-                type="range"
-                min={0.5}
-                max={3}
-                step={0.05}
-                value={velocitySpeed}
-                onChange={(e) => setVelocitySpeed(Number(e.target.value))}
-                className="w-full accent-cyan-400"
-              />
-            </div>
-          )}
+            );
+          })()}
 
           {selectedEffect === 'motion-blur' && (
             <div className="mt-2 p-2.5 rounded-lg bg-white/5 border border-white/10 space-y-1.5">
@@ -2646,7 +2675,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
   }, [overlayFontId, overlayFontSize, overlayColor]);
 
   const getOverlayTextEffectForPreset = useCallback((preset: string | null) => {
-    if (preset === 'animated-captions') return 'text-animation';
+    if (preset === 'animated-captions') return 'animated-captions';
     if (preset === 'motion-tracking-text') return 'motion-tracking';
     return 'none';
   }, []);
@@ -2959,7 +2988,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
 
   const triggerClipTransition = useCallback((nextId: string) => {
     if (!activePreviewId || activePreviewId === nextId) {
-      setActivePreviewId(nextId);
+      selectPreviewWithTransition(nextId);
       return;
     }
 
@@ -2979,7 +3008,6 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
       durationMs: 1400,
     });
     setTransitionProgress(0);
-    setActivePreviewId(nextId);
   }, [activePreviewId, clipTransitions]);
 
   const playNextMedia = useCallback(() => {
@@ -3180,7 +3208,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
     if (!videoRef.current) return;
     let effectSpeed = 1;
     if (selectedEffect === 'slow-motion') effectSpeed = slowMotionSpeed;
-    if (selectedEffect === 'velocity') effectSpeed = velocitySpeed;
+    if (selectedEffect === 'velocity') effectSpeed = typeof velocitySpeed === 'number' ? velocitySpeed : 1.5;
     const manualSpeed = Math.abs(speedValue - 1) > 0.001 ? speedValue : effectSpeed;
     const resolvedSpeed = Math.max(0.1, Math.min(3, manualSpeed));
     videoRef.current.playbackRate = resolvedSpeed;
@@ -3194,6 +3222,9 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
       videoRef.current.currentTime = trim.start;
     }
   }, [activePreviewId, mediaItems, getTrimRangeForItem, clipTrimRanges]);
+
+  // Compute overlay text style CSS from selected preset for use in preview
+  const overlayTextStylePresetCss = getOverlayTextStylePresetCss(overlayTextStylePreset);
 
   useEffect(() => {
     const activeCanvasMode = CANVAS_PREVIEW_EFFECTS.includes(selectedEffect)
@@ -3394,6 +3425,12 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
       if (p < 1) {
         raf = requestAnimationFrame(tick);
       } else {
+        // switch to the 'to' clip after transition completes
+        try {
+          setActivePreviewId(transitionOverlay.toId);
+        } catch (e) {
+          // ignore
+        }
         setTransitionOverlay(null);
         setTransitionProgress(0);
       }
@@ -3508,6 +3545,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
     if (selectedEffect === 'flash-effect') return 'brightness(1.4) contrast(1.15)';
     if (selectedEffect === 'smooth-zoom') return 'contrast(1.1)';
     if (selectedEffect === 'velocity') return 'saturate(1.1)';
+    if (selectedEffect === 'glitch') return 'contrast(1.1) saturate(1.25)';
     if (selectedEffect === 'animated-captions') return 'contrast(1.05)';
     return 'none';
   };
@@ -3596,8 +3634,16 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
       rgbOffset = ` translate(${Math.sin(performance.now() / 150) * offset * 0.4}px, ${Math.cos(performance.now() / 180) * offset * 0.25}px)`;
     }
 
+    let glitchOffset = '';
+    if (selectedEffect === 'glitch') {
+      const t = performance.now() / 130;
+      const x = Math.sin(t * 25) * 2.5;
+      const y = Math.cos(t * 31) * 1.8;
+      glitchOffset = ` translate(${x}px, ${y}px)`;
+    }
+
     const baseTransform = `scale(${zoomScale * zoomToolAmount * keyframeScale}) rotate(${rotationDegrees}deg)`;
-    return `${baseTransform}${shakeOffset}${rgbOffset}`;
+    return `${baseTransform}${shakeOffset}${rgbOffset}${glitchOffset}`;
   };
 
   const activeTrim = activePreviewItem && activePreviewItem.type === 'video'
@@ -3637,7 +3683,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
       const updated = [...prev];
       updated.splice(index + 1, 0, copyItem);
       saveToUndo(updated);
-      setActivePreviewId(nextId);
+      selectPreviewWithTransition(nextId);
       return updated;
     });
   };
@@ -3654,7 +3700,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
       duration: await getMediaDuration(file)
     })));
 
-    setActivePreviewId(newItems[0].id);
+    selectPreviewWithTransition(newItems[0].id);
     setIsPlaying(false);
 
     setMediaItems(prev => {
@@ -3676,7 +3722,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
       if (item) URL.revokeObjectURL(item.preview);
       const nextItems = prev.filter(i => i.id !== id);
       if (activePreviewId === id) {
-        setActivePreviewId(nextItems[0]?.id || null);
+        selectPreviewWithTransition(nextItems[0]?.id || null);
       }
       saveToUndo(nextItems);
       return nextItems;
@@ -3767,10 +3813,21 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
         durationMs: 1400,
       });
       setTransitionProgress(0);
-      setActivePreviewId(nextId);
     }
 
     setActiveTool(null);
+  };
+
+  const selectPreviewWithTransition = (nextId: string | null) => {
+    if (!nextId) {
+      setActivePreviewId(null);
+      return;
+    }
+    if (!activePreviewId || activePreviewId === nextId) {
+      setActivePreviewId(nextId);
+      return;
+    }
+    triggerClipTransition(nextId);
   };
 
   const handleGenerate = () => {
@@ -4226,8 +4283,24 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                             setOverlayColor={setOverlayColor}
                             overlayPosX={overlayPosX}
                             setOverlayPosX={setOverlayPosX}
+                            velocitySpeed={velocitySpeed}
+                            setVelocitySpeed={setVelocitySpeed}
+                            motionBlurAmount={motionBlurAmount}
+                            setMotionBlurAmount={setMotionBlurAmount}
+                            shakeStrength={shakeStrength}
+                            setShakeStrength={setShakeStrength}
+                            flashIntensity={flashIntensity}
+                            setFlashIntensity={setFlashIntensity}
+                            rgbSplitAmount={rgbSplitAmount}
+                            setRgbSplitAmount={setRgbSplitAmount}
+                            smoothZoomAmount={smoothZoomAmount}
+                            setSmoothZoomAmount={setSmoothZoomAmount}
+                            filmGrainOpacity={filmGrainOpacity}
+                            setFilmGrainOpacity={setFilmGrainOpacity}
                             overlayPosY={overlayPosY}
                             setOverlayPosY={setOverlayPosY}
+                            overlayTextStylePreset={overlayTextStylePreset}
+                            setOverlayTextStylePreset={setOverlayTextStylePreset}
                             isTextPlacementMode={isTextPlacementMode}
                             setIsTextPlacementMode={setIsTextPlacementMode}
                             clipTransitions={clipTransitions}
@@ -4890,7 +4963,17 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
               timelineSize={timelineSize}
               setTimelineSize={setTimelineSize}
               overlayTextStylePreset={overlayTextStylePreset}
+<<<<<<< HEAD
               getOverlayTextStylePresetCss={getOverlayTextStylePresetCss(overlayTextStylePreset)}
+=======
+              overlayTextStylePresetCss={getOverlayTextStylePresetCss(overlayTextStylePreset)}
+              extractingAudio={extractingAudio}
+              setExtractingAudio={setExtractingAudio}
+              audioError={audioError}
+              setAudioError={setAudioError}
+              showReadLine={showReadLine}
+              setShowReadLine={setShowReadLine}
+>>>>>>> 47ea0c2 (working on features)
             />
           </div>
 
