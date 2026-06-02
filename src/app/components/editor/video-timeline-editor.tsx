@@ -20,6 +20,7 @@ type TimelineClip = {
   id: string;
   label: string;
   preview: string;
+  file?: File;  // Original file object for API submission
   duration: number;
   trackIndex: number;
   trimStart: number;
@@ -86,6 +87,13 @@ export function VideoTimelineEditor() {
   const pixelsPerSecond = Math.max(40, basePixelsPerSecond * zoom);
   const timelineWidth = Math.max(560, longestTrackDuration * pixelsPerSecond + 120);
 
+  // Calculate total duration across ALL clips for continuous playback
+  const totalTimelineDuration = useMemo(() => {
+    const allClips = clips.filter(c => c.trackIndex === 0); // Use first track duration
+    if (allClips.length === 0) return 10;
+    return allClips.reduce((sum, clip) => sum + (clip.trimEnd - clip.trimStart), 0);
+  }, [clips]);
+
   const trackOffsets = useMemo(() => {
     const offsets: Record<string, number> = {};
     trackGroups.forEach((row) => {
@@ -104,7 +112,12 @@ export function VideoTimelineEditor() {
   }, [activeClip, trackOffsets]);
 
   const activeClipDuration = activeClip ? Math.max(0.1, activeClip.trimEnd - activeClip.trimStart) : 0.1;
-  const playheadLeft = activeClip ? activeClipOffset + (globalProgress / 100) * activeClipDuration * pixelsPerSecond : 0;
+  
+  // Playhead position based on global progress across entire timeline
+  const playheadLeft = useMemo(() => {
+    // Global progress is 0-100, representing the entire timeline
+    return (globalProgress / 100) * timelineWidth;
+  }, [globalProgress, timelineWidth]);
 
   const updateClipRange = useCallback((clipId: string, values: Partial<Pick<TimelineClip, 'trimStart' | 'trimEnd'>>) => {
     setClips((prev) => prev.map((clip) => clip.id === clipId ? {
@@ -124,11 +137,12 @@ export function VideoTimelineEditor() {
         id: Math.random().toString(36).slice(2, 11),
         label: file.name,
         preview,
+        file,  // Store original File object for API submission
         trimStart: 0,
         trimEnd: Math.max(0.1, duration),
         duration: Math.max(0.1, duration),
         trackIndex: 0,
-        transition: 'none' as TransitionType,
+        transition: 'fade' as TransitionType,  // Default transition for all clips
       };
     }));
 
@@ -186,27 +200,137 @@ export function VideoTimelineEditor() {
   }, [selectedClipId]);
 
   const setTransitionForClip = useCallback((clipId: string, transition: TransitionType) => {
-    setClips((prev) => prev.map((clip) => clip.id === clipId ? { ...clip, transition } : clip));
+    setClips((prev) => {
+      const updated = prev.map((clip) => clip.id === clipId ? { ...clip, transition } : clip);
+      console.log(`✅ [TIMELINE] Clip ${clipId} transition updated to: ${transition}`);
+      return updated;
+    });
   }, []);
 
+  /**
+   * Generate transition plan for API submission
+   * Returns array of { index, transition } objects
+   */
+  const buildTransitionPlan = useCallback(() => {
+    if (clips.length === 0) return [];
+    
+    // Sort clips by track index and then by position
+    const sortedClips = [...clips].sort((a, b) => {
+      if (a.trackIndex !== b.trackIndex) return a.trackIndex - b.trackIndex;
+      const offsetA = trackOffsets[a.id] ?? 0;
+      const offsetB = trackOffsets[b.id] ?? 0;
+      return offsetA - offsetB;
+    });
+
+    // Build transition plan - one entry per clip
+    return sortedClips.map((clip, index) => ({
+      index: index,
+      transition: clip.transition,
+    }));
+  }, [clips, trackOffsets]);
+
+  /**
+   * Export timeline for video generation
+   * Collects all clips and transitions, packages them for API
+   */
+  const exportTimeline = useCallback(async () => {
+    if (clips.length === 0) {
+      console.warn("❌ No clips in timeline");
+      return;
+    }
+
+    try {
+      const plan = buildTransitionPlan();
+      
+      console.log("📤 [TIMELINE] Exporting timeline:", {
+        totalClips: clips.length,
+        transitions: plan,
+      });
+
+      // Sort clips for consistent ordering
+      const sortedClips = [...clips].sort((a, b) => {
+        if (a.trackIndex !== b.trackIndex) return a.trackIndex - b.trackIndex;
+        const offsetA = trackOffsets[a.id] ?? 0;
+        const offsetB = trackOffsets[b.id] ?? 0;
+        return offsetA - offsetB;
+      });
+
+      console.log("📋 [TIMELINE] Sorted clips:", sortedClips.map(c => ({
+        id: c.id,
+        label: c.label,
+        hasFile: !!c.file,
+        fileName: c.file?.name,
+        duration: c.duration.toFixed(2),
+        trimStart: c.trimStart.toFixed(2),
+        trimEnd: c.trimEnd.toFixed(2),
+        transition: c.transition,
+      })));
+
+      // Create FormData with all clips
+      const formData = new FormData();
+      
+      // Add each clip video file with trim info
+      for (let i = 0; i < sortedClips.length; i++) {
+        const clip = sortedClips[i];
+        
+        // Add actual file if available
+        if (clip.file) {
+          formData.append(`media`, clip.file, clip.label);
+          console.log(`✅ [TIMELINE] Added file ${i}: ${clip.label} (${(clip.file.size / 1024 / 1024).toFixed(2)}MB) | Transition: ${clip.transition}`);
+        } else {
+          console.warn(`⚠️  [TIMELINE] Clip ${i} has no file object!`);
+        }
+        
+        // Add metadata with transition
+        formData.append(`clip_${i}_label`, clip.label);
+        formData.append(`clip_${i}_transition`, clip.transition);  // Add transition per clip
+        formData.append(`clip_${i}_trimStart`, String(clip.trimStart));
+        formData.append(`clip_${i}_trimEnd`, String(clip.trimEnd));
+        formData.append(`clip_${i}_duration`, String(clip.duration));
+      }
+
+      // Add transition plan
+      console.log("📋 [TIMELINE] Transition Plan:", plan);
+      formData.append("transitionPlan", JSON.stringify(plan));
+      formData.append("totalClips", String(sortedClips.length));
+
+      // Dispatch event for parent component to handle submission
+      const event = new CustomEvent('timeline-ready-for-export', {
+        detail: {
+          formData,
+          clips: sortedClips,
+          transitionPlan: plan,
+        }
+      });
+      window.dispatchEvent(event);
+
+      console.log("✅ [TIMELINE] Timeline ready for export with", sortedClips.length, "clips");
+    } catch (error) {
+      console.error("❌ [TIMELINE] Export failed:", error);
+    }
+  }, [clips, buildTransitionPlan, trackOffsets]);
+
   useEffect(() => {
-    if (!previewRef.current) return;
+    if (!previewRef.current || !activeClip) return;
     const video = previewRef.current;
     const onTimeUpdate = () => {
-      if (!activeClip) return;
       const current = clamp(video.currentTime, activeClip.trimStart, activeClip.trimEnd);
       const timeWithin = current - activeClip.trimStart;
-      setGlobalProgress((timeWithin / activeClipDuration) * 100);
-      if (current >= activeClip.trimEnd - 0.1) {
+      // Calculate progress based on total timeline duration
+      const progressPercent = (activeClipOffset + timeWithin) / (longestTrackDuration || 1) * 100;
+      setGlobalProgress(Math.min(100, progressPercent));
+      
+      // Stop at end of clip
+      if (current >= activeClip.trimEnd - 0.05) {
         video.pause();
         setIsPlaying(false);
       }
     };
     const onSeeked = () => {
-      if (!activeClip) return;
       const current = clamp(video.currentTime, activeClip.trimStart, activeClip.trimEnd);
       const timeWithin = current - activeClip.trimStart;
-      setGlobalProgress((timeWithin / activeClipDuration) * 100);
+      const progressPercent = (activeClipOffset + timeWithin) / (longestTrackDuration || 1) * 100;
+      setGlobalProgress(Math.min(100, progressPercent));
     };
     video.addEventListener('timeupdate', onTimeUpdate);
     video.addEventListener('seeked', onSeeked);
@@ -214,15 +338,16 @@ export function VideoTimelineEditor() {
       video.removeEventListener('timeupdate', onTimeUpdate);
       video.removeEventListener('seeked', onSeeked);
     };
-  }, [activeClip, activeClipDuration]);
+  }, [activeClip, activeClipDuration, activeClipOffset, clips, longestTrackDuration, trackOffsets]);
 
   useEffect(() => {
     if (!previewRef.current || !activeClip) return;
     const video = previewRef.current;
     video.currentTime = activeClip.trimStart;
-    setGlobalProgress(0);
     if (isPlaying) {
       video.play().catch(() => {});
+    } else {
+      video.pause();
     }
   }, [activeClip, isPlaying]);
 
@@ -276,6 +401,15 @@ export function VideoTimelineEditor() {
             {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
             {isPlaying ? 'Pause' : 'Play'}
           </button>
+          <button
+            onClick={() => exportTimeline()}
+            disabled={clips.length === 0}
+            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.25em] text-slate-200 hover:border-green-400 hover:text-green-300 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Export timeline with all clips and transitions"
+          >
+            <Sparkles className="w-4 h-4" />
+            Generate Video
+          </button>
         </div>
       </div>
 
@@ -314,6 +448,7 @@ export function VideoTimelineEditor() {
                 <motion.div
                   className="absolute top-0 bottom-0 w-[2px] bg-red-500 z-40 pointer-events-none"
                   animate={{ left: playheadLeft }}
+                  transition={{ type: 'tween', duration: 0.1 }}
                   style={{ transform: 'translateX(-50%)' }}
                 >
                   <div className="absolute -top-2 left-1/2 h-4 w-4 -translate-x-1/2 rounded-full bg-red-500 shadow-[0_0_20px_rgba(239,68,68,0.45)]" />
@@ -529,11 +664,14 @@ export function VideoTimelineEditor() {
             </div>
 
             <div className="rounded-3xl border border-white/10 bg-[#0b1321] p-4">
-              <div className="text-[9px] uppercase tracking-[0.3em] text-slate-500 mb-2">Tips</div>
+              <div className="text-[9px] uppercase tracking-[0.3em] text-slate-500 mb-2">How to Use</div>
               <div className="space-y-2 text-[11px] leading-5 text-slate-300">
-                <p>Drag clips across lanes to layer multiple video tracks.</p>
-                <p>Use the zoom slider to expand the timeline for fine trimming.</p>
-                <p>Clip thumbnails animate smoothly and snap to track boundaries.</p>
+                <p>✅ <strong>Add Clips:</strong> Click "Add Clips" button to upload video files</p>
+                <p>✅ <strong>Select:</strong> Click any clip in the timeline to select it</p>
+                <p>✅ <strong>Transitions:</strong> Select a clip, then choose transition (Fade, Slide, Wipe, Crossfade, None)</p>
+                <p>✅ <strong>Trim:</strong> Adjust start/end points using the arrow buttons</p>
+                <p>✅ <strong>Arrange:</strong> Drag clips between tracks to organize layers</p>
+                <p>✅ <strong>Generate:</strong> Click "Generate Video" to create final video with transitions</p>
               </div>
             </div>
           </div>

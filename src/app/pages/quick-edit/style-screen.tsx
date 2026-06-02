@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, memo } from "react";
+import { useState, useRef, useEffect, useCallback, memo, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Youtube,
@@ -87,30 +87,61 @@ async function extractAudioFromVideoFile(videoFile: File): Promise<File> {
   video.muted = true;
   video.playsInline = true;
   video.preload = "metadata";
+  video.crossOrigin = "anonymous";
 
   await new Promise<void>((resolve, reject) => {
-    video.onloadedmetadata = () => resolve();
-    video.onerror = () => reject(new Error("Unable to load video file for audio extraction."));
+    const timeout = setTimeout(() => {
+      reject(new Error("Unable to load video file for audio extraction (timeout)."));
+    }, 15000);
+    
+    video.onloadedmetadata = () => {
+      clearTimeout(timeout);
+      resolve();
+    };
+    video.onerror = () => {
+      clearTimeout(timeout);
+      reject(new Error("Unable to load video file for audio extraction."));
+    };
   });
 
   const captureStream = (video as any).captureStream || (video as any).mozCaptureStream;
   if (!captureStream) {
     URL.revokeObjectURL(objectUrl);
-    throw new Error("Audio extraction requires browser support for video.captureStream().");
+    throw new Error("Audio extraction requires browser support for video.captureStream(). Please try a different browser (Chrome, Firefox, or Edge).");
   }
 
   const stream = captureStream.call(video) as MediaStream;
   const audioTracks = stream.getAudioTracks();
   if (audioTracks.length === 0) {
     URL.revokeObjectURL(objectUrl);
-    throw new Error("No audio track was detected in the selected video.");
+    throw new Error("No audio track was detected in the selected video. Make sure the video file contains audio.");
   }
 
-  const supportsWebmOpus = typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported("audio/webm;codecs=opus");
-  const supportsWebm = typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported("audio/webm");
-  const mimeType = supportsWebmOpus ? "audio/webm;codecs=opus" : supportsWebm ? "audio/webm" : "audio/webm";
+  // Find supported MIME type
+  let mimeType = "audio/webm";
+  const possibleMimeTypes = [
+    "audio/webm;codecs=opus",
+    "audio/webm;codecs=vp9",
+    "audio/webm",
+    "audio/mp4",
+    "audio/mpeg"
+  ];
+  
+  for (const type of possibleMimeTypes) {
+    if (typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(type)) {
+      mimeType = type;
+      break;
+    }
+  }
 
-  const recorder = new MediaRecorder(stream, { mimeType });
+  let recorder: MediaRecorder;
+  try {
+    recorder = new MediaRecorder(stream, { mimeType });
+  } catch (error) {
+    URL.revokeObjectURL(objectUrl);
+    throw new Error(`Failed to initialize audio recorder. Your browser may not support audio recording. ${error instanceof Error ? error.message : ''}`);
+  }
+
   const chunks: BlobPart[] = [];
   recorder.ondataavailable = (event) => {
     if (event.data && event.data.size > 0) {
@@ -119,8 +150,18 @@ async function extractAudioFromVideoFile(videoFile: File): Promise<File> {
   };
 
   const recordedBlobPromise = new Promise<Blob>((resolve, reject) => {
-    recorder.onstop = () => resolve(new Blob(chunks, { type: mimeType }));
-    recorder.onerror = () => reject(new Error("Audio extraction failed while recording."));
+    const recordingTimeout = setTimeout(() => {
+      reject(new Error("Audio extraction took too long and was cancelled."));
+    }, 300000); // 5 minute timeout
+    
+    recorder.onstop = () => {
+      clearTimeout(recordingTimeout);
+      resolve(new Blob(chunks, { type: mimeType }));
+    };
+    recorder.onerror = (event) => {
+      clearTimeout(recordingTimeout);
+      reject(new Error(`Audio extraction failed: ${event.error?.message || 'Unknown error'}`));
+    };
   });
 
   recorder.start();
@@ -135,6 +176,12 @@ async function extractAudioFromVideoFile(videoFile: File): Promise<File> {
     } else {
       await new Promise((resolve) => setTimeout(resolve, 3000));
     }
+  } catch (error) {
+    if (recorder.state !== "inactive") {
+      recorder.stop();
+    }
+    URL.revokeObjectURL(objectUrl);
+    throw error;
   } finally {
     if (recorder.state !== "inactive") {
       recorder.stop();
@@ -143,6 +190,10 @@ async function extractAudioFromVideoFile(videoFile: File): Promise<File> {
   }
 
   const audioBlob = await recordedBlobPromise;
+  if (audioBlob.size === 0) {
+    throw new Error("Failed to extract audio - the resulting audio file is empty. Please try with a different video.");
+  }
+  
   const outputName = `${videoFile.name.replace(/\.[^/.]+$/, "")}.webm`;
   return new File([audioBlob], outputName, { type: audioBlob.type || "audio/webm" });
 }
@@ -269,12 +320,6 @@ const TimelineHub = memo(({
   timelineSize,
   setTimelineSize,
   overlayTextStylePreset,
-<<<<<<< HEAD
-  getOverlayTextStylePresetCss,
-  extractingAudio,
-  audioError,
-  recognition,
-=======
   overlayTextStylePresetCss,
   extractingAudio,
   setExtractingAudio,
@@ -282,7 +327,6 @@ const TimelineHub = memo(({
   setAudioError,
   showReadLine,
   setShowReadLine,
->>>>>>> 47ea0c2 (working on features)
 }: any) => {
   const timelineScrollRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
@@ -366,13 +410,17 @@ const TimelineHub = memo(({
   };
 
   // Calculate timeline durations
-  const totalDuration = mediaItems.reduce((acc: number, it: any) => {
-    const t = getTrimRangeForItem(it.id, it.duration);
-    const eff = it.type === 'video' ? (t.end - t.start) : it.duration;
-    return acc + (Number(eff) || 3.0);
-  }, 0) || 1;
+  const totalDuration = useMemo(() => {
+    return mediaItems.reduce((acc: number, it: any) => {
+      const t = getTrimRangeForItem(it.id, it.duration);
+      const eff = it.type === 'video' ? (t.end - t.start) : it.duration;
+      return acc + (Number(eff) || 3.0);
+    }, 0) || 1;
+  }, [mediaItems, getTrimRangeForItem]);
 
-  const playheadLeft = (progress / 100) * totalDuration * pixelsPerSecond;
+  const playheadLeft = useMemo(() => {
+    return (progress / 100) * totalDuration * pixelsPerSecond;
+  }, [progress, totalDuration, pixelsPerSecond]);
 
   useEffect(() => {
     if (!timelineScrollRef.current || isDragging) return;
@@ -553,7 +601,7 @@ const TimelineHub = memo(({
               <motion.div
                 initial={false}
                 animate={{ left: `${playheadLeft}px` }}
-                transition={isPlaying ? { duration: 0 } : { type: "spring", stiffness: 300, damping: 30 }}
+                transition={{ duration: isDragging ? 0.05 : 0, type: "tween" }}
                 className="absolute top-0 bottom-0 w-[2px] bg-red-500 z-30 shadow-[0_0_10px_rgba(239,68,68,0.8)] pointer-events-none"
                 style={{ transform: 'translateX(-50%)' }}
               >
@@ -1006,20 +1054,6 @@ const ToolInspector = memo(({
   setSlowMotionSpeed,
   glitchIntensity,
   setGlitchIntensity,
-  velocitySpeed,
-  setVelocitySpeed,
-  motionBlurAmount,
-  setMotionBlurAmount,
-  shakeStrength,
-  setShakeStrength,
-  flashIntensity,
-  setFlashIntensity,
-  rgbSplitAmount,
-  setRgbSplitAmount,
-  smoothZoomAmount,
-  setSmoothZoomAmount,
-  filmGrainOpacity,
-  setFilmGrainOpacity,
   animatedText,
   setAnimatedText,
   overlayText,
@@ -1034,8 +1068,6 @@ const ToolInspector = memo(({
   setOverlayPosX,
   overlayPosY,
   setOverlayPosY,
-  overlayTextStylePreset,
-  setOverlayTextStylePreset,
   isTextPlacementMode,
   setIsTextPlacementMode,
   clipTransitions,
@@ -1461,7 +1493,12 @@ const ToolInspector = memo(({
             ].map((tr) => (
               <button
                 key={tr.id}
-                onClick={() => applyTransitionForActiveClip(tr.id as any)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  applyTransitionForActiveClip(tr.id as any);
+                }}
+                type="button"
                 className={`w-full px-2.5 py-2 rounded-lg text-left text-[9px] font-bold uppercase tracking-wider transition-colors ${activePreviewId && clipTransitions[activePreviewId] === tr.id ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10'}`}
               >
                 {tr.label}
@@ -2988,7 +3025,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
 
   const triggerClipTransition = useCallback((nextId: string) => {
     if (!activePreviewId || activePreviewId === nextId) {
-      selectPreviewWithTransition(nextId);
+      setActivePreviewId(nextId);
       return;
     }
 
@@ -3010,6 +3047,19 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
     setTransitionProgress(0);
   }, [activePreviewId, clipTransitions]);
 
+  // Select clip for preview, optionally triggering transition animation
+  const selectPreviewWithTransition = useCallback((nextId: string | null) => {
+    if (!nextId) {
+      setActivePreviewId(null);
+      return;
+    }
+    if (!activePreviewId || activePreviewId === nextId) {
+      setActivePreviewId(nextId);
+      return;
+    }
+    triggerClipTransition(nextId);
+  }, [activePreviewId, triggerClipTransition]);
+
   const playNextMedia = useCallback(() => {
     const currentIndex = mediaItems.findIndex(i => i.id === activePreviewId);
     if (currentIndex !== -1 && currentIndex < mediaItems.length - 1) {
@@ -3024,18 +3074,32 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
 
   const togglePlay = () => {
     const activeItem = mediaItems.find(i => i.id === activePreviewId);
+    
+    // If there are no media items, don't try to play
+    if (!activeItem || mediaItems.length === 0) {
+      return;
+    }
+
+    // For video items, control the video element
     if (activeItem?.type === 'video' && videoRef.current) {
       const trim = getTrimRangeForItem(activeItem.id, activeItem.duration);
       if (isPlaying) {
         videoRef.current.pause();
+        setIsPlaying(false);
       } else {
         if (videoRef.current.currentTime < trim.start || videoRef.current.currentTime > trim.end) {
           videoRef.current.currentTime = trim.start;
         }
-        videoRef.current.play();
+        videoRef.current.play().catch(err => {
+          console.error('Error playing video:', err);
+          setIsPlaying(false);
+        });
+        setIsPlaying(true);
       }
+    } else {
+      // For images or when no video ref, just toggle the playing state
+      setIsPlaying(!isPlaying);
     }
-    setIsPlaying(!isPlaying);
   };
 
   const handleTimeUpdate = () => {
@@ -3172,6 +3236,12 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
 
   useEffect(() => {
     if (videoRef.current) {
+      // Reset video to beginning when switching videos
+      const activeItem = mediaItems.find(i => i.id === activePreviewId);
+      if (activeItem?.type === 'video') {
+        videoRef.current.currentTime = 0;
+      }
+      
       if (isPlaying) {
         videoRef.current.play().catch(() => {
           // If autoplay with audio is blocked, force muted playback for reliable preview.
@@ -3185,7 +3255,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
         videoRef.current.pause();
       }
     }
-  }, [isPlaying, activePreviewId]);
+  }, [isPlaying, activePreviewId, mediaItems]);
 
   useEffect(() => {
     if (selectedEffect === 'none') {
@@ -3425,14 +3495,12 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
       if (p < 1) {
         raf = requestAnimationFrame(tick);
       } else {
-        // switch to the 'to' clip after transition completes
-        try {
-          setActivePreviewId(transitionOverlay.toId);
-        } catch (e) {
-          // ignore
-        }
+        // Transition preview finished - don't auto-switch clips
+        // Just clear the overlay state
+        console.log("✅ [TRANSITIONS] Preview animation completed for transition:", transitionOverlay.type);
         setTransitionOverlay(null);
         setTransitionProgress(0);
+        // Keep activePreviewId as-is so user can see the transition was applied
       }
     };
 
@@ -3750,6 +3818,21 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
     });
   }, [saveToUndo]);
 
+  const handleDeleteClip = useCallback((clipId: string) => {
+    setMediaItems((prev) => {
+      const updated = prev.filter((item) => item.id !== clipId);
+      saveToUndo(updated);
+      
+      // If the deleted clip was active, select a new active clip
+      if (activePreviewId === clipId) {
+        const newActiveId = updated.length > 0 ? updated[0].id : null;
+        setActivePreviewId(newActiveId);
+      }
+      
+      return updated;
+    });
+  }, [activePreviewId, saveToUndo]);
+
   const handleAddAudio = (type: 'extracted' | 'direct', trackIndex = 0) => {
     const input = document.createElement('input');
     input.type = 'file';
@@ -3798,36 +3881,60 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
   };
 
   const applyTransitionForActiveClip = (transition: TransitionType) => {
-    if (!activePreviewId) return;
+    try {
+      if (!activePreviewId) {
+        console.warn("⚠️ [TRANSITIONS] No active clip selected");
+        return;
+      }
 
-    setClipTransitions((prev) => ({ ...prev, [activePreviewId]: transition }));
-
-    const currentIndex = mediaItems.findIndex((item) => item.id === activePreviewId);
-    if (currentIndex !== -1 && currentIndex < mediaItems.length - 1) {
-      const nextId = mediaItems[currentIndex + 1].id;
-      setTransitionOverlay({
-        fromId: activePreviewId,
-        toId: nextId,
-        type: transition,
-        startAt: performance.now(),
-        durationMs: 1400,
+      console.log("📝 [TRANSITIONS] Applying transition to clip", { 
+        clipId: activePreviewId, 
+        transition,
+        allClipTransitions: clipTransitions 
       });
-      setTransitionProgress(0);
-    }
+      
+      // Save transition to state - this is what gets sent to the backend
+      setClipTransitions((prev) => {
+        const updated = { ...prev, [activePreviewId]: transition };
+        console.log("✅ [TRANSITIONS] Transition saved to state", { 
+          clipId: activePreviewId,
+          transition,
+          updated 
+        });
+        return updated;
+      });
 
-    setActiveTool(null);
-  };
+      const currentIndex = mediaItems.findIndex((item) => item.id === activePreviewId);
+      if (currentIndex !== -1 && currentIndex < mediaItems.length - 1) {
+        // Only show preview if there's a next clip
+        const nextId = mediaItems[currentIndex + 1].id;
+        
+        console.log("📺 [TRANSITIONS] Playing preview animation", {
+          from: activePreviewId,
+          to: nextId,
+          type: transition,
+          message: "Preview shows what transition will look like in final video"
+        });
+        
+        setTransitionOverlay({
+          fromId: activePreviewId,
+          toId: nextId,
+          type: transition,
+          startAt: performance.now(),
+          durationMs: 1400,
+        });
+        setTransitionProgress(0);
+      } else {
+        console.log("📝 [TRANSITIONS] No preview (last clip or single clip selected)");
+      }
 
-  const selectPreviewWithTransition = (nextId: string | null) => {
-    if (!nextId) {
-      setActivePreviewId(null);
-      return;
+      // Close tool panel after a brief delay to ensure state is saved
+      setTimeout(() => {
+        setActiveTool(null);
+      }, 100);
+    } catch (error) {
+      console.error("❌ [TRANSITIONS] Error applying transition:", error);
     }
-    if (!activePreviewId || activePreviewId === nextId) {
-      setActivePreviewId(nextId);
-      return;
-    }
-    triggerClipTransition(nextId);
   };
 
   const handleGenerate = () => {
@@ -3854,6 +3961,13 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
       index,
       transition: clipTransitions[item.id] || 'none',
     }));
+
+    console.log("🎬 [GENERATE] Transition plan created:", {
+      mediaCount: mediaForProcessing.length,
+      transitionPlan: transitionPlan,
+      clipTransitions: clipTransitions,
+      hasTransitions: transitionPlan.some(t => t.transition !== 'none'),
+    });
 
     const audioForProcessing = audioTracks
       .filter((track) => track.file)
@@ -3975,6 +4089,17 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
         editorSelections,
       }
     });
+
+    // Debug logging for transitions
+    console.log("📤 [QUICK-EDIT] Sending to processing screen:", {
+      mediaCount: mediaForProcessing.length,
+      transitionPlan: transitionPlan,
+      clipTransitions: clipTransitions,
+      editorSelectionsTransitions: editorSelections.transitions,
+      hasTransitionsInPlan: transitionPlan.some(t => t.transition !== 'none'),
+      hasTransitionsInClipMap: Object.values(clipTransitions).some(t => t !== 'none'),
+    });
+
     navigate(`/quick-edit/processing${location.search}`, {
       state: {
         selectedStyle,
@@ -4283,24 +4408,8 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                             setOverlayColor={setOverlayColor}
                             overlayPosX={overlayPosX}
                             setOverlayPosX={setOverlayPosX}
-                            velocitySpeed={velocitySpeed}
-                            setVelocitySpeed={setVelocitySpeed}
-                            motionBlurAmount={motionBlurAmount}
-                            setMotionBlurAmount={setMotionBlurAmount}
-                            shakeStrength={shakeStrength}
-                            setShakeStrength={setShakeStrength}
-                            flashIntensity={flashIntensity}
-                            setFlashIntensity={setFlashIntensity}
-                            rgbSplitAmount={rgbSplitAmount}
-                            setRgbSplitAmount={setRgbSplitAmount}
-                            smoothZoomAmount={smoothZoomAmount}
-                            setSmoothZoomAmount={setSmoothZoomAmount}
-                            filmGrainOpacity={filmGrainOpacity}
-                            setFilmGrainOpacity={setFilmGrainOpacity}
                             overlayPosY={overlayPosY}
                             setOverlayPosY={setOverlayPosY}
-                            overlayTextStylePreset={overlayTextStylePreset}
-                            setOverlayTextStylePreset={setOverlayTextStylePreset}
                             isTextPlacementMode={isTextPlacementMode}
                             setIsTextPlacementMode={setIsTextPlacementMode}
                             clipTransitions={clipTransitions}
@@ -4453,6 +4562,12 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                               if (selectedEffect === 'fade-in') setPreviewOpacity(0);
                               else setPreviewOpacity(1);
                               if (selectedEffect !== 'zoom') setPreviewZoom(1);
+                            }}
+                            onLoadedData={() => {
+                              // Reset current time when new video is loaded
+                              if (videoRef.current) {
+                                videoRef.current.currentTime = 0;
+                              }
                             }}
                             onCanPlay={(e) => { if (isPlaying) e.currentTarget.play().catch(() => {}); }}
                             src={activePreviewItem.preview}
@@ -4957,15 +5072,13 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
               handleAddAudio={handleAddAudio}
               handleAddVideo={() => mediaInputRef.current?.click()}
               handleReorderClips={handleReorderClips}
+              handleDeleteClip={handleDeleteClip}
               getMediaDuration={getMediaDuration}
               setMediaItems={setMediaItems}
               saveToUndo={saveToUndo}
               timelineSize={timelineSize}
               setTimelineSize={setTimelineSize}
               overlayTextStylePreset={overlayTextStylePreset}
-<<<<<<< HEAD
-              getOverlayTextStylePresetCss={getOverlayTextStylePresetCss(overlayTextStylePreset)}
-=======
               overlayTextStylePresetCss={getOverlayTextStylePresetCss(overlayTextStylePreset)}
               extractingAudio={extractingAudio}
               setExtractingAudio={setExtractingAudio}
@@ -4973,7 +5086,6 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
               setAudioError={setAudioError}
               showReadLine={showReadLine}
               setShowReadLine={setShowReadLine}
->>>>>>> 47ea0c2 (working on features)
             />
           </div>
 

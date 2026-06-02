@@ -49,6 +49,7 @@ export function determineErrorSeverity(error: any): ErrorSeverity {
 
 /**
  * Log an error to the error_logs table
+ * Gracefully handles missing user profiles by retrying without user_id if FK constraint fails
  */
 export async function logError(entry: ErrorLogEntry): Promise<void> {
   if (!supabase) {
@@ -61,23 +62,31 @@ export async function logError(entry: ErrorLogEntry): Promise<void> {
     const device = getDeviceInfo();
     const currentRoute = window.location.pathname;
 
-    const { error } = await supabase.from('error_logs').insert([
-      {
-        module: entry.module,
-        route: entry.route || currentRoute,
-        user_id: entry.userId,
-        error_message: entry.errorMessage,
-        stack_trace: entry.stackTrace,
-        severity: entry.severity,
-        browser,
-        device,
-        status: 'open',
-        additional_context: entry.additionalContext || {},
-        timestamp: new Date().toISOString(),
-      },
-    ]);
+    const logEntry = {
+      module: entry.module,
+      route: entry.route || currentRoute,
+      user_id: entry.userId || null, // Allow null
+      error_message: entry.errorMessage,
+      stack_trace: entry.stackTrace,
+      severity: entry.severity,
+      browser,
+      device,
+      status: 'open',
+      additional_context: entry.additionalContext || {},
+      timestamp: new Date().toISOString(),
+    };
 
-    if (error) {
+    let { error } = await supabase.from('error_logs').insert([logEntry]);
+
+    // If FK constraint fails (profile doesn't exist), retry without user_id
+    if (error && error.code === '23503') {
+      console.warn('[ErrorLogger] User profile not found, logging without user_id');
+      logEntry.user_id = null;
+      const retry = await supabase.from('error_logs').insert([logEntry]);
+      if (retry.error) {
+        console.error('[ErrorLogger] Failed to log error after retry:', retry.error);
+      }
+    } else if (error) {
       console.error('[ErrorLogger] Failed to log error:', error);
     }
   } catch (err) {

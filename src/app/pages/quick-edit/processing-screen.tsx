@@ -96,6 +96,15 @@ export function QuickEditProcessingScreen() {
         formData.append("effectSettings", JSON.stringify(editConfig.effectSettings || {}));
         formData.append("transitionPlan", JSON.stringify(editConfig.transitionPlan || []));
         formData.append("editorSelections", JSON.stringify(editConfig.editorSelections || {}));
+
+        // Debug logging for transitions and trim
+        console.log("📨 [PROCESSING-SCREEN] Sending to backend:", {
+          transitionPlanFromConfig: editConfig.transitionPlan,
+          editorSelectionsTransitions: editConfig.editorSelections?.transitions,
+          trimClipRanges: editConfig.editorSelections?.trim?.clipRanges,
+          mediaItemsCount: mediaItems.length,
+        });
+
         formData.append(
           "speedValue",
           String(editConfig.editorSelections?.speed?.value ?? 1),

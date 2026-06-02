@@ -357,7 +357,18 @@ const processVideo = (input, output, duration = null) => {
 
 const processVideoRange = (input, output, start = 0, duration = null) => {
   return new Promise((resolve, reject) => {
-    let command = ffmpeg(input).setStartTime(Math.max(0, Number(start) || 0));
+    const startTime = Math.max(0, Number(start) || 0);
+    const hasTrim = startTime > 0 || (Number.isFinite(Number(duration)) && Number(duration) > 0);
+    
+    console.log(`⏱️  [FFMPEG] processVideoRange:`, {
+      input: input.split('/').pop(),
+      output: output.split('/').pop(),
+      startTime: startTime,
+      duration: duration,
+      hasTrim: hasTrim,
+    });
+    
+    let command = ffmpeg(input).setStartTime(startTime);
 
     if (Number.isFinite(Number(duration)) && Number(duration) > 0) {
       command = command.setDuration(Number(duration));
@@ -366,11 +377,11 @@ const processVideoRange = (input, output, start = 0, duration = null) => {
     command
       .output(output)
       .on("end", () => {
-        console.log("✅ Video range processed");
+        console.log(`✅ [FFMPEG] Video range processed successfully`);
         resolve(output);
       })
       .on("error", (err) => {
-        console.error("❌ FFmpeg Range Error:", err);
+        console.error("❌ [FFMPEG] Range Error:", err);
         reject(err);
       })
       .run();
@@ -1598,17 +1609,27 @@ const inferEffectFromPrompt = (promptText = "") => {
 };
 
 const mapClipTransitionToXfade = (transition = "none") => {
-  const t = String(transition || "none");
-  if (t === "cross-dissolve") return "dissolve";
-  if (t === "slide-left") return "slideleft";
-  if (t === "slide-right") return "slideright";
-  if (t === "dip-black") return "fadeblack";
-  if (t === "dip-white") return "fadewhite";
-  if (t === "zoom-transition") return "zoomin";
-  if (t === "blur-transition") return "hblur";
-  if (t === "spin-transition") return "radial";
-  if (t === "glitch-transition") return "pixelize";
-  if (t === "flash-transition") return "fadefast";
+  const t = String(transition || "none").toLowerCase().trim();
+  
+  // Map UI transition names to FFmpeg xfade types
+  // Valid xfade types: dissolve, fade, wipeleft, wiperight, wipeup, wipedown, slideleft, slideright, slidedown, slideup, circlecrop, rectcrop, pixelize, zoomin, zoomout, etc.
+  if (t === "fade" || t === "crossfade" || t === "cross-dissolve" || t === "fade-transition") {
+    return "dissolve";  // Use dissolve for fade effect
+  }
+  if (t === "slide" || t === "slide-left") {
+    return "slideleft";
+  }
+  if (t === "wipe" || t === "slide-right") {
+    return "wiperight";  // Changed from slideright
+  }
+  if (t === "zoom") {
+    return "zoomin";
+  }
+  if (t === "none") {
+    return "fade";  // Use fade for no transition (minimal effect)
+  }
+  
+  // Default to dissolve
   return "dissolve";
 };
 
@@ -1617,70 +1638,174 @@ const mergeSegmentsWithTransitions = async (segmentPaths, transitions, outputPat
     throw new Error("No segments provided for merge");
   }
 
+  // Single segment - just encode it
   if (segmentPaths.length === 1) {
-    await new Promise((resolve, reject) => {
+    console.log("📝 [API-MEDIA] Single segment - direct encoding");
+    return new Promise((resolve, reject) => {
       ffmpeg(segmentPaths[0])
-        .outputOptions(["-c:v libx264", "-pix_fmt yuv420p", "-an"])
+        .outputOptions(["-c:v libx264", "-pix_fmt yuv420p", "-preset medium", "-crf 23", "-an"])
         .output(outputPath)
-        .on("end", resolve)
-        .on("error", reject)
+        .on("end", () => {
+          console.log("✅ [API-MEDIA] Single segment encoded");
+          resolve();
+        })
+        .on("error", (err) => {
+          console.error("❌ [API-MEDIA] Encoding failed:", err);
+          reject(err);
+        })
         .run();
     });
-    return;
   }
 
+  // Multiple segments - check if transitions needed
+  const hasTransitions = transitions && transitions.some(t => t && t !== "none");
+  
+  console.log("📊 [MERGE] Merge config:", {
+    segmentCount: segmentPaths.length,
+    transitions: transitions,
+    hasTransitions: hasTransitions,
+    transitionDetails: transitions?.map((t, i) => `[${i}]: ${t}` || `[${i}]: none`).join(", "),
+  });
+
+  // No transitions - use concat filter for seamless joining
+  if (!hasTransitions) {
+    console.log("🔗 [MERGE] No transitions found - using CONCAT filter for seamless joining");
+    console.log("    Reason: either transitions is null/undefined or all values are 'none'");
+    console.log("    Transitions received:", transitions);
+    
+    return new Promise((resolve, reject) => {
+      let cmd = ffmpeg();
+      
+      segmentPaths.forEach((p) => {
+        cmd = cmd.input(p);
+      });
+
+      const n = segmentPaths.length;
+      let concatFilter = "";
+      for (let i = 0; i < n; i++) {
+        concatFilter += `[${i}:v]`;
+      }
+      concatFilter += `concat=n=${n}:v=1:a=0[v]`;
+
+      cmd
+        .complexFilter(concatFilter)
+        .outputOptions(["-map", "[v]", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-preset", "medium", "-crf", "23", "-movflags", "+faststart", "-an"])
+        .output(outputPath)
+        .on("end", () => {
+          console.log("✅ [API-MEDIA] Concat merge complete");
+          resolve();
+        })
+        .on("error", (err) => {
+          console.error("❌ [API-MEDIA] Concat merge failed:", err);
+          reject(err);
+        })
+        .run();
+    });
+  }
+
+  // Has transitions - use xfade filters
+  console.log("🎬 [MERGE] Applying transitions with XFADE filters");
+  console.log("    Segments:", segmentPaths.length);
+  console.log("    Transitions array:", transitions);
+
+  // Get all segment durations
   const durations = [];
   for (const p of segmentPaths) {
     const d = await getVideoDuration(p);
     durations.push(Math.max(0.5, Number(d) || 1));
   }
 
-  let cumulative = durations[0];
+  console.log("📊 [MERGE] Segment durations:", durations);
+
+  // Build xfade chain with proper timing
+  const transitionDuration = 0.5;  // Reduced for better visibility
+  let filterChain = "";
   let currentLabel = "[0:v]";
-  const chains = [];
 
   for (let i = 1; i < segmentPaths.length; i++) {
-    // Transition is assigned on the outgoing clip (i-1) in editor UI.
-    // Keep fallback to [i] for backward compatibility with older payloads.
-    const transitionName = transitions?.[i - 1] || transitions?.[i] || "none";
-    const xfadeType = mapClipTransitionToXfade(transitionName);
-    const isNone = transitionName === "none";
-    const transitionDuration = isNone ? 0.001 : 0.8;
-    const offset = Math.max(0, cumulative - transitionDuration);
-    const outLabel = `[v${i}]`;
-
-    console.log("🎞️ [API-MEDIA] Merge transition", {
-      joinIndex: i - 1,
-      fromSegment: i - 1,
-      toSegment: i,
-      transitionName,
-      xfadeType,
-      offset,
-      transitionDuration,
-    });
-
-    chains.push(`${currentLabel}[${i}:v]xfade=transition=${xfadeType}:duration=${transitionDuration}:offset=${offset}${outLabel}`);
-    currentLabel = outLabel;
-    cumulative = cumulative + durations[i] - transitionDuration;
+    const transitionType = transitions[i - 1] || "none";
+    
+    // Skip actual xfade for "none" transitions - use simple concatenation
+    if (transitionType === "none" || transitionType === "") {
+      // For none transitions, just concatenate
+      // We'll handle this by using a simple cut (alpha fade to 1 or 0)
+      console.log(`  → Clip ${i-1} → ${i}: NONE (direct cut)`);
+      
+      const nextLabel = `[cut${i}]`;
+      if (filterChain) filterChain += ";";
+      // Use fps filter to ensure consistent frame rate and concat naturally
+      filterChain += `${currentLabel}[${i}:v]concat=n=2:v=1:a=0${nextLabel}`;
+      currentLabel = nextLabel;
+    } else {
+      // Apply xfade for actual transitions
+      const xfadeType = mapClipTransitionToXfade(transitionType);
+      const prevDuration = durations[i - 1];
+      
+      const minOffset = 0.1;
+      const maxOffset = Math.max(minOffset, prevDuration - 0.1);
+      const targetOffset = prevDuration - transitionDuration;
+      const offset = Math.max(minOffset, Math.min(maxOffset, targetOffset));
+      
+      const nextLabel = `[xfade${i}]`;
+      if (filterChain) filterChain += ";";
+      filterChain += `${currentLabel}[${i}:v]xfade=transition=${xfadeType}:duration=${transitionDuration}:offset=${offset.toFixed(2)}${nextLabel}`;
+      
+      console.log(`  → Clip ${i-1} → ${i}: ${transitionType}`);
+      console.log(`     xfade: ${xfadeType}, duration: ${transitionDuration}s, offset: ${offset.toFixed(2)}s`);
+      
+      currentLabel = nextLabel;
+    }
   }
 
-  await new Promise((resolve, reject) => {
-    let command = ffmpeg();
+  console.log("📝 [MERGE] Filter chain built:", {
+    totalSegments: segmentPaths.length,
+    transitionDuration: transitionDuration,
+    filterChain: filterChain,
+    finalOutputLabel: currentLabel,
+    transitionsApplied: segmentPaths.length - 1,
+  });
+
+  return new Promise((resolve, reject) => {
+    let cmd = ffmpeg();
+    
     segmentPaths.forEach((p) => {
-      command = command.input(p);
+      cmd = cmd.input(p);
     });
 
-    command
-      .complexFilter(chains)
-      .outputOptions(["-map", currentLabel, "-c:v libx264", "-pix_fmt yuv420p", "-an", "-movflags +faststart"])
+    console.log("📹 [MERGE] Applying xfade filter:", {
+      filterChain: filterChain,
+      finalLabel: currentLabel,
+    });
+
+    // For now, test video only to isolate xfade issues
+    // We'll add audio back once video transitions work
+    cmd
+      .complexFilter(filterChain)
+      .outputOptions([
+        "-map", currentLabel,
+        "-c:v", "libx264",
+        "-pix_fmt", "yuv420p",
+        "-preset", "medium",
+        "-crf", "23",
+        "-movflags", "+faststart",
+        "-an"  // Temporarily disable audio
+      ])
       .output(outputPath)
       .on("end", () => {
-        console.log("✅ [API-MEDIA] Transition merge complete");
+        console.log("✅ [MERGE] Xfade merge complete (video only)");
         resolve();
       })
       .on("error", (err) => {
-        console.error("❌ [API-MEDIA] Transition merge failed:", err);
+        console.error("❌ [MERGE] Xfade merge failed:", err);
+        console.error("    Error message:", err.message);
+        console.error("    Error code:", err.code);
         reject(err);
+      })
+      .on("stderr", (stderrLine) => {
+        // Log FFmpeg stderr to see filter details
+        if (stderrLine.includes("error") || stderrLine.includes("Error") || stderrLine.includes("Filter")) {
+          console.log("📢 [FFmpeg] stderr:", stderrLine);
+        }
       })
       .run();
   });
@@ -2893,7 +3018,9 @@ app.post(
 
       try {
         parsedTransitionPlan = transitionPlan ? JSON.parse(transitionPlan) : [];
+        console.log("✅ [API-MEDIA] Parsed transitionPlan from request:", parsedTransitionPlan);
       } catch (e) {
+        console.warn("⚠️  [API-MEDIA] Failed to parse transitionPlan:", e.message);
         parsedTransitionPlan = [];
       }
 
@@ -3018,6 +3145,15 @@ app.post(
         ? parsedEditorSelections.transitions.transitionPlan
         : parsedTransitionPlan;
 
+      console.log("🎯 [API-MEDIA] Transition Plan Resolution:", {
+        hasEditorSelections: !!parsedEditorSelections,
+        hasTransitionsPath: !!parsedEditorSelections?.transitions,
+        hasTransitionPlan: !!parsedEditorSelections?.transitions?.transitionPlan,
+        editorSelectionsTransitionPlan: parsedEditorSelections?.transitions?.transitionPlan,
+        parsedTransitionPlan: parsedTransitionPlan,
+        resolvedTransitionPlan: resolvedTransitionPlan,
+      });
+
       const resolvedSelectedFilter =
         parsedEditorSelections?.filters?.selected && parsedEditorSelections.filters.selected !== "none"
           ? String(parsedEditorSelections.filters.selected)
@@ -3033,6 +3169,16 @@ app.post(
             .map((row) => `#${Number(row?.index) || 0}:${String(row?.transition || "none")}`)
             .join(", ")
         : "";
+
+      // Log transition details for debugging
+      console.log("📋 [API-MEDIA] Transition Plan Debug:", {
+        transitionPlanRaw: transitionPlan,
+        parsedTransitionPlan: parsedTransitionPlan,
+        resolvedTransitionPlan: resolvedTransitionPlan,
+        transitionSummary: transitionSummary,
+        mediaFilesCount: mediaFiles.length,
+        isQuickEditMode: isQuickEditMode,
+      });
 
       const effects = {
         selectedEffect: resolvedSelectedEffect || "none",
@@ -3152,8 +3298,10 @@ app.post(
       // STEP 1: Build base video from uploaded media
       if (isQuickEditMode && mediaFiles.length > 1) {
         console.log("🎞️ [API-MEDIA] Quick Edit multi-clip mode with transitions");
+        console.log("📐 [API-MEDIA] Clip trim ranges:", resolvedEditorSelections?.trim?.clipRanges || {});
 
         const segmentPaths = [];
+        
         for (let i = 0; i < mediaFiles.length; i++) {
           const media = mediaFiles[i];
           const segmentPath = makeTempFilePath(`qclip-${i}.mp4`);
@@ -3165,6 +3313,15 @@ app.post(
           const trimEnd = Number.isFinite(trimEndRaw) ? Math.max(trimStart + 0.01, trimEndRaw) : null;
           const trimDuration = trimEnd == null ? null : Math.max(0.01, trimEnd - trimStart);
 
+          // Log trim details for this clip
+          console.log(`✂️  [API-MEDIA] Clip ${i} (${media.originalname}):`, {
+            mediaId: mediaId?.slice(0, 8),
+            hasTrim: !!rawClipTrim,
+            trimStart: trimStart,
+            trimEnd: trimEnd,
+            trimDuration: trimDuration?.toFixed(2),
+          });
+
           if (media.mimetype?.startsWith("video/")) {
             await processVideoRange(media.path, segmentPath, trimStart, trimDuration);
           } else if (media.mimetype?.startsWith("image/")) {
@@ -3175,12 +3332,47 @@ app.post(
           generatedTempFiles.push(segmentPath);
         }
 
-        const transitionsByIndex = mediaFiles.map((_, index) => {
-          const row = resolvedTransitionPlan.find((p) => Number(p.index) === index);
-          return row?.transition || "none";
+        // Log segment paths for merge verification
+        console.log("📹 [API-MEDIA] Processed segments ready for merge:", {
+          count: segmentPaths.length,
+          paths: segmentPaths.map((p, i) => `${i}: ${p.split('/').pop()}`),
         });
 
+        const transitionsByIndex = mediaFiles.map((_, index) => {
+          // First try to find by index in resolvedTransitionPlan
+          const row = resolvedTransitionPlan.find((p) => Number(p.index) === index);
+          const transition = row?.transition || "none";
+          
+          console.log(`  [Transition] Clip ${index}: resolvedTransitionPlan entry =`, row, "→ transition =", transition);
+          
+          return transition;
+        });
+
+        console.log("🎞️ [API-MEDIA] Multi-clip transitions DEBUG:", {
+          resolvedTransitionPlanType: typeof resolvedTransitionPlan,
+          resolvedTransitionPlanIsArray: Array.isArray(resolvedTransitionPlan),
+          resolvedTransitionPlanLength: resolvedTransitionPlan?.length,
+          resolvedTransitionPlanContent: resolvedTransitionPlan,
+          mediaFileCount: mediaFiles.length,
+          transitionsByIndex: transitionsByIndex,
+        });
+
+        // Verify transitions exist
+        const hasAnyTransitions = transitionsByIndex.some(t => t !== "none");
+        console.log("🎞️ [API-MEDIA] Transition Check:", {
+          hasAnyTransitions,
+          transitionsByIndex,
+          reasonIfNoTransitions: !hasAnyTransitions ? "All transitions are 'none' - will use concat filter instead" : "Transitions will be applied with xfade",
+        });
+
+        // Apply transitions using merge function (handles single and multiple clips)
+        console.log("🎬 [API-MEDIA] Processing segments with transitions...", {
+          segmentCount: segmentPaths.length,
+          transitionsByIndex: transitionsByIndex,
+          hasAnyTransitions: hasAnyTransitions,
+        });
         await mergeSegmentsWithTransitions(segmentPaths, transitionsByIndex, baseOutputPath);
+        console.log("✅ [API-MEDIA] Merge completed with transitions");
         seconds = await getVideoDuration(baseOutputPath);
       } else if (videoFile) {
         console.log("🎬 [API-MEDIA] Using uploaded video as source:", videoFile.originalname);
@@ -3196,6 +3388,13 @@ app.post(
         const primaryTrimDuration = primaryTrimEnd == null
           ? null
           : Math.max(0.01, primaryTrimEnd - primaryTrimStart);
+
+        console.log("✂️  [API-MEDIA] Single video trim info:", {
+          hasTrim: !!rawPrimaryTrim,
+          trimStart: primaryTrimStart,
+          trimEnd: primaryTrimEnd,
+          trimDuration: primaryTrimDuration?.toFixed(2),
+        });
 
         if (isQuickEditMode) {
           // Preserve full uploaded video for Quick Edit.
@@ -3219,29 +3418,32 @@ app.post(
           generatedTempFiles.push(segmentPath);
         }
 
-        const listFilePath = makeTempFilePath("concat.txt");
-        const listContent = segmentPaths
-          .map((p) => `file '${p.replace(/\\/g, "/").replace(/'/g, "'\\''")}'`)
-          .join("\n");
-        fs.writeFileSync(listFilePath, listContent);
-        generatedTempFiles.push(listFilePath);
-
-        await new Promise((resolve, reject) => {
-          ffmpeg()
-            .input(listFilePath)
-            .inputOptions(["-f concat", "-safe 0"])
-            .outputOptions(["-c copy"])
-            .output(baseOutputPath)
-            .on("end", () => {
-              console.log("✅ [API-MEDIA] Slideshow video created from images");
-              resolve();
-            })
-            .on("error", (err) => {
-              console.error("❌ [API-MEDIA] Error creating slideshow:", err);
-              reject(err);
-            })
-            .run();
+        // Apply transitions between image segments
+        const transitionsByIndex = imageFiles.map((_, index) => {
+          const row = resolvedTransitionPlan.find((p) => Number(p.index) === index);
+          return row?.transition || "none";
         });
+
+        console.log("🎞️ [API-MEDIA] Image slideshow transitions:", {
+          imageFileCount: imageFiles.length,
+          transitionPlanLength: resolvedTransitionPlan?.length,
+          transitionsByIndex: transitionsByIndex,
+        });
+
+        // Apply transitions if multiple segments
+        if (segmentPaths.length > 1) {
+          await mergeSegmentsWithTransitions(segmentPaths, transitionsByIndex, baseOutputPath);
+        } else if (segmentPaths.length === 1) {
+          // Copy single segment to output path
+          const fs = require('fs');
+          await new Promise((resolve, reject) => {
+            fs.copyFile(segmentPaths[0], baseOutputPath, (err) => {
+              if (err) reject(err);
+              else resolve();
+            });
+          });
+        }
+        console.log("✅ [API-MEDIA] Slideshow video created with transitions");
       }
 
       // STEP 2: If this is an images-only request, try full AI video generation with Veo.

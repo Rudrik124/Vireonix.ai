@@ -158,6 +158,13 @@ const legacyUserRoutes = [
     }
   },
   {
+    path: "/timeline-editor",
+    async lazy() {
+      const { TimelineEditorPage } = await import("./pages/timeline-editor/timeline-editor-page");
+      return { Component: TimelineEditorPage };
+    }
+  },
+  {
     path: "/quick-edit",
     errorElement: <RouteErrorBoundary />,
     async lazy() {
