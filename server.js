@@ -406,44 +406,75 @@ const mergeVideoWithTrimmedAudio = async (videoPath, audioPath) => {
   if (!videoPath || !audioPath) return videoPath;
 
   const videoDuration = await getVideoDuration(videoPath);
-  const trimmedAudioPath = makeTempFilePath("trimmed-audio.mp4");
-
-  // First, trim the audio to the video duration so that if the
-  // audio is longer (e.g. 10s vs 5s video), only the first part
-  // is kept and the rest is discarded.
-  await new Promise((resolve, reject) => {
-    ffmpeg(audioPath)
-      .outputOptions([`-t ${videoDuration.toFixed(3)}`])
-      .output(trimmedAudioPath)
-      .on("end", () => resolve())
-      .on("error", (err) => {
-        console.error("❌ [AUDIO] Error trimming audio:", err);
-        reject(err);
-      })
-      .run();
-  });
-
+  const hasAudio = await hasAudioStream(videoPath);
   const outputPath = makeTempFilePath("with-audio.mp4");
 
-  await new Promise((resolve, reject) => {
-    ffmpeg()
-      .input(videoPath)
-      .input(trimmedAudioPath)
-      .outputOptions(["-c:v copy", "-c:a aac"])
-      .output(outputPath)
-      .on("end", () => {
-        console.log("✅ [AUDIO] Audio merged with video (trimmed to duration)");
-        resolve();
-      })
-      .on("error", (err) => {
-        console.error("❌ [AUDIO] Error merging audio:", err);
-        reject(err);
-      })
-      .run();
-  });
+  console.log(`🎵 [AUDIO] Merging audio track. Original video has audio: ${hasAudio}, duration: ${videoDuration.toFixed(3)}s`);
 
-  // Best-effort cleanup of the temporary trimmed audio file
-  fs.unlink(trimmedAudioPath, () => {});
+  if (hasAudio) {
+    // Both video and audio have audio tracks. We mix them using amix.
+    await new Promise((resolve, reject) => {
+      ffmpeg()
+        .input(videoPath)
+        .input(audioPath)
+        .complexFilter([
+          `[0:a:0]volume=1.0[a0]`,
+          `[1:a:0]volume=1.0[a1]`,
+          `[a0][a1]amix=inputs=2:duration=first[a]`
+        ])
+        .outputOptions([
+          "-map 0:v:0",
+          "-map [a]",
+          "-c:v copy",
+          "-c:a aac",
+          `-t ${videoDuration.toFixed(3)}`
+        ])
+        .output(outputPath)
+        .on("end", () => {
+          console.log("✅ [AUDIO] Audio streams mixed successfully");
+          resolve();
+        })
+        .on("error", (err) => {
+          console.error("❌ [AUDIO] Error mixing audio streams:", err);
+          reject(err);
+        })
+        .run();
+    });
+  } else {
+    // Video has no audio. We can just add the trimmed custom audio.
+    const trimmedAudioPath = makeTempFilePath("trimmed-audio.mp4");
+
+    await new Promise((resolve, reject) => {
+      ffmpeg(audioPath)
+        .outputOptions([`-t ${videoDuration.toFixed(3)}`])
+        .output(trimmedAudioPath)
+        .on("end", () => resolve())
+        .on("error", (err) => {
+          console.error("❌ [AUDIO] Error trimming audio:", err);
+          reject(err);
+        })
+        .run();
+    });
+
+    await new Promise((resolve, reject) => {
+      ffmpeg()
+        .input(videoPath)
+        .input(trimmedAudioPath)
+        .outputOptions(["-c:v copy", "-c:a aac"])
+        .output(outputPath)
+        .on("end", () => {
+          console.log("✅ [AUDIO] Custom audio track added to silent video");
+          resolve();
+        })
+        .on("error", (err) => {
+          console.error("❌ [AUDIO] Error merging audio:", err);
+          reject(err);
+        })
+        .run();
+    });
+
+    fs.unlink(trimmedAudioPath, () => {});
+  }
 
   return outputPath;
 };
@@ -1490,6 +1521,86 @@ const applyEffectsToVideo = async (inputPath, effects, durationSeconds = 10) => 
     videoFilters.push("tblend=all_mode=difference,eq=contrast=2.0:brightness=0.05:saturation=0");
   }
 
+  // --- NEW EFFECTS ---
+  if (selectedEffect === "shake") {
+    const strength = Math.max(0, Math.min(10, Number(settings.shakeStrength) || 1.5));
+    videoFilters.push(`crop=iw-20:ih-20:10+${strength}*1.5*sin(2*PI*t*8):10+${strength}*1.5*cos(2*PI*t*6.5)`);
+  }
+
+  if (selectedEffect === "velocity") {
+    const speed = Math.max(0.1, Math.min(5, Number(settings.velocitySpeed) || 1.5));
+    const stretch = 1 / speed;
+    videoFilters.push(`setpts=${stretch.toFixed(3)}*PTS`);
+    audioFilter = "";
+  }
+
+  if (selectedEffect === "motion-blur") {
+    videoFilters.push("tmix=frames=3:weights='1 1 1',eq=brightness=0.05");
+  }
+
+  if (selectedEffect === "flash-effect") {
+    videoFilters.push("eq=brightness=0.15:contrast=1.15");
+  }
+
+  if (selectedEffect === "rgb-split") {
+    videoFilters.push("chromashift=cbh=4:cbv=0:crh=-4:crv=0,eq=contrast=1.2:saturation=1.3");
+  }
+
+  if (selectedEffect === "smooth-zoom") {
+    const dur = Number(durationSeconds) || 10;
+    videoFilters.push(`crop=iw/(1+0.12*sin(PI*t/${dur})):ih/(1+0.12*sin(PI*t/${dur})):(iw-ow)/2:(ih-oh)/2,scale=iw:ih,eq=contrast=1.1`);
+  }
+
+  if (selectedEffect === "film-grain") {
+    videoFilters.push("noise=alls=12:allf=t+u,eq=contrast=1.05:saturation=1.1");
+  }
+
+  if (selectedEffect === "animated-captions") {
+    // No-op or return inputPath, as captions are processed separately.
+    console.log("ℹ️ [API-MEDIA] animated-captions placeholder no-op");
+  }
+
+  // --- NEW FILTERS ---
+  if (selectedEffect === "moody") {
+    videoFilters.push("eq=contrast=1.3:brightness=-0.05:saturation=0.75");
+  }
+
+  if (selectedEffect === "warm-tone") {
+    videoFilters.push("colorbalance=rs=0.10:gs=0.04:bs=-0.08,hue=h=-8,eq=saturation=1.25:brightness=0.03");
+  }
+
+  if (selectedEffect === "cool-tone") {
+    videoFilters.push("colorbalance=rs=-0.08:gs=-0.03:bs=0.12,hue=h=14,eq=saturation=1.1:brightness=-0.01");
+  }
+
+  if (selectedEffect === "teal-orange") {
+    videoFilters.push("colorbalance=rs=0.15:gs=0.0:bs=-0.15:rm=0.12:gm=-0.02:bm=-0.12,hue=h=-7,eq=contrast=1.3:saturation=1.25:brightness=0.01");
+  }
+
+  if (selectedEffect === "dreamy-glow") {
+    videoFilters.push("gblur=sigma=1.0,eq=contrast=0.95:saturation=1.15:brightness=0.03");
+  }
+
+  if (selectedEffect === "film-look") {
+    videoFilters.push("eq=contrast=1.2:brightness=0.03:saturation=1.15,curves=preset=vintage");
+  }
+
+  if (selectedEffect === "vhs") {
+    videoFilters.push("chromashift=cbh=2:cbv=1:crh=-2:crv=-1,noise=alls=8:allf=t+u,eq=contrast=1.15:saturation=1.2,hue=h=2");
+  }
+
+  if (selectedEffect === "soft-skin") {
+    videoFilters.push("smartblur=lr=1.5:ls=-0.5,eq=brightness=0.03:saturation=1.15:contrast=0.95");
+  }
+
+  if (selectedEffect === "neon-glow") {
+    videoFilters.push("eq=saturation=1.4:brightness=0.03:contrast=1.2,hue=h=10");
+  }
+
+  if (selectedEffect === "hdr-pop") {
+    videoFilters.push("eq=contrast=1.55:brightness=0.08:saturation=1.45,unsharp=5:5:1.2:5:5:0.0");
+  }
+
   if (!videoFilters.length && !audioFilter) {
     console.log("ℹ️ [API-MEDIA] Effect skipped - no filters produced", {
       selectedEffect,
@@ -1550,10 +1661,11 @@ const applyTextOverlayToVideo = async (inputPath, textOverlay) => {
   const outputPath = makeTempFilePath("text-overlay.mp4");
   const xExpr = `(w-text_w)*${(xPercent / 100).toFixed(4)}`;
   const yExpr = `(h-text_h)*${(yPercent / 100).toFixed(4)}`;
+  const firstFont = String(textOverlay?.fontFamily || "Arial").split(",")[0].trim().replace(/['"]/g, "");
   const drawTextFilter = [
     `drawtext=text='${escapedText}'`,
     `fontsize=${size}`,
-    `font='${String(textOverlay?.fontFamily || "Arial").replace(/'/g, "")}'`,
+    `font='${firstFont}'`,
     `fontcolor=${color}`,
     `x=${xExpr}`,
     `y=${yExpr}`,
@@ -1610,27 +1722,80 @@ const inferEffectFromPrompt = (promptText = "") => {
 
 const mapClipTransitionToXfade = (transition = "none") => {
   const t = String(transition || "none").toLowerCase().trim();
-  
-  // Map UI transition names to FFmpeg xfade types
-  // Valid xfade types: dissolve, fade, wipeleft, wiperight, wipeup, wipedown, slideleft, slideright, slidedown, slideup, circlecrop, rectcrop, pixelize, zoomin, zoomout, etc.
+
+  // Dissolve / fade family
   if (t === "fade" || t === "crossfade" || t === "cross-dissolve" || t === "fade-transition") {
-    return "dissolve";  // Use dissolve for fade effect
+    return "dissolve";
   }
-  if (t === "slide" || t === "slide-left") {
-    return "slideleft";
-  }
-  if (t === "wipe" || t === "slide-right") {
-    return "wiperight";  // Changed from slideright
-  }
-  if (t === "zoom") {
-    return "zoomin";
-  }
-  if (t === "none") {
-    return "fade";  // Use fade for no transition (minimal effect)
-  }
-  
-  // Default to dissolve
-  return "dissolve";
+  // Dip to black/white
+  if (t === "dip-black") return "fade";
+  if (t === "dip-white") return "fadewhite";
+  // Slides
+  if (t === "slide-left" || t === "swipe-transition") return "slideleft";
+  if (t === "slide-right") return "slideleft"; // flip via wiperight when possible
+  if (t === "wipe") return "wiperight";
+  // Zoom / spin
+  if (t === "zoom-transition" || t === "zoom") return "zoomin";
+  if (t === "spin-transition") return "circlecrop";
+  // Blur / glitch / shake
+  if (t === "blur-transition") return "smoothleft";
+  if (t === "glitch-transition") return "pixelize";
+  if (t === "flash-transition") return "fadewhite";
+  if (t === "camera-shake-transition") return "hblur";
+  if (t === "whip-pan-transition") return "slideleft";
+  // Mask / match cut / speed ramp - use dissolve as best ffmpeg match
+  if (t === "mask-transition") return "coverleft";
+  if (t === "match-cut-transition") return "dissolve";
+  if (t === "speed-ramp-transition") return "smoothright";
+  // Explicit cut - keep a very brief dissolve for smoothness
+  if (t === "none" || t === "") return "fade";
+
+  return "dissolve";  // default fallback
+};
+
+// ── Helper: ensure segment has an audio track (add silent track if missing) ──
+const ensureAudioStream = (inputPath, outputPath) => {
+  return new Promise((resolve, reject) => {
+    ffmpeg.ffprobe(inputPath, (err, meta) => {
+      const streams = Array.isArray(meta?.streams) ? meta.streams : [];
+      const hasAudio = streams.some((s) => s?.codec_type === "audio");
+      if (hasAudio) {
+        // Already has audio – just copy it through
+        ffmpeg(inputPath)
+          .outputOptions(["-c copy"])
+          .output(outputPath)
+          .on("end", () => resolve(outputPath))
+          .on("error", (e) => {
+            console.warn("⚠️ [AUDIO-ENSURE] copy failed, using original:", e.message);
+            resolve(inputPath); // fall back to original
+          })
+          .run();
+      } else {
+        // No audio – synthesize a silent track for the same duration
+        const duration = Number(meta?.format?.duration || 10);
+        ffmpeg(inputPath)
+          .inputOptions(["-f lavfi", "-i anullsrc=cl=stereo:r=44100"])
+          .complexFilter([
+            "[0:v]copy[v]",
+            `[1:a]atrim=0:${duration.toFixed(4)},asetpts=PTS-STARTPTS[a]`,
+          ])
+          .outputOptions([
+            "-map", "[v]",
+            "-map", "[a]",
+            "-c:v", "copy",
+            "-c:a", "aac",
+            "-shortest",
+          ])
+          .output(outputPath)
+          .on("end", () => resolve(outputPath))
+          .on("error", (e) => {
+            console.warn("⚠️ [AUDIO-ENSURE] silent-add failed, using original:", e.message);
+            resolve(inputPath); // fall back to original
+          })
+          .run();
+      }
+    });
+  });
 };
 
 const mergeSegmentsWithTransitions = async (segmentPaths, transitions, outputPath) => {
@@ -1638,12 +1803,12 @@ const mergeSegmentsWithTransitions = async (segmentPaths, transitions, outputPat
     throw new Error("No segments provided for merge");
   }
 
-  // Single segment - just encode it
+  // Single segment - just encode it (preserve audio)
   if (segmentPaths.length === 1) {
     console.log("📝 [API-MEDIA] Single segment - direct encoding");
     return new Promise((resolve, reject) => {
       ffmpeg(segmentPaths[0])
-        .outputOptions(["-c:v libx264", "-pix_fmt yuv420p", "-preset medium", "-crf 23", "-an"])
+        .outputOptions(["-c:v libx264", "-pix_fmt yuv420p", "-preset medium", "-crf 23", "-c:a aac", "-movflags +faststart"])
         .output(outputPath)
         .on("end", () => {
           console.log("✅ [API-MEDIA] Single segment encoded");
@@ -1657,159 +1822,189 @@ const mergeSegmentsWithTransitions = async (segmentPaths, transitions, outputPat
     });
   }
 
+  // Ensure every segment has an audio stream before merging
+  console.log("🔊 [MERGE] Ensuring all segments have audio streams...");
+  const audioReadyPaths = [];
+  for (let i = 0; i < segmentPaths.length; i++) {
+    const ap = segmentPaths[i].replace(/\.mp4$/, `-ar${i}.mp4`);
+    const result = await ensureAudioStream(segmentPaths[i], ap);
+    audioReadyPaths.push(result);
+  }
+
   // Multiple segments - check if transitions needed
+  // transitions[i] = transition applied to clip i (entering transition from clip i-1 → i)
   const hasTransitions = transitions && transitions.some(t => t && t !== "none");
-  
+
   console.log("📊 [MERGE] Merge config:", {
-    segmentCount: segmentPaths.length,
+    segmentCount: audioReadyPaths.length,
     transitions: transitions,
     hasTransitions: hasTransitions,
-    transitionDetails: transitions?.map((t, i) => `[${i}]: ${t}` || `[${i}]: none`).join(", "),
   });
 
-  // No transitions - use concat filter for seamless joining
+  // Target resolution/fps for normalization
+  const TARGET_W = 1280;
+  const TARGET_H = 720;
+  const TARGET_FPS = 30;
+
+  // Build video normalization filter for stream index → [normi]
+  const normVFilter = (idx) =>
+    `[${idx}:v]scale=${TARGET_W}:${TARGET_H}:force_original_aspect_ratio=decrease,` +
+    `pad=${TARGET_W}:${TARGET_H}:(ow-iw)/2:(oh-ih)/2:black,` +
+    `setsar=1,fps=${TARGET_FPS}[normv${idx}]`;
+
+  // Build audio normalization filter for stream index → [normai]
+  const normAFilter = (idx) =>
+    `[${idx}:a]aresample=44100,aformat=sample_fmts=fltp:channel_layouts=stereo[norma${idx}]`;
+
+  // ── No transitions: concat with video + audio ─────────────────────────────
   if (!hasTransitions) {
-    console.log("🔗 [MERGE] No transitions found - using CONCAT filter for seamless joining");
-    console.log("    Reason: either transitions is null/undefined or all values are 'none'");
-    console.log("    Transitions received:", transitions);
-    
+    console.log("🔗 [MERGE] No transitions — using CONCAT with audio");
+
     return new Promise((resolve, reject) => {
       let cmd = ffmpeg();
-      
-      segmentPaths.forEach((p) => {
-        cmd = cmd.input(p);
-      });
+      audioReadyPaths.forEach((p) => { cmd = cmd.input(p); });
 
-      const n = segmentPaths.length;
-      let concatFilter = "";
+      const n = audioReadyPaths.length;
+      const filters = [];
       for (let i = 0; i < n; i++) {
-        concatFilter += `[${i}:v]`;
+        filters.push(normVFilter(i));
+        filters.push(normAFilter(i));
       }
-      concatFilter += `concat=n=${n}:v=1:a=0[v]`;
+      const concatVInputs = audioReadyPaths.map((_, i) => `[normv${i}]`).join("");
+      const concatAInputs = audioReadyPaths.map((_, i) => `[norma${i}]`).join("");
+      filters.push(`${concatVInputs}${concatAInputs}concat=n=${n}:v=1:a=1[v][a]`);
+      const filterStr = filters.join(";");
+
+      console.log("📝 [MERGE-CONCAT] Filter:", filterStr);
 
       cmd
-        .complexFilter(concatFilter)
-        .outputOptions(["-map", "[v]", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-preset", "medium", "-crf", "23", "-movflags", "+faststart", "-an"])
+        .complexFilter(filterStr)
+        .outputOptions([
+          "-map", "[v]",
+          "-map", "[a]",
+          "-c:v", "libx264",
+          "-pix_fmt", "yuv420p",
+          "-preset", "medium",
+          "-crf", "23",
+          "-c:a", "aac",
+          "-movflags", "+faststart",
+        ])
         .output(outputPath)
         .on("end", () => {
-          console.log("✅ [API-MEDIA] Concat merge complete");
+          console.log("✅ [MERGE] Concat merge complete (with audio)");
           resolve();
         })
         .on("error", (err) => {
-          console.error("❌ [API-MEDIA] Concat merge failed:", err);
+          console.error("❌ [MERGE] Concat merge failed:", err.message);
           reject(err);
+        })
+        .on("stderr", (line) => {
+          if (line.includes("Error") || line.includes("error") || line.includes("Invalid")) {
+            console.log("📢 [FFmpeg-CONCAT] stderr:", line);
+          }
         })
         .run();
     });
   }
 
-  // Has transitions - use xfade filters
-  console.log("🎬 [MERGE] Applying transitions with XFADE filters");
-  console.log("    Segments:", segmentPaths.length);
-  console.log("    Transitions array:", transitions);
+  // ── Has transitions: xfade (video) + acrossfade (audio) ────────────────────
+  console.log("🎬 [MERGE] Applying XFADE+ACROSSFADE transitions");
 
   // Get all segment durations
   const durations = [];
-  for (const p of segmentPaths) {
+  for (const p of audioReadyPaths) {
     const d = await getVideoDuration(p);
-    durations.push(Math.max(0.5, Number(d) || 1));
+    durations.push(Math.max(1, Number(d) || 3));
   }
-
   console.log("📊 [MERGE] Segment durations:", durations);
 
-  // Build xfade chain with proper timing
-  const transitionDuration = 0.5;  // Reduced for better visibility
-  let filterChain = "";
-  let currentLabel = "[0:v]";
+  // Build filter graph:
+  //   Phase 1: normalize each stream → [normvI], [normaI]
+  //   Phase 2: chain xfade for video and acrossfade for audio in parallel
+  const filterParts = [];
 
-  for (let i = 1; i < segmentPaths.length; i++) {
-    const transitionType = transitions[i - 1] || "none";
-    
-    // Skip actual xfade for "none" transitions - use simple concatenation
-    if (transitionType === "none" || transitionType === "") {
-      // For none transitions, just concatenate
-      // We'll handle this by using a simple cut (alpha fade to 1 or 0)
-      console.log(`  → Clip ${i-1} → ${i}: NONE (direct cut)`);
-      
-      const nextLabel = `[cut${i}]`;
-      if (filterChain) filterChain += ";";
-      // Use fps filter to ensure consistent frame rate and concat naturally
-      filterChain += `${currentLabel}[${i}:v]concat=n=2:v=1:a=0${nextLabel}`;
-      currentLabel = nextLabel;
-    } else {
-      // Apply xfade for actual transitions
-      const xfadeType = mapClipTransitionToXfade(transitionType);
-      const prevDuration = durations[i - 1];
-      
-      const minOffset = 0.1;
-      const maxOffset = Math.max(minOffset, prevDuration - 0.1);
-      const targetOffset = prevDuration - transitionDuration;
-      const offset = Math.max(minOffset, Math.min(maxOffset, targetOffset));
-      
-      const nextLabel = `[xfade${i}]`;
-      if (filterChain) filterChain += ";";
-      filterChain += `${currentLabel}[${i}:v]xfade=transition=${xfadeType}:duration=${transitionDuration}:offset=${offset.toFixed(2)}${nextLabel}`;
-      
-      console.log(`  → Clip ${i-1} → ${i}: ${transitionType}`);
-      console.log(`     xfade: ${xfadeType}, duration: ${transitionDuration}s, offset: ${offset.toFixed(2)}s`);
-      
-      currentLabel = nextLabel;
-    }
+  for (let i = 0; i < audioReadyPaths.length; i++) {
+    filterParts.push(normVFilter(i));
+    filterParts.push(normAFilter(i));
   }
 
-  console.log("📝 [MERGE] Filter chain built:", {
-    totalSegments: segmentPaths.length,
-    transitionDuration: transitionDuration,
-    filterChain: filterChain,
-    finalOutputLabel: currentLabel,
-    transitionsApplied: segmentPaths.length - 1,
-  });
+  let currentVLabel = "[normv0]";
+  let currentALabel = "[norma0]";
+  let accumulatedDuration = durations[0];
+
+  for (let i = 1; i < audioReadyPaths.length; i++) {
+    // Check both index i (entering) and i-1 (outgoing) to match whatever mapping is used in the frontend
+    const transitionType = (transitions[i] && transitions[i] !== "none")
+      ? transitions[i]
+      : (transitions[i - 1] || "none");
+    const isNone = transitionType === "none" || transitionType === "";
+    const xfadeType = mapClipTransitionToXfade(transitionType);
+
+    // Transition duration: 0.04s for cuts, up to 0.8s for real transitions
+    const transitionDuration = isNone
+      ? 0.04
+      : Math.min(0.8, durations[i - 1] * 0.3, durations[i] * 0.3);
+
+    // Video xfade offset
+    const offset = Math.max(0.04, accumulatedDuration - transitionDuration - 0.02);
+
+    const nextVLabel = `[xfv${i}]`;
+    const nextALabel = `[xfa${i}]`;
+
+    // Video xfade
+    filterParts.push(
+      `${currentVLabel}[normv${i}]xfade=transition=${xfadeType}:duration=${transitionDuration.toFixed(4)}:offset=${offset.toFixed(4)}${nextVLabel}`
+    );
+    // Audio crossfade
+    filterParts.push(
+      `${currentALabel}[norma${i}]acrossfade=d=${transitionDuration.toFixed(4)}${nextALabel}`
+    );
+
+    console.log(`  → Clip ${i - 1}→${i}: xfade=${xfadeType} (${transitionType}), dur=${transitionDuration.toFixed(4)}s, offset=${offset.toFixed(4)}s`);
+
+    currentVLabel = nextVLabel;
+    currentALabel = nextALabel;
+    accumulatedDuration = accumulatedDuration + durations[i] - transitionDuration;
+  }
+
+  const fullFilter = filterParts.join(";");
+  console.log("📝 [MERGE] Full filter:", fullFilter);
+  console.log("📝 [MERGE] Final video label:", currentVLabel, "audio label:", currentALabel);
 
   return new Promise((resolve, reject) => {
     let cmd = ffmpeg();
-    
-    segmentPaths.forEach((p) => {
-      cmd = cmd.input(p);
-    });
+    audioReadyPaths.forEach((p) => { cmd = cmd.input(p); });
 
-    console.log("📹 [MERGE] Applying xfade filter:", {
-      filterChain: filterChain,
-      finalLabel: currentLabel,
-    });
-
-    // For now, test video only to isolate xfade issues
-    // We'll add audio back once video transitions work
     cmd
-      .complexFilter(filterChain)
+      .complexFilter(fullFilter)
       .outputOptions([
-        "-map", currentLabel,
+        "-map", currentVLabel,
+        "-map", currentALabel,
         "-c:v", "libx264",
         "-pix_fmt", "yuv420p",
         "-preset", "medium",
         "-crf", "23",
+        "-c:a", "aac",
         "-movflags", "+faststart",
-        "-an"  // Temporarily disable audio
       ])
       .output(outputPath)
       .on("end", () => {
-        console.log("✅ [MERGE] Xfade merge complete (video only)");
+        console.log("✅ [MERGE] Xfade+Acrossfade merge complete (with audio)");
         resolve();
       })
       .on("error", (err) => {
-        console.error("❌ [MERGE] Xfade merge failed:", err);
-        console.error("    Error message:", err.message);
-        console.error("    Error code:", err.code);
+        console.error("❌ [MERGE] Xfade merge failed:", err.message);
         reject(err);
       })
-      .on("stderr", (stderrLine) => {
-        // Log FFmpeg stderr to see filter details
-        if (stderrLine.includes("error") || stderrLine.includes("Error") || stderrLine.includes("Filter")) {
-          console.log("📢 [FFmpeg] stderr:", stderrLine);
+      .on("stderr", (line) => {
+        if (line.includes("Error") || line.includes("error") || line.includes("Invalid") || line.includes("xfade") || line.includes("acrossfade")) {
+          console.log("📢 [FFmpeg-XFADE] stderr:", line);
         }
       })
       .run();
   });
 };
+
 
 /**
  * Generates visual scenes from a text prompt
@@ -3170,6 +3365,13 @@ app.post(
             .join(", ")
         : "";
 
+      const requestedTool = String(req.body?.tool || req.body?.flow || "").toLowerCase();
+      const flowHeader = String(req.get("x-vireonix-flow") || "").toLowerCase();
+      const isQuickEditMode =
+        String(quickEditMode || "").toLowerCase() === "true" ||
+        requestedTool === "quick-edit" ||
+        flowHeader === "quick-edit";
+
       // Log transition details for debugging
       console.log("📋 [API-MEDIA] Transition Plan Debug:", {
         transitionPlanRaw: transitionPlan,
@@ -3184,13 +3386,6 @@ app.post(
         selectedEffect: resolvedSelectedEffect || "none",
         settings: resolvedEffectSettings,
       };
-
-      const requestedTool = String(req.body?.tool || req.body?.flow || "").toLowerCase();
-      const flowHeader = String(req.get("x-vireonix-flow") || "").toLowerCase();
-      const isQuickEditMode =
-        String(quickEditMode || "").toLowerCase() === "true" ||
-        requestedTool === "quick-edit" ||
-        flowHeader === "quick-edit";
 
       console.log("📍 [API-MEDIA] Direct media generation request received");
 
@@ -3574,6 +3769,20 @@ app.post(
         finalOutputPath = textOverlayPath;
       }
 
+      // STEP 4.5: Merge editor audio tracks (extracted/imported) into final video
+      if (audioFiles.length > 0) {
+        try {
+          console.log("🎵 [API-MEDIA] Merging editor audio track into final video:", audioFiles[0].originalname);
+          const withAudioPath = await mergeVideoWithTrimmedAudio(finalOutputPath, audioFiles[0].path);
+          if (withAudioPath && withAudioPath !== finalOutputPath) {
+            generatedTempFiles.push(finalOutputPath);
+            finalOutputPath = withAudioPath;
+          }
+        } catch (audioErr) {
+          console.warn("⚠️ [API-MEDIA] Editor audio merge failed, continuing without:", audioErr?.message || audioErr);
+        }
+      }
+
       // STEP 5: Upload final video to Supabase storage
       console.log("📤 [API-MEDIA] Uploading final video to storage...");
       const { publicUrl, storagePath } = await uploadToSupabase(finalOutputPath, fileName, outputBucket);
@@ -3914,14 +4123,27 @@ app.post("/api/cinematic-video", async (req, res) => {
 // ✅ Merge audio with video (with volume and trim options)
 app.post("/api/merge-audio", upload.fields([
   { name: "videoPath", maxCount: 1 },
+  { name: "videoFile", maxCount: 1 },
   { name: "musicFile", maxCount: 1 },
 ]), async (req, res) => {
+  let downloadedRemoteAudioPath = null;
+  let audioPath = null;
+  let videoFileToDelete = null;
+
   try {
-    const { videoPath, volume = 80, startTime = 0, endTime, muteOriginal = "false" } = req.body;
+    const videoFile = req.files?.videoFile?.[0];
+    const videoPathField = req.files?.videoPath?.[0];
+    const { volume = 80, startTime = 0, endTime, muteOriginal = "false" } = req.body;
     const musicFile = req.files?.musicFile?.[0];
 
-    let audioPath = null;
-    let downloadedRemoteAudioPath = null;
+    const resolvedVideoPath = videoFile?.path || videoPathField?.path || req.body.videoPath;
+
+    // Track if we uploaded a video file to clean it up later
+    if (videoFile?.path) {
+      videoFileToDelete = videoFile.path;
+    } else if (videoPathField?.path) {
+      videoFileToDelete = videoPathField.path;
+    }
 
     if (musicFile) {
       audioPath = musicFile.path;
@@ -3930,15 +4152,22 @@ app.post("/api/merge-audio", upload.fields([
       audioPath = downloadedRemoteAudioPath;
     }
 
-    if (!videoPath || !audioPath) {
+    if (!resolvedVideoPath || !audioPath) {
+      // If we failed early, clean up video file upload
+      if (videoFileToDelete) {
+        fs.unlink(videoFileToDelete, () => {});
+      }
+      if (downloadedRemoteAudioPath) {
+        fs.unlink(downloadedRemoteAudioPath, () => {});
+      }
       return res.status(400).json({
         success: false,
-        error: "Missing videoPath or audio source (musicFile or musicUrl)",
+        error: "Missing video file/path or audio source (musicFile or musicUrl)",
       });
     }
 
     console.log("🎵 [AUDIO] Merging audio with video", {
-      videoPath,
+      resolvedVideoPath,
       musicFile: musicFile?.filename,
       musicUrl: req.body.musicUrl,
       volume,
@@ -3970,6 +4199,11 @@ app.post("/api/merge-audio", upload.fields([
           .run();
       });
 
+      // delete untrimmed temp download if we downloaded it
+      if (downloadedRemoteAudioPath && audioPath !== downloadedRemoteAudioPath) {
+        fs.unlink(downloadedRemoteAudioPath, () => {});
+        downloadedRemoteAudioPath = null;
+      }
       audioPath = trimmedAudioPath;
     } else if (musicVolume !== 1) {
       // Just adjust volume if no trimming needed
@@ -3982,6 +4216,11 @@ app.post("/api/merge-audio", upload.fields([
           .on("error", reject)
           .run();
       });
+      // delete original temp download if we downloaded it
+      if (downloadedRemoteAudioPath && audioPath !== downloadedRemoteAudioPath) {
+        fs.unlink(downloadedRemoteAudioPath, () => {});
+        downloadedRemoteAudioPath = null;
+      }
       audioPath = volumeAdjustedPath;
     }
 
@@ -3990,7 +4229,7 @@ app.post("/api/merge-audio", upload.fields([
 
     await new Promise((resolve, reject) => {
       let cmd = ffmpeg()
-        .input(videoPath)
+        .input(resolvedVideoPath)
         .input(audioPath);
 
       if (shouldMuteOriginal) {
@@ -4019,11 +4258,27 @@ app.post("/api/merge-audio", upload.fields([
       // Cleanup
       fs.unlink(outputPath, () => {});
       fs.unlink(audioPath, () => {});
+      if (videoFileToDelete) {
+        fs.unlink(videoFileToDelete, () => {});
+      }
+      if (downloadedRemoteAudioPath) {
+        fs.unlink(downloadedRemoteAudioPath, () => {});
+      }
     });
 
     fileStream.pipe(res);
   } catch (error) {
     console.error("❌ [AUDIO] Merge error:", error);
+    // Cleanup on error
+    if (audioPath) {
+      fs.unlink(audioPath, () => {});
+    }
+    if (videoFileToDelete) {
+      fs.unlink(videoFileToDelete, () => {});
+    }
+    if (downloadedRemoteAudioPath) {
+      fs.unlink(downloadedRemoteAudioPath, () => {});
+    }
     res.status(500).json({
       success: false,
       error: toErrorMessage(error, "Audio merge failed"),

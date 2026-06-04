@@ -327,6 +327,7 @@ const TimelineHub = memo(({
   setAudioError,
   showReadLine,
   setShowReadLine,
+  selectPreviewWithTransition,
 }: any) => {
   const timelineScrollRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
@@ -440,7 +441,8 @@ const TimelineHub = memo(({
     if (totalDuration === 0) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
-    const globalSeekTime = clickX / pixelsPerSecond;
+    const scrollOffset = timelineScrollRef.current?.scrollLeft || 0;
+    const globalSeekTime = (clickX + scrollOffset) / pixelsPerSecond;
     const clampedSeekTime = Math.max(0, Math.min(totalDuration, globalSeekTime));
     
     handleTimelineClick(clampedSeekTime);
@@ -608,8 +610,6 @@ const TimelineHub = memo(({
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-red-500 border border-red-400 rotate-45 transform origin-top -translate-y-1.5 shadow" />
                 <div className="absolute inset-y-0 left-[-1px] right-[-1px] bg-red-500/20 blur-[1px]" />
               </motion.div>
-
-              {/* Video Track Lane (V1) */}
               <div 
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={async (e) => {
@@ -2378,6 +2378,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
   const [activePreviewId, setActivePreviewId] = useState<string | null>(null);
   const [audioTracks, setAudioTracks] = useState<Array<{ id: string, name: string, type: 'extracted' | 'direct', file?: File }>>([]);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [bgMusicUrl, setBgMusicUrl] = useState<string | null>(null);
   const [showAudioChoice, setShowAudioChoice] = useState(false);
   const [audioError, setAudioError] = useState<string | null>(null);
   const [extractingAudio, setExtractingAudio] = useState(false);
@@ -2396,6 +2397,21 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
       setAudioUrl(null);
     }
   }, [audioTracks]);
+
+  // Manage background music object URL/library URL
+  useEffect(() => {
+    if (selectedMusic) {
+      if (selectedMusic.source === 'library' && selectedMusic.url) {
+        setBgMusicUrl(selectedMusic.url);
+      } else if (selectedMusic.source === 'device' && selectedMusic.file) {
+        const url = URL.createObjectURL(selectedMusic.file);
+        setBgMusicUrl(url);
+        return () => URL.revokeObjectURL(url);
+      }
+    } else {
+      setBgMusicUrl(null);
+    }
+  }, [selectedMusic]);
 
   useEffect(() => {
     return () => {
@@ -2871,6 +2887,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
   const greenScreenAnimationRef = useRef<number | null>(null);
   const previousFrameRef = useRef<ImageData | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const bgMusicRef = useRef<HTMLAudioElement>(null);
   const thumbnailVideoRefs = useRef<Record<string, HTMLVideoElement | null>>({});
 
   const activePreviewItem = mediaItems.find((i) => i.id === activePreviewId) || null;
@@ -3037,6 +3054,12 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
       return;
     }
 
+    // Pause the main video during transition - the overlay will show both clips
+    if (videoRef.current) {
+      videoRef.current.pause();
+      console.log("📹 [PLAYBACK] Paused main video during transition overlay");
+    }
+
     setTransitionOverlay({
       fromId: activePreviewId,
       toId: nextId,
@@ -3061,43 +3084,50 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
   }, [activePreviewId, triggerClipTransition]);
 
   const playNextMedia = useCallback(() => {
+    console.log("📹 [PLAYBACK] playNextMedia called for item:", activePreviewId);
     const currentIndex = mediaItems.findIndex(i => i.id === activePreviewId);
     if (currentIndex !== -1 && currentIndex < mediaItems.length - 1) {
       const nextId = mediaItems[currentIndex + 1].id;
+      console.log("📹 [PLAYBACK] Transitioning to next clip:", nextId);
       triggerClipTransition(nextId);
-      // Ensure we keep playing the next track
+      // Don't try to play here - let the transition completion handler manage playback
       setIsPlaying(true);
     } else {
+      console.log("📹 [PLAYBACK] No more clips to play");
       setIsPlaying(false);
     }
   }, [activePreviewId, mediaItems, triggerClipTransition]);
 
   const togglePlay = () => {
+    console.log("📹 [PLAYBACK] togglePlay called, current isPlaying:", isPlaying);
     const activeItem = mediaItems.find(i => i.id === activePreviewId);
+    
+    console.log("📹 [PLAYBACK] Active item:", { id: activeItem?.id, type: activeItem?.type, hasVideoRef: !!videoRef.current });
     
     // If there are no media items, don't try to play
     if (!activeItem || mediaItems.length === 0) {
+      console.log("📹 [PLAYBACK] No active item or media items");
       return;
     }
 
     // For video items, control the video element
-    if (activeItem?.type === 'video' && videoRef.current) {
+    if (activeItem.type === 'video') {
+      console.log("📹 [PLAYBACK] Detected video type, videoRef.current:", videoRef.current);
       const trim = getTrimRangeForItem(activeItem.id, activeItem.duration);
       if (isPlaying) {
-        videoRef.current.pause();
+        console.log("📹 [PLAYBACK] Pausing video");
         setIsPlaying(false);
       } else {
-        if (videoRef.current.currentTime < trim.start || videoRef.current.currentTime > trim.end) {
+        console.log("📹 [PLAYBACK] Starting video from:", trim.start);
+        // Reset to trim start if outside trim range
+        if (videoRef.current && (videoRef.current.currentTime < trim.start || videoRef.current.currentTime > trim.end)) {
           videoRef.current.currentTime = trim.start;
         }
-        videoRef.current.play().catch(err => {
-          console.error('Error playing video:', err);
-          setIsPlaying(false);
-        });
         setIsPlaying(true);
       }
     } else {
       // For images or when no video ref, just toggle the playing state
+      console.log("📹 [PLAYBACK] Toggling play for image or no ref");
       setIsPlaying(!isPlaying);
     }
   };
@@ -3105,6 +3135,8 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
   const handleTimeUpdate = () => {
     if (videoRef.current && mediaItems.length > 0) {
       const activeIndex = mediaItems.findIndex(i => i.id === activePreviewId);
+      if (activeIndex < 0) return; // Safety check
+      
       const activeItem = activeIndex >= 0 ? mediaItems[activeIndex] : null;
       const timeBefore = mediaItems
         .slice(0, activeIndex)
@@ -3130,6 +3162,14 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
       const globalTime = timeBefore + currentLocalTime;
       const p = (globalTime / totalDuration) * 100;
       setProgress(p || 0);
+
+      // Sync background music time to match globalTime
+      if (bgMusicRef.current && selectedMusic) {
+        const targetTime = (selectedMusic.startTime ?? 0) + globalTime;
+        if (Math.abs(bgMusicRef.current.currentTime - targetTime) > 0.3) {
+          bgMusicRef.current.currentTime = targetTime;
+        }
+      }
 
       if (selectedEffect === 'fade-in') {
         const duration = videoRef.current.duration || 0;
@@ -3186,6 +3226,9 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
             const trim = getTrimRangeForItem(item.id, item.duration);
             videoRef.current.currentTime = Math.max(trim.start, Math.min(trim.end, trim.start + offset));
           }
+          if (bgMusicRef.current && selectedMusic) {
+            bgMusicRef.current.currentTime = (selectedMusic.startTime ?? 0) + globalSeekTime;
+          }
         }, 10);
         break;
       }
@@ -3212,6 +3255,40 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
     }
   }, [showReadLine, progress]);
 
+  // Handle play/pause state
+  useEffect(() => {
+    const activeItem = mediaItems.find(i => i.id === activePreviewId);
+    console.log("📹 [PLAYBACK] useEffect triggered:", { 
+      isPlaying, 
+      activeId: activePreviewId,
+      activeItemType: activeItem?.type,
+      hasVideoRef: !!videoRef.current 
+    });
+    
+    if (!videoRef.current || !activeItem || activeItem.type !== 'video') {
+      console.log("📹 [PLAYBACK] useEffect skipped - video ref or active item missing", {
+        videoRef: !!videoRef.current,
+        activeItem: !!activeItem,
+        isVideo: activeItem?.type === 'video'
+      });
+      return;
+    }
+
+    const video = videoRef.current;
+    console.log("📹 [PLAYBACK] useEffect updating play state:", { isPlaying, videoElementExists: !!video });
+    
+    if (isPlaying) {
+      const playPromise = video.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(err => {
+          console.warn("📹 [PLAYBACK] useEffect play failed:", err);
+        });
+      }
+    } else {
+      video.pause();
+    }
+  }, [isPlaying, activePreviewId, mediaItems]);
+
   // Sync background audio with main playback
   useEffect(() => {
     if (audioRef.current && audioUrl) {
@@ -3223,16 +3300,40 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
     }
   }, [isPlaying, audioTracks.length, audioUrl]);
 
+  // Sync background music with main playback
   useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.muted = isMuted;
-      audioRef.current.volume = Math.max(0, Math.min(1, volumeLevel));
+    if (bgMusicRef.current && bgMusicUrl) {
+      if (isPlaying) {
+        bgMusicRef.current.play().catch(e => console.log("Background music play blocked", e));
+      } else {
+        bgMusicRef.current.pause();
+      }
     }
+  }, [isPlaying, bgMusicUrl]);
+
+  useEffect(() => {
+    const isMutedDeck = isMuted;
+    
+    // Set video element volume/mute
     if (videoRef.current) {
-      videoRef.current.muted = isMuted;
-      videoRef.current.volume = Math.max(0, Math.min(1, volumeLevel));
+      const videoShouldMute = isMutedDeck || (selectedMusic ? selectedMusic.muteOriginal : false);
+      videoRef.current.muted = videoShouldMute;
+      videoRef.current.volume = videoShouldMute ? 0 : Math.max(0, Math.min(1, volumeLevel));
     }
-  }, [isMuted, volumeLevel]);
+
+    // Set upload audio track volume/mute
+    if (audioRef.current) {
+      audioRef.current.muted = isMutedDeck;
+      audioRef.current.volume = isMutedDeck ? 0 : Math.max(0, Math.min(1, volumeLevel));
+    }
+
+    // Set background music volume/mute
+    if (bgMusicRef.current && selectedMusic) {
+      bgMusicRef.current.muted = isMutedDeck;
+      const bgVolume = (selectedMusic.volume ?? 80) / 100;
+      bgMusicRef.current.volume = isMutedDeck ? 0 : bgVolume;
+    }
+  }, [isMuted, volumeLevel, selectedMusic]);
 
   useEffect(() => {
     if (videoRef.current) {
@@ -3495,18 +3596,30 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
       if (p < 1) {
         raf = requestAnimationFrame(tick);
       } else {
-        // Transition preview finished - don't auto-switch clips
-        // Just clear the overlay state
+        // Transition preview finished - update to the next clip
         console.log("✅ [TRANSITIONS] Preview animation completed for transition:", transitionOverlay.type);
+        console.log("📹 [PLAYBACK] Switching to next clip after transition, isPlaying:", isPlaying);
+        setActivePreviewId(transitionOverlay.toId);
         setTransitionOverlay(null);
         setTransitionProgress(0);
-        // Keep activePreviewId as-is so user can see the transition was applied
+        
+        // Ensure playback continues on the next clip
+        if (isPlaying) {
+          setTimeout(() => {
+            if (videoRef.current) {
+              console.log("📹 [PLAYBACK] Resuming playback on next clip");
+              videoRef.current.play().catch((err) => {
+                console.warn("📹 [PLAYBACK] Failed to resume playback after transition:", err);
+              });
+            }
+          }, 50);
+        }
       }
     };
 
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [transitionOverlay]);
+  }, [transitionOverlay, isPlaying]);
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
@@ -4543,33 +4656,73 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                 }}
                 className={`relative rounded-xl bg-slate-950 border border-white/10 shadow-2xl overflow-hidden flex items-center justify-center transition-all ${(isTextPlacementMode || isCaptionPlacementMode) ? 'cursor-crosshair' : 'cursor-default'}`}
               >
-                <AnimatePresence mode="popLayout">
+                <AnimatePresence mode="wait">
                   {activePreviewId && activePreviewItem ? (
                     <motion.div
-                      key={activePreviewId}
+                      key={`preview-${activePreviewId}`}
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
+                      transition={{ duration: 0.2 }}
                       className="absolute inset-0 w-full h-full"
                     >
                       {activePreviewItem.type === 'video' ? (
                         <>
                           <video
                             ref={videoRef}
+                            key={`video-${activePreviewItem.id}`}
                             onTimeUpdate={handleTimeUpdate}
                             onEnded={playNextMedia}
+                            onLoadStart={() => {
+                              console.log("📹 [PLAYBACK] onLoadStart");
+                            }}
                             onLoadedMetadata={() => {
+                              console.log("📹 [PLAYBACK] onLoadedMetadata");
                               if (selectedEffect === 'fade-in') setPreviewOpacity(0);
                               else setPreviewOpacity(1);
                               if (selectedEffect !== 'zoom') setPreviewZoom(1);
                             }}
                             onLoadedData={() => {
-                              // Reset current time when new video is loaded
+                              console.log("📹 [PLAYBACK] onLoadedData, videoRef.current exists:", !!videoRef.current);
+                              // Reset current time to trim start when new video is loaded
                               if (videoRef.current) {
-                                videoRef.current.currentTime = 0;
+                                const activeItem = mediaItems.find(i => i.id === activePreviewId);
+                                if (activeItem?.type === 'video') {
+                                  const trim = getTrimRangeForItem(activeItem.id, activeItem.duration);
+                                  const videoElement = videoRef.current;
+                                  videoElement.currentTime = trim.start;
+                                  console.log("📹 [PLAYBACK] Video loaded, current time set to:", trim.start, "isPlaying:", isPlaying);
+                                  // Immediately try to play if isPlaying is true
+                                  if (isPlaying) {
+                                    setTimeout(() => {
+                                      if (videoElement) {
+                                        videoElement.play().catch(err => {
+                                          console.warn("📹 [PLAYBACK] Play attempt failed on load:", err);
+                                        });
+                                      }
+                                    }, 10);
+                                  }
+                                } else {
+                                  videoRef.current.currentTime = 0;
+                                }
                               }
                             }}
-                            onCanPlay={(e) => { if (isPlaying) e.currentTarget.play().catch(() => {}); }}
+                            onCanPlay={(e) => { 
+                              const videoElement = e.currentTarget;
+                              console.log("📹 [PLAYBACK] onCanPlay fired, isPlaying:", isPlaying, "videoElement:", !!videoElement);
+                              if (isPlaying && videoElement) {
+                                setTimeout(() => {
+                                  if (videoElement) {
+                                    videoElement.play().catch(err => {
+                                      console.warn("📹 [PLAYBACK] Play attempt failed:", err);
+                                    });
+                                  }
+                                }, 10);
+                              }
+                            }}
+                            onError={(e) => {
+                              console.error("📹 [PLAYBACK] Video error:", e);
+                            }}
                             src={activePreviewItem.preview}
                             className={CANVAS_PREVIEW_EFFECTS.includes(selectedEffect) || CANVAS_PREVIEW_FILTERS.includes(selectedFilter) ? 'hidden' : 'w-full h-full object-contain'}
                             style={{
@@ -4603,6 +4756,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                         </>
                       )}
                       {audioUrl && <audio ref={audioRef} src={audioUrl} muted={isMuted} className="hidden" />}
+                      {bgMusicUrl && <audio ref={bgMusicRef} src={bgMusicUrl} className="hidden" />}
                       {selectedEffect === 'flash-effect' && (
                         <div
                           className="absolute inset-0 pointer-events-none bg-white"
@@ -5086,6 +5240,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
               setAudioError={setAudioError}
               showReadLine={showReadLine}
               setShowReadLine={setShowReadLine}
+              selectPreviewWithTransition={selectPreviewWithTransition}
             />
           </div>
 
