@@ -1,13 +1,13 @@
 import { useNavigate } from "react-router";
 import { useState } from "react";
 import { ChevronLeft } from "lucide-react";
+import { useFeedbackData } from "../../../hooks/useDashboardData";
 
 export function DeveloperFeedbackPage() {
   const navigate = useNavigate();
   const [filterStatus, setFilterStatus] = useState<"all" | "open" | "progress" | "resolved">("all");
   const [selectedFeedback, setSelectedFeedback] = useState<any>(null);
-
-  const feedbackList = [];
+  const { feedback: feedbackList, isLoading } = useFeedbackData(50);
 
   const filteredFeedback = filterStatus === "all" ? feedbackList : feedbackList.filter((f) => f.status === filterStatus);
 
@@ -15,10 +15,10 @@ export function DeveloperFeedbackPage() {
     switch (type) {
       case "bug":
         return "bg-red-500/20 text-red-400";
-      case "suggestion":
-        return "bg-blue-500/20 text-blue-400";
-      case "feature":
+      case "feature_request":
         return "bg-green-500/20 text-green-400";
+      case "feedback":
+        return "bg-blue-500/20 text-blue-400";
       default:
         return "bg-slate-500/20 text-slate-400";
     }
@@ -138,32 +138,43 @@ export function DeveloperFeedbackPage() {
         ) : (
           // Feedback List View
           <div className="space-y-4">
-            {filteredFeedback.map((feedback) => (
-              <div
-                key={feedback.id}
-                onClick={() => setSelectedFeedback(feedback)}
-                className="bg-slate-800 rounded border border-slate-700 p-6 hover:border-slate-600 cursor-pointer transition"
-              >
-                <div className="flex justify-between items-start gap-4">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-bold mb-2">{feedback.title}</h3>
-                    <p className="text-sm text-slate-400 mb-3">{feedback.description}</p>
-                    <div className="flex gap-2 flex-wrap">
-                      <span className={`inline-block px-3 py-1 rounded text-xs font-bold ${getTypeColor(feedback.type)}`}>
-                        {feedback.type}
-                      </span>
-                      <span className={`inline-block px-3 py-1 rounded text-xs font-bold ${getStatusColor(feedback.status)}`}>
-                        {feedback.status === "progress" ? "In Progress" : feedback.status}
-                      </span>
+            {isLoading ? (
+              <div className="text-center py-12">
+                <p className="text-slate-400">Loading feedback...</p>
+              </div>
+            ) : filteredFeedback.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-slate-400">No feedback found</p>
+              </div>
+            ) : (
+              filteredFeedback.map((feedback) => (
+                <div
+                  key={feedback.id}
+                  onClick={() => setSelectedFeedback(feedback)}
+                  className="bg-slate-800 rounded border border-slate-700 p-6 hover:border-slate-600 cursor-pointer transition"
+                >
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="flex-1">
+                      <h3 className="text-lg font-bold mb-2">{feedback.title}</h3>
+                      <p className="text-sm text-slate-400 mb-3">{feedback.description}</p>
+                      <div className="flex gap-2 flex-wrap">
+                        <span className={`inline-block px-3 py-1 rounded text-xs font-bold ${getTypeColor(feedback.type)}`}>
+                          {feedback.type === 'feature_request' ? 'Feature Request' : feedback.type}
+                        </span>
+                        <span className={`inline-block px-3 py-1 rounded text-xs font-bold ${getStatusColor('open')}`}>
+                          Open
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-slate-400">
+                        {new Date(feedback.created_at).toLocaleDateString()}
+                      </p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-2xl font-bold text-yellow-400">{feedback.votes}</p>
-                    <p className="text-xs text-slate-400">votes</p>
-                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         )}
       </div>

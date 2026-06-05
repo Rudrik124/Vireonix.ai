@@ -1,34 +1,12 @@
 import { useNavigate } from "react-router";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { ChevronLeft } from "lucide-react";
-import { fetchAnalytics } from "../../../services/developer-portal-api.service";
+import { useAnalyticsData } from "../../../hooks/useDashboardData";
 
 export function DeveloperAnalyticsPage() {
   const navigate = useNavigate();
-  const [timeRange, setTimeRange] = useState<"today" | "7d" | "30d">("7d");
-  const [isLoading, setIsLoading] = useState(true);
-  const [analytics, setAnalytics] = useState({
-    dau: 0,
-    wau: 0,
-    mau: 0,
-    retentionRate: 0,
-  });
-
-  useEffect(() => {
-    loadAnalytics();
-  }, [timeRange]);
-
-  const loadAnalytics = async () => {
-    setIsLoading(true);
-    try {
-      const data = await fetchAnalytics(timeRange);
-      setAnalytics(data);
-    } catch (error) {
-      console.error("Failed to load analytics:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const [timeRange, setTimeRange] = useState<"7d" | "30d" | "90d">("7d");
+  const { analytics, isLoading } = useAnalyticsData(timeRange);
 
   return (
     <div className="min-h-screen bg-slate-900 text-white">
@@ -50,7 +28,7 @@ export function DeveloperAnalyticsPage() {
       <div className="mx-auto max-w-7xl px-6 py-8">
         {/* Time Range Filter */}
         <div className="mb-8 flex gap-3">
-          {(["today", "7d", "30d"] as const).map((range) => (
+          {(["7d", "30d", "90d"] as const).map((range) => (
             <button
               key={range}
               onClick={() => setTimeRange(range)}
@@ -60,7 +38,7 @@ export function DeveloperAnalyticsPage() {
                   : "bg-slate-700 text-slate-400 hover:bg-slate-600"
               }`}
             >
-              {range === "today" ? "Today" : range === "7d" ? "Last 7 Days" : "Last 30 Days"}
+              {range === "7d" ? "Last 7 Days" : range === "30d" ? "Last 30 Days" : "Last 90 Days"}
             </button>
           ))}
         </div>
@@ -74,10 +52,10 @@ export function DeveloperAnalyticsPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <MetricCard label="Daily Active Users" value={analytics.dau.toString()} trend="+0%" />
-            <MetricCard label="Weekly Active Users" value={analytics.wau.toString()} trend="+0%" />
-            <MetricCard label="Monthly Active Users" value={analytics.mau.toString()} trend="+0%" />
-            <MetricCard label="Retention Rate" value={`${analytics.retentionRate}%`} trend="+0%" />
+            <MetricCard label="Daily Active Users" value={analytics?.dau?.toString() || "0"} trend="+0%" />
+            <MetricCard label="Weekly Active Users" value={analytics?.wau?.toString() || "0"} trend="+0%" />
+            <MetricCard label="Monthly Active Users" value={analytics?.mau?.toString() || "0"} trend="+0%" />
+            <MetricCard label="Retention Rate" value={`${analytics?.retentionRate || 0}%`} trend="+0%" />
           </div>
         )}
 
@@ -86,44 +64,60 @@ export function DeveloperAnalyticsPage() {
           <div className="bg-slate-800 rounded border border-slate-700 p-6">
             <h2 className="text-lg font-bold mb-4">Most Used Features</h2>
             <div className="space-y-4">
-              {[
-                { name: "AI Generated Video", usage: 0, users: 0 },
-                { name: "Reference Video", usage: 0, users: 0 },
-                { name: "Images to Video", usage: 0, users: 0 },
-                { name: "Quick Edit", usage: 0, users: 0 },
-              ].map((feature) => (
-                <div key={feature.name}>
-                  <div className="flex justify-between mb-2">
-                    <span className="text-sm font-bold">{feature.name}</span>
-                    <span className="text-sm text-slate-400">{feature.users} users</span>
+              {(analytics?.featureUsage
+                ? Object.entries(analytics.featureUsage)
+                    .sort((a, b) => (b[1]?.count || 0) - (a[1]?.count || 0))
+                    .slice(0, 4)
+                : []
+              ).map(([feature, stats]: [string, any]) => {
+                const maxCount = Math.max(
+                  ...(analytics?.featureUsage
+                    ? Object.values(analytics.featureUsage).map((s: any) => s?.count || 0)
+                    : [100])
+                );
+                const percentage = ((stats?.count || 0) / (maxCount || 1)) * 100;
+                return (
+                  <div key={feature}>
+                    <div className="flex justify-between mb-2">
+                      <span className="text-sm font-bold">{feature}</span>
+                      <span className="text-sm text-slate-400">{stats?.count || 0} uses</span>
+                    </div>
+                    <div className="w-full bg-slate-700 rounded-full h-2">
+                      <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${percentage}%` }}></div>
+                    </div>
                   </div>
-                  <div className="w-full bg-slate-700 rounded-full h-2">
-                    <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${feature.usage}%` }}></div>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
           <div className="bg-slate-800 rounded border border-slate-700 p-6">
             <h2 className="text-lg font-bold mb-4">Least Used Features</h2>
             <div className="space-y-4">
-              {[
-                { name: "Batch Processing", usage: 0, users: 0 },
-                { name: "API Direct Access", usage: 0, users: 0 },
-                { name: "Custom Models", usage: 0, users: 0 },
-                { name: "Webhooks", usage: 0, users: 0 },
-              ].map((feature) => (
-                <div key={feature.name}>
-                  <div className="flex justify-between mb-2">
-                    <span className="text-sm font-bold">{feature.name}</span>
-                    <span className="text-sm text-slate-400">{feature.users} users</span>
+              {(analytics?.featureUsage
+                ? Object.entries(analytics.featureUsage)
+                    .sort((a, b) => (a[1]?.count || 0) - (b[1]?.count || 0))
+                    .slice(0, 4)
+                : []
+              ).map(([feature, stats]: [string, any]) => {
+                const maxCount = Math.max(
+                  ...(analytics?.featureUsage
+                    ? Object.values(analytics.featureUsage).map((s: any) => s?.count || 0)
+                    : [100])
+                );
+                const percentage = ((stats?.count || 0) / (maxCount || 1)) * 100;
+                return (
+                  <div key={feature}>
+                    <div className="flex justify-between mb-2">
+                      <span className="text-sm font-bold">{feature}</span>
+                      <span className="text-sm text-slate-400">{stats?.count || 0} uses</span>
+                    </div>
+                    <div className="w-full bg-slate-700 rounded-full h-2">
+                      <div className="bg-yellow-500 h-2 rounded-full" style={{ width: `${percentage}%` }}></div>
+                    </div>
                   </div>
-                  <div className="w-full bg-slate-700 rounded-full h-2">
-                    <div className="bg-yellow-500 h-2 rounded-full" style={{ width: `${feature.usage}%` }}></div>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>

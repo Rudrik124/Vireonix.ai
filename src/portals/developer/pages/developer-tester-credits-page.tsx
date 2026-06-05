@@ -1,7 +1,8 @@
 import { useNavigate } from "react-router";
 import { useState, useEffect } from "react";
 import { Plus, Send, AlertCircle, Zap, TrendingUp } from "lucide-react";
-import { fetchTesters, assignCreditsToTester, fetchTesterCreditHistory } from "../../../services/developer-portal-api.service";
+import { supabase } from "../../../lib/supabase";
+import { trackCreditTransaction } from "../../../services/analytics.service";
 
 interface Tester {
   id: string;
@@ -37,95 +38,103 @@ export function DeveloperTesterCreditsPage() {
   const [newTesterEmail, setNewTesterEmail] = useState("");
   const [newTesterName, setNewTesterName] = useState("");
 
-  // Mock data for testing
-  const mockTesters: Tester[] = [
-    {
-      id: "tester-001",
-      email: "qa1@vireonix.ai",
-      name: "Alice Johnson",
-      currentCredits: 250,
-      weeklyAllocation: 500,
-      totalUsed: 1850,
-      status: "active",
-    },
-    {
-      id: "tester-002",
-      email: "qa2@vireonix.ai",
-      name: "Bob Smith",
-      currentCredits: 142,
-      weeklyAllocation: 500,
-      totalUsed: 2158,
-      status: "active",
-    },
-    {
-      id: "tester-003",
-      email: "qa3@vireonix.ai",
-      name: "Carol Davis",
-      currentCredits: 89,
-      weeklyAllocation: 500,
-      totalUsed: 2911,
-      status: "active",
-    },
-    {
-      id: "tester-004",
-      email: "qa4@vireonix.ai",
-      name: "David Wilson",
-      currentCredits: 500,
-      weeklyAllocation: 500,
-      totalUsed: 1500,
-      status: "active",
-    },
-  ];
-
-  useEffect(() => {
-    loadTesters();
-  }, []);
-
+  // Load testers from database
   const loadTesters = async () => {
     setIsLoading(true);
     try {
-      const data = await fetchTesters();
-      // Use mock data if API returns empty
-      setTesters(data.testers && data.testers.length > 0 ? data.testers : mockTesters);
+      // Get all users with tester role
+      const { data: testerProfiles, error } = await supabase
+        .from("app_profiles")
+        .select("id, email, full_name, developer_credits, subscription_status")
+        .eq("role", "tester");
+
+      if (error) throw error;
+
+      // Get usage stats for each tester
+      const testersWithStats = await Promise.all(
+        (testerProfiles || []).map(async (profile) => {
+          const { count: totalUsed } = await supabase
+            .from("usage_logs")
+            .select("*", { count: "exact", head: true })
+            .eq("user_id", profile.id);
+
+          return {
+            id: profile.id,
+            email: profile.email,
+            name: profile.full_name || profile.email,
+            currentCredits: profile.developer_credits || 0,
+            weeklyAllocation: 500,
+            totalUsed: totalUsed || 0,
+            status: profile.subscription_status === "active" ? "active" : "inactive",
+          };
+        })
+      );
+
+      setTesters(testersWithStats);
     } catch (error) {
       console.error("Failed to load testers:", error);
-      // Fallback to mock data
-      setTesters(mockTesters);
+      setTesters([]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleAddTester = (e: React.FormEvent) => {
+  useEffect(() => {
+    loadTesters();
+  }, []);
+
+  const handleAddTester = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!newTesterEmail || !newTesterName) {
       alert("Please fill in all fields");
       return;
     }
 
-    const newTester: Tester = {
-      id: `tester-${Date.now()}`,
-      email: newTesterEmail,
-      name: newTesterName,
-      currentCredits: 500,
-      weeklyAllocation: 500,
-      totalUsed: 0,
-      status: "active",
-    };
-
-    setTesters([...testers, newTester]);
-    setNewTesterEmail("");
-    setNewTesterName("");
-    setShowAddTester(false);
-    alert(`✓ Added ${newTesterName} as a new tester!`);
+    try {
+      // Note: In a real app, you'd call an admin endpoint to create the user
+      // For now, this would be handled by your backend
+      alert(`✓ Added ${newTesterName} as a new tester! (Backend integration required)`);
+      setNewTesterEmail("");
+      setNewTesterName("");
+      setShowAddTester(false);
+      await loadTesters();
+    } catch (error) {
+      console.error("Failed to add tester:", error);
+      alert("Failed to add tester");
+    }
   };
 
   const handleSelectTester = async (tester: Tester) => {
     setSelectedTester(tester);
     try {
-      const historyData = await fetchTesterCreditHistory(tester.id);
-      setHistory(historyData.transactions || []);
+      // Get credit history for this tester
+      const { data: transactions, error } = await supabase
+        .from("usage_logs")
+        .select("*")
+        .eq("user_id", tester.id)
+        .in("feature_key", ["credit_deducted", "credit_added", "credit_refunded"])
+        .order("created_at", { ascending: false })
+        .limit(20);
+
+      if (error) throw error;
+
+      const mappedHistory: CreditTransaction[] = (transactions || []).map((log) => ({
+        id: log.id,
+        testerId: log.user_id,
+        amount: Math.abs(log.credits_charged || 0),
+        reason: log.metadata?.reason || log.feature_key,
+        assignedBy: log.metadata?.assignedBy || "System",
+        timestamp: new Date(log.created_at).toLocaleString(),
+        type:
+          log.feature_key === "credit_refunded"
+            ? "refunded"
+            : log.credits_charged > 0
+            ? "used"
+            : "assigned",
+      }));
+
+      setHistory(mappedHistory);
     } catch (error) {
       console.error("Failed to load tester history:", error);
       setHistory([]);
@@ -148,7 +157,18 @@ export function DeveloperTesterCreditsPage() {
 
     setIsAssigning(true);
     try {
-      await assignCreditsToTester(selectedTester.id, amount, reason);
+      // Track the credit assignment
+      await trackCreditTransaction(amount, "added", reason, {
+        testerId: selectedTester.id,
+      });
+
+      // Update the tester's credits in the database
+      const { error: updateError } = await supabase
+        .from("app_profiles")
+        .update({ developer_credits: selectedTester.currentCredits + amount })
+        .eq("id", selectedTester.id);
+
+      if (updateError) throw updateError;
 
       // Update local state
       setTesters((prev) =>

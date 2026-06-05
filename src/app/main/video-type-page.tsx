@@ -462,13 +462,12 @@ export function VideoTypePage() {
                   {/* Audio Waveform Animation */}
                   <div className="flex items-end gap-[2px] h-6 w-8">
                     {[1,2,3,4,5].map(i => (
-                      <div 
-                        key={i} 
+                      <div
+                        key={i}
                         className="w-1 bg-cyan-400 rounded-t-sm"
                         style={{
-                          animation: `wave ${0.5 + Math.random() * 0.5}s ease-in-out infinite alternate`,
-                          animationDelay: `${i * 0.1}s`,
-                          transformOrigin: 'bottom'
+                          animation: `wave ${0.5 + Math.random() * 0.5}s ease-in-out ${i * 0.1}s infinite alternate`,
+                          transformOrigin: 'bottom',
                         }}
                       />
                     ))}

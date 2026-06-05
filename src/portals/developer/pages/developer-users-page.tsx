@@ -1,7 +1,8 @@
 import { useNavigate } from "react-router";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { ChevronLeft, Search, Lock, Unlock } from "lucide-react";
-import { fetchUsers, suspendUser, addCreditsToUser } from "../../../services/developer-portal-api.service";
+import { useUserList } from "../../../hooks/useDashboardData";
+import { supabase } from "../../../lib/supabase";
 
 interface User {
   id: string;
@@ -10,48 +11,62 @@ interface User {
   role: string;
   status: 'active' | 'suspended';
   credits: number;
-  videos: number;
+  portalAccess: string[];
   joinDate: string;
-  lastLogin?: string;
 }
 
 export function DeveloperUsersPage() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [users, setUsers] = useState<User[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   const [page, setPage] = useState(1);
 
-  useEffect(() => {
-    loadUsers();
-  }, [page]);
+  const { users: allUsers, isLoading } = useUserList(page, 20);
 
-  const loadUsers = async () => {
-    setIsLoading(true);
-    try {
-      const data = await fetchUsers(page, 20);
-      setUsers(data.users || []);
-    } catch (error) {
-      console.error("Failed to load users:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const filteredUsers = (allUsers?.users || []).filter(
+    (user) =>
+      user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const handleSuspendUser = async (userId: string) => {
     setIsUpdating(true);
     try {
-      await suspendUser(userId);
-      setUsers(prev => prev.map(u => 
-        u.id === userId ? { ...u, status: 'suspended' } : u
-      ));
+      const { error } = await supabase
+        .from("app_profiles")
+        .update({ subscription_status: "suspended" })
+        .eq("id", userId);
+
+      if (error) throw error;
+
       if (selectedUser?.id === userId) {
-        setSelectedUser({ ...selectedUser, status: 'suspended' });
+        setSelectedUser({ ...selectedUser, status: "suspended" });
       }
     } catch (error) {
       console.error("Failed to suspend user:", error);
+      alert("Failed to suspend user");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleReactivateUser = async (userId: string) => {
+    setIsUpdating(true);
+    try {
+      const { error } = await supabase
+        .from("app_profiles")
+        .update({ subscription_status: "active" })
+        .eq("id", userId);
+
+      if (error) throw error;
+
+      if (selectedUser?.id === userId) {
+        setSelectedUser({ ...selectedUser, status: "active" });
+      }
+    } catch (error) {
+      console.error("Failed to reactivate user:", error);
+      alert("Failed to reactivate user");
     } finally {
       setIsUpdating(false);
     }
@@ -60,25 +75,28 @@ export function DeveloperUsersPage() {
   const handleAddCredits = async (userId: string, amount: number) => {
     setIsUpdating(true);
     try {
-      const result = await addCreditsToUser(userId, amount, "Admin credit adjustment");
-      setUsers(prev => prev.map(u => 
-        u.id === userId ? { ...u, credits: result.newBalance } : u
-      ));
+      const currentUser = allUsers?.users.find(u => u.id === userId);
+      if (!currentUser) return;
+
+      const newBalance = currentUser.credits + amount;
+
+      const { error } = await supabase
+        .from("app_profiles")
+        .update({ user_credits: newBalance })
+        .eq("id", userId);
+
+      if (error) throw error;
+
       if (selectedUser?.id === userId) {
-        setSelectedUser({ ...selectedUser, credits: result.newBalance });
+        setSelectedUser({ ...selectedUser, credits: newBalance });
       }
     } catch (error) {
       console.error("Failed to add credits:", error);
+      alert("Failed to add credits");
     } finally {
       setIsUpdating(false);
     }
   };
-
-  const filteredUsers = users.filter(
-    (user) =>
-      user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   return (
     <div className="min-h-screen bg-slate-900 text-white">

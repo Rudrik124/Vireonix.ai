@@ -1,108 +1,152 @@
 import { useNavigate } from "react-router";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { ChevronLeft, AlertCircle, CheckCircle, Trash2, RotateCcw } from "lucide-react";
 import { useAuth } from "../../../app/context/auth-context";
-import {
-  fetchErrorLogs,
-  resolveError,
-  reopenError,
-  deleteErrorLog,
-  type ErrorLog,
-  type ErrorSeverity,
-  type ErrorStatus,
-} from "../../../services/error-logs.service";
+import { useErrorLogsData } from "../../../hooks/useDashboardData";
+import { supabase } from "../../../lib/supabase";
+
+type ErrorSeverity = 'critical' | 'high' | 'medium' | 'low';
+type ErrorStatus = 'open' | 'resolved';
+
+interface ErrorLog {
+  id: string;
+  error_message: string;
+  module: string;
+  route: string;
+  severity: ErrorSeverity;
+  status: ErrorStatus;
+  browser?: string;
+  device?: string;
+  timestamp: string;
+  stack_trace?: string;
+  additional_context?: Record<string, any>;
+  created_at: string;
+  updated_at?: string;
+  resolved_at?: string;
+}
 
 export function DeveloperErrorLogsPage() {
   const navigate = useNavigate();
   const { profile } = useAuth();
-  const [errors, setErrors] = useState<ErrorLog[]>([]);
   const [selectedError, setSelectedError] = useState<ErrorLog | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isUpdating, setIsUpdating] = useState(false);
 
   // Filters
   const [timeRange, setTimeRange] = useState<'today' | 'last7days' | 'all'>('all');
   const [severityFilter, setSeverityFilter] = useState<ErrorSeverity[]>(['critical', 'high', 'medium', 'low']);
   const [statusFilter, setStatusFilter] = useState<ErrorStatus[]>(['open', 'resolved']);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isUpdating, setIsUpdating] = useState(false);
 
-  // Load errors
-  useEffect(() => {
-    loadErrors();
-  }, [timeRange, severityFilter, statusFilter]);
+  // Load errors with realtime updates
+  const { errorLogs, isLoading } = useErrorLogsData(50, severityFilter);
 
-  const loadErrors = async () => {
-    setIsLoading(true);
-    const logs = await fetchErrorLogs({
-      timeRange,
-      severity: severityFilter,
-      status: statusFilter,
-    });
-    
-    // Filter by search query
-    let filtered = logs;
+  // Filter logs by search query and time range
+  const filteredErrors = errorLogs.filter((log) => {
+    // Time range filter
+    if (timeRange === 'today') {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (new Date(log.created_at) < today) return false;
+    } else if (timeRange === 'last7days') {
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      if (new Date(log.created_at) < sevenDaysAgo) return false;
+    }
+
+    // Status filter
+    if (!statusFilter.includes(log.status as ErrorStatus)) return false;
+
+    // Search query
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      filtered = logs.filter(
-        (log) =>
-          log.error_message.toLowerCase().includes(query) ||
-          log.module.toLowerCase().includes(query) ||
-          log.route.toLowerCase().includes(query)
+      return (
+        log.error_message.toLowerCase().includes(query) ||
+        log.module.toLowerCase().includes(query) ||
+        log.route.toLowerCase().includes(query)
       );
     }
 
-    setErrors(filtered);
-    setIsLoading(false);
-  };
+    return true;
+  });
 
   const handleResolveError = async (errorId: string) => {
     if (!profile?.id) return;
     setIsUpdating(true);
-    const success = await resolveError(errorId, profile.id);
-    if (success) {
-      setErrors((prev) =>
-        prev.map((e) =>
-          e.id === errorId
-            ? { ...e, status: 'resolved' as const, resolved_at: new Date().toISOString() }
-            : e
-        )
-      );
+    try {
+      const { error } = await supabase
+        .from('error_logs')
+        .update({
+          status: 'resolved',
+          resolved_at: new Date().toISOString(),
+          resolved_by: profile.id,
+        })
+        .eq('id', errorId);
+
+      if (error) throw error;
+
       if (selectedError?.id === errorId) {
-        setSelectedError({ ...selectedError, status: 'resolved' as const });
+        setSelectedError({
+          ...selectedError,
+          status: 'resolved',
+          resolved_at: new Date().toISOString(),
+        });
       }
+    } catch (error) {
+      console.error('Failed to resolve error:', error);
+      alert('Failed to resolve error');
+    } finally {
+      setIsUpdating(false);
     }
-    setIsUpdating(false);
   };
 
   const handleReopenError = async (errorId: string) => {
     setIsUpdating(true);
-    const success = await reopenError(errorId);
-    if (success) {
-      setErrors((prev) =>
-        prev.map((e) =>
-          e.id === errorId
-            ? { ...e, status: 'open' as const, resolved_at: undefined }
-            : e
-        )
-      );
+    try {
+      const { error } = await supabase
+        .from('error_logs')
+        .update({
+          status: 'open',
+          resolved_at: null,
+          resolved_by: null,
+        })
+        .eq('id', errorId);
+
+      if (error) throw error;
+
       if (selectedError?.id === errorId) {
-        setSelectedError({ ...selectedError, status: 'open' as const });
+        setSelectedError({
+          ...selectedError,
+          status: 'open',
+          resolved_at: undefined,
+        });
       }
+    } catch (error) {
+      console.error('Failed to reopen error:', error);
+      alert('Failed to reopen error');
+    } finally {
+      setIsUpdating(false);
     }
-    setIsUpdating(false);
   };
 
   const handleDeleteError = async (errorId: string) => {
     if (confirm('Are you sure you want to delete this error log?')) {
       setIsUpdating(true);
-      const success = await deleteErrorLog(errorId);
-      if (success) {
-        setErrors((prev) => prev.filter((e) => e.id !== errorId));
+      try {
+        const { error } = await supabase
+          .from('error_logs')
+          .delete()
+          .eq('id', errorId);
+
+        if (error) throw error;
+
         if (selectedError?.id === errorId) {
           setSelectedError(null);
         }
+      } catch (error) {
+        console.error('Failed to delete error:', error);
+        alert('Failed to delete error');
+      } finally {
+        setIsUpdating(false);
       }
-      setIsUpdating(false);
     }
   };
 
@@ -346,7 +390,7 @@ export function DeveloperErrorLogsPage() {
               <div className="bg-slate-800 rounded border border-slate-700 p-6 text-center">
                 <p className="text-slate-400">Loading errors...</p>
               </div>
-            ) : errors.length === 0 ? (
+            ) : filteredErrors.length === 0 ? (
               <div className="bg-slate-800 rounded border border-slate-700 p-6 text-center">
                 <AlertCircle className="w-12 h-12 text-slate-500 mx-auto mb-3" />
                 <p className="text-slate-400">No errors found</p>
@@ -365,7 +409,7 @@ export function DeveloperErrorLogsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {errors.map((error) => (
+                    {filteredErrors.map((error) => (
                       <tr key={error.id} className="border-b border-slate-700 hover:bg-slate-700/50 transition cursor-pointer">
                         <td className="px-6 py-3 text-sm max-w-xs truncate" title={error.error_message}>
                           {error.error_message}
@@ -386,7 +430,7 @@ export function DeveloperErrorLogsPage() {
                           </span>
                         </td>
                         <td className="px-6 py-3 text-sm text-slate-400">
-                          {new Date(error.timestamp).toLocaleString()}
+                          {new Date(error.created_at).toLocaleString()}
                         </td>
                         <td className="px-6 py-3 text-sm">
                           <button

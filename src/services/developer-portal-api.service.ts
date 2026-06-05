@@ -1,16 +1,42 @@
-import { useAuth } from '../app/context/auth-context';
+import { supabase } from '../lib/supabase';
 
 /**
  * Base fetch function for developer portal APIs
  */
 async function callDeveloperAPI(endpoint: string, options?: RequestInit) {
-  const token = localStorage.getItem('sb-auth-token');
-  
+  let token: string | null = null;
+
+  try {
+    if (typeof window !== 'undefined') {
+      // Quick check for a known key
+      token = localStorage.getItem('sb-auth-token');
+
+      // If Supabase client is available, prefer session access token
+      if (!token && typeof supabase !== 'undefined' && supabase) {
+        const { data } = await supabase.auth.getSession();
+        token = data?.session?.access_token ?? data?.session?.provider_token ?? null;
+      }
+
+      // Fallback: scan localStorage for keys like "sb-<id>-auth-token"
+      if (!token) {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
+            token = localStorage.getItem(key);
+            break;
+          }
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('Unable to read auth token from storage/supabase', e);
+  }
+
   const response = await fetch(`/api/developer${endpoint}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options?.headers,
     },
   });

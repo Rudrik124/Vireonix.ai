@@ -1,36 +1,12 @@
 import { useNavigate } from "react-router";
-import { useEffect, useState } from "react";
 import { useAuth } from "../../../app/context/auth-context";
 import { Users, Zap, AlertCircle, BarChart3, LogOut, Wallet } from "lucide-react";
-import { fetchDashboardStats } from "../../../services/developer-portal-api.service";
+import { useDashboardStats } from "../../../hooks/useDashboardData";
 
 export function DeveloperDashboardPage() {
   const { profile, logout } = useAuth();
   const navigate = useNavigate();
-  const [stats, setStats] = useState({
-    totalUsers: 0,
-    activeUsers: 0,
-    newUsers: 0,
-    creditsConsumed: 0,
-    aiRequests: 0,
-    revenue: 0,
-  });
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    loadStats();
-  }, []);
-
-  const loadStats = async () => {
-    try {
-      const data = await fetchDashboardStats();
-      setStats(data);
-    } catch (error) {
-      console.error("Failed to load dashboard stats:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const { stats, isLoading } = useDashboardStats();
 
   const handleLogout = async () => {
     await logout();
