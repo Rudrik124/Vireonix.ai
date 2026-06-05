@@ -1870,9 +1870,8 @@ const mergeSegmentsWithTransitions = async (segmentPaths, transitions, outputPat
         filters.push(normVFilter(i));
         filters.push(normAFilter(i));
       }
-      const concatVInputs = audioReadyPaths.map((_, i) => `[normv${i}]`).join("");
-      const concatAInputs = audioReadyPaths.map((_, i) => `[norma${i}]`).join("");
-      filters.push(`${concatVInputs}${concatAInputs}concat=n=${n}:v=1:a=1[v][a]`);
+      const concatInputs = audioReadyPaths.map((_, i) => `[normv${i}][norma${i}]`).join("");
+      filters.push(`${concatInputs}concat=n=${n}:v=1:a=1[v][a]`);
       const filterStr = filters.join(";");
 
       console.log("📝 [MERGE-CONCAT] Filter:", filterStr);
