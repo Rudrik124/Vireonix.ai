@@ -752,11 +752,11 @@ export function LandingPage() {
                     <div className="space-y-4 w-full">
                       <div>
                         <div className="flex justify-between text-xs font-bold uppercase tracking-wider mb-2 opacity-60"><span>Traditional Editor</span><span>10 mins</span></div>
-                        <Progress percent={10} showInfo={false} strokeColor="#4b5563" trailColor={isDarkMode ? '#374151' : '#e5e7eb'} strokeWidth={12} />
+                        <Progress percent={10} showInfo={false} strokeColor="#4b5563" railColor={isDarkMode ? '#374151' : '#e5e7eb'} size={["100%", 12]} />
                       </div>
                       <div>
                         <div className="flex justify-between text-xs font-bold uppercase tracking-wider mb-2 text-purple-400"><span>Veytrix.AI</span><span>1 min</span></div>
-                        <Progress percent={100} showInfo={false} strokeColor={{ '0%': '#a855f7', '100%': '#6366f1' }} trailColor={isDarkMode ? '#374151' : '#e5e7eb'} status="active" strokeWidth={12} />
+                        <Progress percent={100} showInfo={false} strokeColor={{ '0%': '#a855f7', '100%': '#6366f1' }} railColor={isDarkMode ? '#374151' : '#e5e7eb'} status="active" size={["100%", 12]} />
                       </div>
                     </div>
                   </div>
@@ -765,7 +765,7 @@ export function LandingPage() {
 
               {/* 95% Editing Automation */}
               <motion.div whileHover={{ scale: 1.02 }} className={`p-8 rounded-3xl border transition-all flex flex-col items-center text-center justify-center ${isDarkMode ? 'bg-[#130E24] border-purple-500/20 hover:bg-[#1A1333]' : 'bg-white border-black/5'} shadow-2xl shadow-blue-900/20`}>
-                 <Progress type="circle" percent={95} size={150} strokeWidth={8} strokeColor={{ '0%': '#3b82f6', '100%': '#06b6d4' }} format={(p) => <span className={`text-3xl font-black ${isDarkMode ? 'text-white' : 'text-black'}`}>{p}%</span>} />
+                 <Progress type="circle" percent={95} size={150} strokeColor={{ '0%': '#3b82f6', '100%': '#06b6d4' }} format={(p) => <span className={`text-3xl font-black ${isDarkMode ? 'text-white' : 'text-black'}`}>{p}%</span>} />
                  <h3 className="text-2xl font-bold mt-6 mb-2">Editing Automation</h3>
                  <p className="opacity-70 font-medium text-lg">Automated editing tasks</p>
               </motion.div>
@@ -817,7 +817,7 @@ export function LandingPage() {
               <Col xs={24} md={8} key={i}>
                 <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeInUp}>
                   <Card 
-                    bordered={plan.featured} 
+                    variant={plan.featured ? "outlined" : "borderless"} 
                     className={`h-full text-center rounded-3xl transition-all duration-300 ${
                       plan.featured 
                         ? 'border-purple-500 shadow-2xl shadow-purple-500/20 scale-100 md:scale-110 z-10 relative py-4' 

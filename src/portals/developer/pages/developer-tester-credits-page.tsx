@@ -1,8 +1,12 @@
 import { useNavigate } from "react-router";
 import { useState, useEffect } from "react";
 import { Plus, Send, AlertCircle, Zap, TrendingUp } from "lucide-react";
-import { supabase } from "../../../lib/supabase";
-import { trackCreditTransaction } from "../../../services/analytics.service";
+import {
+  assignCreditsToTester,
+  createTester,
+  fetchTesterCreditHistory,
+  fetchTesters,
+} from "../../../services/developer-portal-api.service";
 
 interface Tester {
   id: string;
@@ -38,39 +42,11 @@ export function DeveloperTesterCreditsPage() {
   const [newTesterEmail, setNewTesterEmail] = useState("");
   const [newTesterName, setNewTesterName] = useState("");
 
-  // Load testers from database
   const loadTesters = async () => {
     setIsLoading(true);
     try {
-      // Get all users with tester role
-      const { data: testerProfiles, error } = await supabase
-        .from("app_profiles")
-        .select("id, email, full_name, developer_credits, subscription_status")
-        .eq("role", "tester");
-
-      if (error) throw error;
-
-      // Get usage stats for each tester
-      const testersWithStats = await Promise.all(
-        (testerProfiles || []).map(async (profile) => {
-          const { count: totalUsed } = await supabase
-            .from("usage_logs")
-            .select("*", { count: "exact", head: true })
-            .eq("user_id", profile.id);
-
-          return {
-            id: profile.id,
-            email: profile.email,
-            name: profile.full_name || profile.email,
-            currentCredits: profile.developer_credits || 0,
-            weeklyAllocation: 500,
-            totalUsed: totalUsed || 0,
-            status: profile.subscription_status === "active" ? "active" : "inactive",
-          };
-        })
-      );
-
-      setTesters(testersWithStats);
+      const testerData = await fetchTesters();
+      setTesters(testerData.testers || []);
     } catch (error) {
       console.error("Failed to load testers:", error);
       setTesters([]);
@@ -92,49 +68,28 @@ export function DeveloperTesterCreditsPage() {
     }
 
     try {
-      // Note: In a real app, you'd call an admin endpoint to create the user
-      // For now, this would be handled by your backend
-      alert(`✓ Added ${newTesterName} as a new tester! (Backend integration required)`);
+      const response = await createTester(newTesterEmail, newTesterName);
       setNewTesterEmail("");
       setNewTesterName("");
       setShowAddTester(false);
       await loadTesters();
+
+      const message = response.temporaryPassword
+        ? `Tester created for ${response.email}. Temporary password: ${response.temporaryPassword}`
+        : `Tester access updated for ${response.email}.`;
+
+      alert(message);
     } catch (error) {
       console.error("Failed to add tester:", error);
-      alert("Failed to add tester");
+      alert(error instanceof Error ? error.message : "Failed to add tester");
     }
   };
 
   const handleSelectTester = async (tester: Tester) => {
     setSelectedTester(tester);
     try {
-      // Get credit history for this tester
-      const { data: transactions, error } = await supabase
-        .from("usage_logs")
-        .select("*")
-        .eq("user_id", tester.id)
-        .in("feature_key", ["credit_deducted", "credit_added", "credit_refunded"])
-        .order("created_at", { ascending: false })
-        .limit(20);
-
-      if (error) throw error;
-
-      const mappedHistory: CreditTransaction[] = (transactions || []).map((log) => ({
-        id: log.id,
-        testerId: log.user_id,
-        amount: Math.abs(log.credits_charged || 0),
-        reason: log.metadata?.reason || log.feature_key,
-        assignedBy: log.metadata?.assignedBy || "System",
-        timestamp: new Date(log.created_at).toLocaleString(),
-        type:
-          log.feature_key === "credit_refunded"
-            ? "refunded"
-            : log.credits_charged > 0
-            ? "used"
-            : "assigned",
-      }));
-
-      setHistory(mappedHistory);
+      const historyData = await fetchTesterCreditHistory(tester.id);
+      setHistory(historyData.transactions || []);
     } catch (error) {
       console.error("Failed to load tester history:", error);
       setHistory([]);
@@ -149,7 +104,7 @@ export function DeveloperTesterCreditsPage() {
       return;
     }
 
-    const amount = parseInt(creditAmount);
+    const amount = parseInt(creditAmount, 10);
     if (isNaN(amount) || amount <= 0) {
       alert("Please enter a valid credit amount");
       return;
@@ -157,51 +112,37 @@ export function DeveloperTesterCreditsPage() {
 
     setIsAssigning(true);
     try {
-      // Track the credit assignment
-      await trackCreditTransaction(amount, "added", reason, {
-        testerId: selectedTester.id,
-      });
+      const response = await assignCreditsToTester(selectedTester.id, amount, reason);
+      const updatedBalance = response.newBalance ?? selectedTester.currentCredits + amount;
 
-      // Update the tester's credits in the database
-      const { error: updateError } = await supabase
-        .from("app_profiles")
-        .update({ developer_credits: selectedTester.currentCredits + amount })
-        .eq("id", selectedTester.id);
-
-      if (updateError) throw updateError;
-
-      // Update local state
       setTesters((prev) =>
-        prev.map((t) =>
-          t.id === selectedTester.id
-            ? { ...t, currentCredits: t.currentCredits + amount }
-            : t
-        )
+        prev.map((tester) =>
+          tester.id === selectedTester.id
+            ? { ...tester, currentCredits: updatedBalance }
+            : tester,
+        ),
       );
 
       setSelectedTester((prev) =>
-        prev ? { ...prev, currentCredits: prev.currentCredits + amount } : null
+        prev ? { ...prev, currentCredits: updatedBalance } : null,
       );
 
-      // Add to history
       const newTransaction: CreditTransaction = {
         id: `TXN-${Date.now()}`,
         testerId: selectedTester.id,
-        amount: amount,
-        reason: reason,
+        amount,
+        reason,
         assignedBy: "Developer",
         timestamp: new Date().toLocaleString(),
         type: "assigned",
       };
 
       setHistory((prev) => [newTransaction, ...prev]);
-
-      // Reset form
       setCreditAmount("");
       setReason("");
       setShowForm(false);
 
-      alert(`✓ Assigned ${amount} credits to ${selectedTester.email}`);
+      alert(`Assigned ${amount} credits to ${selectedTester.email}`);
     } catch (error: any) {
       alert(`Failed to assign credits: ${error.message}`);
     } finally {
@@ -217,8 +158,8 @@ export function DeveloperTesterCreditsPage() {
     );
   }
 
-  const totalCreditsAssigned = testers.reduce((sum, t) => sum + t.currentCredits, 0);
-  const totalCreditsUsed = testers.reduce((sum, t) => sum + t.totalUsed, 0);
+  const totalCreditsAssigned = testers.reduce((sum, tester) => sum + tester.currentCredits, 0);
+  const totalCreditsUsed = testers.reduce((sum, tester) => sum + tester.totalUsed, 0);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-900 to-blue-800">
@@ -236,7 +177,6 @@ export function DeveloperTesterCreditsPage() {
           </button>
         </div>
 
-        {/* Summary Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <div className="bg-blue-700 p-6 rounded-lg">
             <p className="text-blue-200 text-sm mb-2">TOTAL TESTERS</p>
@@ -266,7 +206,6 @@ export function DeveloperTesterCreditsPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Tester List */}
           <div className="lg:col-span-1">
             <div className="bg-blue-700 rounded-lg p-6">
               <div className="flex justify-between items-center mb-4">
@@ -354,11 +293,9 @@ export function DeveloperTesterCreditsPage() {
             </div>
           </div>
 
-          {/* Credit Assignment Form & History */}
           <div className="lg:col-span-2">
             {selectedTester ? (
               <div className="space-y-6">
-                {/* Tester Details */}
                 <div className="bg-blue-700 rounded-lg p-6">
                   <h3 className="text-2xl font-bold text-white mb-4">{selectedTester.name || selectedTester.email}</h3>
 
@@ -380,7 +317,6 @@ export function DeveloperTesterCreditsPage() {
                   <p className="text-blue-200 text-sm">Email: {selectedTester.email}</p>
                 </div>
 
-                {/* Assign Credits Form */}
                 <div className="bg-blue-700 rounded-lg p-6">
                   <button
                     onClick={() => setShowForm(!showForm)}
@@ -430,7 +366,6 @@ export function DeveloperTesterCreditsPage() {
                   )}
                 </div>
 
-                {/* Transaction History */}
                 <div className="bg-blue-700 rounded-lg p-6">
                   <h3 className="text-lg font-semibold text-white mb-4">Credit History</h3>
 
@@ -453,7 +388,8 @@ export function DeveloperTesterCreditsPage() {
                                 : "text-blue-400"
                             }`}
                           >
-                            {tx.type === "assigned" ? "+" : "-"}{tx.amount}
+                            {tx.type === "assigned" ? "+" : "-"}
+                            {tx.amount}
                           </span>
                         </div>
                       ))}

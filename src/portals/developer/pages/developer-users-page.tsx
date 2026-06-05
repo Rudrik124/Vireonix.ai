@@ -2,7 +2,7 @@ import { useNavigate } from "react-router";
 import { useState } from "react";
 import { ChevronLeft, Search, Lock, Unlock } from "lucide-react";
 import { useUserList } from "../../../hooks/useDashboardData";
-import { supabase } from "../../../lib/supabase";
+import { addCreditsToUser, reactivateUser, suspendUser } from "../../../services/developer-portal-api.service";
 
 interface User {
   id: string;
@@ -33,12 +33,7 @@ export function DeveloperUsersPage() {
   const handleSuspendUser = async (userId: string) => {
     setIsUpdating(true);
     try {
-      const { error } = await supabase
-        .from("app_profiles")
-        .update({ subscription_status: "suspended" })
-        .eq("id", userId);
-
-      if (error) throw error;
+      await suspendUser(userId);
 
       if (selectedUser?.id === userId) {
         setSelectedUser({ ...selectedUser, status: "suspended" });
@@ -54,12 +49,7 @@ export function DeveloperUsersPage() {
   const handleReactivateUser = async (userId: string) => {
     setIsUpdating(true);
     try {
-      const { error } = await supabase
-        .from("app_profiles")
-        .update({ subscription_status: "active" })
-        .eq("id", userId);
-
-      if (error) throw error;
+      await reactivateUser(userId);
 
       if (selectedUser?.id === userId) {
         setSelectedUser({ ...selectedUser, status: "active" });
@@ -78,14 +68,8 @@ export function DeveloperUsersPage() {
       const currentUser = allUsers?.users.find(u => u.id === userId);
       if (!currentUser) return;
 
-      const newBalance = currentUser.credits + amount;
-
-      const { error } = await supabase
-        .from("app_profiles")
-        .update({ user_credits: newBalance })
-        .eq("id", userId);
-
-      if (error) throw error;
+      const response = await addCreditsToUser(userId, amount, "Manual adjustment from developer portal");
+      const newBalance = response.newBalance ?? currentUser.credits + amount;
 
       if (selectedUser?.id === userId) {
         setSelectedUser({ ...selectedUser, credits: newBalance });

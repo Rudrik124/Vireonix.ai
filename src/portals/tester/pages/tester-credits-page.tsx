@@ -54,7 +54,29 @@ export function TesterCreditsPage() {
 
       // Fetch transaction history
       const historyData = await fetchTesterCreditHistory(profile!.id);
-      setTransactions(historyData.transactions || []);
+      let runningBalance = creditsData.currentBalance || 0;
+      const mappedTransactions: CreditTransaction[] = (historyData.transactions || []).map((transaction: any) => {
+        const isUsage = transaction.type === "used";
+        const signedAmount = isUsage ? -Math.abs(transaction.amount || 0) : Math.abs(transaction.amount || 0);
+        const normalized = {
+          id: transaction.id,
+          type: isUsage
+            ? "usage"
+            : transaction.type === "refunded"
+            ? "refund"
+            : "allocation",
+          description: transaction.reason || "Credit update",
+          amount: signedAmount,
+          balance: runningBalance,
+          timestamp: transaction.timestamp,
+          details: transaction.assignedBy ? `By ${transaction.assignedBy}` : undefined,
+        } satisfies CreditTransaction;
+
+        runningBalance -= signedAmount;
+        return normalized;
+      });
+
+      setTransactions(mappedTransactions);
     } catch (error) {
       console.error("Failed to load credit data:", error);
       // Data will remain as 0 if fetch fails

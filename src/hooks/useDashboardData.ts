@@ -1,12 +1,11 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
-  getDashboardStats,
   getAnalytics,
-  getUserList,
   getErrorLogs,
   getCreditTransactions,
   getFeedback,
 } from '../services/analytics.service';
+import { fetchDashboardStats, fetchUsers } from '../services/developer-portal-api.service';
 import {
   useUsageLogsRealtime,
   useNewUsersRealtime,
@@ -28,7 +27,7 @@ export function useDashboardStats() {
   const [isLoading, setIsLoading] = useState(true);
 
   const loadStats = useCallback(async () => {
-    const data = await getDashboardStats();
+    const data = await fetchDashboardStats();
     if (data) {
       setStats(data);
     }
@@ -93,7 +92,7 @@ export function useUserList(page: number = 1, limit: number = 20) {
   const [isLoading, setIsLoading] = useState(true);
 
   const loadUsers = useCallback(async () => {
-    const data = await getUserList(page, limit);
+    const data = await fetchUsers(page, limit);
     if (data) {
       setUsers(data);
     }

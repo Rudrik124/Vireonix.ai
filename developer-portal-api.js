@@ -9,41 +9,90 @@ let supabase = null;
 const getSupabaseClient = () => {
   if (!supabase) {
     const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-    const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+    const supabaseKey =
+      process.env.SUPABASE_SERVICE_ROLE_KEY ||
+      process.env.VITE_SUPABASE_SERVICE_ROLE_KEY ||
+      process.env.VITE_SUPABASE_ANON_KEY ||
+      process.env.SUPABASE_ANON_KEY;
     supabase = createClient(supabaseUrl, supabaseKey);
   }
   return supabase;
 };
 
+const TESTER_PERMISSIONS = [
+  "tester.portal.access",
+  "user.portal.access",
+  "developer.testing.run",
+];
+
+const TESTER_PORTAL_ACCESS = ["tester", "user"];
+
+const authenticateInternalRequest = async (req, res) => {
+  const token = req.headers.authorization?.replace("Bearer ", "");
+  if (!token) {
+    res.status(401).json({ error: "No token provided" });
+    return null;
+  }
+
+  const {
+    data: { user },
+    error: authError,
+  } = await getSupabaseClient().auth.getUser(token);
+  if (authError || !user) {
+    res.status(401).json({ error: "Unauthorized" });
+    return null;
+  }
+
+  const { data: profile, error: profileError } = await getSupabaseClient()
+    .from("app_profiles")
+    .select("id, email, role")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (profileError || !profile) {
+    res.status(403).json({ error: "Profile not found" });
+    return null;
+  }
+
+  req.user = user;
+  req.profile = profile;
+  return { user, profile };
+};
+
 // Middleware to verify admin/developer access
 const verifyDeveloperAccess = async (req, res, next) => {
   try {
-    const token = req.headers.authorization?.replace("Bearer ", "");
-    if (!token) return res.status(401).json({ error: "No token provided" });
+    const auth = await authenticateInternalRequest(req, res);
+    if (!auth) return;
 
-    const {
-      data: { user },
-      error: authError,
-    } = await getSupabaseClient().auth.getUser(token);
-    if (authError || !user) return res.status(401).json({ error: "Unauthorized" });
-
-    // Check if user is admin or developer
-    const { data: profile, error: profileError } = await getSupabaseClient()
-      .from("app_profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    if (profileError || !profile) return res.status(403).json({ error: "Profile not found" });
-    if (!["admin", "super_admin", "developer"].includes(profile.role)) {
+    if (!["admin", "super_admin", "developer"].includes(auth.profile.role)) {
       return res.status(403).json({ error: "Insufficient permissions" });
     }
 
-    req.user = user;
-    req.profile = profile;
     next();
   } catch (error) {
     console.error("Developer access verification error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+const verifyTesterOrDeveloperAccess = async (req, res, next) => {
+  try {
+    const auth = await authenticateInternalRequest(req, res);
+    if (!auth) return;
+
+    if (!["admin", "super_admin", "developer", "tester"].includes(auth.profile.role)) {
+      return res.status(403).json({ error: "Insufficient permissions" });
+    }
+
+    const targetTesterId = req.params.testerId;
+    if (auth.profile.role === "tester" && targetTesterId && auth.user.id !== targetTesterId) {
+      return res.status(403).json({ error: "Cannot access another tester profile" });
+    }
+
+    next();
+  } catch (error) {
+    console.error("Tester access verification error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };
@@ -269,6 +318,24 @@ router.post("/api/developer/users/:userId/suspend", verifyDeveloperAccess, async
   }
 });
 
+router.post("/api/developer/users/:userId/reactivate", verifyDeveloperAccess, async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const { error } = await getSupabaseClient()
+      .from("app_profiles")
+      .update({ subscription_status: "active" })
+      .eq("id", userId);
+
+    if (error) throw error;
+
+    res.json({ success: true, message: "User reactivated" });
+  } catch (error) {
+    console.error("Reactivate user error:", error);
+    res.status(500).json({ error: "Failed to reactivate user" });
+  }
+});
+
 // ============ CREDITS MANAGEMENT ============
 
 /**
@@ -362,6 +429,293 @@ router.get("/api/developer/credits/transactions", verifyDeveloperAccess, async (
   } catch (error) {
     console.error("Transactions error:", error);
     res.status(500).json({ error: "Failed to fetch transactions" });
+  }
+});
+
+// ============ TESTER CREDITS ============
+
+router.get("/api/developer/testers", verifyDeveloperAccess, async (_req, res) => {
+  try {
+    const { data: testerProfiles, error } = await getSupabaseClient()
+      .from("app_profiles")
+      .select("id, email, full_name, developer_credits, subscription_status")
+      .eq("role", "tester")
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+
+    const testers = await Promise.all(
+      (testerProfiles || []).map(async (profile) => {
+        const { count: totalUsed } = await getSupabaseClient()
+          .from("usage_logs")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", profile.id)
+          .eq("wallet_type", "developer_credits");
+
+        return {
+          id: profile.id,
+          email: profile.email,
+          name: profile.full_name || profile.email,
+          currentCredits: profile.developer_credits || 0,
+          weeklyAllocation: 500,
+          totalUsed: totalUsed || 0,
+          status: profile.subscription_status === "active" ? "active" : "inactive",
+        };
+      }),
+    );
+
+    res.json({ testers });
+  } catch (error) {
+    console.error("Tester list error:", error);
+    res.status(500).json({ error: "Failed to fetch testers" });
+  }
+});
+
+router.post("/api/developer/testers", verifyDeveloperAccess, async (req, res) => {
+  try {
+    const email = String(req.body?.email || "").trim().toLowerCase();
+    const fullName = String(req.body?.fullName || "").trim();
+
+    if (!email || !fullName) {
+      return res.status(400).json({ error: "Email and full name are required" });
+    }
+
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailPattern.test(email)) {
+      return res.status(400).json({ error: "Enter a valid email address" });
+    }
+
+    const { data: existingProfile, error: existingProfileError } = await getSupabaseClient()
+      .from("app_profiles")
+      .select("id, email")
+      .eq("email", email)
+      .maybeSingle();
+
+    if (existingProfileError) throw existingProfileError;
+
+    if (existingProfile) {
+      const { error: updateError } = await getSupabaseClient()
+        .from("app_profiles")
+        .update({
+          email,
+          full_name: fullName,
+          role: "tester",
+          portal_access: TESTER_PORTAL_ACCESS,
+          permissions: TESTER_PERMISSIONS,
+          subscription_status: "active",
+        })
+        .eq("id", existingProfile.id);
+
+      if (updateError) throw updateError;
+
+      return res.json({
+        success: true,
+        mode: "updated",
+        email,
+      });
+    }
+
+    const temporaryPassword = `${Math.random().toString(36).slice(-8)}T9!`;
+    const { data: createdUserData, error: createUserError } = await getSupabaseClient().auth.admin.createUser({
+      email,
+      password: temporaryPassword,
+      email_confirm: true,
+      user_metadata: {
+        full_name: fullName,
+      },
+    });
+
+    if (createUserError || !createdUserData?.user) {
+      throw createUserError || new Error("Failed to create tester account");
+    }
+
+    const testerId = createdUserData.user.id;
+
+    const { error: insertProfileError } = await getSupabaseClient()
+      .from("app_profiles")
+      .insert({
+        id: testerId,
+        email,
+        full_name: fullName,
+        role: "tester",
+        portal_access: TESTER_PORTAL_ACCESS,
+        permissions: TESTER_PERMISSIONS,
+        subscription_status: "active",
+        user_credits: 0,
+        developer_credits: 0,
+      });
+
+    if (insertProfileError) throw insertProfileError;
+
+    await getSupabaseClient().from("credit_wallets").upsert(
+      [
+        {
+          user_id: testerId,
+          wallet_type: "user_credits",
+          balance: 0,
+          is_unlimited: false,
+        },
+        {
+          user_id: testerId,
+          wallet_type: "developer_credits",
+          balance: 0,
+          is_unlimited: false,
+        },
+      ],
+      { onConflict: "user_id,wallet_type" },
+    );
+
+    res.json({
+      success: true,
+      mode: "created",
+      email,
+      temporaryPassword,
+    });
+  } catch (error) {
+    console.error("Create tester error:", error);
+    res.status(500).json({ error: error?.message || "Failed to create tester" });
+  }
+});
+
+router.get("/api/developer/testers/:testerId/credits", verifyTesterOrDeveloperAccess, async (req, res) => {
+  try {
+    const { testerId } = req.params;
+
+    const { data: tester, error: testerError } = await getSupabaseClient()
+      .from("app_profiles")
+      .select("developer_credits")
+      .eq("id", testerId)
+      .maybeSingle();
+
+    if (testerError || !tester) {
+      return res.status(404).json({ error: "Tester not found" });
+    }
+
+    const now = Date.now();
+    const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const monthAgo = new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+    const { data: weeklyLogs } = await getSupabaseClient()
+      .from("usage_logs")
+      .select("credits_charged")
+      .eq("user_id", testerId)
+      .eq("wallet_type", "developer_credits")
+      .gt("created_at", weekAgo);
+
+    const { data: monthlyLogs } = await getSupabaseClient()
+      .from("usage_logs")
+      .select("credits_charged")
+      .eq("user_id", testerId)
+      .eq("wallet_type", "developer_credits")
+      .gt("created_at", monthAgo);
+
+    const weeklyUsed = (weeklyLogs || []).reduce((sum, log) => sum + Math.max(log.credits_charged || 0, 0), 0);
+    const monthlyUsed = (monthlyLogs || []).reduce((sum, log) => sum + Math.max(log.credits_charged || 0, 0), 0);
+
+    res.json({
+      currentBalance: tester.developer_credits || 0,
+      weeklyAllocation: 500,
+      weeklyUsed,
+      monthlyUsed,
+    });
+  } catch (error) {
+    console.error("Tester credits error:", error);
+    res.status(500).json({ error: "Failed to fetch tester credits" });
+  }
+});
+
+router.get("/api/developer/testers/:testerId/credits/history", verifyTesterOrDeveloperAccess, async (req, res) => {
+  try {
+    const { testerId } = req.params;
+
+    const { data: transactions, error } = await getSupabaseClient()
+      .from("usage_logs")
+      .select("id, user_id, credits_charged, feature_key, created_at, metadata")
+      .eq("user_id", testerId)
+      .eq("wallet_type", "developer_credits")
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    if (error) throw error;
+
+    res.json({
+      transactions: (transactions || []).map((log) => {
+        const amount = Math.abs(log.credits_charged || 0);
+        let type = "assigned";
+
+        if (log.feature_key === "credit_refunded") {
+          type = "refunded";
+        } else if ((log.credits_charged || 0) > 0) {
+          type = "used";
+        }
+
+        return {
+          id: log.id,
+          testerId: log.user_id,
+          amount,
+          reason: log.metadata?.reason || log.feature_key,
+          assignedBy: log.metadata?.assignedBy || log.metadata?.assigned_by || "System",
+          timestamp: new Date(log.created_at).toLocaleString(),
+          type,
+        };
+      }),
+    });
+  } catch (error) {
+    console.error("Tester credit history error:", error);
+    res.status(500).json({ error: "Failed to fetch tester credit history" });
+  }
+});
+
+router.post("/api/developer/testers/:testerId/credits/assign", verifyDeveloperAccess, async (req, res) => {
+  try {
+    const { testerId } = req.params;
+    const { amount, reason } = req.body;
+
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ error: "Invalid amount" });
+    }
+
+    const { data: tester, error: fetchError } = await getSupabaseClient()
+      .from("app_profiles")
+      .select("id, email, developer_credits")
+      .eq("id", testerId)
+      .eq("role", "tester")
+      .maybeSingle();
+
+    if (fetchError || !tester) {
+      return res.status(404).json({ error: "Tester not found" });
+    }
+
+    const newBalance = (tester.developer_credits || 0) + amount;
+
+    const { error: updateError } = await getSupabaseClient()
+      .from("app_profiles")
+      .update({ developer_credits: newBalance })
+      .eq("id", testerId);
+
+    if (updateError) throw updateError;
+
+    await getSupabaseClient().from("usage_logs").insert({
+      user_id: testerId,
+      actor_role: req.profile.role,
+      portal: "internal",
+      usage_type: "test",
+      wallet_type: "developer_credits",
+      feature_key: "credit_added",
+      credits_requested: 0,
+      credits_charged: -amount,
+      status: "completed",
+      metadata: {
+        reason: reason || "Manual tester credit assignment",
+        assignedBy: req.profile.email || req.user.email || "Developer",
+        assigned_by: req.user.id,
+      },
+    });
+
+    res.json({ success: true, newBalance });
+  } catch (error) {
+    console.error("Assign tester credits error:", error);
+    res.status(500).json({ error: "Failed to assign tester credits" });
   }
 });
 

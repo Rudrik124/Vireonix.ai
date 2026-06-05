@@ -3,29 +3,59 @@ import { supabase } from '../lib/supabase';
 /**
  * Base fetch function for developer portal APIs
  */
+function readStoredAccessToken() {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  const parseStoredToken = (rawValue: string | null) => {
+    if (!rawValue) {
+      return null;
+    }
+
+    try {
+      const parsed = JSON.parse(rawValue);
+      if (typeof parsed === 'string') {
+        return parsed;
+      }
+
+      return parsed?.access_token || parsed?.currentSession?.access_token || parsed?.session?.access_token || null;
+    } catch {
+      return rawValue;
+    }
+  };
+
+  const legacyToken = parseStoredToken(localStorage.getItem('sb-auth-token'));
+  if (legacyToken) {
+    return legacyToken;
+  }
+
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
+      const parsedToken = parseStoredToken(localStorage.getItem(key));
+      if (parsedToken) {
+        return parsedToken;
+      }
+    }
+  }
+
+  return null;
+}
+
 async function callDeveloperAPI(endpoint: string, options?: RequestInit) {
   let token: string | null = null;
 
   try {
     if (typeof window !== 'undefined') {
-      // Quick check for a known key
-      token = localStorage.getItem('sb-auth-token');
-
-      // If Supabase client is available, prefer session access token
-      if (!token && typeof supabase !== 'undefined' && supabase) {
+      // Prefer the live session token from Supabase.
+      if (typeof supabase !== 'undefined' && supabase) {
         const { data } = await supabase.auth.getSession();
-        token = data?.session?.access_token ?? data?.session?.provider_token ?? null;
+        token = data?.session?.access_token ?? null;
       }
 
-      // Fallback: scan localStorage for keys like "sb-<id>-auth-token"
       if (!token) {
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
-            token = localStorage.getItem(key);
-            break;
-          }
-        }
+        token = readStoredAccessToken();
       }
     }
   } catch (e) {
@@ -74,6 +104,12 @@ export async function addCreditsToUser(userId: string, amount: number, reason: s
 
 export async function suspendUser(userId: string) {
   return callDeveloperAPI(`/users/${userId}/suspend`, {
+    method: 'POST',
+  });
+}
+
+export async function reactivateUser(userId: string) {
+  return callDeveloperAPI(`/users/${userId}/reactivate`, {
     method: 'POST',
   });
 }
@@ -136,6 +172,13 @@ export async function fetchTesters() {
   return callDeveloperAPI('/testers');
 }
 
+export async function createTester(email: string, fullName: string) {
+  return callDeveloperAPI('/testers', {
+    method: 'POST',
+    body: JSON.stringify({ email, fullName }),
+  });
+}
+
 export async function fetchTesterCredits(testerId: string) {
   return callDeveloperAPI(`/testers/${testerId}/credits`);
 }
@@ -159,6 +202,5 @@ export async function fetchDeveloperTesterAssignments() {
  * Hook to get the auth token from localStorage
  */
 export function useAuthToken() {
-  // Get token from localStorage or from Supabase session
-  return localStorage.getItem('sb-auth-token');
+  return readStoredAccessToken();
 }
