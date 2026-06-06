@@ -75,12 +75,12 @@ export function QuickEditResultScreen() {
     <div 
       className="h-screen w-full flex flex-col overflow-hidden font-sans text-slate-200"
       style={{
-        background: 'linear-gradient(135deg, #0b0d1f 0%, #1a1b2e 30%, #2d3142 60%, #3f4a67 85%, #1a1b2e 100%)',
+        background: 'linear-gradient(135deg, #0B1020 0%, #1a1b2e 30%, #2d3142 60%, #3f4a67 85%, #1a1b2e 100%)',
       }}
     >
       {/* Background Ambience */}
       <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-cyan-500/5 blur-[120px] rounded-full" />
+        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-purple-500/5 blur-[120px] rounded-full" />
         <div className="absolute inset-0" style={{ boxShadow: 'inset 0 0 500px rgba(11,13,31,0.95)' }} />
       </div>
 
@@ -92,7 +92,7 @@ export function QuickEditResultScreen() {
             >
               <div className="relative">
                 {/* Theme Background Glow */}
-                <div className="absolute inset-0 bg-cyan-500/20 rounded-full blur-xl scale-150 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="absolute inset-0 bg-purple-500/20 rounded-full blur-xl scale-150 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 
                 <BrandLogo size={32} className="relative z-10" />
               </div>
@@ -106,7 +106,7 @@ export function QuickEditResultScreen() {
           </button>
           <div className="h-4 w-[1px] bg-white/10 mx-2" />
           <div className="flex flex-col">
-            <h1 className="text-sm font-bold tracking-tight text-white uppercase tracking-[0.1em]">Quick Edit <span className="text-cyan-400">Studio</span></h1>
+            <h1 className="text-sm font-bold tracking-tight text-white uppercase tracking-[0.1em]">Quick Edit <span className="text-purple-400">Studio</span></h1>
             <div className="flex items-center gap-2">
                <ShieldCheck className="w-3 h-3 text-emerald-500" />
                <span className="text-[10px] text-emerald-500 font-bold uppercase tracking-widest">Optimized & Rendered</span>
@@ -125,7 +125,7 @@ export function QuickEditResultScreen() {
       <main className="flex-1 flex flex-col md:flex-row overflow-y-auto md:overflow-hidden relative z-10">
         
         {/* Left Export Specs */}
-        <aside className="w-full md:w-80 flex-none border-b md:border-b-0 md:border-r border-white/10 bg-[#0b0d1f]/40 backdrop-blur-3xl p-6 md:p-8 flex flex-col gap-8 overflow-y-auto">
+        <aside className="w-full md:w-80 flex-none border-b md:border-b-0 md:border-r border-white/10 bg-[#0B1020]/40 backdrop-blur-3xl p-6 md:p-8 flex flex-col gap-8 overflow-y-auto">
            <div className="space-y-4">
               <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Quick Metrics</label>
               <div className="space-y-3">
@@ -135,7 +135,7 @@ export function QuickEditResultScreen() {
                    { label: 'Resolution', val: metrics?.res || 'Full HD 1080p', icon: Files },
                  ].map((detail) => (
                    <div key={detail.label} className="p-3 rounded-xl bg-white/5 border border-white/10 flex items-center gap-3">
-                      <detail.icon className="w-4 h-4 text-cyan-400" />
+                      <detail.icon className="w-4 h-4 text-purple-400" />
                       <div className="flex flex-col">
                          <span className="text-[9px] font-black text-slate-500 uppercase leading-none mb-1">{detail.label}</span>
                          <span className="text-xs font-bold text-white">{detail.val}</span>
@@ -174,8 +174,8 @@ export function QuickEditResultScreen() {
            </div>
 
            <div className="relative flex-1 min-h-[400px]">
-              <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500/20 to-purple-500/20 blur-lg opacity-20" />
-              <div className="absolute inset-0 border border-white/10 rounded-2xl bg-[#0b0d1f] flex flex-col overflow-hidden relative shadow-2xl">
+              <div className="absolute -inset-1 bg-gradient-to-r from-purple-500/20 to-fuchsia-500/20 blur-lg opacity-20" />
+              <div className="absolute inset-0 border border-white/10 rounded-2xl bg-[#0B1020] flex flex-col overflow-hidden relative shadow-2xl">
                  <div className="flex-1 relative flex items-center justify-center bg-black/20">
                     <video 
                       src={videoUrl} 
@@ -184,7 +184,7 @@ export function QuickEditResultScreen() {
                       autoPlay 
                       loop
                     />
-                    <Sparkles className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 text-cyan-500/5 animate-pulse" />
+                    <Sparkles className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 text-purple-500/5 animate-pulse" />
                  </div>
 
                  {/* Download Bar */}
@@ -194,10 +194,10 @@ export function QuickEditResultScreen() {
                        <span className="text-[10px] font-bold text-slate-500 uppercase">Generating ID: {Math.random().toString(36).substr(2, 9)}</span>
                     </div>
                     <motion.button 
-                      whileHover={{ scale: 1.02, boxShadow: '0 0 30px rgba(34,211,238,0.3)' }}
+                      whileHover={{ scale: 1.02, boxShadow: '0 0 30px rgba(168, 85, 247,0.3)' }}
                       whileTap={{ scale: 0.98 }}
                       onClick={handleDownload}
-                      className="px-8 h-12 rounded-xl bg-gradient-to-r from-cyan-600 to-teal-500 text-[#0b0d1f] text-sm font-black uppercase tracking-widest flex items-center gap-3"
+                      className="px-8 h-12 rounded-xl bg-gradient-to-r from-purple-600 to-fuchsia-500 text-[#0B1020] text-sm font-black uppercase tracking-widest flex items-center gap-3"
                     >
                        <Download className="w-4 h-4" />
                        Save to Device
@@ -213,8 +213,8 @@ export function QuickEditResultScreen() {
                 { label: 'Instagram Reels', icon: Instagram },
                 { label: 'TikTok', icon: Smartphone },
               ].map((item, i) => (
-                <div key={i} className="p-5 rounded-2xl bg-white/5 border border-white/10 hover:border-cyan-500/30 transition-all cursor-pointer group text-center flex flex-col items-center">
-                   <item.icon className="w-6 h-6 mb-3 text-slate-400 group-hover:text-cyan-400" />
+                <div key={i} className="p-5 rounded-2xl bg-white/5 border border-white/10 hover:border-purple-500/30 transition-all cursor-pointer group text-center flex flex-col items-center">
+                   <item.icon className="w-6 h-6 mb-3 text-slate-400 group-hover:text-purple-400" />
                    <h3 className="text-[10px] font-black text-white uppercase tracking-widest">{item.label}</h3>
                 </div>
               ))}

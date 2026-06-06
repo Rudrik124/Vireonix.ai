@@ -106,7 +106,7 @@ export const AudioEditControls: React.FC<AudioEditControlsProps> = ({ videoDurat
     <Card className="w-full bg-[#0f1724] border-white/10 p-4 space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Music className="w-4 h-4 text-cyan-400" />
+          <Music className="w-4 h-4 text-purple-400" />
           <span className="text-sm font-semibold">{selectedMusic.name}</span>
           <span className="text-xs text-white/60">by {selectedMusic.artist}</span>
         </div>
@@ -141,7 +141,7 @@ export const AudioEditControls: React.FC<AudioEditControlsProps> = ({ videoDurat
               <span className="text-xs text-white/60 min-w-fit">{formatTime(currentTime)}</span>
               <div className="flex-1 h-1 bg-white/10 rounded-full cursor-pointer">
                 <div
-                  className="h-full bg-cyan-400 rounded-full"
+                  className="h-full bg-purple-400 rounded-full"
                   style={{
                     width: `${selectedMusic.url ? (currentTime / selectedMusic.duration) * 100 : 0}%`,
                   }}
@@ -180,7 +180,7 @@ export const AudioEditControls: React.FC<AudioEditControlsProps> = ({ videoDurat
         <div className="space-y-1">
           <div className="flex justify-between">
             <span className="text-xs text-white/60">Start</span>
-            <span className="text-xs text-cyan-400">{formatTime(selectedMusic.startTime)}</span>
+            <span className="text-xs text-purple-400">{formatTime(selectedMusic.startTime)}</span>
           </div>
           <Slider
             value={[selectedMusic.startTime]}
@@ -196,7 +196,7 @@ export const AudioEditControls: React.FC<AudioEditControlsProps> = ({ videoDurat
         <div className="space-y-1">
           <div className="flex justify-between">
             <span className="text-xs text-white/60">End</span>
-            <span className="text-xs text-cyan-400">{formatTime(selectedMusic.endTime)}</span>
+            <span className="text-xs text-purple-400">{formatTime(selectedMusic.endTime)}</span>
           </div>
           <Slider
             value={[selectedMusic.endTime]}

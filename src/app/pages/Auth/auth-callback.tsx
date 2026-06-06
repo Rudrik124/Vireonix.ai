@@ -92,7 +92,7 @@ export function AuthCallbackPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800">
       <div className="text-center">
-        <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-400 mb-4" />
+        <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-400 mb-4" />
         <p className="text-white text-lg font-semibold">Signing you in...</p>
       </div>
     </div>

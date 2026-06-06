@@ -51,9 +51,9 @@ export function ProcessingPage() {
 
   return (
     <div 
-      className="min-h-screen relative overflow-hidden font-sans selection:bg-cyan-500/30 selection:text-white flex items-center justify-center pb-20"
+      className="min-h-screen relative overflow-hidden font-sans selection:bg-purple-500/30 selection:text-white flex items-center justify-center pb-20"
       style={{
-        background: 'linear-gradient(135deg, #0b0d1f 0%, #1a1b2e 30%, #2d3142 60%, #3f4a67 85%, #1a1b2e 100%)',
+        background: 'linear-gradient(135deg, #0B1020 0%, #1a1b2e 30%, #2d3142 60%, #3f4a67 85%, #1a1b2e 100%)',
         backgroundAttachment: 'fixed'
       }}
     >
@@ -81,14 +81,14 @@ export function ProcessingPage() {
                 repeat: Infinity,
                 ease: "linear",
               }}
-              className="w-20 h-20 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center shadow-[0_0_30px_rgba(34,211,238,0.5)] border border-cyan-300/30"
+              className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-400 to-blue-500 flex items-center justify-center shadow-[0_0_30px_rgba(168, 85, 247,0.5)] border border-purple-300/30"
             >
-              <Video className="w-10 h-10 text-[#0b0d1f]" fill="currentColor" />
+              <Video className="w-10 h-10 text-[#0B1020]" fill="currentColor" />
             </motion.div>
           </div>
 
           {/* Title */}
-          <h2 className="text-3xl md:text-4xl font-black text-center mb-4 text-transparent bg-clip-text bg-gradient-to-r from-white via-cyan-100 to-teal-300 drop-shadow-[0_2px_10px_rgba(34,211,238,0.2)]">
+          <h2 className="text-3xl md:text-4xl font-black text-center mb-4 text-transparent bg-clip-text bg-gradient-to-r from-white via-purple-100 to-fuchsia-300 drop-shadow-[0_2px_10px_rgba(168, 85, 247,0.2)]">
             Creating Your Video
           </h2>
 
@@ -100,16 +100,16 @@ export function ProcessingPage() {
              transition={{ duration: 0.3 }}
              className="text-center mb-8"
           >
-            <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-cyan-900/30 rounded-full border border-cyan-500/20 shadow-inner">
-              <Loader2 className="w-4 h-4 text-cyan-400 animate-spin" />
-              <span className="text-sm font-semibold text-cyan-50">{currentStatus}</span>
+            <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-purple-900/30 rounded-full border border-purple-500/20 shadow-inner">
+              <Loader2 className="w-4 h-4 text-purple-400 animate-spin" />
+              <span className="text-sm font-semibold text-purple-50">{currentStatus}</span>
             </div>
           </motion.div>
 
           {/* Progress Bar */}
           <div className="mb-6 relative">
-            <div className="absolute inset-0 bg-cyan-500/20 blur-md rounded-full" />
-            <Progress value={progress} className="h-3 bg-[#0b0d1f]/50 border border-[#3f4a67]/50 relative z-10 [&>div]:bg-gradient-to-r [&>div]:from-cyan-500 [&>div]:to-teal-400" />
+            <div className="absolute inset-0 bg-purple-500/20 blur-md rounded-full" />
+            <Progress value={progress} className="h-3 bg-[#0B1020]/50 border border-[#3f4a67]/50 relative z-10 [&>div]:bg-gradient-to-r [&>div]:from-purple-500 [&>div]:to-fuchsia-400" />
           </div>
 
           {/* Progress Percentage */}
@@ -118,7 +118,7 @@ export function ProcessingPage() {
               key={progress}
               initial={{ scale: 1.2 }}
               animate={{ scale: 1 }}
-              className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-blue-500 drop-shadow-[0_0_15px_rgba(34,211,238,0.4)]"
+              className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-300 to-blue-500 drop-shadow-[0_0_15px_rgba(168, 85, 247,0.4)]"
             >
               {progress}%
             </motion.span>
@@ -143,7 +143,7 @@ export function ProcessingPage() {
                   repeat: Infinity,
                   delay: i * 0.2,
                 }}
-                className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)]"
+                className="w-2 h-2 rounded-full bg-purple-400 shadow-[0_0_8px_rgba(168, 85, 247,0.8)]"
               />
             ))}
           </div>
@@ -160,20 +160,20 @@ export function ProcessingPage() {
             {statusMessages.map((status, index) => (
               <div
                 key={index}
-                className={`flex items-center gap-3 text-sm font-semibold transition-all duration-300 ${index <= statusIndex ? "text-cyan-50" : "text-[#64748b]"
+                className={`flex items-center gap-3 text-sm font-semibold transition-all duration-300 ${index <= statusIndex ? "text-purple-50" : "text-[#64748b]"
                   }`}
               >
                 <div
                   className={`w-2 h-2 rounded-full transition-all duration-300 ${index < statusIndex
-                      ? "bg-teal-400 shadow-[0_0_8px_rgba(45,212,191,0.8)]"
+                      ? "bg-fuchsia-400 shadow-[0_0_8px_rgba(45,212,191,0.8)]"
                       : index === statusIndex
-                        ? "bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.9)] animate-pulse"
+                        ? "bg-purple-400 shadow-[0_0_10px_rgba(168, 85, 247,0.9)] animate-pulse"
                         : "bg-[#3f4a67]"
                     }`}
                 />
                 <span>{status}</span>
                 {index < statusIndex && (
-                  <span className="ml-auto text-teal-400 text-xs drop-shadow-[0_0_5px_rgba(45,212,191,0.5)]">✓</span>
+                  <span className="ml-auto text-fuchsia-400 text-xs drop-shadow-[0_0_5px_rgba(45,212,191,0.5)]">✓</span>
                 )}
               </div>
             ))}

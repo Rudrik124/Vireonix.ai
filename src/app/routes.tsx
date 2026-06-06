@@ -36,15 +36,15 @@ function RouteErrorBoundary() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 p-8">
-      <div className="mx-auto max-w-3xl rounded-3xl border border-white/10 bg-slate-900/90 p-8 shadow-2xl shadow-cyan-500/10">
+      <div className="mx-auto max-w-3xl rounded-3xl border border-white/10 bg-slate-900/90 p-8 shadow-2xl shadow-purple-500/10">
         <h1 className="text-3xl font-black tracking-tight text-white">Something went wrong</h1>
         <p className="mt-3 text-sm leading-6 text-slate-400">We were unable to load this part of the editor. Please try refreshing or return to the quick edit home page.</p>
         <pre className="mt-6 overflow-auto rounded-2xl bg-slate-950/80 p-4 text-xs text-slate-300 border border-white/10">
           {String(error ?? 'Unknown error')}
         </pre>
         <div className="mt-6 flex flex-wrap gap-3">
-          <a href="/quick-edit/upload" className="inline-flex items-center justify-center rounded-full bg-cyan-500 px-4 py-2 text-sm font-bold text-slate-950 transition hover:bg-cyan-400">Back to Quick Edit</a>
-          <a href="/" className="inline-flex items-center justify-center rounded-full border border-white/10 bg-transparent px-4 py-2 text-sm font-bold text-slate-200 transition hover:border-cyan-500/40">Go Home</a>
+          <a href="/quick-edit/upload" className="inline-flex items-center justify-center rounded-full bg-purple-500 px-4 py-2 text-sm font-bold text-slate-950 transition hover:bg-purple-400">Back to Quick Edit</a>
+          <a href="/" className="inline-flex items-center justify-center rounded-full border border-white/10 bg-transparent px-4 py-2 text-sm font-bold text-slate-200 transition hover:border-purple-500/40">Go Home</a>
         </div>
       </div>
     </div>

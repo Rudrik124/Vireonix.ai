@@ -368,7 +368,7 @@ export function VideoTimelineEditor() {
         step={0.1}
         value={zoom}
         onChange={(event) => setZoom(Number(event.target.value))}
-        className="w-full accent-cyan-400"
+        className="w-full accent-purple-400"
       />
     </div>
   );
@@ -389,14 +389,14 @@ export function VideoTimelineEditor() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => inputRef.current?.click()}
-            className="inline-flex items-center gap-2 rounded-full bg-cyan-500 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.25em] text-[#030617] shadow-lg shadow-cyan-500/10 hover:bg-cyan-400 transition"
+            className="inline-flex items-center gap-2 rounded-full bg-purple-500 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.25em] text-[#030617] shadow-lg shadow-purple-500/10 hover:bg-purple-400 transition"
           >
             <Plus className="w-4 h-4" />
             Add Clips
           </button>
           <button
             onClick={() => setIsPlaying((value) => !value)}
-            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.25em] text-slate-200 hover:border-cyan-500 hover:text-cyan-300 transition"
+            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.25em] text-slate-200 hover:border-purple-500 hover:text-purple-300 transition"
           >
             {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
             {isPlaying ? 'Pause' : 'Play'}
@@ -417,7 +417,7 @@ export function VideoTimelineEditor() {
         <div className="flex-1 overflow-hidden p-4">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.28em] text-slate-400">
-              <Layers className="w-4 h-4 text-cyan-300" />
+              <Layers className="w-4 h-4 text-purple-300" />
               {trackCount} tracks
             </div>
             {trackControls}
@@ -464,7 +464,7 @@ export function VideoTimelineEditor() {
                       }}
                       onDragLeave={() => setHoveredTrack(null)}
                       onDrop={() => handleDropOnTrack(row.index)}
-                      className={`relative min-h-[72px] rounded-3xl border px-3 py-2.5 transition ${row.index % 2 === 0 ? 'bg-[#08111f]/80' : 'bg-[#09131f]/80'} ${hoveredTrack === row.index ? 'border-cyan-500/40 bg-cyan-500/10' : 'border-white/10'}`}
+                      className={`relative min-h-[72px] rounded-3xl border px-3 py-2.5 transition ${row.index % 2 === 0 ? 'bg-[#08111f]/80' : 'bg-[#09131f]/80'} ${hoveredTrack === row.index ? 'border-purple-500/40 bg-purple-500/10' : 'border-white/10'}`}
                     >
                       <div className="absolute left-4 top-4 text-[10px] uppercase tracking-[0.3em] text-slate-500 font-black">V{row.index + 1}</div>
                       <div className="absolute inset-y-0 left-[84px] right-0 top-0 flex items-center" />
@@ -507,7 +507,7 @@ export function VideoTimelineEditor() {
                               }}
                               onDragOver={(event) => event.preventDefault()}
                               onDoubleClick={() => setSelectedClipId(clip.id)}
-                              className={`absolute top-5 rounded-3xl border px-3 py-2 overflow-hidden shadow-xl transition-all ${isSelected ? 'border-cyan-400 bg-cyan-500/20 shadow-cyan-500/20' : 'border-white/10 bg-[#09111f]/90 hover:bg-[#111a2f] hover:border-cyan-500/20'} z-20 cursor-grab`}
+                              className={`absolute top-5 rounded-3xl border px-3 py-2 overflow-hidden shadow-xl transition-all ${isSelected ? 'border-purple-400 bg-purple-500/20 shadow-purple-500/20' : 'border-white/10 bg-[#09111f]/90 hover:bg-[#111a2f] hover:border-purple-500/20'} z-20 cursor-grab`}
                               style={{ left, width: clipWidth }}
                               onClick={(event) => {
                                 event.stopPropagation();
@@ -526,7 +526,7 @@ export function VideoTimelineEditor() {
                                 <div className="absolute inset-0 bg-gradient-to-t from-[#02060f]/95 via-transparent to-transparent" />
                               </div>
                               <div className="relative z-10 flex items-center gap-2">
-                                <Video className="w-3.5 h-3.5 text-cyan-200" />
+                                <Video className="w-3.5 h-3.5 text-purple-200" />
                                 <div className="flex-1 overflow-hidden">
                                   <div className="truncate text-[11px] font-semibold text-white">{clip.label}</div>
                                   <div className="text-[9px] text-slate-300">{(clip.trimEnd - clip.trimStart).toFixed(1)}s</div>
@@ -554,7 +554,7 @@ export function VideoTimelineEditor() {
                                     event.stopPropagation();
                                     updateClipRange(clip.id, { trimStart: clamp(clip.trimStart - 0.2, 0, clip.trimEnd - 0.15) });
                                   }}
-                                  className="rounded-full bg-white/5 px-2 py-1 hover:bg-cyan-500/20 transition"
+                                  className="rounded-full bg-white/5 px-2 py-1 hover:bg-purple-500/20 transition"
                                   title="Trim start earlier"
                                 >
                                   <ArrowLeft className="w-3 h-3" />
@@ -564,7 +564,7 @@ export function VideoTimelineEditor() {
                                     event.stopPropagation();
                                     updateClipRange(clip.id, { trimStart: clamp(clip.trimStart + 0.2, 0, clip.trimEnd - 0.15) });
                                   }}
-                                  className="rounded-full bg-white/5 px-2 py-1 hover:bg-cyan-500/20 transition"
+                                  className="rounded-full bg-white/5 px-2 py-1 hover:bg-purple-500/20 transition"
                                   title="Trim start later"
                                 >
                                   <ArrowRight className="w-3 h-3" />
@@ -574,7 +574,7 @@ export function VideoTimelineEditor() {
                                     event.stopPropagation();
                                     updateClipRange(clip.id, { trimEnd: clamp(clip.trimEnd - 0.2, clip.trimStart + 0.15, clip.duration) });
                                   }}
-                                  className="rounded-full bg-white/5 px-2 py-1 hover:bg-cyan-500/20 transition"
+                                  className="rounded-full bg-white/5 px-2 py-1 hover:bg-purple-500/20 transition"
                                   title="Trim end earlier"
                                 >
                                   <ArrowDownRight className="w-3 h-3" />
@@ -584,7 +584,7 @@ export function VideoTimelineEditor() {
                                     event.stopPropagation();
                                     updateClipRange(clip.id, { trimEnd: clamp(clip.trimEnd + 0.2, clip.trimStart + 0.15, clip.duration) });
                                   }}
-                                  className="rounded-full bg-white/5 px-2 py-1 hover:bg-cyan-500/20 transition"
+                                  className="rounded-full bg-white/5 px-2 py-1 hover:bg-purple-500/20 transition"
                                   title="Trim end later"
                                 >
                                   <ArrowUpRight className="w-3 h-3" />
@@ -604,7 +604,7 @@ export function VideoTimelineEditor() {
 
         <div className="w-[260px] border-l border-white/10 bg-[#080b16]/95 p-3 overflow-y-auto">
           <div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.3em] text-slate-500 mb-3">
-            <Sparkles className="w-4 h-4 text-cyan-400" />
+            <Sparkles className="w-4 h-4 text-purple-400" />
             Clip Inspector
           </div>
 
@@ -652,7 +652,7 @@ export function VideoTimelineEditor() {
                 <select
                   value={activeClip.transition}
                   onChange={(event) => setTransitionForClip(activeClip.id, event.target.value as TransitionType)}
-                  className="w-full rounded-2xl border border-white/10 bg-[#09101f] px-3 py-2 text-sm text-slate-200 outline-none focus:border-cyan-400"
+                  className="w-full rounded-2xl border border-white/10 bg-[#09101f] px-3 py-2 text-sm text-slate-200 outline-none focus:border-purple-400"
                 >
                   {(['none', 'fade', 'slide', 'wipe', 'crossfade'] as TransitionType[]).map((type) => (
                     <option key={type} value={type}>{TRANSITION_LABELS[type]}</option>

@@ -163,7 +163,7 @@ export function ReferenceVideoSetupScreen() {
 
   return (
     <div 
-      className="min-h-screen relative overflow-hidden font-sans selection:bg-cyan-500/30 selection:text-white pb-12"
+      className="min-h-screen relative overflow-hidden font-sans selection:bg-purple-500/30 selection:text-white pb-12"
       style={{
         background: 'radial-gradient(circle at 50% 0%, #1e293b 0%, #0f172a 50%, #020617 100%)',
         backgroundAttachment: 'fixed'
@@ -172,8 +172,8 @@ export function ReferenceVideoSetupScreen() {
 
       {/* Dynamic Background Elements */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-cyan-500/10 rounded-full blur-[120px] animate-pulse" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-500/10 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }} />
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-500/10 rounded-full blur-[120px] animate-pulse" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-500/10 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }} />
       </div>
 
       <div className="container mx-auto px-4 py-8 max-w-7xl relative z-10">
@@ -188,9 +188,9 @@ export function ReferenceVideoSetupScreen() {
               <BrandLogo size={42} className="relative z-10" />
               <div className="flex flex-col">
                 <span className="text-xl font-black tracking-tighter text-white">
-                  VEYTRIX<span className="text-cyan-400">.AI</span>
+                  VEYTRIX<span className="text-purple-400">.AI</span>
                 </span>
-                <span className="text-[10px] font-bold text-cyan-500/60 tracking-[0.3em] uppercase">Studio</span>
+                <span className="text-[10px] font-bold text-purple-500/60 tracking-[0.3em] uppercase">Studio</span>
               </div>
             </div>
             <div className="h-8 w-[1px] bg-white/10 hidden md:block" />
@@ -212,8 +212,8 @@ export function ReferenceVideoSetupScreen() {
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                   className="flex items-center gap-2.5 bg-white/5 hover:bg-white/10 backdrop-blur-md px-3.5 py-2 rounded-2xl border border-white/10 transition-all text-white group shadow-xl"
                 >
-                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center shadow-lg shadow-cyan-500/20">
-                    <User className="w-3 h-3 text-[#0b0d1f]" />
+                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-fuchsia-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
+                    <User className="w-3 h-3 text-[#0B1020]" />
                   </div>
                   <span className="text-[10px] font-bold uppercase tracking-widest">{userName}</span>
                   <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform duration-300 ${isUserMenuOpen ? 'rotate-180' : ''}`} />
@@ -225,7 +225,7 @@ export function ReferenceVideoSetupScreen() {
                       initial={{ opacity: 0, y: 10, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      className="absolute right-0 top-full mt-2 w-48 bg-[#0b0d1f]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-[100]"
+                      className="absolute right-0 top-full mt-2 w-48 bg-[#0B1020]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-[100]"
                     >
                       <div className="p-2">
                         <button 
@@ -262,10 +262,10 @@ export function ReferenceVideoSetupScreen() {
                   <span className="text-[11px] font-bold uppercase tracking-widest">Advanced Config</span>
                 </button>
               </DialogTrigger>
-              <DialogContent className="bg-[#0b0d1f]/95 backdrop-blur-2xl border-white/10 text-white sm:max-w-[425px] rounded-3xl shadow-2xl">
+              <DialogContent className="bg-[#0B1020]/95 backdrop-blur-2xl border-white/10 text-white sm:max-w-[425px] rounded-3xl shadow-2xl">
                 <DialogHeader>
                   <DialogTitle className="flex items-center gap-2 text-xl font-black uppercase tracking-tighter">
-                    <Settings2 className="w-5 h-5 text-cyan-400" />
+                    <Settings2 className="w-5 h-5 text-purple-400" />
                     Production Settings
                   </DialogTitle>
                 </DialogHeader>
@@ -286,7 +286,7 @@ export function ReferenceVideoSetupScreen() {
                             onClick={() => isPremium ? handlePremiumIntercept("4k") : setExportQuality(res as any)}
                             className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border flex flex-col items-center gap-1 ${
                               exportQuality === res 
-                                ? 'bg-cyan-500/10 border-cyan-500 text-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.2)]' 
+                                ? 'bg-purple-500/10 border-purple-500 text-purple-400 shadow-[0_0_15px_rgba(168, 85, 247,0.2)]' 
                                 : 'bg-white/5 border-white/5 text-slate-500 hover:border-white/20'
                             }`}
                           >
@@ -317,7 +317,7 @@ export function ReferenceVideoSetupScreen() {
                             onClick={() => isPremium ? handlePremiumIntercept("60fps") : setFps(fpsValue)}
                             className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border flex flex-col items-center gap-1 ${
                               fps === fpsValue
-                                ? 'bg-indigo-500/10 border-indigo-500 text-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.2)]' 
+                                ? 'bg-purple-500/10 border-purple-500 text-purple-400 shadow-[0_0_15px_rgba(168, 85, 247,0.2)]' 
                                 : 'bg-white/5 border-white/5 text-slate-500 hover:border-white/20'
                             }`}
                           >
@@ -353,7 +353,7 @@ export function ReferenceVideoSetupScreen() {
                         </div>
                         <button
                           onClick={() => handlePremiumIntercept("watermark")}
-                          className={`w-12 h-6 rounded-full relative transition-all bg-cyan-600 shadow-[0_0_10px_rgba(34,211,238,0.3)]`}
+                          className={`w-12 h-6 rounded-full relative transition-all bg-purple-600 shadow-[0_0_10px_rgba(168, 85, 247,0.3)]`}
                         >
                           <div className={`absolute top-1 right-1 w-4 h-4 rounded-full bg-white transition-all`} />
                         </button>
@@ -389,8 +389,8 @@ export function ReferenceVideoSetupScreen() {
                 <div>
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-cyan-500/10 rounded-lg">
-                        <Video className="w-5 h-5 text-cyan-400" />
+                      <div className="p-2 bg-purple-500/10 rounded-lg">
+                        <Video className="w-5 h-5 text-purple-400" />
                       </div>
                       <h2 className="text-xl font-black text-white tracking-tight">Reference Production</h2>
                     </div>
@@ -402,12 +402,12 @@ export function ReferenceVideoSetupScreen() {
                     )}
                   </div>
                   
-                  <div className="relative group overflow-hidden rounded-2xl border-2 border-dashed border-white/10 hover:border-cyan-500/50 transition-all duration-500 active:scale-[0.99]">
+                  <div className="relative group overflow-hidden rounded-2xl border-2 border-dashed border-white/10 hover:border-purple-500/50 transition-all duration-500 active:scale-[0.99]">
                     <input type="file" accept="video/*" onChange={handleReferenceVideoChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" />
-                    <div className="p-12 text-center bg-[#0b0d1f]/40 group-hover:bg-cyan-500/[0.02] transition-colors">
+                    <div className="p-12 text-center bg-[#0B1020]/40 group-hover:bg-purple-500/[0.02] transition-colors">
                       <div className="mb-4 relative">
-                        <div className="absolute inset-0 bg-cyan-400/20 rounded-full blur-2xl scale-150 opacity-0 group-hover:opacity-100 transition-opacity" />
-                        <Upload className="w-10 h-10 text-cyan-400 mx-auto relative z-10 group-hover:translate-y-[-4px] transition-transform" />
+                        <div className="absolute inset-0 bg-purple-400/20 rounded-full blur-2xl scale-150 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <Upload className="w-10 h-10 text-purple-400 mx-auto relative z-10 group-hover:translate-y-[-4px] transition-transform" />
                       </div>
                       <p className="text-[#cbd5e1] font-bold text-lg mb-1">
                         {referenceVideo ? referenceVideo.name : "Drop Reference Video"}
@@ -420,8 +420,8 @@ export function ReferenceVideoSetupScreen() {
                 <div>
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-purple-500/10 rounded-lg">
-                        <Sparkles className="w-5 h-5 text-purple-400" />
+                      <div className="p-2 bg-fuchsia-500/10 rounded-lg">
+                        <Sparkles className="w-5 h-5 text-fuchsia-400" />
                       </div>
                       <h2 className="text-xl font-black text-white tracking-tight">Creative Prompt</h2>
                     </div>
@@ -434,9 +434,9 @@ export function ReferenceVideoSetupScreen() {
                       value={prompt}
                       onChange={(e) => setPrompt(e.target.value)}
                       placeholder="Describe the cinematic style, desired changes from the reference, lighting, and visual narrative..."
-                      className="min-h-[220px] text-lg leading-relaxed p-6 resize-none rounded-2xl border-white/10 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10 bg-[#0b0d1f]/40 text-white placeholder:text-[#475569] transition-all"
+                      className="min-h-[220px] text-lg leading-relaxed p-6 resize-none rounded-2xl border-white/10 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 bg-[#0B1020]/40 text-white placeholder:text-[#475569] transition-all"
                     />
-                    <div className="absolute bottom-4 right-4 text-[#475569] group-focus-within:text-cyan-400 transition-colors pointer-events-none">
+                    <div className="absolute bottom-4 right-4 text-[#475569] group-focus-within:text-purple-400 transition-colors pointer-events-none">
                       <Layout className="w-5 h-5" />
                     </div>
                   </div>
@@ -456,7 +456,7 @@ export function ReferenceVideoSetupScreen() {
               className="bg-[#1a1b2e]/60 backdrop-blur-3xl rounded-3xl border border-white/10 p-6 shadow-2xl"
             >
               <div className="flex items-center gap-3 mb-6 pb-4 border-b border-white/5">
-                <Settings2 className="w-5 h-5 text-cyan-400" />
+                <Settings2 className="w-5 h-5 text-purple-400" />
                 <h3 className="font-black text-white tracking-tight uppercase text-sm">Project Specification</h3>
               </div>
 
@@ -471,11 +471,11 @@ export function ReferenceVideoSetupScreen() {
                         onClick={() => setSelectedRatio(ratio)}
                         className={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all duration-300 ${
                           selectedRatio === ratio
-                            ? "bg-cyan-500/10 border-cyan-500 shadow-[0_0_15px_rgba(34,211,238,0.2)]"
+                            ? "bg-purple-500/10 border-purple-500 shadow-[0_0_15px_rgba(168, 85, 247,0.2)]"
                             : "bg-white/5 border-white/5 hover:border-white/20"
                         }`}
                       >
-                        <div className={`${ratioPreviewClasses[ratio]} rounded-[1px] border-2 mb-2 ${selectedRatio === ratio ? 'border-cyan-400' : 'border-[#475569]/50 transition-colors'}`} />
+                        <div className={`${ratioPreviewClasses[ratio]} rounded-[1px] border-2 mb-2 ${selectedRatio === ratio ? 'border-purple-400' : 'border-[#475569]/50 transition-colors'}`} />
                         <span className={`text-[9px] font-black tracking-tighter ${selectedRatio === ratio ? 'text-white' : 'text-[#64748b]'}`}>{ratio}</span>
                       </button>
                     ))}
@@ -488,7 +488,7 @@ export function ReferenceVideoSetupScreen() {
                     <Clock className="w-3 h-3" /> Runtime Duration
                   </label>
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-[#0b0d1f]/40 p-3 rounded-2xl border border-white/5 focus-within:border-cyan-500/40 transition-colors">
+                    <div className="bg-[#0B1020]/40 p-3 rounded-2xl border border-white/5 focus-within:border-purple-500/40 transition-colors">
                       <span className="text-[9px] font-black text-[#475569] uppercase mb-1 block">Minutes</span>
                       <input 
                         type="number" 
@@ -497,7 +497,7 @@ export function ReferenceVideoSetupScreen() {
                         className="bg-transparent border-none p-0 w-full text-xl font-black text-white focus:ring-0"
                       />
                     </div>
-                    <div className="bg-[#0b0d1f]/40 p-3 rounded-2xl border border-white/5 focus-within:border-cyan-500/40 transition-colors">
+                    <div className="bg-[#0B1020]/40 p-3 rounded-2xl border border-white/5 focus-within:border-purple-500/40 transition-colors">
                       <span className="text-[9px] font-black text-[#475569] uppercase mb-1 block">Seconds</span>
                       <input 
                         type="number" 
@@ -519,7 +519,7 @@ export function ReferenceVideoSetupScreen() {
                     <div className="relative group">
                       <input type="file" multiple accept="image/*,video/*" onChange={handleMediaChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
                       <div className="p-4 rounded-xl border border-white/5 bg-white/5 group-hover:bg-white/10 transition-colors flex items-center gap-3">
-                        <div className="p-2 bg-cyan-500/10 rounded-lg"><ImageIcon className="w-4 h-4 text-cyan-400" /></div>
+                        <div className="p-2 bg-purple-500/10 rounded-lg"><ImageIcon className="w-4 h-4 text-purple-400" /></div>
                         <div className="flex flex-col">
                           <span className="text-xs font-bold text-white">Project Assets</span>
                           <span className="text-[10px] text-[#64748b]">{mediaFiles.length > 0 ? `${mediaFiles.length} files selected` : 'Select reference images'}</span>
@@ -529,7 +529,7 @@ export function ReferenceVideoSetupScreen() {
                     <div className="relative group">
                       <input type="file" accept="audio/*" onChange={handleAudioChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
                       <div className="p-4 rounded-xl border border-white/5 bg-white/5 group-hover:bg-white/10 transition-colors flex items-center gap-3">
-                        <div className="p-2 bg-indigo-500/10 rounded-lg"><Music className="w-4 h-4 text-indigo-400" /></div>
+                        <div className="p-2 bg-purple-500/10 rounded-lg"><Music className="w-4 h-4 text-purple-400" /></div>
                         <div className="flex flex-col">
                           <span className="text-xs font-bold text-white">Studio Audio</span>
                           <span className="text-[10px] text-[#64748b] truncate max-w-[150px]">{audioFile ? audioFile.name : 'Select backing track'}</span>
@@ -597,7 +597,7 @@ export function ReferenceVideoSetupScreen() {
                   navigate(`${"/reference-video/processing"}${location.search}`, { state: config });
                 }}
                 disabled={!canGenerate}
-                className="w-full h-16 text-lg font-black bg-gradient-to-r from-cyan-600 via-teal-500 to-indigo-600 hover:scale-[1.02] active:scale-[0.98] text-white shadow-[0_8px_30px_rgba(34,211,238,0.3)] hover:shadow-[0_12px_40px_rgba(34,211,238,0.5)] transition-all rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed border border-cyan-400/20"
+                className="w-full h-16 text-lg font-black bg-gradient-to-r from-purple-600 via-fuchsia-500 to-purple-600 hover:scale-[1.02] active:scale-[0.98] text-white shadow-[0_8px_30px_rgba(168, 85, 247,0.3)] hover:shadow-[0_12px_40px_rgba(168, 85, 247,0.5)] transition-all rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed border border-purple-400/20"
               >
                 <div className="flex items-center gap-3">
                   <Sparkles className="w-6 h-6" />
@@ -615,12 +615,12 @@ export function ReferenceVideoSetupScreen() {
         {/* Footer */}
         <footer className="mt-20 pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-8">
           <div className="flex items-center gap-8 text-[10px] font-extrabold text-[#475569] uppercase tracking-[0.25em]">
-            <a href="#" className="hover:text-cyan-400 transition-all hover:translate-y-[-1px] active:translate-y-[0px]">Documentation</a>
-            <a href="#" className="hover:text-cyan-400 transition-all hover:translate-y-[-1px] active:translate-y-[0px]">Studio Support</a>
-            <a href="#" className="hover:text-cyan-400 transition-all hover:translate-y-[-1px] active:translate-y-[0px]">System Status</a>
+            <a href="#" className="hover:text-purple-400 transition-all hover:translate-y-[-1px] active:translate-y-[0px]">Documentation</a>
+            <a href="#" className="hover:text-purple-400 transition-all hover:translate-y-[-1px] active:translate-y-[0px]">Studio Support</a>
+            <a href="#" className="hover:text-purple-400 transition-all hover:translate-y-[-1px] active:translate-y-[0px]">System Status</a>
           </div>
           <div className="flex items-center gap-4">
-            <div className="h-1 w-1 rounded-full bg-cyan-500/40" />
+            <div className="h-1 w-1 rounded-full bg-purple-500/40" />
             <p className="text-[10px] font-extrabold text-[#475569] uppercase tracking-[0.25em]">
               © 2026 VEYTRIX.AI • PROFESSIONAL PRODUCTION ENGINE
             </p>

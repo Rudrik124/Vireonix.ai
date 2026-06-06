@@ -212,7 +212,7 @@ const editingStyles = [
     title: "Instagram Reel",
     description: "Vertical trendy format",
     icon: Instagram,
-    gradient: "from-pink-500/20 to-purple-600/20",
+    gradient: "from-pink-500/20 to-fuchsia-600/20",
     ratio: '9:16'
   },
   {
@@ -220,7 +220,7 @@ const editingStyles = [
     title: "Cinematic Film",
     description: "Ultra-wide cinematic look",
     icon: Film,
-    gradient: "from-indigo-500/20 to-purple-600/20",
+    gradient: "from-purple-500/20 to-fuchsia-600/20",
     ratio: '21:9'
   },
   {
@@ -272,14 +272,14 @@ const CAPTION_STYLE_PRESETS = [
 
 const QUICK_TOOLS = [
   { id: 'effects', icon: Sparkle, label: 'Effects', color: 'text-amber-300' },
-  { id: 'transitions', icon: Layers, label: 'Transitions', color: 'text-cyan-300' },
+  { id: 'transitions', icon: Layers, label: 'Transitions', color: 'text-purple-300' },
   { id: 'filters', icon: Palette, label: 'Filters', color: 'text-pink-300' },
-  { id: 'speed', icon: Timer, label: 'Speed', color: 'text-cyan-300' },
+  { id: 'speed', icon: Timer, label: 'Speed', color: 'text-purple-300' },
   { id: 'trim', icon: Scissors, label: 'Trim', color: 'text-green-300' },
   { id: 'copy', icon: Copy, label: 'Copy', color: 'text-blue-300' },
-  { id: 'text-tool', icon: Type, label: 'Text', color: 'text-purple-300' },
-  { id: 'rotate', icon: RotateCw, label: 'Rotate', color: 'text-teal-300' },
-  { id: 'volume', icon: Volume2, label: 'Volume', color: 'text-indigo-300' },
+  { id: 'text-tool', icon: Type, label: 'Text', color: 'text-fuchsia-300' },
+  { id: 'rotate', icon: RotateCw, label: 'Rotate', color: 'text-fuchsia-300' },
+  { id: 'volume', icon: Volume2, label: 'Volume', color: 'text-purple-300' },
   { id: 'crop', icon: Crop, label: 'Crop', color: 'text-red-300' },
   { id: 'zoom', icon: ZoomIn, label: 'Zoom', color: 'text-yellow-300' },
   { id: 'keyframe', icon: MonitorPlay, label: 'Keyframe', color: 'text-emerald-300' },
@@ -458,7 +458,7 @@ const TimelineHub = memo(({
           <span>{mediaItems.length} Video Clips • {audioTracks.length} Audio Tracks • {captions.length} Captions</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="px-1.5 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[8px] uppercase tracking-wider font-black">Edit Mode</span>
+          <span className="px-1.5 py-0.5 rounded bg-purple-500/10 border border-purple-500/20 text-purple-400 text-[8px] uppercase tracking-wider font-black">Edit Mode</span>
           
           <div className="w-[1px] h-3 bg-white/10" />
 
@@ -468,7 +468,7 @@ const TimelineHub = memo(({
               onClick={() => setTimelineSize('minimized')}
               className={`p-1 rounded text-[8px] font-black uppercase tracking-wider flex items-center justify-center transition-all ${
                 timelineSize === 'minimized'
-                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+                  ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
                   : 'text-slate-500 hover:text-slate-300 hover:bg-white/5 border border-transparent'
               }`}
               title="Minimize Timeline"
@@ -479,7 +479,7 @@ const TimelineHub = memo(({
               onClick={() => setTimelineSize('normal')}
               className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider flex items-center justify-center transition-all ${
                 timelineSize === 'normal'
-                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+                  ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
                   : 'text-slate-500 hover:text-slate-300 hover:bg-white/5 border border-transparent'
               }`}
               title="Normal Timeline"
@@ -490,7 +490,7 @@ const TimelineHub = memo(({
               onClick={() => setTimelineSize('maximized')}
               className={`p-1 rounded text-[8px] font-black uppercase tracking-wider flex items-center justify-center transition-all ${
                 timelineSize === 'maximized'
-                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+                  ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
                   : 'text-slate-500 hover:text-slate-300 hover:bg-white/5 border border-transparent'
               }`}
               title="Maximize Timeline"
@@ -517,7 +517,7 @@ const TimelineHub = memo(({
                     e.stopPropagation();
                     handleAddVideo();
                   }}
-                  className="w-4 h-4 rounded-full bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 hover:bg-cyan-500 hover:text-[#0b0d1f] hover:border-cyan-400 transition-all flex items-center justify-center cursor-pointer shadow-md"
+                  className="w-4 h-4 rounded-full bg-purple-500/20 border border-purple-500/30 text-purple-300 hover:bg-purple-500 hover:text-[#0B1020] hover:border-purple-400 transition-all flex items-center justify-center cursor-pointer shadow-md"
                   title="Add Video/Image"
                 >
                   <Plus className="w-2.5 h-2.5" />
@@ -528,7 +528,7 @@ const TimelineHub = memo(({
                     if (activePreviewId) handleDeleteClip(activePreviewId);
                   }}
                   disabled={!activePreviewId}
-                  className="w-4 h-4 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-300 hover:bg-rose-500 hover:text-[#0b0d1f] hover:border-rose-400 transition-all flex items-center justify-center cursor-pointer shadow-md disabled:opacity-30 disabled:cursor-not-allowed"
+                  className="w-4 h-4 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-300 hover:bg-rose-500 hover:text-[#0B1020] hover:border-rose-400 transition-all flex items-center justify-center cursor-pointer shadow-md disabled:opacity-30 disabled:cursor-not-allowed"
                   title="Delete Active Clip"
                 >
                   <Trash2 className="w-2.5 h-2.5" />
@@ -551,7 +551,7 @@ const TimelineHub = memo(({
                       setSelectedAudioLane(idx);
                       setShowAudioChoice(true);
                     }}
-                    className="w-4 h-4 rounded-full bg-purple-500/20 border border-purple-500/30 text-purple-300 hover:bg-purple-500 hover:text-[#0b0d1f] hover:border-purple-400 transition-all flex items-center justify-center cursor-pointer shadow-md"
+                    className="w-4 h-4 rounded-full bg-fuchsia-500/20 border border-fuchsia-500/30 text-fuchsia-300 hover:bg-fuchsia-500 hover:text-[#0B1020] hover:border-fuchsia-400 transition-all flex items-center justify-center cursor-pointer shadow-md"
                     title={`Add Audio to ${laneName}`}
                   >
                     <Plus className="w-2.5 h-2.5" />
@@ -566,7 +566,7 @@ const TimelineHub = memo(({
           <div className="flex-1 p-2 flex flex-col justify-center min-h-[30px] border-b border-white/5 last:border-b-0 relative group/captionheader">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-black text-slate-300">CC</span>
-              <div className="w-4 h-4 rounded-full bg-teal-500/20 border border-teal-500/30 text-teal-300 flex items-center justify-center cursor-default shadow-md" title="Captions">
+              <div className="w-4 h-4 rounded-full bg-fuchsia-500/20 border border-fuchsia-500/30 text-fuchsia-300 flex items-center justify-center cursor-default shadow-md" title="Captions">
                 <MessageSquare className="w-2.5 h-2.5" />
               </div>
             </div>
@@ -693,7 +693,7 @@ const TimelineHub = memo(({
                         className={`group h-full relative overflow-hidden rounded-xl border flex items-center px-2 cursor-pointer ${
                           isDragging && dragRef.current?.itemId === item.id ? '' : 'transition-all duration-300 ease-out'
                         } ${isActive
-                          ? 'bg-cyan-500/20 border-cyan-400 shadow-[inset_0_0_10px_rgba(34,211,238,0.2)] text-white'
+                          ? 'bg-purple-500/20 border-purple-400 shadow-[inset_0_0_10px_rgba(168, 85, 247,0.2)] text-white'
                           : 'bg-cyan-950/20 border-white/5 hover:border-white/20 text-slate-400'
                           }`}
                       >
@@ -710,9 +710,9 @@ const TimelineHub = memo(({
                         )}
                         <div className="absolute inset-0 bg-black/40 pointer-events-none" />
                         {item.type === 'video' ? (
-                          <Video className="w-3.5 h-3.5 mr-1 flex-shrink-0 text-cyan-200/90 z-10" />
+                          <Video className="w-3.5 h-3.5 mr-1 flex-shrink-0 text-purple-200/90 z-10" />
                         ) : (
-                          <ImageIcon className="w-3.5 h-3.5 mr-1 flex-shrink-0 text-cyan-400/70 z-10" />
+                          <ImageIcon className="w-3.5 h-3.5 mr-1 flex-shrink-0 text-purple-400/70 z-10" />
                         )}
                         <span className="text-[8px] font-black uppercase tracking-wider truncate mr-1 z-10">
                           {item.file ? item.file.name : `Clip ${i + 1}`}
@@ -755,7 +755,7 @@ const TimelineHub = memo(({
                             <div
                               draggable={false}
                               onMouseDown={(e) => handleMouseDown(e, item.id, 'start', item.duration)}
-                              className="absolute left-0 top-0 bottom-0 w-2 bg-cyan-400/90 cursor-ew-resize hover:bg-cyan-300 hover:w-2.5 z-20 flex items-center justify-center border-r border-black/40 shadow-[0_0_8px_rgba(34,211,238,0.4)] transition-all"
+                              className="absolute left-0 top-0 bottom-0 w-2 bg-purple-400/90 cursor-ew-resize hover:bg-purple-300 hover:w-2.5 z-20 flex items-center justify-center border-r border-black/40 shadow-[0_0_8px_rgba(168, 85, 247,0.4)] transition-all"
                               title={`Trim Start: ${trim.start.toFixed(2)}s`}
                             >
                               <div className="w-[1px] h-3 bg-black/60 rounded" />
@@ -765,7 +765,7 @@ const TimelineHub = memo(({
                             <div
                               draggable={false}
                               onMouseDown={(e) => handleMouseDown(e, item.id, 'end', item.duration)}
-                              className="absolute right-0 top-0 bottom-0 w-2 bg-cyan-400/90 cursor-ew-resize hover:bg-cyan-300 hover:w-2.5 z-20 flex items-center justify-center border-l border-black/40 shadow-[0_0_8px_rgba(34,211,238,0.4)] transition-all"
+                              className="absolute right-0 top-0 bottom-0 w-2 bg-purple-400/90 cursor-ew-resize hover:bg-purple-300 hover:w-2.5 z-20 flex items-center justify-center border-l border-black/40 shadow-[0_0_8px_rgba(168, 85, 247,0.4)] transition-all"
                               title={`Trim End: ${trim.end.toFixed(2)}s`}
                             >
                               <div className="w-[1px] h-3 bg-black/60 rounded" />
@@ -794,11 +794,11 @@ const TimelineHub = memo(({
                           <div
                             key={track.id}
                             style={{ width: `${totalDuration * pixelsPerSecond}px` }}
-                            className="h-full flex-none rounded-md border border-purple-500/30 bg-purple-500/10 flex items-center justify-between px-2 select-none"
+                            className="h-full flex-none rounded-md border border-fuchsia-500/30 bg-fuchsia-500/10 flex items-center justify-between px-2 select-none"
                           >
                             <div className="flex items-center overflow-hidden">
-                              <Music className="w-3 h-3 mr-1 text-purple-400 flex-shrink-0" />
-                              <span className="text-[8px] font-black uppercase tracking-wider text-purple-300 truncate">
+                              <Music className="w-3 h-3 mr-1 text-fuchsia-400 flex-shrink-0" />
+                              <span className="text-[8px] font-black uppercase tracking-wider text-fuchsia-300 truncate">
                                 {track.name}
                               </span>
                             </div>
@@ -809,7 +809,7 @@ const TimelineHub = memo(({
                                 <div
                                   key={index}
                                   style={{ height: `${h}px` }}
-                                  className={`w-[1px] bg-purple-400/60 rounded-full ${isPlaying ? 'animate-pulse' : ''}`}
+                                  className={`w-[1px] bg-fuchsia-400/60 rounded-full ${isPlaying ? 'animate-pulse' : ''}`}
                                 />
                               ))}
                             </div>
@@ -823,7 +823,7 @@ const TimelineHub = memo(({
                             setSelectedAudioLane(idx);
                             setShowAudioChoice(!showAudioChoiceLocal);
                           }}
-                          className="w-full h-full flex flex-col items-center justify-center border border-dashed border-purple-500/15 hover:border-purple-500/40 hover:bg-purple-500/[0.02] cursor-pointer rounded-lg transition-all group relative"
+                          className="w-full h-full flex flex-col items-center justify-center border border-dashed border-fuchsia-500/15 hover:border-fuchsia-500/40 hover:bg-fuchsia-500/[0.02] cursor-pointer rounded-lg transition-all group relative"
                         >
                           <div className="absolute inset-0 flex items-center gap-[2px] opacity-[0.01] pointer-events-none">
                             {Array.from({ length: 40 }).map((_, i) => (
@@ -834,8 +834,8 @@ const TimelineHub = memo(({
                               />
                             ))}
                           </div>
-                          <div className="flex items-center gap-1.5 text-[8px] font-bold text-slate-500 group-hover:text-purple-400 uppercase tracking-widest transition-colors z-10">
-                            <Plus className="w-3 h-3 text-purple-500/60 group-hover:text-purple-400" />
+                          <div className="flex items-center gap-1.5 text-[8px] font-bold text-slate-500 group-hover:text-fuchsia-400 uppercase tracking-widest transition-colors z-10">
+                            <Plus className="w-3 h-3 text-fuchsia-500/60 group-hover:text-fuchsia-400" />
                             <span>Add Track A{idx + 1} Audio</span>
                           </div>
                         </div>
@@ -863,12 +863,12 @@ const TimelineHub = memo(({
                         style={{ width: `${captionWidth}px`, left: `${captionLeft}px` }}
                         className={`absolute h-full top-0 rounded-md border flex items-center px-2 cursor-pointer transition-all ${
                           isCaptionActive
-                            ? 'bg-teal-500/30 border-teal-400 shadow-[inset_0_0_10px_rgba(20,184,166,0.2)] text-white'
-                            : 'bg-teal-950/20 border-teal-500/30 hover:border-teal-400 text-slate-300'
+                            ? 'bg-fuchsia-500/30 border-fuchsia-400 shadow-[inset_0_0_10px_rgba(20,184,166,0.2)] text-white'
+                            : 'bg-teal-950/20 border-fuchsia-500/30 hover:border-fuchsia-400 text-slate-300'
                         }`}
                         title={`${caption.text} (${captionDuration.toFixed(1)}s)`}
                       >
-                        <MessageSquare className="w-3 h-3 mr-1 flex-shrink-0 text-teal-400/70" />
+                        <MessageSquare className="w-3 h-3 mr-1 flex-shrink-0 text-fuchsia-400/70" />
                         <span className="text-[8px] font-black uppercase tracking-wider truncate mr-1">
                           {caption.text}
                         </span>
@@ -879,7 +879,7 @@ const TimelineHub = memo(({
                     );
                   })}
                   {captions.length === 0 && (
-                    <div className="w-full h-full flex items-center justify-center border border-dashed border-teal-500/15 rounded-lg">
+                    <div className="w-full h-full flex items-center justify-center border border-dashed border-fuchsia-500/15 rounded-lg">
                       <span className="text-[8px] font-bold text-slate-600 uppercase tracking-widest">No Captions</span>
                     </div>
                   )}
@@ -907,7 +907,7 @@ const TimelineHub = memo(({
               }}
               className="flex flex-col items-center gap-1.5 p-2 rounded-lg hover:bg-white/5 text-slate-300 w-20 transition-all border border-transparent hover:border-white/5 active:scale-95 disabled:cursor-wait disabled:opacity-60"
             >
-              <Scissors className="w-4 h-4 text-purple-400" />
+              <Scissors className="w-4 h-4 text-fuchsia-400" />
               <span className="text-[7.5px] font-black uppercase tracking-wider text-slate-300">
                 {extractingAudio ? "Extracting..." : "Extract"}
               </span>
@@ -919,7 +919,7 @@ const TimelineHub = memo(({
               }}
               className="flex flex-col items-center gap-1.5 p-2 rounded-lg hover:bg-white/5 text-slate-300 w-20 transition-all border border-transparent hover:border-white/5 active:scale-95"
             >
-              <FileAudio className="w-4 h-4 text-cyan-400" />
+              <FileAudio className="w-4 h-4 text-purple-400" />
               <span className="text-[7.5px] font-black uppercase tracking-wider text-slate-300">Upload</span>
             </button>
             <button 
@@ -1006,7 +1006,7 @@ const QuickToolsGrid = memo(({ QUICK_TOOLS, activeTool, setActiveTool, copyActiv
           }}
           className={`flex flex-col items-center justify-center gap-1.5 p-2.5 rounded-xl border transition-all active:scale-[0.98] group ${
             isSelected 
-              ? 'bg-cyan-500/20 border-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.2)]' 
+              ? 'bg-purple-500/20 border-purple-400 shadow-[0_0_10px_rgba(168, 85, 247,0.2)]' 
               : 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/15'
           }`}
         >
@@ -1132,7 +1132,7 @@ const ToolInspector = memo(({
           <div className="space-y-1.5 max-h-56 overflow-y-auto custom-scrollbar pr-1">
             <button
               onClick={() => setSelectedFilter('none')}
-              className={`w-full px-2.5 py-2 rounded-lg text-left text-[9px] font-bold uppercase tracking-wider transition-colors ${selectedFilter === 'none' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10'}`}
+              className={`w-full px-2.5 py-2 rounded-lg text-left text-[9px] font-bold uppercase tracking-wider transition-colors ${selectedFilter === 'none' ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40' : 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10'}`}
             >
               No Filter
             </button>
@@ -1154,7 +1154,7 @@ const ToolInspector = memo(({
               <button
                 key={f.id}
                 onClick={() => setSelectedFilter(f.id as any)}
-                className={`w-full px-2.5 py-2 rounded-lg text-left text-[9px] font-bold uppercase tracking-wider transition-colors ${selectedFilter === f.id ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10'}`}
+                className={`w-full px-2.5 py-2 rounded-lg text-left text-[9px] font-bold uppercase tracking-wider transition-colors ${selectedFilter === f.id ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40' : 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10'}`}
               >
                 {f.label}
               </button>
@@ -1172,7 +1172,7 @@ const ToolInspector = memo(({
           <div className="space-y-1.5 max-h-48 overflow-y-auto custom-scrollbar pr-1">
             <button
               onClick={() => setSelectedEffect('none')}
-              className={`w-full px-2.5 py-2 rounded-lg text-left text-[9px] font-bold uppercase tracking-wider transition-colors ${selectedEffect === 'none' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10'}`}
+              className={`w-full px-2.5 py-2 rounded-lg text-left text-[9px] font-bold uppercase tracking-wider transition-colors ${selectedEffect === 'none' ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40' : 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10'}`}
             >
               No Effect
             </button>
@@ -1194,7 +1194,7 @@ const ToolInspector = memo(({
               <button
                 key={eff.id}
                 onClick={() => setSelectedEffect(eff.id as any)}
-                className={`w-full px-2.5 py-2 rounded-lg text-left text-[9px] font-bold uppercase tracking-wider transition-colors ${selectedEffect === eff.id ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'bg-white/5 text-slate-300 border-white/10 hover:bg-white/10'}`}
+                className={`w-full px-2.5 py-2 rounded-lg text-left text-[9px] font-bold uppercase tracking-wider transition-colors ${selectedEffect === eff.id ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40' : 'bg-white/5 text-slate-300 border-white/10 hover:bg-white/10'}`}
               >
                 {eff.label}
               </button>
@@ -1213,7 +1213,7 @@ const ToolInspector = memo(({
                 max={30}
                 value={blurAmount}
                 onChange={(e) => setBlurAmount(Number(e.target.value))}
-                className="w-full accent-cyan-400"
+                className="w-full accent-purple-400"
               />
             </div>
           )}
@@ -1232,7 +1232,7 @@ const ToolInspector = memo(({
                   step={0.1}
                   value={brightness}
                   onChange={(e) => setBrightness(Number(e.target.value))}
-                  className="w-full accent-cyan-400"
+                  className="w-full accent-purple-400"
                 />
               </div>
               <div>
@@ -1247,7 +1247,7 @@ const ToolInspector = memo(({
                   step={0.1}
                   value={contrast}
                   onChange={(e) => setContrast(Number(e.target.value))}
-                  className="w-full accent-cyan-400"
+                  className="w-full accent-purple-400"
                 />
               </div>
               <div>
@@ -1262,7 +1262,7 @@ const ToolInspector = memo(({
                   step={0.1}
                   value={saturation}
                   onChange={(e) => setSaturation(Number(e.target.value))}
-                  className="w-full accent-cyan-400"
+                  className="w-full accent-purple-400"
                 />
               </div>
             </div>
@@ -1281,7 +1281,7 @@ const ToolInspector = memo(({
                 step={0.1}
                 value={slowMotionSpeed}
                 onChange={(e) => setSlowMotionSpeed(Number(e.target.value))}
-                className="w-full accent-cyan-400"
+                className="w-full accent-purple-400"
               />
             </div>
           )}
@@ -1299,7 +1299,7 @@ const ToolInspector = memo(({
                 step={0.5}
                 value={glitchIntensity}
                 onChange={(e) => setGlitchIntensity(Number(e.target.value))}
-                className="w-full accent-cyan-400"
+                className="w-full accent-purple-400"
               />
             </div>
           )}
@@ -1319,7 +1319,7 @@ const ToolInspector = memo(({
                   step={0.05}
                   value={safeVelocitySpeed}
                   onChange={(e) => setVelocitySpeed(Number(e.target.value))}
-                  className="w-full accent-cyan-400"
+                  className="w-full accent-purple-400"
                 />
               </div>
             );
@@ -1338,7 +1338,7 @@ const ToolInspector = memo(({
                 step={1}
                 value={motionBlurAmount}
                 onChange={(e) => setMotionBlurAmount(Number(e.target.value))}
-                className="w-full accent-cyan-400"
+                className="w-full accent-purple-400"
               />
             </div>
           )}
@@ -1356,7 +1356,7 @@ const ToolInspector = memo(({
                 step={0.1}
                 value={shakeStrength}
                 onChange={(e) => setShakeStrength(Number(e.target.value))}
-                className="w-full accent-cyan-400"
+                className="w-full accent-purple-400"
               />
             </div>
           )}
@@ -1374,7 +1374,7 @@ const ToolInspector = memo(({
                 step={0.05}
                 value={flashIntensity}
                 onChange={(e) => setFlashIntensity(Number(e.target.value))}
-                className="w-full accent-cyan-400"
+                className="w-full accent-purple-400"
               />
             </div>
           )}
@@ -1392,7 +1392,7 @@ const ToolInspector = memo(({
                 step={1}
                 value={rgbSplitAmount}
                 onChange={(e) => setRgbSplitAmount(Number(e.target.value))}
-                className="w-full accent-cyan-400"
+                className="w-full accent-purple-400"
               />
             </div>
           )}
@@ -1410,7 +1410,7 @@ const ToolInspector = memo(({
                 step={0.05}
                 value={smoothZoomAmount}
                 onChange={(e) => setSmoothZoomAmount(Number(e.target.value))}
-                className="w-full accent-cyan-400"
+                className="w-full accent-purple-400"
               />
             </div>
           )}
@@ -1428,7 +1428,7 @@ const ToolInspector = memo(({
                 step={0.05}
                 value={filmGrainOpacity}
                 onChange={(e) => setFilmGrainOpacity(Number(e.target.value))}
-                className="w-full accent-cyan-400"
+                className="w-full accent-purple-400"
               />
             </div>
           )}
@@ -1499,7 +1499,7 @@ const ToolInspector = memo(({
                   applyTransitionForActiveClip(tr.id as any);
                 }}
                 type="button"
-                className={`w-full px-2.5 py-2 rounded-lg text-left text-[9px] font-bold uppercase tracking-wider transition-colors ${activePreviewId && clipTransitions[activePreviewId] === tr.id ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10'}`}
+                className={`w-full px-2.5 py-2 rounded-lg text-left text-[9px] font-bold uppercase tracking-wider transition-colors ${activePreviewId && clipTransitions[activePreviewId] === tr.id ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40' : 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10'}`}
               >
                 {tr.label}
               </button>
@@ -1526,14 +1526,14 @@ const ToolInspector = memo(({
               step={0.05}
               value={speedValue}
               onChange={(e) => setSpeedValue(Number(e.target.value))}
-              className="w-full accent-cyan-400"
+              className="w-full accent-purple-400"
             />
             <div className="flex gap-1">
               {[0.5, 1, 1.25, 1.5, 2].map((preset) => (
                 <button
                   key={preset}
                   onClick={() => setSpeedValue(preset)}
-                  className={`flex-1 py-1 rounded text-[8px] font-black uppercase border transition-colors ${Math.abs(speedValue - preset) < 0.001 ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40' : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10'}`}
+                  className={`flex-1 py-1 rounded text-[8px] font-black uppercase border transition-colors ${Math.abs(speedValue - preset) < 0.001 ? 'bg-purple-500/20 text-purple-300 border-purple-500/40' : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10'}`}
                 >
                   {preset}x
                 </button>
@@ -1580,7 +1580,7 @@ const ToolInspector = memo(({
                       videoRef.current.currentTime = nextStart;
                     }
                   }}
-                  className="w-full accent-cyan-400"
+                  className="w-full accent-purple-400"
                 />
               </div>
 
@@ -1606,7 +1606,7 @@ const ToolInspector = memo(({
                       },
                     }));
                   }}
-                  className="w-full accent-cyan-400"
+                  className="w-full accent-purple-400"
                 />
               </div>
               <button
@@ -1647,7 +1647,7 @@ const ToolInspector = memo(({
                 <button
                   key={deg}
                   onClick={() => setRotationDegrees(deg)}
-                  className={`py-1.5 rounded text-[8px] font-black uppercase border transition-colors ${rotationDegrees === deg ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40' : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10'}`}
+                  className={`py-1.5 rounded text-[8px] font-black uppercase border transition-colors ${rotationDegrees === deg ? 'bg-purple-500/20 text-purple-300 border-purple-500/40' : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10'}`}
                 >
                   {deg}°
                 </button>
@@ -1687,7 +1687,7 @@ const ToolInspector = memo(({
                   setIsMuted(false);
                 }
               }}
-              className="w-full accent-cyan-400"
+              className="w-full accent-purple-400"
             />
           </div>
         </div>
@@ -1705,28 +1705,28 @@ const ToolInspector = memo(({
                 <span>Width</span>
                 <span>{Math.round(cropWidthPct)}%</span>
               </div>
-              <input type="range" min={30} max={100} step={1} value={cropWidthPct} onChange={(e) => setCropWidthPct(Number(e.target.value))} className="w-full accent-cyan-400 font-sans" />
+              <input type="range" min={30} max={100} step={1} value={cropWidthPct} onChange={(e) => setCropWidthPct(Number(e.target.value))} className="w-full accent-purple-400 font-sans" />
             </div>
             <div>
               <div className="flex items-center justify-between text-[8px] font-bold uppercase tracking-widest text-slate-300 mb-0.5">
                 <span>Height</span>
                 <span>{Math.round(cropHeightPct)}%</span>
               </div>
-              <input type="range" min={30} max={100} step={1} value={cropHeightPct} onChange={(e) => setCropHeightPct(Number(e.target.value))} className="w-full accent-cyan-400" />
+              <input type="range" min={30} max={100} step={1} value={cropHeightPct} onChange={(e) => setCropHeightPct(Number(e.target.value))} className="w-full accent-purple-400" />
             </div>
             <div>
               <div className="flex items-center justify-between text-[8px] font-bold uppercase tracking-widest text-slate-300 mb-0.5">
                 <span>Center X</span>
                 <span>{Math.round(cropCenterX)}%</span>
               </div>
-              <input type="range" min={0} max={100} step={1} value={cropCenterX} onChange={(e) => setCropCenterX(Number(e.target.value))} className="w-full accent-cyan-400" />
+              <input type="range" min={0} max={100} step={1} value={cropCenterX} onChange={(e) => setCropCenterX(Number(e.target.value))} className="w-full accent-purple-400" />
             </div>
             <div>
               <div className="flex items-center justify-between text-[8px] font-bold uppercase tracking-widest text-slate-300 mb-0.5">
                 <span>Center Y</span>
                 <span>{Math.round(cropCenterY)}%</span>
               </div>
-              <input type="range" min={0} max={100} step={1} value={cropCenterY} onChange={(e) => setCropCenterY(Number(e.target.value))} className="w-full accent-cyan-400" />
+              <input type="range" min={0} max={100} step={1} value={cropCenterY} onChange={(e) => setCropCenterY(Number(e.target.value))} className="w-full accent-purple-400" />
             </div>
             <button
               onClick={() => {
@@ -1761,7 +1761,7 @@ const ToolInspector = memo(({
               step={0.05}
               value={zoomToolAmount}
               onChange={(e) => setZoomToolAmount(Number(e.target.value))}
-              className="w-full accent-cyan-400"
+              className="w-full accent-purple-400"
             />
             <button
               onClick={() => setZoomToolAmount(1)}
@@ -1790,7 +1790,7 @@ const ToolInspector = memo(({
                 <button
                   key={preset.id}
                   onClick={() => setKeyframeMode(preset.id as any)}
-                  className={`py-1.5 rounded text-[8px] font-black uppercase border transition-colors ${keyframeMode === preset.id ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40' : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10'}`}
+                  className={`py-1.5 rounded text-[8px] font-black uppercase border transition-colors ${keyframeMode === preset.id ? 'bg-purple-500/20 text-purple-300 border-purple-500/40' : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10'}`}
                 >
                   {preset.label}
                 </button>
@@ -1808,7 +1808,7 @@ const ToolInspector = memo(({
                 step={0.05}
                 value={keyframeAmount}
                 onChange={(e) => setKeyframeAmount(Number(e.target.value))}
-                className="w-full accent-cyan-400"
+                className="w-full accent-purple-400"
                 disabled={keyframeMode === 'none'}
               />
             </div>
@@ -1842,7 +1842,7 @@ const ToolInspector = memo(({
                   <button
                     key={font.id}
                     onClick={() => setOverlayFontId(font.id)}
-                    className={`px-2 py-1 rounded text-left text-[8px] font-bold uppercase border transition-colors ${overlayFontId === font.id ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40' : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10'}`}
+                    className={`px-2 py-1 rounded text-left text-[8px] font-bold uppercase border transition-colors ${overlayFontId === font.id ? 'bg-purple-500/20 text-purple-300 border-purple-500/40' : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10'}`}
                     style={{ fontFamily: font.family }}
                   >
                     {font.label}
@@ -1876,7 +1876,7 @@ const ToolInspector = memo(({
                         setAnimatedText(overlayText);
                       }
                     }}
-                    className={`px-2 py-2 rounded-lg text-left text-[8px] font-bold uppercase tracking-wider transition-colors ${overlayTextStylePreset === style.id ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10'}`}
+                    className={`px-2 py-2 rounded-lg text-left text-[8px] font-bold uppercase tracking-wider transition-colors ${overlayTextStylePreset === style.id ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40' : 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10'}`}
                   >
                     {style.label}
                   </button>
@@ -1892,7 +1892,7 @@ const ToolInspector = memo(({
                   max={96}
                   value={overlayFontSize}
                   onChange={(e) => setOverlayFontSize(Number(e.target.value))}
-                  className="w-full accent-cyan-400"
+                  className="w-full accent-purple-400"
                 />
               </div>
               <div>
@@ -1914,7 +1914,7 @@ const ToolInspector = memo(({
                   max={100}
                   value={overlayPosX}
                   onChange={(e) => setOverlayPosX(Number(e.target.value))}
-                  className="w-full accent-cyan-400"
+                  className="w-full accent-purple-400"
                 />
               </div>
               <div>
@@ -1925,13 +1925,13 @@ const ToolInspector = memo(({
                   max={100}
                   value={overlayPosY}
                   onChange={(e) => setOverlayPosY(Number(e.target.value))}
-                  className="w-full accent-cyan-400"
+                  className="w-full accent-purple-400"
                 />
               </div>
             </div>
             <button
               onClick={() => setIsTextPlacementMode(!isTextPlacementMode)}
-              className={`w-full py-1.5 rounded text-[8px] font-black uppercase border transition-colors ${isTextPlacementMode ? 'bg-cyan-500 text-[#0b0d1f] border-cyan-400' : 'bg-white/5 text-slate-300 border-white/10 hover:bg-white/15'}`}
+              className={`w-full py-1.5 rounded text-[8px] font-black uppercase border transition-colors ${isTextPlacementMode ? 'bg-purple-500 text-[#0B1020] border-purple-400' : 'bg-white/5 text-slate-300 border-white/10 hover:bg-white/15'}`}
             >
               {isTextPlacementMode ? 'Click Preview' : 'Place on Preview'}
             </button>
@@ -1962,7 +1962,7 @@ const ToolInspector = memo(({
             <select
               value={captionLanguage}
               onChange={(e) => setCaptionLanguage(e.target.value)}
-              className="w-full px-2.5 py-1.5 rounded bg-black/30 border border-white/10 text-white text-[9px] focus:outline-none focus:border-cyan-500/50 font-bold"
+              className="w-full px-2.5 py-1.5 rounded bg-black/30 border border-white/10 text-white text-[9px] focus:outline-none focus:border-purple-500/50 font-bold"
             >
               {CAPTION_LANGUAGES.map((lang) => (
                 <option key={lang.id} value={lang.id}>
@@ -1976,13 +1976,13 @@ const ToolInspector = memo(({
           <div className="flex gap-0.5 bg-black/40 p-0.5 rounded-lg border border-white/5">
             <button
               onClick={() => setCaptionTab('list')}
-              className={`flex-1 py-1 rounded text-[8px] font-black uppercase tracking-wider transition-all ${captionTab === 'list' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' : 'text-slate-500 hover:text-slate-300 border border-transparent'}`}
+              className={`flex-1 py-1 rounded text-[8px] font-black uppercase tracking-wider transition-all ${captionTab === 'list' ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' : 'text-slate-500 hover:text-slate-300 border border-transparent'}`}
             >
               List
             </button>
             <button
               onClick={() => setCaptionTab('style')}
-              className={`flex-1 py-1 rounded text-[8px] font-black uppercase tracking-wider transition-all ${captionTab === 'style' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' : 'text-slate-500 hover:text-slate-300 border border-transparent'}`}
+              className={`flex-1 py-1 rounded text-[8px] font-black uppercase tracking-wider transition-all ${captionTab === 'style' ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' : 'text-slate-500 hover:text-slate-300 border border-transparent'}`}
             >
               Style
             </button>
@@ -2001,7 +2001,7 @@ const ToolInspector = memo(({
                       onClick={() => setCurrentCaption(cap)}
                       className={`flex items-start gap-1.5 px-2 py-1.5 rounded-lg border cursor-pointer transition-all group ${
                         currentCaption?.id === cap.id
-                          ? 'bg-teal-500/20 border-teal-400 shadow-[inset_0_0_8px_rgba(20,184,166,0.1)]'
+                          ? 'bg-fuchsia-500/20 border-fuchsia-400 shadow-[inset_0_0_8px_rgba(20,184,166,0.1)]'
                           : 'bg-white/5 border-white/5 hover:border-white/10'
                       }`}
                     >
@@ -2033,7 +2033,7 @@ const ToolInspector = memo(({
                   value={newCaptionText}
                   onChange={(e) => setNewCaptionText(e.target.value)}
                   placeholder="Enter caption..."
-                  className="w-full px-2.5 py-1.5 rounded bg-black/30 border border-white/10 text-white text-[10px] focus:outline-none focus:border-cyan-500/50 placeholder:text-slate-600"
+                  className="w-full px-2.5 py-1.5 rounded bg-black/30 border border-white/10 text-white text-[10px] focus:outline-none focus:border-purple-500/50 placeholder:text-slate-600"
                 />
                 <div className="grid grid-cols-2 gap-1.5">
                   <div>
@@ -2072,7 +2072,7 @@ const ToolInspector = memo(({
                     setNewCaptionStart(0);
                     setNewCaptionEnd(3);
                   }}
-                  className="w-full py-1.5 rounded-lg bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 text-[8px] font-black uppercase hover:bg-cyan-500/30 transition-all"
+                  className="w-full py-1.5 rounded-lg bg-purple-500/20 border border-purple-500/30 text-purple-300 text-[8px] font-black uppercase hover:bg-purple-500/30 transition-all"
                 >
                   + Add Caption
                 </button>
@@ -2090,7 +2090,7 @@ const ToolInspector = memo(({
                 className={`w-full py-2 rounded-lg text-[8px] font-black uppercase flex items-center justify-center gap-1.5 transition-all ${
                   isAutoCapturing
                     ? 'bg-red-500/20 border border-red-500/40 text-red-300 animate-pulse cursor-not-allowed'
-                    : 'bg-purple-500/15 border border-purple-500/30 text-purple-300 hover:bg-purple-500/25'
+                    : 'bg-fuchsia-500/15 border border-fuchsia-500/30 text-fuchsia-300 hover:bg-fuchsia-500/25'
                 }`}
               >
                 {isAutoCapturing ? (
@@ -2130,7 +2130,7 @@ const ToolInspector = memo(({
                           alignment: preset.alignment,
                         }));
                       }}
-                      className={`px-2 py-2 rounded text-left text-[7px] font-bold uppercase border transition-all ${captionStylePreset === preset.id ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40 ring-2 ring-cyan-500/30' : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10'}`}
+                      className={`px-2 py-2 rounded text-left text-[7px] font-bold uppercase border transition-all ${captionStylePreset === preset.id ? 'bg-purple-500/20 text-purple-300 border-purple-500/40 ring-2 ring-purple-500/30' : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10'}`}
                     >
                       <div>{preset.label}</div>
                       <div className="text-[6px] text-slate-500 normal-case font-normal">{preset.description}</div>
@@ -2151,7 +2151,7 @@ const ToolInspector = memo(({
                       }}
                       className={`px-2 py-1 rounded text-left text-[7px] font-bold uppercase border transition-colors ${
                         captionStyle.fontId === font.id
-                          ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'
+                          ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
                           : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10'
                       }`}
                       style={{ fontFamily: font.family }}
@@ -2172,7 +2172,7 @@ const ToolInspector = memo(({
                     max={72}
                     value={captionStyle.fontSize}
                     onChange={(e) => setCaptionStyle((prev: any) => ({ ...prev, fontSize: Number(e.target.value) }))}
-                    className="w-full accent-cyan-400"
+                    className="w-full accent-purple-400"
                   />
                 </div>
                 <div>
@@ -2194,7 +2194,7 @@ const ToolInspector = memo(({
                     onClick={() => setCaptionStyle((prev: any) => ({ ...prev, bgEnabled: !prev.bgEnabled }))}
                     className={`px-2 py-0.5 rounded text-[7px] font-black uppercase border transition-all ${
                       captionStyle.bgEnabled
-                        ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30'
+                        ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
                         : 'bg-white/5 text-slate-500 border-white/10'
                     }`}
                   >
@@ -2218,7 +2218,7 @@ const ToolInspector = memo(({
                   <button
                     onClick={() => setCaptionStyle((prev: any) => ({ ...prev, bold: !prev.bold }))}
                     className={`flex-1 py-1.5 rounded border text-[8px] transition-all flex items-center justify-center ${
-                      captionStyle.bold ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30' : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10'
+                      captionStyle.bold ? 'bg-purple-500/20 text-purple-300 border-purple-500/30' : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10'
                     }`}
                   >
                     <Bold className="w-3 h-3" />
@@ -2226,7 +2226,7 @@ const ToolInspector = memo(({
                   <button
                     onClick={() => setCaptionStyle((prev: any) => ({ ...prev, italic: !prev.italic }))}
                     className={`flex-1 py-1.5 rounded border text-[8px] transition-all flex items-center justify-center ${
-                      captionStyle.italic ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30' : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10'
+                      captionStyle.italic ? 'bg-purple-500/20 text-purple-300 border-purple-500/30' : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10'
                     }`}
                   >
                     <Italic className="w-3 h-3" />
@@ -2234,7 +2234,7 @@ const ToolInspector = memo(({
                   <button
                     onClick={() => setCaptionStyle((prev: any) => ({ ...prev, outline: !prev.outline }))}
                     className={`flex-1 py-1.5 rounded border text-[8px] font-black uppercase transition-all ${
-                      captionStyle.outline ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30' : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10'
+                      captionStyle.outline ? 'bg-purple-500/20 text-purple-300 border-purple-500/30' : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10'
                     }`}
                     title="Text Outline"
                   >
@@ -2255,7 +2255,7 @@ const ToolInspector = memo(({
                         onClick={() => setCaptionStyle((prev: any) => ({ ...prev, alignment: align }))}
                         className={`flex-1 py-1.5 rounded border transition-all flex items-center justify-center ${
                           captionStyle.alignment === align
-                            ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30'
+                            ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
                             : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10'
                         }`}
                       >
@@ -2276,7 +2276,7 @@ const ToolInspector = memo(({
                     max={100}
                     value={captionStyle.posX}
                     onChange={(e) => setCaptionStyle((prev: any) => ({ ...prev, posX: Number(e.target.value) }))}
-                    className="w-full accent-cyan-400"
+                    className="w-full accent-purple-400"
                   />
                 </div>
                 <div>
@@ -2287,7 +2287,7 @@ const ToolInspector = memo(({
                     max={100}
                     value={captionStyle.posY}
                     onChange={(e) => setCaptionStyle((prev: any) => ({ ...prev, posY: Number(e.target.value) }))}
-                    className="w-full accent-cyan-400"
+                    className="w-full accent-purple-400"
                   />
                 </div>
               </div>
@@ -2297,7 +2297,7 @@ const ToolInspector = memo(({
                 onClick={() => setIsCaptionPlacementMode(!isCaptionPlacementMode)}
                 className={`w-full py-1.5 rounded text-[8px] font-black uppercase border transition-colors ${
                   isCaptionPlacementMode
-                    ? 'bg-cyan-500 text-[#0b0d1f] border-cyan-400'
+                    ? 'bg-purple-500 text-[#0B1020] border-purple-400'
                     : 'bg-white/5 text-slate-300 border-white/10 hover:bg-white/15'
                 }`}
               >
@@ -4309,15 +4309,15 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
 
   return (
     <div
-      className="h-screen w-full flex flex-col overflow-hidden font-sans selection:bg-cyan-500/30 selection:text-white text-slate-200"
+      className="h-screen w-full flex flex-col overflow-hidden font-sans selection:bg-purple-500/30 selection:text-white text-slate-200"
       style={{
-        background: 'linear-gradient(135deg, #0b0d1f 0%, #1a1b2e 30%, #2d3142 60%, #3f4a67 85%, #1a1b2e 100%)',
+        background: 'linear-gradient(135deg, #0B1020 0%, #1a1b2e 30%, #2d3142 60%, #3f4a67 85%, #1a1b2e 100%)',
       }}
     >
       {/* Dynamic Background Effects */}
       <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-cyan-500/5 blur-[120px] rounded-full" />
-        <div className="absolute bottom-0 left-0 w-1/3 h-1/3 bg-purple-500/5 blur-[120px] rounded-full" />
+        <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-purple-500/5 blur-[120px] rounded-full" />
+        <div className="absolute bottom-0 left-0 w-1/3 h-1/3 bg-fuchsia-500/5 blur-[120px] rounded-full" />
         <div className="absolute inset-0" style={{ boxShadow: 'inset 0 0 500px rgba(11,13,31,0.95)' }} />
       </div>
 
@@ -4333,8 +4333,8 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
           <div className="h-4 w-[1px] bg-white/10" />
           <div className="flex items-center gap-2">
             <h1 className="text-[11px] font-black tracking-widest text-white uppercase">Studio Engine</h1>
-            <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-              <div className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-pulse" />
+            <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">
+              <div className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse" />
               <span className="text-[8px] font-bold uppercase tracking-widest">Active</span>
             </div>
           </div>
@@ -4360,19 +4360,19 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden border-b border-white/10">
           
           {/* Left Column: Media Pool & Toolbox */}
-          <aside className="w-full md:w-[350px] flex-none border-r border-white/10 flex flex-col bg-[#0b0d1f]/40 backdrop-blur-md overflow-hidden relative">
+          <aside className="w-full md:w-[350px] flex-none border-r border-white/10 flex flex-col bg-[#0B1020]/40 backdrop-blur-md overflow-hidden relative">
             
             {/* Media Pool Title Header */}
             <div className="p-4 border-b border-white/5 flex-none bg-black/10">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <ImageIcon className="w-4 h-4 text-cyan-400" />
+                  <ImageIcon className="w-4 h-4 text-purple-400" />
                   <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">Media Pool</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => { setIsToolboxOpen(true); setActiveTool(null); }}
-                    className="px-2 py-1 rounded-md bg-gradient-to-r from-cyan-500/20 to-purple-600/20 hover:from-cyan-500 hover:to-purple-600 hover:text-[#0b0d26] border border-cyan-500/35 hover:border-cyan-400 text-cyan-300 text-[8px] font-black uppercase tracking-wider transition-all flex items-center gap-1 shadow-[0_0_8px_rgba(6,182,212,0.1)] cursor-pointer"
+                    className="px-2 py-1 rounded-md bg-gradient-to-r from-purple-500/20 to-fuchsia-600/20 hover:from-purple-500 hover:to-fuchsia-600 hover:text-[#0b0d26] border border-purple-500/35 hover:border-purple-400 text-purple-300 text-[8px] font-black uppercase tracking-wider transition-all flex items-center gap-1 shadow-[0_0_8px_rgba(6,182,212,0.1)] cursor-pointer"
                   >
                     <Zap className="w-2.5 h-2.5 animate-pulse" />
                     <span>Toolbox</span>
@@ -4395,7 +4395,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                     }}
                     className={`group relative aspect-video rounded-lg border transition-all cursor-pointer overflow-hidden bg-slate-900 ${
                       activePreviewId === item.id
-                        ? 'border-cyan-500 shadow-[0_0_10px_rgba(34,211,238,0.2)]'
+                        ? 'border-purple-500 shadow-[0_0_10px_rgba(168, 85, 247,0.2)]'
                         : 'border-white/10 hover:border-white/20'
                     }`}
                   >
@@ -4423,7 +4423,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                       {item.type}
                     </div>
                     {!!clipTransitions[item.id] && clipTransitions[item.id] !== 'none' && (
-                      <div className="absolute top-1 right-1 px-1 py-0.5 rounded bg-cyan-500/25 border border-cyan-400/40 text-[7px] font-black text-cyan-200 uppercase">
+                      <div className="absolute top-1 right-1 px-1 py-0.5 rounded bg-purple-500/25 border border-purple-400/40 text-[7px] font-black text-purple-200 uppercase">
                         {clipTransitions[item.id].replace('-transition', '')}
                       </div>
                     )}
@@ -4432,7 +4432,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
 
                 <button
                   onClick={() => mediaInputRef.current?.click()}
-                  className="aspect-video rounded-lg border border-dashed border-white/10 bg-white/5 hover:border-cyan-500/30 hover:bg-cyan-500/5 transition-all text-slate-500 hover:text-cyan-400 flex flex-col items-center justify-center gap-1.5"
+                  className="aspect-video rounded-lg border border-dashed border-white/10 bg-white/5 hover:border-purple-500/30 hover:bg-purple-500/5 transition-all text-slate-500 hover:text-purple-400 flex flex-col items-center justify-center gap-1.5"
                 >
                   <Plus className="w-4 h-4" />
                   <span className="text-[8px] font-black uppercase tracking-widest">Add Media</span>
@@ -4460,7 +4460,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                 >
                   <div className="flex items-center justify-between mb-3 pb-1.5 border-b border-white/10">
                     <div className="flex items-center gap-2">
-                      <Zap className="w-4 h-4 text-cyan-400" />
+                      <Zap className="w-4 h-4 text-purple-400" />
                       <span className="text-xs font-black uppercase tracking-wider text-slate-200">Toolbox Options</span>
                     </div>
                     <button
@@ -4580,7 +4580,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                           <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest block mb-2">Smart Auto Features</span>
                           <div className="grid grid-cols-2 gap-1.5">
                             {[
-                              { id: 'subtitles', label: 'Subtitles', icon: Layers, color: 'text-purple-400' },
+                              { id: 'subtitles', label: 'Subtitles', icon: Layers, color: 'text-fuchsia-400' },
                               { id: 'autoCuts', label: 'Auto-Cuts', icon: Trash2, color: 'text-red-400' },
                               { id: 'backgroundMusic', label: 'Music', icon: Music, color: 'text-amber-400' },
                               { id: 'faceTracking', label: 'Tracking', icon: Monitor, color: 'text-emerald-400' },
@@ -4593,7 +4593,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                                 <Switch
                                   checked={aiOptions[opt.id as keyof typeof aiOptions]}
                                   onCheckedChange={() => toggleOption(opt.id as keyof typeof aiOptions)}
-                                  className="scale-50 data-[state=checked]:bg-cyan-500"
+                                  className="scale-50 data-[state=checked]:bg-purple-500"
                                 />
                               </div>
                             ))}
@@ -4803,7 +4803,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                     </motion.div>
                   ) : (
                     <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-center p-6">
-                      <Video className="w-12 h-12 text-cyan-400/10 animate-pulse" />
+                      <Video className="w-12 h-12 text-purple-400/10 animate-pulse" />
                       <span className="text-[9px] font-black text-white/20 uppercase tracking-[0.2em]">Source Preview Empty</span>
                     </div>
                   )}
@@ -4880,16 +4880,16 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                             left: 0,
                             right: 0,
                             height: '2px',
-                            background: 'linear-gradient(90deg, transparent 0%, rgba(34,211,238,0.9) 20%, rgba(34,211,238,1) 50%, rgba(34,211,238,0.9) 80%, transparent 100%)',
-                            boxShadow: '0 0 8px rgba(34,211,238,0.7), 0 0 24px rgba(34,211,238,0.25)',
+                            background: 'linear-gradient(90deg, transparent 0%, rgba(168, 85, 247,0.9) 20%, rgba(168, 85, 247,1) 50%, rgba(168, 85, 247,0.9) 80%, transparent 100%)',
+                            boxShadow: '0 0 8px rgba(168, 85, 247,0.7), 0 0 24px rgba(168, 85, 247,0.25)',
                           }
                         : {
                             left: `${readLinePosition}%`,
                             top: 0,
                             bottom: 0,
                             width: '2px',
-                            background: 'linear-gradient(180deg, transparent 0%, rgba(34,211,238,0.9) 20%, rgba(34,211,238,1) 50%, rgba(34,211,238,0.9) 80%, transparent 100%)',
-                            boxShadow: '0 0 8px rgba(34,211,238,0.7), 0 0 24px rgba(34,211,238,0.25)',
+                            background: 'linear-gradient(180deg, transparent 0%, rgba(168, 85, 247,0.9) 20%, rgba(168, 85, 247,1) 50%, rgba(168, 85, 247,0.9) 80%, transparent 100%)',
+                            boxShadow: '0 0 8px rgba(168, 85, 247,0.7), 0 0 24px rgba(168, 85, 247,0.25)',
                           }
                     }
                   />
@@ -4924,9 +4924,9 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
 
                 {/* HUD Overlay Badges */}
                 <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 z-40 max-w-[80%]">
-                  {Math.abs(speedValue - 1) > 0.001 && <div className="px-1.5 py-0.5 rounded bg-cyan-500/20 border border-cyan-400/30 text-[8px] font-black uppercase text-cyan-200">Speed {speedValue.toFixed(2)}x</div>}
+                  {Math.abs(speedValue - 1) > 0.001 && <div className="px-1.5 py-0.5 rounded bg-purple-500/20 border border-purple-400/30 text-[8px] font-black uppercase text-purple-200">Speed {speedValue.toFixed(2)}x</div>}
                   {hasTrimApplied && activePreviewId && <div className="px-1.5 py-0.5 rounded bg-emerald-500/20 border border-emerald-400/30 text-[8px] font-black uppercase text-emerald-200">Trimmed</div>}
-                  {rotationDegrees % 360 !== 0 && <div className="px-1.5 py-0.5 rounded bg-teal-500/20 border border-teal-400/30 text-[8px] font-black uppercase text-teal-200">Rotated {rotationDegrees}°</div>}
+                  {rotationDegrees % 360 !== 0 && <div className="px-1.5 py-0.5 rounded bg-fuchsia-500/20 border border-fuchsia-400/30 text-[8px] font-black uppercase text-fuchsia-200">Rotated {rotationDegrees}°</div>}
                   {isMuted && <div className="px-1.5 py-0.5 rounded bg-red-500/20 border border-red-400/30 text-[8px] font-black uppercase text-red-200">Muted</div>}
                   {zoomToolAmount > 1.001 && <div className="px-1.5 py-0.5 rounded bg-yellow-500/20 border border-yellow-400/30 text-[8px] font-black uppercase text-yellow-200">Zoom {zoomToolAmount.toFixed(2)}x</div>}
                 </div>
@@ -4973,7 +4973,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
 
                 <button
                   onClick={togglePlay}
-                  className="w-8 h-8 rounded-full bg-cyan-500 flex items-center justify-center text-[#0b0d1f] hover:scale-105 active:scale-95 transition-all shadow-md shadow-cyan-500/10"
+                  className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center text-[#0B1020] hover:scale-105 active:scale-95 transition-all shadow-md shadow-purple-500/10"
                 >
                   {isPlaying ? <Pause className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current ml-0.5" />}
                 </button>
@@ -4982,7 +4982,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                   onClick={() => setIsMuted(!isMuted)}
                   className="p-1 text-slate-400 hover:text-white transition-colors"
                 >
-                  {isMuted ? <VolumeX className="w-4 h-4 text-red-400" /> : <Volume2 className="w-4 h-4 text-cyan-400" />}
+                  {isMuted ? <VolumeX className="w-4 h-4 text-red-400" /> : <Volume2 className="w-4 h-4 text-purple-400" />}
                 </button>
 
                 <button
@@ -5000,7 +5000,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                   onClick={() => setShowReadLine(v => !v)}
                   title={showReadLine ? 'Hide Read Line' : 'Show Read Line'}
                   className={`p-1 rounded transition-all ${
-                    showReadLine ? 'text-cyan-400 bg-cyan-500/15' : 'text-slate-500 hover:text-white'
+                    showReadLine ? 'text-purple-400 bg-purple-500/15' : 'text-slate-500 hover:text-white'
                   }`}
                 >
                   <ScanLine className="w-4 h-4" />
@@ -5025,7 +5025,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                     <button
                       onClick={() => setReadLineDirection(d => d === 'horizontal' ? 'vertical' : 'horizontal')}
                       title={`Direction: ${readLineDirection}`}
-                      className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase border border-cyan-500/30 text-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20 transition-all"
+                      className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase border border-purple-500/30 text-purple-400 bg-purple-500/10 hover:bg-purple-500/20 transition-all"
                     >
                       {readLineDirection === 'horizontal' ? '↔' : '↕'}
                     </button>
@@ -5077,20 +5077,20 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                           }}
                           className={`relative p-3 rounded-xl border transition-all text-left overflow-hidden ${
                             selectedStyle === style.id && !isCustomFrameOpen
-                              ? 'border-cyan-500/50 bg-cyan-500/5 shadow-[0_0_10px_rgba(34,211,238,0.1)]'
+                              ? 'border-purple-500/50 bg-purple-500/5 shadow-[0_0_10px_rgba(168, 85, 247,0.1)]'
                               : 'border-white/5 bg-white/5 hover:border-white/10'
                           }`}
                         >
                           <div className={`absolute inset-0 bg-gradient-to-br ${style.gradient} opacity-20`} />
                           <div className="relative flex items-center gap-3">
-                            <style.icon className={`w-4 h-4 ${selectedStyle === style.id ? 'text-cyan-400' : 'text-slate-500'}`} />
+                            <style.icon className={`w-4 h-4 ${selectedStyle === style.id ? 'text-purple-400' : 'text-slate-500'}`} />
                             <div className="flex flex-col">
-                              <span className={`text-[10px] font-bold uppercase tracking-wider ${selectedStyle === style.id ? 'text-cyan-200' : 'text-slate-400'}`}>
+                              <span className={`text-[10px] font-bold uppercase tracking-wider ${selectedStyle === style.id ? 'text-purple-200' : 'text-slate-400'}`}>
                                 {style.title}
                               </span>
                             </div>
                             {selectedStyle === style.id && !isCustomFrameOpen && (
-                              <div className="ml-auto w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_5px_rgba(34,211,238,0.8)]" />
+                              <div className="ml-auto w-1.5 h-1.5 rounded-full bg-purple-400 shadow-[0_0_5px_rgba(168, 85, 247,0.8)]" />
                             )}
                           </div>
                         </button>
@@ -5117,7 +5117,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                             }}
                             className={`py-1.5 px-2 rounded-lg border text-[8px] font-black uppercase transition-all ${
                               aspectRatio === item.ratio && !isCustomFrameOpen
-                                ? 'border-cyan-500 bg-cyan-500/10 text-cyan-400 font-bold'
+                                ? 'border-purple-500 bg-purple-500/10 text-purple-400 font-bold'
                                 : 'border-white/5 bg-white/5 text-slate-400 hover:border-white/10 hover:text-slate-300'
                             }`}
                           >
@@ -5133,7 +5133,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                         if (!isCustomFrameOpen) setAspectRatio('Custom');
                       }}
                       className={`w-full py-2.5 rounded-lg border border-dashed transition-all text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-1.5 ${
-                        isCustomFrameOpen ? 'border-purple-500 text-purple-400 bg-purple-500/5' : 'border-white/10 text-slate-500 hover:text-slate-300'
+                        isCustomFrameOpen ? 'border-fuchsia-500 text-fuchsia-400 bg-fuchsia-500/5' : 'border-white/10 text-slate-500 hover:text-slate-300'
                       }`}
                     >
                       <Maximize2 className="w-3.5 h-3.5" />
@@ -5167,7 +5167,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                             <button
                               key={r}
                               onClick={() => setAspectRatio(r)}
-                              className={`flex-1 py-1 rounded border text-[8px] font-black transition-all ${aspectRatio === r ? 'border-purple-500 bg-purple-500/10 text-purple-400' : 'border-white/5 bg-white/5 text-slate-500'}`}
+                              className={`flex-1 py-1 rounded border text-[8px] font-black transition-all ${aspectRatio === r ? 'border-fuchsia-500 bg-fuchsia-500/10 text-fuchsia-400' : 'border-white/5 bg-white/5 text-slate-500'}`}
                             >
                               {r}
                             </button>
@@ -5187,7 +5187,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                       <div className="flex justify-between"><span className="text-slate-600">Format:</span><span className="text-slate-300">{activePreviewItem.type}</span></div>
                       <div className="flex justify-between"><span className="text-slate-600">Duration:</span><span className="text-slate-300">{activePreviewItem.duration.toFixed(2)}s</span></div>
                       <div className="flex justify-between"><span className="text-slate-600">Source:</span><span className="text-slate-300 truncate max-w-[120px]">{activePreviewItem.file ? activePreviewItem.file.name : 'Bench anime clip.mp4'}</span></div>
-                      <div className="flex justify-between"><span className="text-slate-600">Track:</span><span className="text-cyan-400">V1</span></div>
+                      <div className="flex justify-between"><span className="text-slate-600">Track:</span><span className="text-purple-400">V1</span></div>
                     </div>
                   ) : (
                     <div className="text-center py-4 text-[9px] font-bold text-slate-600 uppercase tracking-widest">
@@ -5254,7 +5254,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
         <div className="flex items-center gap-3">
           <button 
             onClick={() => setIsMusicPickerOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 hover:bg-cyan-500/20 transition-all font-bold text-[9px] uppercase tracking-wider"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-300 hover:bg-purple-500/20 transition-all font-bold text-[9px] uppercase tracking-wider"
             title="Add background music"
           >
             <Music className="w-3.5 h-3.5" />
@@ -5264,7 +5264,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
 
         <div className="flex items-center">
           <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/5 text-slate-300 hover:bg-white/10 transition-all font-bold text-[9px] uppercase tracking-wider">
-            <Smartphone className="w-3.5 h-3.5 text-purple-400" />
+            <Smartphone className="w-3.5 h-3.5 text-fuchsia-400" />
             <span>Format: {aspectRatio}</span>
             <ChevronRight className="w-3 h-3 text-slate-500" />
           </button>
@@ -5278,10 +5278,10 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
             Discard
           </button>
           <motion.button
-            whileHover={{ scale: 1.02, boxShadow: '0 0 20px rgba(34,211,238,0.2)' }}
+            whileHover={{ scale: 1.02, boxShadow: '0 0 20px rgba(168, 85, 247,0.2)' }}
             whileTap={{ scale: 0.98 }}
             onClick={handleGenerate}
-            className="relative h-9 px-6 rounded-lg flex items-center gap-2 transition-all overflow-hidden bg-gradient-to-r from-cyan-600 via-teal-500 to-cyan-400 text-[#0b0d1f] cursor-pointer"
+            className="relative h-9 px-6 rounded-lg flex items-center gap-2 transition-all overflow-hidden bg-gradient-to-r from-purple-600 via-fuchsia-500 to-purple-400 text-[#0B1020] cursor-pointer"
           >
             <motion.div
               animate={{ opacity: [0.2, 0.4, 0.2], scale: [1, 1.1, 1] }}
@@ -5329,7 +5329,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
           border-radius: 10px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(34, 211, 238, 0.2);
+          background: rgba(168, 85, 247, 0.2);
         }
       `}} />
 

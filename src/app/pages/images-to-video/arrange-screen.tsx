@@ -29,9 +29,9 @@ export function ImagesToVideoArrangeScreen() {
 
   return (
     <div
-      className="min-h-screen relative overflow-hidden font-sans selection:bg-cyan-500/30 selection:text-white pb-20"
+      className="min-h-screen relative overflow-hidden font-sans selection:bg-purple-500/30 selection:text-white pb-20"
       style={{
-        background: 'linear-gradient(135deg, #0b0d1f 0%, #1a1b2e 30%, #2d3142 60%, #3f4a67 85%, #1a1b2e 100%)',
+        background: 'linear-gradient(135deg, #0B1020 0%, #1a1b2e 30%, #2d3142 60%, #3f4a67 85%, #1a1b2e 100%)',
         backgroundAttachment: 'fixed'
       }}
     >
@@ -47,7 +47,7 @@ export function ImagesToVideoArrangeScreen() {
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           onClick={() => navigate("/images-to-video/upload")}
-          className="inline-flex items-center gap-2 text-[#94a3b8] hover:text-cyan-400 transition-colors mb-8"
+          className="inline-flex items-center gap-2 text-[#94a3b8] hover:text-purple-400 transition-colors mb-8"
         >
           <ArrowLeft className="w-4 h-4" />
           <span className="text-sm font-medium">Back to upload</span>
@@ -59,7 +59,7 @@ export function ImagesToVideoArrangeScreen() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-12"
         >
-          <h1 className="text-4xl md:text-5xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-white via-cyan-100 to-teal-300 drop-shadow-[0_2px_10px_rgba(34,211,238,0.2)]">
+          <h1 className="text-4xl md:text-5xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-white via-purple-100 to-fuchsia-300 drop-shadow-[0_2px_10px_rgba(168, 85, 247,0.2)]">
             Arrange Your Images
           </h1>
           <p className="text-[#94a3b8] font-medium text-lg">Drag to reorder and set duration for each image</p>
@@ -81,22 +81,22 @@ export function ImagesToVideoArrangeScreen() {
                 transition={{ delay: index * 0.1 }}
                 onClick={() => setSelectedImage(image.id)}
                 className={`flex items-center gap-4 p-4 rounded-xl border transition-all cursor-pointer ${selectedImage === image.id
-                  ? "border-cyan-500 bg-cyan-500/10 shadow-[0_0_15px_rgba(34,211,238,0.2)]"
-                  : "border-[#3f4a67]/50 hover:border-cyan-500/30 bg-[#2d3142]/40"
+                  ? "border-purple-500 bg-purple-500/10 shadow-[0_0_15px_rgba(168, 85, 247,0.2)]"
+                  : "border-[#3f4a67]/50 hover:border-purple-500/30 bg-[#2d3142]/40"
                   }`}
               >
                 {/* Drag Handle */}
-                <div className="cursor-grab active:cursor-grabbing text-[#64748b] hover:text-cyan-400">
+                <div className="cursor-grab active:cursor-grabbing text-[#64748b] hover:text-purple-400">
                   <GripVertical className="w-5 h-5" />
                 </div>
 
                 {/* Order Number */}
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-[#0b0d1f] text-sm font-bold shadow-[0_0_10px_rgba(34,211,238,0.3)]">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-blue-500 flex items-center justify-center text-[#0B1020] text-sm font-bold shadow-[0_0_10px_rgba(168, 85, 247,0.3)]">
                   {index + 1}
                 </div>
 
                 {/* Image Preview */}
-                <div className="w-20 h-20 rounded-lg overflow-hidden bg-[#0b0d1f]/40 border border-[#3f4a67]/50">
+                <div className="w-20 h-20 rounded-lg overflow-hidden bg-[#0B1020]/40 border border-[#3f4a67]/50">
                   <div className="w-full h-full bg-cover bg-center" style={{ backgroundImage: `url(${image.url})` }} />
                 </div>
 
@@ -119,7 +119,7 @@ export function ImagesToVideoArrangeScreen() {
                       className="cursor-pointer"
                     />
                   </div>
-                  <span className="text-sm font-bold text-cyan-400 min-w-[3rem]">
+                  <span className="text-sm font-bold text-purple-400 min-w-[3rem]">
                     {image.duration}s
                   </span>
                 </div>
@@ -128,10 +128,10 @@ export function ImagesToVideoArrangeScreen() {
           </div>
 
           {/* Total Duration */}
-          <div className="mt-6 p-4 bg-cyan-900/20 rounded-xl border border-cyan-500/20">
+          <div className="mt-6 p-4 bg-purple-900/20 rounded-xl border border-purple-500/20">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-cyan-100">Total Video Duration</span>
-              <span className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 drop-shadow-[0_0_8px_rgba(34,211,238,0.5)]">
+              <span className="text-sm font-medium text-purple-100">Total Video Duration</span>
+              <span className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-500 drop-shadow-[0_0_8px_rgba(168, 85, 247,0.5)]">
                 {images.reduce((sum, img) => sum + img.duration, 0)}s
               </span>
             </div>
@@ -146,7 +146,7 @@ export function ImagesToVideoArrangeScreen() {
         >
           <Button
             onClick={handleContinue}
-            className="w-full h-14 text-lg font-bold bg-gradient-to-r from-cyan-600 via-teal-500 to-cyan-400 hover:opacity-90 text-[#0b0d1f] shadow-[0_0_20px_rgba(34,211,238,0.3)] hover:shadow-[0_0_30px_rgba(34,211,238,0.5)] transition-all rounded-xl border border-cyan-300/40"
+            className="w-full h-14 text-lg font-bold bg-gradient-to-r from-purple-600 via-fuchsia-500 to-purple-400 hover:opacity-90 text-[#0B1020] shadow-[0_0_20px_rgba(168, 85, 247,0.3)] hover:shadow-[0_0_30px_rgba(168, 85, 247,0.5)] transition-all rounded-xl border border-purple-300/40"
           >
             Continue to Style Selection
           </Button>
@@ -160,7 +160,7 @@ export function ImagesToVideoArrangeScreen() {
           className="mt-8 p-4 bg-[#1a1b2e]/40 backdrop-blur-md rounded-xl border border-[#3f4a67]/50 text-center shadow-md"
         >
           <p className="text-sm text-[#94a3b8] font-medium flex items-center justify-center gap-1.5">
-            <Lightbulb className="w-4 h-4 text-cyan-400" /> <span className="font-bold text-cyan-400">Tip:</span> Recommended duration is 2-5 seconds per image
+            <Lightbulb className="w-4 h-4 text-purple-400" /> <span className="font-bold text-purple-400">Tip:</span> Recommended duration is 2-5 seconds per image
           </p>
         </motion.div>
       </div>

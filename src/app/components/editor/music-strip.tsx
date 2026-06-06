@@ -27,10 +27,10 @@ export const MusicStrip: React.FC<MusicStripProps> = ({ videoDuration, onEditCli
   return (
     <div className="space-y-3">
       {/* Music Summary Card */}
-      <Card className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-500/30 p-3 space-y-2">
+      <Card className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/30 p-3 space-y-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 flex-1 min-w-0">
-            <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-lg flex items-center justify-center">
+            <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-purple-400 to-blue-500 rounded-lg flex items-center justify-center">
               <Music className="w-5 h-5 text-white" />
             </div>
             <div className="flex-1 min-w-0">
@@ -47,10 +47,10 @@ export const MusicStrip: React.FC<MusicStripProps> = ({ videoDuration, onEditCli
                 setShowEditControls(!showEditControls);
                 onEditClick?.();
               }}
-              className="h-8 w-8 p-0 hover:bg-cyan-500/20"
+              className="h-8 w-8 p-0 hover:bg-purple-500/20"
               title="Edit audio"
             >
-              <Settings className="w-4 h-4 text-cyan-400" />
+              <Settings className="w-4 h-4 text-purple-400" />
             </Button>
             <Button
               size="sm"
@@ -68,11 +68,11 @@ export const MusicStrip: React.FC<MusicStripProps> = ({ videoDuration, onEditCli
         <div className="flex flex-wrap gap-2 text-xs">
           <div className="bg-black/30 rounded px-2 py-1">
             <span className="text-white/70">Duration: </span>
-            <span className="text-cyan-400 font-semibold">{formatTime(musicDuration)}</span>
+            <span className="text-purple-400 font-semibold">{formatTime(musicDuration)}</span>
           </div>
           <div className="bg-black/30 rounded px-2 py-1">
             <span className="text-white/70">Volume: </span>
-            <span className="text-cyan-400 font-semibold">{selectedMusic.volume}%</span>
+            <span className="text-purple-400 font-semibold">{selectedMusic.volume}%</span>
           </div>
           {selectedMusic.muteOriginal && (
             <div className="bg-black/30 rounded px-2 py-1">
@@ -85,11 +85,11 @@ export const MusicStrip: React.FC<MusicStripProps> = ({ videoDuration, onEditCli
         <div className="bg-black/40 rounded p-2 space-y-1">
           <div className="flex items-center justify-between text-xs">
             <span className="text-white/60">Trim Range</span>
-            <span className="text-cyan-300">{formatTime(selectedMusic.startTime)} → {formatTime(selectedMusic.endTime)}</span>
+            <span className="text-purple-300">{formatTime(selectedMusic.startTime)} → {formatTime(selectedMusic.endTime)}</span>
           </div>
           <div className="w-full h-1 bg-black/60 rounded-full overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-cyan-400 to-blue-500"
+              className="h-full bg-gradient-to-r from-purple-400 to-blue-500"
               style={{
                 width: `${(musicDuration / selectedMusic.duration) * 100}%`,
               }}

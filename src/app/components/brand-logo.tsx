@@ -59,7 +59,7 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({ className, size = 56 }) =>
         height: size,
         objectFit: 'contain'
       }}
-      className={`${className} drop-shadow-[0_0_15px_rgba(34,211,238,0.4)]`}
+      className={`${className} drop-shadow-[0_0_15px_rgba(168, 85, 247,0.4)]`}
     />
   );
 };

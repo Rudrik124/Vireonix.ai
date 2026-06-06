@@ -25,7 +25,7 @@ export const Toggle: React.FC<ToggleProps> = ({
       <button
         onClick={() => onChange(!enabled)}
         className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-          enabled ? 'bg-cyan-500' : 'bg-[#3f4a67]/50'
+          enabled ? 'bg-purple-500' : 'bg-[#3f4a67]/50'
         }`}
       >
         <motion.span

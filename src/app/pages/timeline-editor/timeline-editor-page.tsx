@@ -214,7 +214,7 @@ export function TimelineEditorPage() {
               {loadingState === "generating" && (
                 <>
                   <div className="flex justify-center mb-4">
-                    <Loader2 className="w-8 h-8 animate-spin text-cyan-400" />
+                    <Loader2 className="w-8 h-8 animate-spin text-purple-400" />
                   </div>
                   <h3 className="text-lg font-bold mb-2">Generating Video</h3>
                   <p className="text-sm text-slate-400">{loadingMessage}</p>
@@ -244,7 +244,7 @@ export function TimelineEditorPage() {
                   <p className="text-sm text-slate-400">{errorMessage}</p>
                   <button
                     onClick={() => setLoadingState("idle")}
-                    className="mt-4 px-4 py-2 bg-cyan-500 text-slate-950 rounded-lg font-bold hover:bg-cyan-400 transition"
+                    className="mt-4 px-4 py-2 bg-purple-500 text-slate-950 rounded-lg font-bold hover:bg-purple-400 transition"
                   >
                     Close
                   </button>

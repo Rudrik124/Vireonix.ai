@@ -62,7 +62,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
       <DialogContent className="max-w-lg bg-[#0f1724] border-white/10">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-white">
-            <FileVideo className="w-5 h-5 text-cyan-400" />
+            <FileVideo className="w-5 h-5 text-purple-400" />
             Export Video
           </DialogTitle>
         </DialogHeader>
@@ -71,8 +71,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({
           {/* Video Summary */}
           <Card className="bg-[#061018] border-white/10 p-3">
             <div className="flex items-center gap-3">
-              <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-cyan-500/20 to-blue-500/20 rounded-lg flex items-center justify-center">
-                <FileVideo className="w-6 h-6 text-cyan-400" />
+              <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-lg flex items-center justify-center">
+                <FileVideo className="w-6 h-6 text-purple-400" />
               </div>
               <div className="flex-1">
                 <h4 className="text-sm font-semibold text-white">Video Duration</h4>
@@ -83,9 +83,9 @@ export const ExportModal: React.FC<ExportModalProps> = ({
 
           {/* Music Summary */}
           {selectedMusic && (
-            <Card className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-500/30 p-3">
+            <Card className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/30 p-3">
               <div className="flex items-center gap-3 mb-2">
-                <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-lg flex items-center justify-center">
+                <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-purple-400 to-blue-500 rounded-lg flex items-center justify-center">
                   <Music className="w-5 h-5 text-white" />
                 </div>
                 <div className="flex-1">
@@ -94,11 +94,11 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                 </div>
               </div>
               <div className="flex flex-wrap gap-2 text-xs">
-                <Badge variant="outline" className="bg-black/30 border-white/20 text-cyan-300">
+                <Badge variant="outline" className="bg-black/30 border-white/20 text-purple-300">
                   <Volume2 className="w-3 h-3 mr-1" />
                   {selectedMusic.volume}%
                 </Badge>
-                <Badge variant="outline" className="bg-black/30 border-white/20 text-cyan-300">
+                <Badge variant="outline" className="bg-black/30 border-white/20 text-purple-300">
                   {Math.floor((selectedMusic.endTime - selectedMusic.startTime) / 60)}:
                   {((selectedMusic.endTime - selectedMusic.startTime) % 60).toString().padStart(2, "0")}
                 </Badge>
@@ -188,9 +188,9 @@ export const ExportModal: React.FC<ExportModalProps> = ({
             )}
 
             {/* Info */}
-            <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-lg p-3 text-xs text-cyan-300 space-y-1">
+            <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-3 text-xs text-purple-300 space-y-1">
               <p className="font-medium">💡 Export Tips:</p>
-              <ul className="list-disc list-inside space-y-1 text-cyan-300/80">
+              <ul className="list-disc list-inside space-y-1 text-purple-300/80">
                 <li>Use HIGH quality for social media</li>
                 <li>Use MEDIUM quality for web/preview</li>
                 <li>Use LOW quality for faster export</li>
@@ -213,7 +213,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
           <Button
             onClick={handleExport}
             disabled={isExporting}
-            className="flex-1 bg-cyan-600 hover:bg-cyan-700 gap-2"
+            className="flex-1 bg-purple-600 hover:bg-purple-700 gap-2"
           >
             {isExporting ? (
               <>

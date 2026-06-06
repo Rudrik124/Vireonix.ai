@@ -36,9 +36,9 @@ export function ResultPage() {
 
   return (
     <div 
-      className="min-h-screen relative overflow-hidden font-sans selection:bg-cyan-500/30 selection:text-white pb-20 text-slate-200"
+      className="min-h-screen relative overflow-hidden font-sans selection:bg-purple-500/30 selection:text-white pb-20 text-slate-200"
       style={{
-        background: 'linear-gradient(135deg, #0b0d1f 0%, #1a1b2e 30%, #2d3142 60%, #3f4a67 85%, #1a1b2e 100%)',
+        background: 'linear-gradient(135deg, #0B1020 0%, #1a1b2e 30%, #2d3142 60%, #3f4a67 85%, #1a1b2e 100%)',
         backgroundAttachment: 'fixed'
       }}
     >
@@ -63,12 +63,12 @@ export function ResultPage() {
             >
               <div className="relative">
                 {/* Theme Background Glow */}
-                <div className="absolute inset-0 bg-cyan-500/20 rounded-full blur-xl scale-150 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="absolute inset-0 bg-purple-500/20 rounded-full blur-xl scale-150 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 
                 <BrandLogo size={48} className="relative z-10" />
               </div>
-              <span className="text-xl font-black tracking-tight text-white drop-shadow-[0_0_15px_rgba(34,211,238,0.3)]">
-                VEYTRIX<span className="text-cyan-400">.AI</span>
+              <span className="text-xl font-black tracking-tight text-white drop-shadow-[0_0_15px_rgba(168, 85, 247,0.3)]">
+                VEYTRIX<span className="text-purple-400">.AI</span>
               </span>
             </div>
 
@@ -76,7 +76,7 @@ export function ResultPage() {
 
             <button
               onClick={() => navigate("/features")}
-              className="flex items-center gap-2 text-[#94a3b8] hover:text-cyan-400 transition-colors group"
+              className="flex items-center gap-2 text-[#94a3b8] hover:text-purple-400 transition-colors group"
             >
               <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
               <span className="text-sm font-bold uppercase tracking-widest">Back</span>
@@ -94,7 +94,7 @@ export function ResultPage() {
             <span className="text-sm font-semibold text-emerald-300 tracking-wide uppercase font-sans tracking-[0.1em]">Video ready!</span>
           </div>
 
-          <h1 className="text-4xl md:text-5xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-white via-cyan-100 to-teal-300 drop-shadow-[0_2px_10px_rgba(34,211,238,0.2)]">
+          <h1 className="text-4xl md:text-5xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-white via-purple-100 to-fuchsia-300 drop-shadow-[0_2px_10px_rgba(168, 85, 247,0.2)]">
             Your Video is Ready
           </h1>
 
@@ -120,7 +120,7 @@ export function ResultPage() {
                 autoPlay
                 className="w-full h-full object-cover relative z-10"
               />
-              <div className="absolute inset-0 bg-gradient-to-b from-transparent to-cyan-500/5 mix-blend-overlay pointer-events-none z-20" />
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent to-purple-500/5 mix-blend-overlay pointer-events-none z-20" />
             </div>
           ) : (
             <div className="text-center py-12">
@@ -141,7 +141,7 @@ export function ResultPage() {
         >
           <Button
             onClick={handleDownload}
-             className="flex-1 h-14 text-lg font-bold bg-gradient-to-r from-cyan-600 via-teal-500 to-cyan-400 hover:opacity-90 text-[#0b0d1f] shadow-[0_0_20px_rgba(34,211,238,0.3)] hover:shadow-[0_0_30px_rgba(34,211,238,0.5)] transition-all rounded-xl border border-cyan-300/40"
+             className="flex-1 h-14 text-lg font-bold bg-gradient-to-r from-purple-600 via-fuchsia-500 to-purple-400 hover:opacity-90 text-[#0B1020] shadow-[0_0_20px_rgba(168, 85, 247,0.3)] hover:shadow-[0_0_30px_rgba(168, 85, 247,0.5)] transition-all rounded-xl border border-purple-300/40"
           >
             <Download className="w-5 h-5 mr-2" />
             Download
@@ -150,7 +150,7 @@ export function ResultPage() {
           <Button
             onClick={handleShare}
             variant="outline"
-             className="flex-1 h-14 border border-[#3f4a67] hover:border-cyan-400/50 hover:bg-cyan-500/10 hover:text-cyan-300 text-[#cbd5e1] rounded-xl font-semibold transition-all bg-[#0b0d1f]/40 shadow-md"
+             className="flex-1 h-14 border border-[#3f4a67] hover:border-purple-400/50 hover:bg-purple-500/10 hover:text-purple-300 text-[#cbd5e1] rounded-xl font-semibold transition-all bg-[#0B1020]/40 shadow-md"
           >
             <Share2 className="w-5 h-5 mr-2" />
             Share
@@ -167,9 +167,9 @@ export function ResultPage() {
           <Button 
             onClick={() => navigate("/features")}
             variant="outline"
-            className="h-14 px-8 border border-[#3f4a67] hover:border-cyan-400/50 hover:bg-cyan-500/10 hover:text-cyan-300 text-[#cbd5e1] rounded-xl font-semibold transition-all bg-[#1a1b2e]/60 backdrop-blur-xl shadow-lg"
+            className="h-14 px-8 border border-[#3f4a67] hover:border-purple-400/50 hover:bg-purple-500/10 hover:text-purple-300 text-[#cbd5e1] rounded-xl font-semibold transition-all bg-[#1a1b2e]/60 backdrop-blur-xl shadow-lg"
           >
-            <Sparkles className="w-5 h-5 mr-2 text-cyan-400" />
+            <Sparkles className="w-5 h-5 mr-2 text-purple-400" />
             Create Another Video
           </Button>
         </motion.div>

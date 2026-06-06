@@ -65,7 +65,7 @@ function EditorPageContent() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0b0d1f] text-white">
+    <div className="min-h-screen bg-[#0B1020] text-white">
       <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
         <div className="flex items-center gap-3">
           <BrandLogo size={40} />
@@ -157,13 +157,13 @@ function EditorPageContent() {
           {/* Music Section */}
           <div className="mb-6 pb-6 border-b border-white/10">
             <div className="text-sm font-medium mb-3 flex items-center gap-2">
-              <Music className="w-4 h-4 text-cyan-400" />
+              <Music className="w-4 h-4 text-purple-400" />
               Background Music
             </div>
             
             <Button
               onClick={() => setIsMusicPickerOpen(true)}
-              className="w-full mb-3 bg-cyan-600 hover:bg-cyan-700 text-white flex items-center justify-center gap-2"
+              className="w-full mb-3 bg-purple-600 hover:bg-purple-700 text-white flex items-center justify-center gap-2"
             >
               <Music className="w-4 h-4" />
               Add Music
@@ -178,7 +178,7 @@ function EditorPageContent() {
             <button 
               onClick={() => setIsExportModalOpen(true)}
               disabled={isExporting}
-              className="w-full py-2 bg-cyan-600 hover:bg-cyan-700 disabled:bg-cyan-600/50 rounded text-sm font-semibold flex items-center justify-center gap-2"
+              className="w-full py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-600/50 rounded text-sm font-semibold flex items-center justify-center gap-2"
             >
               {isExporting ? (
                 <>

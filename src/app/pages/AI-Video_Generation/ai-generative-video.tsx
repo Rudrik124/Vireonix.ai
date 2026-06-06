@@ -64,13 +64,13 @@ const BackgroundGlows = memo(() => (
       <motion.div
         animate={{ opacity: [0.1, 0.25, 0.1], scale: [1, 1.1, 1] }}
         transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute top-[-20%] left-[-10%] w-[80vw] h-[30vh] bg-gradient-to-r from-transparent via-cyan-500 to-transparent blur-[90px] rotate-[35deg] transform origin-top-left"
+        className="absolute top-[-20%] left-[-10%] w-[80vw] h-[30vh] bg-gradient-to-r from-transparent via-purple-500 to-transparent blur-[90px] rotate-[35deg] transform origin-top-left"
         style={{ willChange: "transform, opacity" }}
       />
       <motion.div
         animate={{ opacity: [0.1, 0.2, 0.1], scale: [1, 1.15, 1] }}
         transition={{ duration: 18, repeat: Infinity, ease: "easeInOut", delay: 2 }}
-        className="absolute bottom-[-20%] right-[-10%] w-[100vw] h-[25vh] bg-gradient-to-r from-transparent via-teal-500 to-transparent blur-[100px] rotate-[-25deg] transform origin-bottom-right"
+        className="absolute bottom-[-20%] right-[-10%] w-[100vw] h-[25vh] bg-gradient-to-r from-transparent via-fuchsia-500 to-transparent blur-[100px] rotate-[-25deg] transform origin-bottom-right"
         style={{ willChange: "transform, opacity" }}
       />
     </div>
@@ -79,13 +79,13 @@ const BackgroundGlows = memo(() => (
     <motion.div
       animate={{ opacity: [0.03, 0.1, 0.03], scale: [1, 1.2, 1], x: [0, 50, 0], y: [0, -30, 0] }}
       transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-      className="fixed top-[5%] left-[5%] w-[60%] h-[60%] bg-cyan-500/30 rounded-full blur-[300px] pointer-events-none z-0 mix-blend-screen"
+      className="fixed top-[5%] left-[5%] w-[60%] h-[60%] bg-purple-500/30 rounded-full blur-[300px] pointer-events-none z-0 mix-blend-screen"
       style={{ willChange: "transform, opacity" }}
     />
     <motion.div
       animate={{ opacity: [0.02, 0.08, 0.02], scale: [1, 1.3, 1], x: [0, -40, 0], y: [0, 50, 0] }}
       transition={{ duration: 20, repeat: Infinity, ease: "easeInOut", delay: 2 }}
-      className="fixed bottom-[0%] right-[5%] w-[70%] h-[70%] bg-teal-500/30 rounded-full blur-[350px] pointer-events-none z-0 mix-blend-screen"
+      className="fixed bottom-[0%] right-[5%] w-[70%] h-[70%] bg-fuchsia-500/30 rounded-full blur-[350px] pointer-events-none z-0 mix-blend-screen"
       style={{ willChange: "transform, opacity" }}
     />
     <motion.div
@@ -114,7 +114,7 @@ const ParticleBackground = memo(() => {
         yOffset: Math.random() * -150 - 50,
         opacityMax: isFlare ? 0.4 : 0.6,
         duration: Math.random() * 35 + 20,
-        bgColor: isFlare ? 'rgba(34, 211, 238, 0.15)' : `rgba(165, 243, 252, ${Math.random() * 0.4 + 0.1})`,
+        bgColor: isFlare ? 'rgba(168, 85, 247, 0.15)' : `rgba(165, 243, 252, ${Math.random() * 0.4 + 0.1})`,
         rotate: isFlare ? Math.random() * 180 : 0
       };
     });
@@ -136,7 +136,7 @@ const ParticleBackground = memo(() => {
             borderRadius: p.isFlare ? '100%' : '50%',
             backgroundColor: p.bgColor,
             filter: p.isFlare ? 'blur(3px)' : 'blur(0.5px)',
-            boxShadow: p.isFlare ? '0 0 20px rgba(34, 211, 238, 0.4)' : 'none',
+            boxShadow: p.isFlare ? '0 0 20px rgba(168, 85, 247, 0.4)' : 'none',
             rotate: p.rotate,
             willChange: "transform, opacity"
           }}
@@ -334,9 +334,9 @@ export function AIGenerativeVideoPage() {
 
   return (
     <div
-      className="min-h-screen relative overflow-hidden font-sans selection:bg-cyan-500/30 selection:text-white pb-20 flex flex-col"
+      className="min-h-screen relative overflow-hidden font-sans selection:bg-purple-500/30 selection:text-white pb-20 flex flex-col"
       style={{
-        background: 'linear-gradient(135deg, #0b0d1f 0%, #1a1b2e 30%, #2d3142 60%, #3f4a67 85%, #1a1b2e 100%)',
+        background: 'linear-gradient(135deg, #0B1020 0%, #1a1b2e 30%, #2d3142 60%, #3f4a67 85%, #1a1b2e 100%)',
         backgroundAttachment: 'fixed'
       }}
     >
@@ -360,12 +360,12 @@ export function AIGenerativeVideoPage() {
         >
           <div className="relative">
             {/* Theme Background Glow */}
-            <div className="absolute inset-0 bg-cyan-500/20 rounded-full blur-xl scale-150 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="absolute inset-0 bg-purple-500/20 rounded-full blur-xl scale-150 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             
             <BrandLogo size={48} className="relative z-10" />
           </div>
-          <span className="text-2xl font-black tracking-tight text-white drop-shadow-[0_0_15px_rgba(34,211,238,0.3)] group-hover:text-cyan-400/80 transition-colors">
-            VEYTRIX<span className="text-cyan-400">.AI</span>
+          <span className="text-2xl font-black tracking-tight text-white drop-shadow-[0_0_15px_rgba(168, 85, 247,0.3)] group-hover:text-purple-400/80 transition-colors">
+            VEYTRIX<span className="text-purple-400">.AI</span>
           </span>
         </motion.div>
 
@@ -378,8 +378,8 @@ export function AIGenerativeVideoPage() {
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                 className="flex items-center gap-2.5 bg-white/5 hover:bg-white/10 backdrop-blur-md px-3.5 py-2 rounded-2xl border border-white/10 transition-all text-white group shadow-xl"
               >
-                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center shadow-lg shadow-cyan-500/20">
-                  <User className="w-3 h-3 text-[#0b0d1f]" />
+                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-fuchsia-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
+                  <User className="w-3 h-3 text-[#0B1020]" />
                 </div>
                 <span className="text-[10px] font-bold uppercase tracking-widest">{userName}</span>
                 <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform duration-300 ${isUserMenuOpen ? 'rotate-180' : ''}`} />
@@ -391,7 +391,7 @@ export function AIGenerativeVideoPage() {
                     initial={{ opacity: 0, y: 10, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    className="absolute right-0 top-full mt-2 w-48 bg-[#0b0d1f]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-[100]"
+                    className="absolute right-0 top-full mt-2 w-48 bg-[#0B1020]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-[100]"
                   >
                     <div className="p-2">
                       <button 
@@ -426,10 +426,10 @@ export function AIGenerativeVideoPage() {
                 <span className="text-[11px] font-bold uppercase tracking-widest">Advanced Config</span>
               </button>
             </DialogTrigger>
-            <DialogContent className="bg-[#0b0d1f]/95 backdrop-blur-2xl border-white/10 text-white sm:max-w-[425px] rounded-3xl shadow-2xl">
+            <DialogContent className="bg-[#0B1020]/95 backdrop-blur-2xl border-white/10 text-white sm:max-w-[425px] rounded-3xl shadow-2xl">
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2 text-xl font-black uppercase tracking-tighter">
-                  <Settings2 className="w-5 h-5 text-cyan-400" />
+                  <Settings2 className="w-5 h-5 text-purple-400" />
                   Production Settings
                 </DialogTitle>
               </DialogHeader>
@@ -450,7 +450,7 @@ export function AIGenerativeVideoPage() {
                           onClick={() => isPremium ? handlePremiumIntercept("4k") : setExportQuality(res)}
                           className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border flex flex-col items-center gap-1 ${
                             exportQuality === res 
-                              ? 'bg-cyan-500/10 border-cyan-500 text-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.2)]' 
+                              ? 'bg-purple-500/10 border-purple-500 text-purple-400 shadow-[0_0_15px_rgba(168, 85, 247,0.2)]' 
                               : 'bg-white/5 border-white/5 text-slate-500 hover:border-white/20'
                           }`}
                         >
@@ -481,7 +481,7 @@ export function AIGenerativeVideoPage() {
                           onClick={() => isPremium ? handlePremiumIntercept("60fps") : setFps(f)}
                           className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border flex flex-col items-center gap-1 ${
                             fps === f
-                              ? 'bg-indigo-500/10 border-indigo-500 text-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.2)]' 
+                              ? 'bg-purple-500/10 border-purple-500 text-purple-400 shadow-[0_0_15px_rgba(168, 85, 247,0.2)]' 
                               : 'bg-white/5 border-white/5 text-slate-500 hover:border-white/20'
                           }`}
                         >
@@ -517,7 +517,7 @@ export function AIGenerativeVideoPage() {
                       </div>
                       <button
                         onClick={() => handlePremiumIntercept("watermark")}
-                        className={`w-12 h-6 rounded-full relative transition-all bg-cyan-600 shadow-[0_0_10px_rgba(34,211,238,0.3)]`}
+                        className={`w-12 h-6 rounded-full relative transition-all bg-purple-600 shadow-[0_0_10px_rgba(168, 85, 247,0.3)]`}
                       >
                         <div className={`absolute top-1 right-1 w-4 h-4 rounded-full bg-white transition-all`} />
                       </button>
@@ -548,7 +548,7 @@ export function AIGenerativeVideoPage() {
         >
           <button
             onClick={() => navigate("/features")}
-            className="inline-flex items-center gap-2 text-[#94a3b8] hover:text-cyan-300 transition-colors group"
+            className="inline-flex items-center gap-2 text-[#94a3b8] hover:text-purple-300 transition-colors group"
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
             <span className="text-sm font-medium tracking-wide">Back to selection</span>
@@ -561,13 +561,13 @@ export function AIGenerativeVideoPage() {
           transition={{ duration: 0.5 }}
           className="text-center mb-10"
         >
-          <div className="inline-flex items-center gap-2 bg-[#1a1b2e]/60 backdrop-blur-3xl px-6 py-2.5 rounded-full border border-cyan-500/20 mb-6 shadow-[0_4px_30px_rgba(0,0,0,0.2)] hover:bg-[#2d3142]/60 transition-colors cursor-default">
-            <Sparkles className="w-4 h-4 text-cyan-400" />
-            <span className="text-sm font-semibold text-cyan-100 tracking-wide uppercase font-sans tracking-[0.2em]">AI Generative Video</span>
+          <div className="inline-flex items-center gap-2 bg-[#1a1b2e]/60 backdrop-blur-3xl px-6 py-2.5 rounded-full border border-purple-500/20 mb-6 shadow-[0_4px_30px_rgba(0,0,0,0.2)] hover:bg-[#2d3142]/60 transition-colors cursor-default">
+            <Sparkles className="w-4 h-4 text-purple-400" />
+            <span className="text-sm font-semibold text-purple-100 tracking-wide uppercase font-sans tracking-[0.2em]">AI Generative Video</span>
           </div>
 
-          <h1 className="text-4xl md:text-5xl lg:text-5xl font-black tracking-tighter mb-4 selection:bg-cyan-500/30">
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-cyan-100 to-teal-300 drop-shadow-[0_2px_10px_rgba(34,211,238,0.2)]">
+          <h1 className="text-4xl md:text-5xl lg:text-5xl font-black tracking-tighter mb-4 selection:bg-purple-500/30">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-purple-100 to-fuchsia-300 drop-shadow-[0_2px_10px_rgba(168, 85, 247,0.2)]">
               Generate Video with AI
             </span>
           </h1>
@@ -599,16 +599,16 @@ export function AIGenerativeVideoPage() {
               hidden: { opacity: 0, y: 30 },
               visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } }
             }}
-            className="bg-[#1a1b2e]/50 backdrop-blur-3xl border border-[#3f4a67]/50 rounded-[2rem] p-6 lg:p-8 shadow-[0_8px_30px_rgba(11,13,31,0.5)] flex flex-col group hover:shadow-[0_8px_30px_rgba(34,211,238,0.15)] transition-all h-full min-h-[300px]"
+            className="bg-[#1a1b2e]/50 backdrop-blur-3xl border border-[#3f4a67]/50 rounded-[2rem] p-6 lg:p-8 shadow-[0_8px_30px_rgba(11,13,31,0.5)] flex flex-col group hover:shadow-[0_8px_30px_rgba(168, 85, 247,0.15)] transition-all h-full min-h-[300px]"
           >
             <div className="flex items-center justify-between mb-4 border-b border-[#3f4a67]/50 pb-4">
-              <label className="text-xs md:text-sm font-bold text-cyan-50/90 uppercase tracking-[0.15em] flex items-center gap-3">
-                <Sparkles className="w-4 h-4 text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]" />
+              <label className="text-xs md:text-sm font-bold text-purple-50/90 uppercase tracking-[0.15em] flex items-center gap-3">
+                <Sparkles className="w-4 h-4 text-purple-400 drop-shadow-[0_0_8px_rgba(168, 85, 247,0.8)]" />
                 Enter prompt manually
               </label>
               <button
                 onClick={handleSurpriseMe}
-                className="text-[10px] uppercase tracking-widest font-bold text-cyan-400 bg-cyan-900/30 hover:bg-cyan-800/50 px-3 py-1.5 rounded-full border border-cyan-500/30 hover:border-cyan-400 transition-all flex items-center gap-1.5 shadow-[0_0_10px_rgba(34,211,238,0.1)] hover:shadow-[0_0_15px_rgba(34,211,238,0.3)] hover:scale-105 active:scale-95"
+                className="text-[10px] uppercase tracking-widest font-bold text-purple-400 bg-purple-900/30 hover:bg-purple-800/50 px-3 py-1.5 rounded-full border border-purple-500/30 hover:border-purple-400 transition-all flex items-center gap-1.5 shadow-[0_0_10px_rgba(168, 85, 247,0.1)] hover:shadow-[0_0_15px_rgba(168, 85, 247,0.3)] hover:scale-105 active:scale-95"
               >
                 Surprise me
               </button>
@@ -617,7 +617,7 @@ export function AIGenerativeVideoPage() {
               value={prompt}
               onChange={(event) => setPrompt(event.target.value)}
               placeholder="Example: A cinematic fly-through of a futuristic city at sunrise with smooth camera motion and volumetric light."
-              className="flex-1 w-full text-base resize-none rounded-2xl border border-[#3f4a67]/60 group-focus-within:border-cyan-400 hover:border-cyan-500/50 group-focus-within:ring-1 group-focus-within:ring-cyan-500/50 group-focus-within:shadow-[0_0_40px_rgba(34,211,238,0.15)] bg-[#0b0d1f]/60 text-white placeholder:text-slate-500 transition-all duration-300 p-5 shadow-inner"
+              className="flex-1 w-full text-base resize-none rounded-2xl border border-[#3f4a67]/60 group-focus-within:border-purple-400 hover:border-purple-500/50 group-focus-within:ring-1 group-focus-within:ring-purple-500/50 group-focus-within:shadow-[0_0_40px_rgba(168, 85, 247,0.15)] bg-[#0B1020]/60 text-white placeholder:text-slate-500 transition-all duration-300 p-5 shadow-inner"
             />
           </motion.div>
 
@@ -627,10 +627,10 @@ export function AIGenerativeVideoPage() {
               hidden: { opacity: 0, y: 30 },
               visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } }
             }}
-            className="bg-[#1a1b2e]/50 backdrop-blur-3xl border border-[#3f4a67]/50 rounded-[2rem] p-6 lg:p-8 shadow-[0_8px_30px_rgba(11,13,31,0.5)] flex flex-col h-full hover:shadow-[0_8px_30px_rgba(34,211,238,0.15)] transition-all min-h-[300px]"
+            className="bg-[#1a1b2e]/50 backdrop-blur-3xl border border-[#3f4a67]/50 rounded-[2rem] p-6 lg:p-8 shadow-[0_8px_30px_rgba(11,13,31,0.5)] flex flex-col h-full hover:shadow-[0_8px_30px_rgba(168, 85, 247,0.15)] transition-all min-h-[300px]"
           >
-            <label className="text-xs md:text-sm font-bold mb-4 text-cyan-50/90 uppercase tracking-[0.15em] flex items-center gap-3 border-b border-[#3f4a67]/50 pb-4">
-              <Video className="w-4 h-4 text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]" />
+            <label className="text-xs md:text-sm font-bold mb-4 text-purple-50/90 uppercase tracking-[0.15em] flex items-center gap-3 border-b border-[#3f4a67]/50 pb-4">
+              <Video className="w-4 h-4 text-purple-400 drop-shadow-[0_0_8px_rgba(168, 85, 247,0.8)]" />
               Aspect Ratio
             </label>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 flex-1 content-start mt-2">
@@ -640,20 +640,20 @@ export function AIGenerativeVideoPage() {
                   onClick={() => setSelectedRatio(opt.label)}
                   className={`flex flex-col items-center justify-center rounded-2xl border p-4 transition-all duration-300 group/frame ${
                     selectedRatio === opt.label
-                      ? "border-cyan-400 bg-cyan-500/10 shadow-[0_0_15px_rgba(34,211,238,0.2)]"
-                      : "border-[#3f4a67]/80 bg-[#0b0d1f]/40 hover:border-cyan-500/60 hover:bg-[#1a1b2e]/80 hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(34,211,238,0.15)]"
+                      ? "border-purple-400 bg-purple-500/10 shadow-[0_0_15px_rgba(168, 85, 247,0.2)]"
+                      : "border-[#3f4a67]/80 bg-[#0B1020]/40 hover:border-purple-500/60 hover:bg-[#1a1b2e]/80 hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(168, 85, 247,0.15)]"
                   }`}
                 >
                   <div className="h-10 flex items-center justify-center mb-2">
                     <div 
                       style={{ width: opt.width, height: opt.height }}
                       className={`border-2 rounded-[2px] transition-all duration-300 ${
-                        selectedRatio === opt.label ? "border-cyan-400" : "border-slate-500/50 group-hover/frame:border-slate-400"
+                        selectedRatio === opt.label ? "border-purple-400" : "border-slate-500/50 group-hover/frame:border-slate-400"
                       }`}
                     />
                   </div>
                   <div className={`text-[12px] font-black tracking-wider transition-all duration-300 ${
-                    selectedRatio === opt.label ? "text-cyan-100 drop-shadow-[0_0_5px_rgba(255,255,255,0.4)]" : "text-slate-500 group-hover/frame:text-slate-300"
+                    selectedRatio === opt.label ? "text-purple-100 drop-shadow-[0_0_5px_rgba(255,255,255,0.4)]" : "text-slate-500 group-hover/frame:text-slate-300"
                   }`}>
                     {opt.label}
                   </div>
@@ -667,14 +667,14 @@ export function AIGenerativeVideoPage() {
               hidden: { opacity: 0, y: 30 },
               visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } }
             }}
-            className="bg-[#1a1b2e]/50 backdrop-blur-3xl border border-[#3f4a67]/50 rounded-[2rem] p-6 lg:p-8 shadow-[0_8px_30px_rgba(11,13,31,0.5)] flex flex-col h-full hover:shadow-[0_8px_30px_rgba(34,211,238,0.15)] transition-all min-h-[300px]"
+            className="bg-[#1a1b2e]/50 backdrop-blur-3xl border border-[#3f4a67]/50 rounded-[2rem] p-6 lg:p-8 shadow-[0_8px_30px_rgba(11,13,31,0.5)] flex flex-col h-full hover:shadow-[0_8px_30px_rgba(168, 85, 247,0.15)] transition-all min-h-[300px]"
           >
-            <label className="text-xs md:text-sm font-bold mb-4 text-cyan-50/90 uppercase tracking-[0.15em] border-b border-[#3f4a67]/50 pb-4">
+            <label className="text-xs md:text-sm font-bold mb-4 text-purple-50/90 uppercase tracking-[0.15em] border-b border-[#3f4a67]/50 pb-4">
               Runtime Duration
             </label>
             <div className="grid grid-cols-2 gap-3 mt-2">
-              <div className={`relative bg-[#0b0d1f]/60 border rounded-2xl transition-all duration-300 ${
-                durationMinutes > 0 ? "border-cyan-400 bg-cyan-900/10 shadow-[0_0_15px_rgba(6,182,212,0.1)]" : "border-[#3f4a67]/80"
+              <div className={`relative bg-[#0B1020]/60 border rounded-2xl transition-all duration-300 ${
+                durationMinutes > 0 ? "border-purple-400 bg-purple-900/10 shadow-[0_0_15px_rgba(6,182,212,0.1)]" : "border-[#3f4a67]/80"
               }`}>
                 <label className="absolute top-2 left-4 text-[7px] uppercase tracking-widest font-black text-slate-500">Minutes</label>
                 <input 
@@ -687,8 +687,8 @@ export function AIGenerativeVideoPage() {
                 />
               </div>
 
-              <div className={`relative bg-[#0b0d1f]/60 border rounded-2xl transition-all duration-300 ${
-                durationSeconds > 0 ? "border-cyan-400 bg-cyan-900/10 shadow-[0_0_15px_rgba(6,182,212,0.1)]" : "border-[#3f4a67]/80"
+              <div className={`relative bg-[#0B1020]/60 border rounded-2xl transition-all duration-300 ${
+                durationSeconds > 0 ? "border-purple-400 bg-purple-900/10 shadow-[0_0_15px_rgba(6,182,212,0.1)]" : "border-[#3f4a67]/80"
               }`}>
                 <label className="absolute top-2 left-4 text-[7px] uppercase tracking-widest font-black text-slate-500">Seconds</label>
                 <input 
@@ -714,13 +714,13 @@ export function AIGenerativeVideoPage() {
               `}} />
               {/* Animated Button Sheen/Glow Background */}
               <div
-                className="absolute -inset-1 rounded-[1.25rem] bg-gradient-to-r from-cyan-600 via-teal-400 to-blue-600 opacity-40 blur-xl group-hover/btn:opacity-70 transition-opacity duration-500"
+                className="absolute -inset-1 rounded-[1.25rem] bg-gradient-to-r from-purple-600 via-fuchsia-400 to-blue-600 opacity-40 blur-xl group-hover/btn:opacity-70 transition-opacity duration-500"
                 style={{ backgroundSize: '200% 200%', animation: 'bg-pan 5s linear infinite' }}
               />
               <Button
                 onClick={handleGenerateVideo}
                 disabled={!prompt.trim() || isGenerating}
-                className="relative w-full h-16 text-lg rounded-2xl bg-gradient-to-r from-cyan-600 via-teal-500 to-cyan-400 hover:opacity-100 hover:scale-[1.03] transition-all duration-300 shadow-[0_0_20px_rgba(34,211,238,0.3)] hover:shadow-[0_0_40px_rgba(34,211,238,0.6)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 text-[#0b0d1f] font-black tracking-widest border border-cyan-300/50 overflow-hidden z-10"
+                className="relative w-full h-16 text-lg rounded-2xl bg-gradient-to-r from-purple-600 via-fuchsia-500 to-purple-400 hover:opacity-100 hover:scale-[1.03] transition-all duration-300 shadow-[0_0_20px_rgba(168, 85, 247,0.3)] hover:shadow-[0_0_40px_rgba(168, 85, 247,0.6)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 text-[#0B1020] font-black tracking-widest border border-purple-300/50 overflow-hidden z-10"
               >
                 {/* Internal animated gloss */}
                 <div

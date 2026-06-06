@@ -77,7 +77,7 @@ export const MusicPickerModal: React.FC<MusicPickerModalProps> = ({
       <DialogContent className="max-w-2xl bg-[#0f1724] border-white/10">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-white">
-            <Music className="w-5 h-5 text-cyan-400" />
+            <Music className="w-5 h-5 text-purple-400" />
             Add Music to Your Video
           </DialogTitle>
         </DialogHeader>
@@ -103,7 +103,7 @@ export const MusicPickerModal: React.FC<MusicPickerModalProps> = ({
               {/* Upload Area */}
               <div
                 onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-white/20 hover:border-cyan-400/50 rounded-lg p-8 text-center cursor-pointer transition-colors"
+                className="border-2 border-dashed border-white/20 hover:border-purple-400/50 rounded-lg p-8 text-center cursor-pointer transition-colors"
               >
                 <input
                   ref={fileInputRef}
@@ -113,7 +113,7 @@ export const MusicPickerModal: React.FC<MusicPickerModalProps> = ({
                   className="hidden"
                 />
 
-                <Upload className="w-8 h-8 mx-auto mb-2 text-cyan-400" />
+                <Upload className="w-8 h-8 mx-auto mb-2 text-purple-400" />
                 <p className="text-sm font-medium text-white">Click to upload or drag and drop</p>
                 <p className="text-xs text-white/60 mt-1">
                   MP3, WAV, or AAC files up to 100MB

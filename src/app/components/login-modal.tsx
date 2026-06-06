@@ -266,12 +266,12 @@ export function LoginModal({ isOpen, onClose, customMessage, customTitle }: Logi
             <motion.div 
               animate={{ x: [0, 100, 0], y: [0, -50, 0], scale: [1, 1.2, 1] }}
               transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
-              className="absolute top-0 right-1/4 w-[800px] h-[800px] bg-purple-600/10 rounded-full blur-[120px]"
+              className="absolute top-0 right-1/4 w-[800px] h-[800px] bg-fuchsia-600/10 rounded-full blur-[120px]"
             />
             <motion.div 
               animate={{ x: [0, -100, 0], y: [0, 50, 0], scale: [1, 1.1, 1] }}
               transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-              className="absolute bottom-0 left-1/4 w-[600px] h-[600px] bg-indigo-600/10 rounded-full blur-[100px]"
+              className="absolute bottom-0 left-1/4 w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-[100px]"
             />
           </div>
 
@@ -318,9 +318,9 @@ export function LoginModal({ isOpen, onClose, customMessage, customTitle }: Logi
                     <span className="text-sm font-semibold text-white">Rendering...</span>
                   </div>
                   <div className="w-full bg-white/10 rounded-full h-1.5 mt-2 overflow-hidden">
-                    <div className="bg-purple-400 h-full w-[75%] rounded-full shadow-[0_0_10px_#c084fc]"></div>
+                    <div className="bg-fuchsia-400 h-full w-[75%] rounded-full shadow-[0_0_10px_#c084fc]"></div>
                   </div>
-                  <div className="text-right text-[10px] text-purple-400 mt-1 font-mono">75%</div>
+                  <div className="text-right text-[10px] text-fuchsia-400 mt-1 font-mono">75%</div>
                 </div>
 
                 {/* Floating Card 2 */}
@@ -361,13 +361,13 @@ export function LoginModal({ isOpen, onClose, customMessage, customTitle }: Logi
                     
                     <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded text-[9px] font-bold text-white uppercase tracking-wider border border-white/10">PREVIEW</div>
                     <div className="absolute top-2 right-2 flex gap-1">
-                       <span className="bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 px-1.5 py-0.5 rounded text-[9px] font-bold">4K</span>
+                       <span className="bg-purple-500/20 text-purple-300 border border-purple-500/30 px-1.5 py-0.5 rounded text-[9px] font-bold">4K</span>
                        <span className="bg-white/10 text-white/70 border border-white/10 px-1.5 py-0.5 rounded text-[9px] font-bold">60fps</span>
                     </div>
                     
                     <div className="absolute bottom-2 left-2 right-2">
                       <div className="w-full h-1 bg-white/20 rounded-full overflow-hidden">
-                         <div className="h-full bg-purple-400 w-1/3 rounded-full" />
+                         <div className="h-full bg-fuchsia-400 w-1/3 rounded-full" />
                       </div>
                     </div>
                   </div>
@@ -384,13 +384,13 @@ export function LoginModal({ isOpen, onClose, customMessage, customTitle }: Logi
 
             {/* Floating Status Pills in Background (Hidden on Mobile) */}
             <div className="absolute top-10 left-10 hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md text-[10px] font-medium text-white/60 login-float" style={{animationDelay: '0.5s'}}>
-              <span className="text-purple-400">⚡</span> AI Engine Online
+              <span className="text-fuchsia-400">⚡</span> AI Engine Online
             </div>
             <div className="absolute bottom-10 right-10 hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md text-[10px] font-medium text-white/60 login-float" style={{animationDelay: '1.2s'}}>
               <span className="text-emerald-400">☁</span> Secure Cloud Access
             </div>
             <div className="absolute bottom-20 left-10 hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md text-[10px] font-medium text-white/60 login-float" style={{animationDelay: '2.5s'}}>
-              <span className="text-purple-400">🎬</span> Rendering Enabled
+              <span className="text-fuchsia-400">🎬</span> Rendering Enabled
             </div>
 
             {/* Glass Card Container */}
@@ -398,7 +398,7 @@ export function LoginModal({ isOpen, onClose, customMessage, customTitle }: Logi
               
               {/* Logo & Welcome */}
               <div className="text-center mb-8">
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 shadow-[0_0_20px_rgba(168,85,247,0.3)] mb-5">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-purple-400 to-blue-600 shadow-[0_0_20px_rgba(168,85,247,0.3)] mb-5">
                   <span className="text-xl font-black text-white">V</span>
                 </div>
                 <h3 className="text-2xl font-bold text-white mb-2 tracking-tight">
@@ -498,15 +498,15 @@ export function LoginModal({ isOpen, onClose, customMessage, customTitle }: Logi
                 {mode === "signin" && (
                   <div className="flex justify-between items-center py-1 mt-1">
                     <label className="flex items-center gap-2 cursor-pointer group">
-                      <div className="w-4 h-4 rounded border border-white/20 bg-white/5 flex items-center justify-center group-hover:border-purple-400 transition-colors">
-                        <div className="w-2 h-2 rounded-sm bg-purple-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <div className="w-4 h-4 rounded border border-white/20 bg-white/5 flex items-center justify-center group-hover:border-fuchsia-400 transition-colors">
+                        <div className="w-2 h-2 rounded-sm bg-fuchsia-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
                       <span className="text-[11px] font-medium text-slate-400 group-hover:text-slate-300 transition-colors">Remember me</span>
                     </label>
                     <button
                       type="button"
                       onClick={handleForgotPassword}
-                      className="text-[11px] font-medium text-slate-400 hover:text-purple-400 transition-colors"
+                      className="text-[11px] font-medium text-slate-400 hover:text-fuchsia-400 transition-colors"
                     >
                       Forgot password?
                     </button>
@@ -534,8 +534,8 @@ export function LoginModal({ isOpen, onClose, customMessage, customTitle }: Logi
                   disabled={isLoading || loginSuccess}
                   className="relative w-full h-[52px] mt-6 rounded-xl font-bold text-white overflow-hidden group transition-all"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-indigo-500 transition-transform group-hover:scale-105" />
-                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-gradient-to-r from-indigo-500 to-purple-600 transition-opacity duration-300" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-fuchsia-500 to-purple-500 transition-transform group-hover:scale-105" />
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-gradient-to-r from-purple-500 to-fuchsia-600 transition-opacity duration-300" />
                   <div className="absolute inset-0 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)] rounded-xl" />
                   
                   {/* Shimmer Effect */}
@@ -614,10 +614,10 @@ export function LoginModal({ isOpen, onClose, customMessage, customTitle }: Logi
 
                 {/* What You Get Checklist */}
                 <div className="mt-8 pt-6 border-t border-white/10 flex flex-wrap gap-x-6 gap-y-3 justify-center text-[11px] text-slate-400 font-medium">
-                  <span className="flex items-center gap-1.5"><span className="text-purple-400">✔</span> AI Video Generation</span>
-                  <span className="flex items-center gap-1.5"><span className="text-purple-400">✔</span> 4K Exports</span>
-                  <span className="flex items-center gap-1.5"><span className="text-purple-400">✔</span> Prompt-Based Editing</span>
-                  <span className="flex items-center gap-1.5"><span className="text-purple-400">✔</span> Cloud Rendering</span>
+                  <span className="flex items-center gap-1.5"><span className="text-fuchsia-400">✔</span> AI Video Generation</span>
+                  <span className="flex items-center gap-1.5"><span className="text-fuchsia-400">✔</span> 4K Exports</span>
+                  <span className="flex items-center gap-1.5"><span className="text-fuchsia-400">✔</span> Prompt-Based Editing</span>
+                  <span className="flex items-center gap-1.5"><span className="text-fuchsia-400">✔</span> Cloud Rendering</span>
                 </div>
               </form>
             </div>

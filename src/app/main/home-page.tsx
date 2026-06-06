@@ -152,19 +152,19 @@ export function HomePage() {
 	return (
 		<>
 			<motion.div
-				className="min-h-screen relative overflow-hidden font-sans selection:bg-cyan-500/30 selection:text-white pb-20 flex flex-col"
+				className="min-h-screen relative overflow-hidden font-sans selection:bg-purple-500/30 selection:text-white pb-20 flex flex-col"
 				animate={{
 					background: [
-						'linear-gradient(135deg, #0b0d1f 0%, #1a1b2e 30%, #2d3142 60%, #3f4a67 85%, #1a1b2e 100%)',
-						'linear-gradient(135deg, #1a1b2e 0%, #2d3142 30%, #3f4a67 60%, #0b0d1f 85%, #2d3142 100%)',
-						'linear-gradient(135deg, #0b0d1f 0%, #1a1b2e 30%, #2d3142 60%, #3f4a67 85%, #1a1b2e 100%)',
+						'linear-gradient(135deg, #0B1020 0%, #1a1b2e 30%, #2d3142 60%, #3f4a67 85%, #1a1b2e 100%)',
+						'linear-gradient(135deg, #1a1b2e 0%, #2d3142 30%, #3f4a67 60%, #0B1020 85%, #2d3142 100%)',
+						'linear-gradient(135deg, #0B1020 0%, #1a1b2e 30%, #2d3142 60%, #3f4a67 85%, #1a1b2e 100%)',
 					]
 				}}
 				transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
 				style={{ backgroundAttachment: 'fixed' }}
 			>
 				{/* Focal Radial Glow (Behind Title) */}
-				<div className="fixed top-[20%] left-1/2 -translate-x-1/2 w-[60%] h-[40%] bg-cyan-500/10 blur-[120px] rounded-full pointer-events-none z-0" />
+				<div className="fixed top-[20%] left-1/2 -translate-x-1/2 w-[60%] h-[40%] bg-purple-500/10 blur-[120px] rounded-full pointer-events-none z-0" />
 
 				{/* Floating Particles */}
 				<div className="fixed inset-0 pointer-events-none z-0">
@@ -187,7 +187,7 @@ export function HomePage() {
 								ease: "linear",
 								delay: Math.random() * 20
 							}}
-							className="absolute w-1 h-1 bg-cyan-400/40 rounded-full blur-[1px]"
+							className="absolute w-1 h-1 bg-purple-400/40 rounded-full blur-[1px]"
 						/>
 					))}
 				</div>
@@ -209,12 +209,12 @@ export function HomePage() {
 						>
 							<div className="relative">
 								{/* Theme Background Glow */}
-								<div className="absolute inset-0 bg-cyan-500/20 rounded-full blur-xl scale-150 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+								<div className="absolute inset-0 bg-purple-500/20 rounded-full blur-xl scale-150 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
 								<BrandLogo size={56} className="relative z-10" />
 							</div>
-							<span className="text-2xl font-black tracking-tight text-white drop-shadow-[0_0_15px_rgba(34,211,238,0.3)] group-hover:text-cyan-400/80 transition-colors">
-								VEYTRIX<span className="text-cyan-400">.AI</span>
+							<span className="text-2xl font-black tracking-tight text-white drop-shadow-[0_0_15px_rgba(168, 85, 247,0.3)] group-hover:text-purple-400/80 transition-colors">
+								VEYTRIX<span className="text-purple-400">.AI</span>
 							</span>
 						</motion.div>
 
@@ -234,8 +234,8 @@ export function HomePage() {
 											onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
 											className="flex items-center gap-3 bg-white/5 hover:bg-white/10 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/10 transition-all text-white group shadow-xl"
 										>
-											<div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center shadow-lg shadow-cyan-500/20">
-												<User className="w-4 h-4 text-[#0b0d1f]" />
+											<div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-fuchsia-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
+												<User className="w-4 h-4 text-[#0B1020]" />
 											</div>
 											<span className="text-sm font-bold tracking-tight">{userName}</span>
 											<ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-300 ${isUserMenuOpen ? 'rotate-180' : ''}`} />
@@ -252,7 +252,7 @@ export function HomePage() {
 										initial={{ opacity: 0, y: 10, scale: 0.95 }}
 										animate={{ opacity: 1, y: 0, scale: 1 }}
 										exit={{ opacity: 0, y: 10, scale: 0.95 }}
-										className="absolute right-4 top-[calc(100%+0.5rem)] md:right-0 md:top-full md:mt-2 w-48 bg-[#0b0d1f]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-[100]"
+										className="absolute right-4 top-[calc(100%+0.5rem)] md:right-0 md:top-full md:mt-2 w-48 bg-[#0B1020]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-[100]"
 									>
 										<div className="p-2">
 											{!isLoggedIn && (
@@ -287,7 +287,7 @@ export function HomePage() {
 					>
 						<button
 							onClick={() => navigate("/features")}
-							className="inline-flex items-center gap-2 text-gray-500 hover:text-cyan-400 transition-colors group"
+							className="inline-flex items-center gap-2 text-gray-500 hover:text-purple-400 transition-colors group"
 						>
 							<ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
 							<span className="text-sm">Back to selection</span>
@@ -301,11 +301,11 @@ export function HomePage() {
 						className="text-center mb-12"
 					>
 						<div className="inline-flex items-center gap-2 bg-white/5 backdrop-blur-sm px-4 py-2 rounded-full border border-white/10 mb-6">
-							<Sparkles className="w-4 h-4 text-cyan-400" />
+							<Sparkles className="w-4 h-4 text-purple-400" />
 							<span className="text-sm text-gray-400">Powered by AI Video Engine v2.0</span>
 						</div>
 
-						<h1 className="text-[clamp(2.5rem,8vw,4.5rem)] leading-tight font-black mb-6 bg-gradient-to-r from-white via-cyan-100 to-teal-300 bg-clip-text text-transparent drop-shadow-[0_2px_10px_rgba(34,211,238,0.2)]">
+						<h1 className="text-[clamp(2.5rem,8vw,4.5rem)] leading-tight font-black mb-6 bg-gradient-to-r from-white via-purple-100 to-fuchsia-300 bg-clip-text text-transparent drop-shadow-[0_2px_10px_rgba(168, 85, 247,0.2)]">
 							AI Video Editor
 						</h1>
 
@@ -332,7 +332,7 @@ export function HomePage() {
 								value={prompt}
 								onChange={(e) => setPrompt(e.target.value)}
 								placeholder="e.g. A fast-paced cinematic trailer with glitch transitions and color grading focused on cold blue tones..."
-								className="min-h-[150px] text-lg resize-none rounded-2xl border-white/10 focus:border-cyan-500/50 focus:ring-cyan-500/30 bg-white/5 text-white placeholder:text-gray-600"
+								className="min-h-[150px] text-lg resize-none rounded-2xl border-white/10 focus:border-purple-500/50 focus:ring-purple-500/30 bg-white/5 text-white placeholder:text-gray-600"
 							/>
 						</div>
 
@@ -346,7 +346,7 @@ export function HomePage() {
 								onDragLeave={() => handleDragLeave(false)}
 								onDrop={(e) => handleDrop(e, false)}
 								className={`relative border-2 border-dashed rounded-2xl p-10 md:p-16 text-center transition-all duration-300 ${isDragging
-									? "border-cyan-500 bg-cyan-500/10 shadow-[0_0_30px_rgba(34,211,238,0.2)]"
+									? "border-purple-500 bg-purple-500/10 shadow-[0_0_30px_rgba(168, 85, 247,0.2)]"
 									: "border-white/10 hover:border-white/20 bg-white/5"
 									}`}
 							>
@@ -358,12 +358,12 @@ export function HomePage() {
 									className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
 								/>
 								<div className="flex flex-col items-center gap-6">
-									<div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-cyan-600 to-teal-500 flex items-center justify-center shadow-2xl shadow-cyan-500/20">
-										<Upload className="w-10 h-10 text-[#0b0d1f]" />
+									<div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-purple-600 to-fuchsia-500 flex items-center justify-center shadow-2xl shadow-purple-500/20">
+										<Upload className="w-10 h-10 text-[#0B1020]" />
 									</div>
 									<div>
 										<p className="text-lg mb-1">
-											<span className="font-bold text-cyan-400">Click to upload</span> or drag and drop
+											<span className="font-bold text-purple-400">Click to upload</span> or drag and drop
 										</p>
 										<p className="text-sm text-gray-500">Supports MP4, MOV, JPG, PNG (Max 500MB)</p>
 									</div>
@@ -388,9 +388,9 @@ export function HomePage() {
 											>
 												<div className="flex items-center gap-3">
 													{file.type.startsWith("video") ? (
-														<Video className="w-5 h-5 text-cyan-400" />
+														<Video className="w-5 h-5 text-purple-400" />
 													) : (
-														<ImageIcon className="w-5 h-5 text-teal-400" />
+														<ImageIcon className="w-5 h-5 text-fuchsia-400" />
 													)}
 													<span className="text-sm font-medium truncate max-w-[150px]">{file.name}</span>
 												</div>
@@ -418,11 +418,11 @@ export function HomePage() {
 										key={duration.value}
 										onClick={() => setSelectedDuration(duration.value)}
 										className={`flex items-center gap-3 px-8 py-4 rounded-2xl border transition-all duration-300 ${selectedDuration === duration.value
-											? "border-cyan-500 bg-cyan-500/10 text-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.2)]"
+											? "border-purple-500 bg-purple-500/10 text-purple-400 shadow-[0_0_20px_rgba(168, 85, 247,0.2)]"
 											: "border-white/10 hover:border-white/20 bg-white/5 text-gray-400"
 											}`}
 									>
-										<Clock className={`w-5 h-5 ${selectedDuration === duration.value ? "text-cyan-400" : "text-gray-500"}`} />
+										<Clock className={`w-5 h-5 ${selectedDuration === duration.value ? "text-purple-400" : "text-gray-500"}`} />
 										<span className="font-bold">{duration.label}</span>
 									</button>
 								))}
@@ -433,11 +433,11 @@ export function HomePage() {
 						<Button
 							onClick={handleGenerate}
 							disabled={!prompt.trim() || uploadedFiles.length === 0 || uploading}
-							className="w-full h-16 text-xl font-bold bg-gradient-to-r from-cyan-600 via-teal-500 to-cyan-400 text-[#0b0d1f] hover:opacity-95 transition-all shadow-[0_10px_40px_rgba(34,211,238,0.3)] disabled:opacity-30 rounded-2xl relative overflow-hidden group"
+							className="w-full h-16 text-xl font-bold bg-gradient-to-r from-purple-600 via-fuchsia-500 to-purple-400 text-[#0B1020] hover:opacity-95 transition-all shadow-[0_10px_40px_rgba(168, 85, 247,0.3)] disabled:opacity-30 rounded-2xl relative overflow-hidden group"
 						>
 							{uploading ? (
 								<div className="flex items-center gap-3">
-									<div className="w-6 h-6 border-4 border-[#0b0d1f] border-t-transparent rounded-full animate-spin" />
+									<div className="w-6 h-6 border-4 border-[#0B1020] border-t-transparent rounded-full animate-spin" />
 									Processing Media...
 								</div>
 							) : (

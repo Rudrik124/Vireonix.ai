@@ -10,21 +10,21 @@ const videoStyles = [
     title: "Cinematic",
     description: "Epic and dramatic with smooth transitions",
     icon: Film,
-    gradient: "from-blue-500 to-cyan-400",
+    gradient: "from-blue-500 to-purple-400",
   },
   {
     id: "slideshow",
     title: "Slideshow",
     description: "Classic presentation style",
     icon: Sparkles,
-    gradient: "from-cyan-400 to-teal-400",
+    gradient: "from-purple-400 to-fuchsia-400",
   },
   {
     id: "travel",
     title: "Travel Vlog",
     description: "Adventure and exploration vibes",
     icon: Plane,
-    gradient: "from-teal-400 to-emerald-400",
+    gradient: "from-fuchsia-400 to-emerald-400",
   },
   {
     id: "instagram",
@@ -70,9 +70,9 @@ export function ImagesToVideoStyleScreen() {
 
   return (
     <div 
-      className="min-h-screen relative overflow-hidden font-sans selection:bg-cyan-500/30 selection:text-white pb-20"
+      className="min-h-screen relative overflow-hidden font-sans selection:bg-purple-500/30 selection:text-white pb-20"
       style={{
-        background: 'linear-gradient(135deg, #0b0d1f 0%, #1a1b2e 30%, #2d3142 60%, #3f4a67 85%, #1a1b2e 100%)',
+        background: 'linear-gradient(135deg, #0B1020 0%, #1a1b2e 30%, #2d3142 60%, #3f4a67 85%, #1a1b2e 100%)',
         backgroundAttachment: 'fixed'
       }}
     >
@@ -88,7 +88,7 @@ export function ImagesToVideoStyleScreen() {
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           onClick={() => navigate("/images-to-video/arrange")}
-          className="inline-flex items-center gap-2 text-[#94a3b8] hover:text-cyan-400 transition-colors mb-8"
+          className="inline-flex items-center gap-2 text-[#94a3b8] hover:text-purple-400 transition-colors mb-8"
         >
           <ArrowLeft className="w-4 h-4" />
           <span className="text-sm font-medium">Back to arrangement</span>
@@ -100,7 +100,7 @@ export function ImagesToVideoStyleScreen() {
            animate={{ opacity: 1, y: 0 }}
            className="text-center mb-12"
         >
-          <h1 className="text-4xl md:text-5xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-white via-cyan-100 to-teal-300 drop-shadow-[0_2px_10px_rgba(34,211,238,0.2)]">
+          <h1 className="text-4xl md:text-5xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-white via-purple-100 to-fuchsia-300 drop-shadow-[0_2px_10px_rgba(168, 85, 247,0.2)]">
             Choose Your Style
           </h1>
           <p className="text-[#94a3b8] font-medium text-lg">Select video style, transitions, and music</p>
@@ -123,8 +123,8 @@ export function ImagesToVideoStyleScreen() {
                   onClick={() => setSelectedStyle(style.id)}
                   className={`relative p-6 rounded-xl border transition-all text-left ${
                     selectedStyle === style.id
-                      ? "border-cyan-500 bg-cyan-500/10 shadow-[0_0_20px_rgba(34,211,238,0.2)]"
-                      : "border-[#3f4a67]/50 hover:border-cyan-500/30 bg-[#1a1b2e]/60 backdrop-blur-sm"
+                      ? "border-purple-500 bg-purple-500/10 shadow-[0_0_20px_rgba(168, 85, 247,0.2)]"
+                      : "border-[#3f4a67]/50 hover:border-purple-500/30 bg-[#1a1b2e]/60 backdrop-blur-sm"
                   }`}
                 >
                   <div className="flex items-start gap-4">
@@ -136,8 +136,8 @@ export function ImagesToVideoStyleScreen() {
                       <p className="text-sm text-[#cbd5e1]">{style.description}</p>
                     </div>
                     {selectedStyle === style.id && (
-                      <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-cyan-400 to-blue-500 flex items-center justify-center flex-shrink-0 shadow-[0_0_10px_rgba(34,211,238,0.5)]">
-                        <svg className="w-4 h-4 text-[#0b0d1f]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-purple-400 to-blue-500 flex items-center justify-center flex-shrink-0 shadow-[0_0_10px_rgba(168, 85, 247,0.5)]">
+                        <svg className="w-4 h-4 text-[#0B1020]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                         </svg>
                       </div>
@@ -164,8 +164,8 @@ export function ImagesToVideoStyleScreen() {
                 onClick={() => setSelectedTransition(transition.id)}
                 className={`p-4 rounded-xl border transition-all ${
                   selectedTransition === transition.id
-                    ? "border-cyan-500 bg-cyan-500/10 text-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.2)]"
-                    : "border-[#3f4a67]/50 bg-[#1a1b2e]/40 hover:border-cyan-500/30 text-[#cbd5e1]"
+                    ? "border-purple-500 bg-purple-500/10 text-purple-400 shadow-[0_0_15px_rgba(168, 85, 247,0.2)]"
+                    : "border-[#3f4a67]/50 bg-[#1a1b2e]/40 hover:border-purple-500/30 text-[#cbd5e1]"
                 }`}
               >
                 <span className="font-semibold">{transition.label}</span>
@@ -182,7 +182,7 @@ export function ImagesToVideoStyleScreen() {
            className="bg-[#1a1b2e]/60 backdrop-blur-xl rounded-2xl shadow-[0_8px_30px_rgba(11,13,31,0.5)] border border-[#3f4a67]/50 p-8 mb-8"
         >
           <div className="flex items-center gap-2 mb-6">
-            <Music className="w-5 h-5 text-cyan-400" />
+            <Music className="w-5 h-5 text-purple-400" />
             <h2 className="text-xl font-bold text-white">Background Music</h2>
           </div>
 
@@ -193,8 +193,8 @@ export function ImagesToVideoStyleScreen() {
                 onClick={() => setSelectedMusic(music.id)}
                 className={`p-4 rounded-xl border transition-all text-left ${
                   selectedMusic === music.id
-                    ? "border-cyan-500 bg-cyan-500/10 text-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.2)]"
-                    : "border-[#3f4a67]/50 bg-[#2d3142]/40 hover:border-cyan-500/30 text-[#cbd5e1]"
+                    ? "border-purple-500 bg-purple-500/10 text-purple-400 shadow-[0_0_15px_rgba(168, 85, 247,0.2)]"
+                    : "border-[#3f4a67]/50 bg-[#2d3142]/40 hover:border-purple-500/30 text-[#cbd5e1]"
                 }`}
               >
                 <span className="font-semibold">{music.label}</span>
@@ -203,7 +203,7 @@ export function ImagesToVideoStyleScreen() {
           </div>
 
           {/* Custom Audio Upload */}
-          <div className="relative border-2 border-dashed border-[#3f4a67] rounded-xl p-6 hover:border-cyan-400/50 transition-all bg-[#0b0d1f]/40">
+          <div className="relative border-2 border-dashed border-[#3f4a67] rounded-xl p-6 hover:border-purple-400/50 transition-all bg-[#0B1020]/40">
             <input
               type="file"
               accept="audio/*"
@@ -211,9 +211,9 @@ export function ImagesToVideoStyleScreen() {
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
             />
             <div className="flex items-center justify-center gap-3">
-              <Upload className="w-5 h-5 text-cyan-400" />
+              <Upload className="w-5 h-5 text-purple-400" />
               <span className="text-sm font-medium text-[#94a3b8]">
-                {customAudio ? <span className="text-cyan-400">✓ {customAudio.name}</span> : "Upload custom audio"}
+                {customAudio ? <span className="text-purple-400">✓ {customAudio.name}</span> : "Upload custom audio"}
               </span>
             </div>
           </div>
@@ -227,7 +227,7 @@ export function ImagesToVideoStyleScreen() {
         >
           <Button
             onClick={handleGenerate}
-             className="w-full h-14 text-lg font-bold bg-gradient-to-r from-cyan-600 via-teal-500 to-cyan-400 hover:opacity-90 text-[#0b0d1f] shadow-[0_0_20px_rgba(34,211,238,0.3)] hover:shadow-[0_0_30px_rgba(34,211,238,0.5)] transition-all rounded-xl border border-cyan-300/40"
+             className="w-full h-14 text-lg font-bold bg-gradient-to-r from-purple-600 via-fuchsia-500 to-purple-400 hover:opacity-90 text-[#0B1020] shadow-[0_0_20px_rgba(168, 85, 247,0.3)] hover:shadow-[0_0_30px_rgba(168, 85, 247,0.5)] transition-all rounded-xl border border-purple-300/40"
           >
             <Sparkles className="w-5 h-5 mr-2" />
             Create Video

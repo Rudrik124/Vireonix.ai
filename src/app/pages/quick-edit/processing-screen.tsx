@@ -324,7 +324,7 @@ export function QuickEditProcessingScreen() {
 
   if (error) {
     return (
-      <div className="h-screen w-full flex items-center justify-center bg-[#0b0d1f] text-slate-200 p-8">
+      <div className="h-screen w-full flex items-center justify-center bg-[#0B1020] text-slate-200 p-8">
         <motion.div 
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -356,12 +356,12 @@ export function QuickEditProcessingScreen() {
     <div 
       className="h-screen w-full flex flex-col overflow-hidden font-sans text-slate-200"
       style={{
-        background: 'linear-gradient(135deg, #0b0d1f 0%, #1a1b2e 30%, #2d3142 60%, #3f4a67 85%, #1a1b2e 100%)',
+        background: 'linear-gradient(135deg, #0B1020 0%, #1a1b2e 30%, #2d3142 60%, #3f4a67 85%, #1a1b2e 100%)',
       }}
     >
       {/* Background Ambience */}
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-cyan-500/5 blur-[120px] rounded-full animate-pulse" />
+        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-purple-500/5 blur-[120px] rounded-full animate-pulse" />
         <div className="absolute inset-0" style={{ boxShadow: 'inset 0 0 500px rgba(11,13,31,0.95)' }} />
       </div>
 
@@ -376,10 +376,10 @@ export function QuickEditProcessingScreen() {
           </button>
           <div className="h-8 w-[1px] bg-white/10 mx-2" />
           <div className="flex flex-col">
-            <h1 className="text-sm font-bold tracking-tight text-white uppercase tracking-[0.1em]">Quick Edit <span className="text-cyan-400">Studio</span></h1>
+            <h1 className="text-sm font-bold tracking-tight text-white uppercase tracking-[0.1em]">Quick Edit <span className="text-purple-400">Studio</span></h1>
             <div className="flex items-center gap-2">
-               <div className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-ping" />
-               <span className="text-[10px] text-cyan-400 font-bold uppercase tracking-widest">Processing Node #84</span>
+               <div className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-ping" />
+               <span className="text-[10px] text-purple-400 font-bold uppercase tracking-widest">Processing Node #84</span>
             </div>
           </div>
         </div>
@@ -390,18 +390,18 @@ export function QuickEditProcessingScreen() {
         
         <div className="max-w-4xl w-full flex flex-col gap-10">
           
-          <div className="relative group p-[2px] rounded-2xl bg-gradient-to-r from-cyan-500/20 via-blue-500/20 to-purple-500/20">
-            <div className="relative bg-[#0b0d1f]/60 backdrop-blur-3xl border border-white/10 rounded-2xl overflow-hidden p-10 flex flex-col items-center text-center gap-8">
+          <div className="relative group p-[2px] rounded-2xl bg-gradient-to-r from-purple-500/20 via-blue-500/20 to-fuchsia-500/20">
+            <div className="relative bg-[#0B1020]/60 backdrop-blur-3xl border border-white/10 rounded-2xl overflow-hidden p-10 flex flex-col items-center text-center gap-8">
                 
                 <div className="relative h-32 w-32">
                    <motion.div 
                      animate={{ rotate: 360 }}
                      transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
-                     className="absolute inset-0 rounded-full border border-dashed border-cyan-500/30"
+                     className="absolute inset-0 rounded-full border border-dashed border-purple-500/30"
                    />
                    <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center shadow-[0_0_30px_rgba(34,211,238,0.3)]">
-                           <Zap className="w-8 h-8 text-[#0b0d1f]" fill="currentColor" />
+                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-400 to-blue-600 flex items-center justify-center shadow-[0_0_30px_rgba(168, 85, 247,0.3)]">
+                           <Zap className="w-8 h-8 text-[#0B1020]" fill="currentColor" />
                         </div>
                    </div>
                 </div>
@@ -420,11 +420,11 @@ export function QuickEditProcessingScreen() {
                 <div className="w-full max-w-md space-y-2">
                    <div className="flex justify-between text-[10px] font-black uppercase text-slate-500">
                       <span>{progress === 100 ? "Pipeline Finalized" : "AI Progress"}</span>
-                      <span className="text-cyan-400">{progress}%</span>
+                      <span className="text-purple-400">{progress}%</span>
                    </div>
                    <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
                       <motion.div 
-                        className="h-full bg-cyan-500 shadow-[0_0_15px_rgba(34,211,238,0.5)]"
+                        className="h-full bg-purple-500 shadow-[0_0_15px_rgba(168, 85, 247,0.5)]"
                         initial={{ width: 0 }}
                         animate={{ width: `${progress}%` }}
                       />
@@ -445,14 +445,14 @@ export function QuickEditProcessingScreen() {
                       x: idx === currentStep ? 5 : 0
                     }}
                     className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
-                      idx === currentStep ? 'bg-cyan-500/5 border-cyan-500/20 shadow-[0_0_15px_rgba(34,211,238,0.1)]' : 'border-white/5 bg-transparent'
+                      idx === currentStep ? 'bg-purple-500/5 border-purple-500/20 shadow-[0_0_15px_rgba(168, 85, 247,0.1)]' : 'border-white/5 bg-transparent'
                     }`}
                   >
                     <div className="w-4 h-4 rounded-full flex items-center justify-center flex-none">
                       {idx < currentStep || progress === 100 ? (
                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                       ) : idx === currentStep ? (
-                        <Loader2 className="w-3.5 h-3.5 text-cyan-400 animate-spin" />
+                        <Loader2 className="w-3.5 h-3.5 text-purple-400 animate-spin" />
                       ) : (
                         <div className="w-1.5 h-1.5 rounded-full bg-slate-700" />
                       )}
@@ -465,7 +465,7 @@ export function QuickEditProcessingScreen() {
              <div className="bg-black/40 border border-white/10 rounded-2xl p-6 flex flex-col justify-between">
                 <div className="space-y-4">
                    <div className="flex items-center gap-2">
-                      <Activity className="w-3.5 h-3.5 text-cyan-400" />
+                      <Activity className="w-3.5 h-3.5 text-purple-400" />
                       <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Node Analytics</span>
                    </div>
                    <div className="space-y-4">
@@ -487,7 +487,7 @@ export function QuickEditProcessingScreen() {
                    </div>
                 </div>
                 <div className="pt-4 border-t border-white/5 flex items-center justify-between">
-                   <span className="text-[8px] font-mono text-cyan-500/40 uppercase">ENV_MODE: Studio_Accel</span>
+                   <span className="text-[8px] font-mono text-purple-500/40 uppercase">ENV_MODE: Studio_Accel</span>
                    <div className="flex items-center gap-2">
                       <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                       <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">System Stable</span>
@@ -502,7 +502,7 @@ export function QuickEditProcessingScreen() {
 
       <footer className="h-12 border-t border-white/10 bg-black/40 backdrop-blur-md flex items-center justify-center px-8 z-20">
          <div className="flex items-center gap-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-            <Sparkles className="w-3 h-3 text-cyan-400" />
+            <Sparkles className="w-3 h-3 text-purple-400" />
             <span>{progress === 100 ? "Ready for delivery" : "AI is working its magic..."}</span>
          </div>
       </footer>

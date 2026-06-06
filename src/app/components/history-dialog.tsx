@@ -37,8 +37,8 @@ interface HistoryDialogProps {
 
 const toolConfig = {
   'quick-edit': { label: 'Quick AI Studio', icon: Zap, color: 'text-amber-400', bg: 'bg-amber-400/10' },
-  'reference-video': { label: 'Reference Video Studio', icon: Video, color: 'text-cyan-400', bg: 'bg-cyan-400/10' },
-  'forge': { label: 'Video Forge Studio', icon: Sparkles, color: 'text-purple-400', bg: 'bg-purple-400/10' },
+  'reference-video': { label: 'Reference Video Studio', icon: Video, color: 'text-purple-400', bg: 'bg-purple-400/10' },
+  'forge': { label: 'Video Forge Studio', icon: Sparkles, color: 'text-fuchsia-400', bg: 'bg-fuchsia-400/10' },
   'avatar': { label: 'Avatar Pro Studio', icon: ImageIcon, color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
 };
 
@@ -78,13 +78,13 @@ export function HistoryDialog({ open, onOpenChange, onSelect }: HistoryDialogPro
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-transparent border-none text-white sm:max-w-5xl rounded-[2.5rem] shadow-none p-0 overflow-hidden outline-none">
-        <div className="flex bg-[#0b0d1f]/95 backdrop-blur-2xl">
+        <div className="flex bg-[#0B1020]/95 backdrop-blur-2xl">
           {/* Sidebar */}
           <div className="w-[240px] flex-none border-r border-white/5 flex flex-col bg-white/[0.02]">
             <div className="p-8 border-b border-white/5">
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-3 text-xl font-black uppercase tracking-tighter">
-                  <Clock className="w-6 h-6 text-cyan-400" />
+                  <Clock className="w-6 h-6 text-purple-400" />
                   History
                 </DialogTitle>
               </DialogHeader>
@@ -95,7 +95,7 @@ export function HistoryDialog({ open, onOpenChange, onSelect }: HistoryDialogPro
                 onClick={() => setFilter('all')}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border ${
                   filter === 'all' 
-                    ? 'bg-cyan-500/10 border-cyan-500/50 text-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.15)]' 
+                    ? 'bg-purple-500/10 border-purple-500/50 text-purple-400 shadow-[0_0_20px_rgba(168, 85, 247,0.15)]' 
                     : 'bg-transparent border-transparent text-slate-500 hover:bg-white/5 hover:text-slate-300'
                 }`}
               >
@@ -116,11 +116,11 @@ export function HistoryDialog({ open, onOpenChange, onSelect }: HistoryDialogPro
                     onClick={() => setFilter(f)}
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border ${
                       filter === f 
-                        ? 'bg-cyan-500/10 border-cyan-500/50 text-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.15)]' 
+                        ? 'bg-purple-500/10 border-purple-500/50 text-purple-400 shadow-[0_0_20px_rgba(168, 85, 247,0.15)]' 
                         : 'bg-transparent border-transparent text-slate-500 hover:bg-white/5 hover:text-slate-300'
                     }`}
                   >
-                    <Icon className={`w-4 h-4 ${filter === f ? 'text-cyan-400' : 'text-slate-600'}`} />
+                    <Icon className={`w-4 h-4 ${filter === f ? 'text-purple-400' : 'text-slate-600'}`} />
                     <span className="truncate">{config.label.replace(' Studio', '')}</span>
                   </button>
                 );
@@ -128,7 +128,7 @@ export function HistoryDialog({ open, onOpenChange, onSelect }: HistoryDialogPro
             </div>
 
             <div className="p-6 bg-white/[0.02] border-t border-white/5">
-               <div className="flex items-center gap-3 text-cyan-500/40">
+               <div className="flex items-center gap-3 text-purple-500/40">
                  <ExternalLink className="w-3 h-3" />
                  <span className="text-[8px] font-black uppercase tracking-widest">Persistence Active</span>
                </div>
@@ -155,7 +155,7 @@ export function HistoryDialog({ open, onOpenChange, onSelect }: HistoryDialogPro
                   placeholder="Search projects..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl py-2.5 pl-11 pr-5 text-[11px] font-bold focus:border-cyan-500/50 outline-none transition-all placeholder:text-slate-600"
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl py-2.5 pl-11 pr-5 text-[11px] font-bold focus:border-purple-500/50 outline-none transition-all placeholder:text-slate-600"
                 />
               </div>
             </div>
@@ -183,7 +183,7 @@ export function HistoryDialog({ open, onOpenChange, onSelect }: HistoryDialogPro
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       onClick={() => onSelect?.(item)}
-                      className="group relative bg-white/5 border border-white/5 hover:border-cyan-500/30 rounded-2xl p-4 cursor-pointer transition-all hover:bg-white/[0.08]"
+                      className="group relative bg-white/5 border border-white/5 hover:border-purple-500/30 rounded-2xl p-4 cursor-pointer transition-all hover:bg-white/[0.08]"
                     >
                       <div className="flex items-start justify-between mb-3">
                         <div className={`p-2.5 rounded-xl ${config.bg} ${config.color} group-hover:scale-110 transition-transform`}>
@@ -198,7 +198,7 @@ export function HistoryDialog({ open, onOpenChange, onSelect }: HistoryDialogPro
                       </div>
 
                       <div className="space-y-1">
-                        <h4 className="text-sm font-black text-white truncate group-hover:text-cyan-100 transition-colors">{item.title}</h4>
+                        <h4 className="text-sm font-black text-white truncate group-hover:text-purple-100 transition-colors">{item.title}</h4>
                         <div className="flex items-center gap-2">
                           <span className={`text-[8px] font-black uppercase tracking-widest ${config.color}`}>{config.label}</span>
                           <span className="text-[8px] font-bold text-slate-600 uppercase tracking-tighter">
@@ -208,7 +208,7 @@ export function HistoryDialog({ open, onOpenChange, onSelect }: HistoryDialogPro
                       </div>
 
                       <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all">
-                        <ChevronRight className="w-4 h-4 text-cyan-400" />
+                        <ChevronRight className="w-4 h-4 text-purple-400" />
                       </div>
                     </motion.div>
                   );

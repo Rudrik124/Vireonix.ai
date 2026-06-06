@@ -99,9 +99,9 @@ export function ReferenceVideoProcessingScreen() {
 
   return (
     <div
-      className="min-h-screen relative overflow-hidden font-sans selection:bg-cyan-500/30 selection:text-white flex items-center justify-center"
+      className="min-h-screen relative overflow-hidden font-sans selection:bg-purple-500/30 selection:text-white flex items-center justify-center"
       style={{
-        background: 'linear-gradient(135deg, #0b0d1f 0%, #1a1b2e 30%, #2d3142 60%, #3f4a67 85%, #1a1b2e 100%)',
+        background: 'linear-gradient(135deg, #0B1020 0%, #1a1b2e 30%, #2d3142 60%, #3f4a67 85%, #1a1b2e 100%)',
         backgroundAttachment: 'fixed'
       }}
     >
@@ -119,12 +119,12 @@ export function ReferenceVideoProcessingScreen() {
           <motion.div
             animate={{ rotate: 360 }}
             transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-            className="w-24 h-24 mx-auto mb-8 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center shadow-[0_0_30px_rgba(34,211,238,0.5)] border border-cyan-300/30"
+            className="w-24 h-24 mx-auto mb-8 rounded-full bg-gradient-to-br from-purple-400 to-blue-500 flex items-center justify-center shadow-[0_0_30px_rgba(168, 85, 247,0.5)] border border-purple-300/30"
           >
-            <Film className="w-12 h-12 text-[#0b0d1f]" fill="currentColor" />
+            <Film className="w-12 h-12 text-[#0B1020]" fill="currentColor" />
           </motion.div>
 
-          <h2 className="text-3xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-white via-cyan-100 to-teal-300 drop-shadow-[0_2px_10px_rgba(34,211,238,0.2)]">
+          <h2 className="text-3xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-white via-purple-100 to-fuchsia-300 drop-shadow-[0_2px_10px_rgba(168, 85, 247,0.2)]">
             Generating with Reference
           </h2>
           <p className="text-[#94a3b8] mb-8 font-medium">
@@ -139,9 +139,9 @@ export function ReferenceVideoProcessingScreen() {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.25 }}
-                  className="flex items-center gap-3 text-sm font-semibold text-cyan-100"
+                  className="flex items-center gap-3 text-sm font-semibold text-purple-100"
                 >
-                  <Wand2 className="w-4 h-4 text-cyan-400 drop-shadow-[0_0_5px_rgba(34,211,238,0.5)]" />
+                  <Wand2 className="w-4 h-4 text-purple-400 drop-shadow-[0_0_5px_rgba(168, 85, 247,0.5)]" />
                   <span>{step}</span>
                 </motion.div>
               )

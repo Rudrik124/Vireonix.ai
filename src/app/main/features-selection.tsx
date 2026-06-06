@@ -90,7 +90,7 @@ const PortalPreview = ({ type, isActive }: { type: string, isActive: boolean }) 
             </div>
             <div className="w-1/2 h-full relative">
                <img src="https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=500&auto=format&fit=crop" className="w-full h-full object-cover opacity-90" />
-               <div className="absolute top-1 right-1 text-[7px] md:text-[9px] font-black tracking-widest text-purple-200 bg-purple-900/80 px-1 rounded border border-purple-500/30">OUT</div>
+               <div className="absolute top-1 right-1 text-[7px] md:text-[9px] font-black tracking-widest text-fuchsia-200 bg-purple-900/80 px-1 rounded border border-fuchsia-500/30">OUT</div>
             </div>
          </div>
          <motion.div 
@@ -128,9 +128,9 @@ const PortalPreview = ({ type, isActive }: { type: string, isActive: boolean }) 
             ))}
           </div>
           <div className="w-full h-4 md:h-6 bg-white/5 rounded flex gap-0.5 p-0.5 relative border border-white/10">
-             <div className="w-1/4 bg-teal-500/30 rounded border border-teal-500/20" />
+             <div className="w-1/4 bg-fuchsia-500/30 rounded border border-fuchsia-500/20" />
              <div className="w-1/2 bg-emerald-500/30 rounded border border-emerald-500/20" />
-             <div className="w-1/4 bg-cyan-500/30 rounded border border-cyan-500/20" />
+             <div className="w-1/4 bg-purple-500/30 rounded border border-purple-500/20" />
              <motion.div 
                animate={isActive ? { x: ['0%', '350%'] } : { x: '0%' }}
                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
@@ -189,7 +189,7 @@ export function FeaturesSelectionPage() {
   };
 
   return (
-    <div className="tools-section bg-[#0B0A10] text-white font-sans selection:bg-purple-500/30 relative">
+    <div className="tools-section bg-[#0B0A10] text-white font-sans selection:bg-fuchsia-500/30 relative">
       {/* HOMEPAGE BACKGROUND MATCH */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 bg-[#0B0A10]">
         {/* Grid Glow */}
@@ -201,12 +201,12 @@ export function FeaturesSelectionPage() {
         <motion.div 
           animate={{ x: [0, 50, 0], y: [0, -25, 0], scale: [1, 1.1, 1] }}
           transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-0 right-1/4 w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-[100px]"
+          className="absolute top-0 right-1/4 w-[600px] h-[600px] bg-fuchsia-600/10 rounded-full blur-[100px]"
         />
         <motion.div 
           animate={{ x: [0, -50, 0], y: [0, 25, 0], scale: [1, 1.05, 1] }}
           transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute bottom-0 left-1/4 w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[100px]"
+          className="absolute bottom-0 left-1/4 w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[100px]"
         />
       </div>
 
@@ -216,7 +216,7 @@ export function FeaturesSelectionPage() {
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.location.reload()}>
             <BrandLogo size={28} className="relative z-10" />
             <span className="text-lg font-black tracking-tight drop-shadow-md">
-              VEYTRIX<span className="text-purple-400">.AI</span>
+              VEYTRIX<span className="text-fuchsia-400">.AI</span>
             </span>
           </div>
           <div className="h-4 w-[1px] bg-white/10" />
@@ -454,8 +454,8 @@ export function FeaturesSelectionPage() {
         .portal.orange { border-color: rgba(249, 115, 22, 0.2); box-shadow: 0 0 20px rgba(249, 115, 22, 0.05); }
         .portal.green { border-color: rgba(16, 185, 129, 0.2); box-shadow: 0 0 20px rgba(16, 185, 129, 0.05); }
 
-        .portal-btn.blue { background: linear-gradient(135deg, #3b82f6 0%, #4f46e5 100%); }
-        .portal-btn.purple { background: linear-gradient(135deg, #8b5cf6 0%, #d946ef 100%); }
+        .portal-btn.blue { background: linear-gradient(135deg, #3b82f6 0%, #9333ea 100%); }
+        .portal-btn.purple { background: linear-gradient(135deg, #d946ef 0%, #d946ef 100%); }
         .portal-btn.orange { background: linear-gradient(135deg, #f97316 0%, #ef4444 100%); }
         .portal-btn.green { background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%); }
 

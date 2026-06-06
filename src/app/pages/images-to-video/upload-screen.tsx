@@ -44,8 +44,8 @@ const EmojiIcon = ({ icon: Icon, size = "md", className = "" }: { icon: LucideIc
     xl: "w-10 h-10",
   };
   return (
-    <div className={`flex items-center justify-center bg-cyan-950/40 border border-cyan-500/40 shadow-[0_0_15px_rgba(6,182,212,0.15)] transition-colors ${sizeClasses[size]} ${className}`}>
-      <Icon className={`${iconSizeClasses[size]} text-cyan-400`} strokeWidth={2.5} />
+    <div className={`flex items-center justify-center bg-cyan-950/40 border border-purple-500/40 shadow-[0_0_15px_rgba(6,182,212,0.15)] transition-colors ${sizeClasses[size]} ${className}`}>
+      <Icon className={`${iconSizeClasses[size]} text-purple-400`} strokeWidth={2.5} />
     </div>
   );
 };
@@ -225,7 +225,7 @@ export function ImagesToVideoUploadScreen() {
     <div 
       className="min-h-screen font-sans selection:bg-blue-500/30 selection:text-white pb-20 text-white"
       style={{
-        background: 'linear-gradient(135deg, #0b0d1f 0%, #1a1b2e 30%, #2d3142 60%, #3f4a67 85%, #1a1b2e 100%)',
+        background: 'linear-gradient(135deg, #0B1020 0%, #1a1b2e 30%, #2d3142 60%, #3f4a67 85%, #1a1b2e 100%)',
         backgroundAttachment: 'fixed'
       }}
     >
@@ -249,18 +249,18 @@ export function ImagesToVideoUploadScreen() {
             >
               <div className="relative">
                 {/* Theme Background Glow */}
-                <div className="absolute inset-0 bg-cyan-500/20 rounded-full blur-xl scale-150 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="absolute inset-0 bg-purple-500/20 rounded-full blur-xl scale-150 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 
                 <BrandLogo size={48} className="relative z-10" />
               </div>
-              <span className="text-xl font-black tracking-tight text-white drop-shadow-[0_0_15px_rgba(34,211,238,0.3)]">
-                VEYTRIX<span className="text-cyan-400">.AI</span>
+              <span className="text-xl font-black tracking-tight text-white drop-shadow-[0_0_15px_rgba(168, 85, 247,0.3)]">
+                VEYTRIX<span className="text-purple-400">.AI</span>
               </span>
             </div>
 
             <button
               onClick={() => navigate("/features")}
-              className="flex items-center gap-2 text-[#94a3b8] hover:text-cyan-400 transition-colors group"
+              className="flex items-center gap-2 text-[#94a3b8] hover:text-purple-400 transition-colors group"
             >
               <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
               <span className="text-sm font-bold uppercase tracking-widest">Back</span>
@@ -280,8 +280,8 @@ export function ImagesToVideoUploadScreen() {
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                   className="flex items-center gap-2.5 bg-white/5 hover:bg-white/10 backdrop-blur-md px-3.5 py-2 rounded-2xl border border-white/10 transition-all text-white group shadow-xl"
                 >
-                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center shadow-lg shadow-cyan-500/20">
-                    <User className="w-3 h-3 text-[#0b0d1f]" />
+                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-fuchsia-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
+                    <User className="w-3 h-3 text-[#0B1020]" />
                   </div>
                   <span className="text-[10px] font-bold uppercase tracking-widest">{userName}</span>
                   <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform duration-300 ${isUserMenuOpen ? 'rotate-180' : ''}`} />
@@ -293,7 +293,7 @@ export function ImagesToVideoUploadScreen() {
                       initial={{ opacity: 0, y: 10, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      className="absolute right-0 top-full mt-2 w-48 bg-[#0b0d1f]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-[100]"
+                      className="absolute right-0 top-full mt-2 w-48 bg-[#0B1020]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-[100]"
                     >
                       <div className="p-2">
                         <button 
@@ -328,10 +328,10 @@ export function ImagesToVideoUploadScreen() {
                   <span className="text-xs font-bold uppercase tracking-widest">Advanced Config</span>
                 </button>
               </DialogTrigger>
-              <DialogContent className="bg-[#0b0d1f]/95 backdrop-blur-2xl border-white/10 text-white sm:max-w-[425px] rounded-3xl shadow-2xl">
+              <DialogContent className="bg-[#0B1020]/95 backdrop-blur-2xl border-white/10 text-white sm:max-w-[425px] rounded-3xl shadow-2xl">
                 <DialogHeader>
                   <DialogTitle className="flex items-center gap-2 text-xl font-black uppercase tracking-tighter">
-                    <Settings2 className="w-5 h-5 text-cyan-400" />
+                    <Settings2 className="w-5 h-5 text-purple-400" />
                     Production Settings
                   </DialogTitle>
                 </DialogHeader>
@@ -352,7 +352,7 @@ export function ImagesToVideoUploadScreen() {
                             onClick={() => isPremium ? handlePremiumIntercept("4k") : setExportQuality(res)}
                             className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border flex flex-col items-center gap-1 ${
                               exportQuality === res 
-                                ? 'bg-cyan-500/10 border-cyan-500 text-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.2)]' 
+                                ? 'bg-purple-500/10 border-purple-500 text-purple-400 shadow-[0_0_15px_rgba(168, 85, 247,0.2)]' 
                                 : 'bg-white/5 border-white/5 text-slate-500 hover:border-white/20'
                             }`}
                           >
@@ -383,7 +383,7 @@ export function ImagesToVideoUploadScreen() {
                             onClick={() => isPremium ? handlePremiumIntercept("60fps") : setFps(f)}
                             className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border flex flex-col items-center gap-1 ${
                               fps === f
-                                ? 'bg-indigo-500/10 border-indigo-500 text-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.2)]' 
+                                ? 'bg-purple-500/10 border-purple-500 text-purple-400 shadow-[0_0_15px_rgba(168, 85, 247,0.2)]' 
                                 : 'bg-white/5 border-white/5 text-slate-500 hover:border-white/20'
                             }`}
                           >
@@ -419,7 +419,7 @@ export function ImagesToVideoUploadScreen() {
                         </div>
                         <button
                           onClick={() => handlePremiumIntercept("watermark")}
-                          className={`w-12 h-6 rounded-full relative transition-all bg-cyan-600 shadow-[0_0_10px_rgba(34,211,238,0.3)]`}
+                          className={`w-12 h-6 rounded-full relative transition-all bg-purple-600 shadow-[0_0_10px_rgba(168, 85, 247,0.3)]`}
                         >
                           <div className={`absolute top-1 right-1 w-4 h-4 rounded-full bg-white transition-all`} />
                         </button>
@@ -452,9 +452,9 @@ export function ImagesToVideoUploadScreen() {
            animate={{ opacity: 1, y: 0 }}
            className="text-center mb-6"
         >
-          <div className="inline-flex items-center gap-2 bg-[#1a1b2e]/60 backdrop-blur-3xl px-6 py-2 rounded-full border border-cyan-500/20 mb-4 shadow-[0_4px_30px_rgba(0,0,0,0.2)]">
-            <Sparkles className="w-4 h-4 text-cyan-400" />
-            <span className="text-sm font-semibold text-cyan-100 tracking-wide uppercase font-sans tracking-[0.2em]">AI Motion Studio</span>
+          <div className="inline-flex items-center gap-2 bg-[#1a1b2e]/60 backdrop-blur-3xl px-6 py-2 rounded-full border border-purple-500/20 mb-4 shadow-[0_4px_30px_rgba(0,0,0,0.2)]">
+            <Sparkles className="w-4 h-4 text-purple-400" />
+            <span className="text-sm font-semibold text-purple-100 tracking-wide uppercase font-sans tracking-[0.2em]">AI Motion Studio</span>
           </div>
 
           {/* Header */}
@@ -479,7 +479,7 @@ export function ImagesToVideoUploadScreen() {
                initial={{ opacity: 0, x: -20 }}
                animate={{ opacity: 1, x: 0 }}
                transition={{ delay: 0.1 }}
-               className="bg-[#1a1b2e]/60 backdrop-blur-xl rounded-[1.5rem] shadow-[0_8px_30px_rgba(11,13,31,0.5)] border border-[#3f4a67]/50 p-4 flex flex-col transition-all hover:shadow-[0_8px_30px_rgba(34,211,238,0.1)]"
+               className="bg-[#1a1b2e]/60 backdrop-blur-xl rounded-[1.5rem] shadow-[0_8px_30px_rgba(11,13,31,0.5)] border border-[#3f4a67]/50 p-4 flex flex-col transition-all hover:shadow-[0_8px_30px_rgba(168, 85, 247,0.1)]"
             >
               <div className="text-lg font-semibold mb-4 text-slate-100 flex items-center gap-3">
                 <EmojiIcon icon={Upload} size="sm" /> 
@@ -488,7 +488,7 @@ export function ImagesToVideoUploadScreen() {
               
               <div className="flex flex-col gap-3">
                 {/* Visual Media Upload */}
-                <div className="relative flex flex-col items-center justify-center border-2 border-dashed border-[#3f4a67]/80 rounded-2xl p-3 min-h-[110px] text-center cursor-pointer transition-all bg-[#2d3142]/40 hover:border-cyan-500/60 hover:bg-cyan-900/10 group">
+                <div className="relative flex flex-col items-center justify-center border-2 border-dashed border-[#3f4a67]/80 rounded-2xl p-3 min-h-[110px] text-center cursor-pointer transition-all bg-[#2d3142]/40 hover:border-purple-500/60 hover:bg-purple-900/10 group">
                   <input
                     type="file"
                     multiple
@@ -508,7 +508,7 @@ export function ImagesToVideoUploadScreen() {
                 <p className="text-slate-500 text-xs mt-3 font-mono">PNG, JPG (Max 10MB)</p>
                 
                 {mediaFiles.length > 0 && (
-                  <div className="absolute bottom-4 right-4 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-[10px] font-black uppercase tracking-wider hover:bg-cyan-500/20 transition-all pointer-events-none">
+                  <div className="absolute bottom-4 right-4 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-400 text-[10px] font-black uppercase tracking-wider hover:bg-purple-500/20 transition-all pointer-events-none">
                     <span>✏</span>
                     <span>edit</span>
                   </div>
@@ -516,7 +516,7 @@ export function ImagesToVideoUploadScreen() {
               </div>
 
               {/* Audio Upload */}
-              <div className="relative flex flex-col items-center justify-center border-2 border-dashed border-[#3f4a67]/60 rounded-2xl p-3 min-h-[90px] text-center cursor-pointer transition-all bg-[#2d3142]/40 hover:border-cyan-500/60 hover:bg-cyan-900/10 group">
+              <div className="relative flex flex-col items-center justify-center border-2 border-dashed border-[#3f4a67]/60 rounded-2xl p-3 min-h-[90px] text-center cursor-pointer transition-all bg-[#2d3142]/40 hover:border-purple-500/60 hover:bg-purple-900/10 group">
                 <input
                   type="file"
                   accept="audio/*"
@@ -542,7 +542,7 @@ export function ImagesToVideoUploadScreen() {
                initial={{ opacity: 0, x: -20 }}
                animate={{ opacity: 1, x: 0 }}
                transition={{ delay: 0.3 }}
-               className="bg-[#1a1b2e]/60 backdrop-blur-xl rounded-[1.5rem] shadow-[0_8px_30px_rgba(11,13,31,0.5)] border border-[#3f4a67]/50 p-4 transition-all hover:shadow-[0_8px_30px_rgba(34,211,238,0.1)] flex-1"
+               className="bg-[#1a1b2e]/60 backdrop-blur-xl rounded-[1.5rem] shadow-[0_8px_30px_rgba(11,13,31,0.5)] border border-[#3f4a67]/50 p-4 transition-all hover:shadow-[0_8px_30px_rgba(168, 85, 247,0.1)] flex-1"
             >
               <div className="text-lg font-semibold mb-5 text-slate-100 flex items-center gap-3">
                 <EmojiIcon icon={Palette} size="sm" /> 
@@ -556,16 +556,16 @@ export function ImagesToVideoUploadScreen() {
                     onClick={() => setSelectedStyle(style.name)}
                     className={`flex flex-col items-center justify-center bg-[#1a1b2e]/80 border rounded-[1rem] p-3 text-center cursor-pointer transition-all ${
                       selectedStyle === style.name 
-                        ? "border-cyan-400 bg-cyan-900/30 shadow-[0_0_15px_rgba(6,182,212,0.3)] scale-[1.02]" 
-                        : "border-[#3f4a67]/40 hover:border-cyan-500/40 hover:scale-[1.02]"
+                        ? "border-purple-400 bg-purple-900/30 shadow-[0_0_15px_rgba(6,182,212,0.3)] scale-[1.02]" 
+                        : "border-[#3f4a67]/40 hover:border-purple-500/40 hover:scale-[1.02]"
                     }`}
                   >
                     <EmojiIcon 
                       icon={style.icon} 
                       size="sm" 
-                      className={selectedStyle === style.name ? "bg-cyan-500/20 border-cyan-400 w-8 h-8" : "border-slate-600/30 bg-slate-800/40 w-8 h-8"} 
+                      className={selectedStyle === style.name ? "bg-purple-500/20 border-purple-400 w-8 h-8" : "border-slate-600/30 bg-slate-800/40 w-8 h-8"} 
                     />
-                    <div className={`mt-2 font-black text-[10px] transition-colors uppercase tracking-widest ${selectedStyle === style.name ? "text-cyan-400" : "text-slate-400"}`}>
+                    <div className={`mt-2 font-black text-[10px] transition-colors uppercase tracking-widest ${selectedStyle === style.name ? "text-purple-400" : "text-slate-400"}`}>
                       {style.name}
                     </div>
                   </div>
@@ -581,7 +581,7 @@ export function ImagesToVideoUploadScreen() {
                initial={{ opacity: 0, x: 20 }}
                animate={{ opacity: 1, x: 0 }}
                transition={{ delay: 0.2 }}
-               className="bg-[#1a1b2e]/60 backdrop-blur-xl rounded-[1.5rem] shadow-[0_8px_30px_rgba(11,13,31,0.5)] border border-[#3f4a67]/50 p-4 transition-all hover:shadow-[0_8px_30px_rgba(34,211,238,0.1)] h-full flex flex-col"
+               className="bg-[#1a1b2e]/60 backdrop-blur-xl rounded-[1.5rem] shadow-[0_8px_30px_rgba(11,13,31,0.5)] border border-[#3f4a67]/50 p-4 transition-all hover:shadow-[0_8px_30px_rgba(168, 85, 247,0.1)] h-full flex flex-col"
             >
               <div className="text-xl font-semibold mb-6 text-slate-100 flex items-center gap-3">
                 <EmojiIcon icon={Settings} size="sm" /> 
@@ -591,15 +591,15 @@ export function ImagesToVideoUploadScreen() {
               <div className="mb-4 flex-1 flex flex-col">
                 <label className="block text-slate-400 font-bold mb-2 text-[10px] uppercase tracking-[0.2em]">Prompt</label>
                 <div className="relative flex-1 group/prompt min-h-[100px]">
-                  <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/0 via-cyan-500/5 to-cyan-500/0 rounded-xl opacity-0 group-hover/prompt:opacity-100 transition-opacity duration-500 blur-md pointer-events-none" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-purple-500/0 via-purple-500/5 to-purple-500/0 rounded-xl opacity-0 group-hover/prompt:opacity-100 transition-opacity duration-500 blur-md pointer-events-none" />
                   <textarea 
-                    className="relative w-full h-full p-4 text-sm bg-[#0b0d1f]/80 border border-[#3f4a67]/60 rounded-xl text-white outline-none transition-all placeholder:text-slate-600 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-500 focus:shadow-[0_0_25px_rgba(34,211,238,0.15)] resize-none shadow-inner leading-relaxed" 
+                    className="relative w-full h-full p-4 text-sm bg-[#0B1020]/80 border border-[#3f4a67]/60 rounded-xl text-white outline-none transition-all placeholder:text-slate-600 focus:border-purple-400 focus:ring-1 focus:ring-purple-500 focus:shadow-[0_0_25px_rgba(168, 85, 247,0.15)] resize-none shadow-inner leading-relaxed" 
                     placeholder="Describe your video in detail here... e.g. 'A futuristic cyberpunk city skyline at sunset, with glowing neon signs and flying cars.'"
                     value={prompt}
                     onChange={e => setPrompt(e.target.value)}
                   />
                   {prompt.length > 0 && (
-                    <div className="absolute bottom-4 right-4 z-20 flex items-center gap-1.5 px-2 py-1 rounded-lg bg-cyan-500/20 text-cyan-400 text-[10px] font-bold">
+                    <div className="absolute bottom-4 right-4 z-20 flex items-center gap-1.5 px-2 py-1 rounded-lg bg-purple-500/20 text-purple-400 text-[10px] font-bold">
                       {prompt.length} chars
                     </div>
                   )}
@@ -615,20 +615,20 @@ export function ImagesToVideoUploadScreen() {
                       onClick={() => setAspectRatio(opt.label)}
                       className={`flex flex-col items-center justify-center bg-[#1a1b2e]/40 border rounded-2xl p-4 cursor-pointer transition-all duration-300 group/frame ${
                         aspectRatio === opt.label 
-                          ? "border-cyan-400 bg-cyan-900/20 shadow-[0_0_15px_rgba(6,182,212,0.2)]" 
-                          : "border-[#3f4a67]/40 hover:border-cyan-500/30 hover:bg-[#2d3142]/40"
+                          ? "border-purple-400 bg-purple-900/20 shadow-[0_0_15px_rgba(6,182,212,0.2)]" 
+                          : "border-[#3f4a67]/40 hover:border-purple-500/30 hover:bg-[#2d3142]/40"
                       }`}
                     >
                       <div className="h-10 flex items-center justify-center mb-3">
                         <div 
                           style={{ width: opt.width, height: opt.height }}
                           className={`border-2 rounded-[2px] transition-all duration-300 ${
-                            aspectRatio === opt.label ? "border-cyan-400" : "border-slate-500/50 group-hover/frame:border-slate-400"
+                            aspectRatio === opt.label ? "border-purple-400" : "border-slate-500/50 group-hover/frame:border-slate-400"
                           }`}
                         />
                       </div>
                       <div className={`text-[11px] font-bold tracking-wider transition-colors ${
-                        aspectRatio === opt.label ? "text-cyan-400" : "text-slate-500 group-hover/frame:text-slate-300"
+                        aspectRatio === opt.label ? "text-purple-400" : "text-slate-500 group-hover/frame:text-slate-300"
                       }`}>
                         {opt.label}
                       </div>
@@ -642,8 +642,8 @@ export function ImagesToVideoUploadScreen() {
                   Runtime Duration
                 </label>
                 <div className="grid grid-cols-2 gap-3 max-w-sm">
-                  <div className={`relative bg-[#0b0d1f]/60 border rounded-xl transition-all duration-300 ${
-                    durationMinutes > 0 ? "border-cyan-400 bg-cyan-900/10 shadow-[0_0_15px_rgba(6,182,212,0.1)]" : "border-[#3f4a67]/60 group-focus-within/input:border-cyan-400"
+                  <div className={`relative bg-[#0B1020]/60 border rounded-xl transition-all duration-300 ${
+                    durationMinutes > 0 ? "border-purple-400 bg-purple-900/10 shadow-[0_0_15px_rgba(6,182,212,0.1)]" : "border-[#3f4a67]/60 group-focus-within/input:border-purple-400"
                   }`}>
                     <label className="absolute top-2 left-4 text-[7px] uppercase tracking-widest font-black text-slate-500">Minutes</label>
                     <input 
@@ -656,8 +656,8 @@ export function ImagesToVideoUploadScreen() {
                     />
                   </div>
 
-                  <div className={`relative bg-[#0b0d1f]/60 border rounded-xl transition-all duration-300 ${
-                    durationSeconds > 0 ? "border-cyan-400 bg-cyan-900/10 shadow-[0_0_15px_rgba(6,182,212,0.1)]" : "border-[#3f4a67]/60 group-focus-within/input:border-cyan-400"
+                  <div className={`relative bg-[#0B1020]/60 border rounded-xl transition-all duration-300 ${
+                    durationSeconds > 0 ? "border-purple-400 bg-purple-900/10 shadow-[0_0_15px_rgba(6,182,212,0.1)]" : "border-[#3f4a67]/60 group-focus-within/input:border-purple-400"
                   }`}>
                     <label className="absolute top-2 left-4 text-[7px] uppercase tracking-widest font-black text-slate-500">Seconds</label>
                     <input 
@@ -695,7 +695,7 @@ export function ImagesToVideoUploadScreen() {
               }}
               whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
               whileTap={{ scale: 0.98 }}
-              className="relative w-full flex items-center justify-center gap-4 uppercase tracking-[0.25em] font-black bg-gradient-to-r from-[#00b4d8] to-[#01f9ff] text-[#0b0d1f] border-none rounded-2xl py-6 transition-all hover:shadow-[0_0_50px_rgba(0,245,255,0.4)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 text-lg overflow-hidden group"
+              className="relative w-full flex items-center justify-center gap-4 uppercase tracking-[0.25em] font-black bg-gradient-to-r from-[#00b4d8] to-[#01f9ff] text-[#0B1020] border-none rounded-2xl py-6 transition-all hover:shadow-[0_0_50px_rgba(0,245,255,0.4)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 text-lg overflow-hidden group"
             >
               {/* Continuous Shimmer Light Beam */}
               <motion.div 
@@ -733,7 +733,7 @@ export function ImagesToVideoUploadScreen() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowAdvanced(false)}
-              className="absolute inset-0 bg-[#0b0d1f]/80 backdrop-blur-md"
+              className="absolute inset-0 bg-[#0B1020]/80 backdrop-blur-md"
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -742,13 +742,13 @@ export function ImagesToVideoUploadScreen() {
               className="relative w-full max-w-md bg-[#16182c] border border-[#3f4a67]/50 rounded-[2.5rem] shadow-[0_25px_80px_rgba(0,0,0,0.6)] overflow-hidden"
             >
               {/* Glow Effect */}
-              <div className="absolute -top-24 -right-24 w-48 h-48 bg-cyan-500/10 blur-[80px] rounded-full" />
+              <div className="absolute -top-24 -right-24 w-48 h-48 bg-purple-500/10 blur-[80px] rounded-full" />
               
               <div className="p-8 relative z-10">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-10">
                   <div className="flex items-center gap-3">
-                    <EmojiIcon icon={Settings2} size="sm" className="bg-cyan-500/10 border-cyan-500/30" />
+                    <EmojiIcon icon={Settings2} size="sm" className="bg-purple-500/10 border-purple-500/30" />
                     <h2 className="text-2xl font-black uppercase tracking-wider text-slate-100">Production Settings</h2>
                   </div>
                   <button 
@@ -763,7 +763,7 @@ export function ImagesToVideoUploadScreen() {
                   {/* Export Quality */}
                   <div>
                     <div className="flex items-center gap-2 mb-4 text-slate-400">
-                      <Download className="w-4 h-4 text-cyan-400" />
+                      <Download className="w-4 h-4 text-purple-400" />
                       <span className="text-[10px] font-black uppercase tracking-[0.2em]">Export Quality</span>
                     </div>
                     <div className="grid grid-cols-3 gap-3">
@@ -773,18 +773,18 @@ export function ImagesToVideoUploadScreen() {
                           onClick={() => setExportQuality(q)}
                           className={`relative flex flex-col items-center justify-center py-5 rounded-2xl border transition-all duration-300 ${
                             exportQuality === q
-                              ? "bg-cyan-500/10 border-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.15)]"
+                              ? "bg-purple-500/10 border-purple-400 shadow-[0_0_20px_rgba(168, 85, 247,0.15)]"
                               : "bg-[#1a1b2e]/60 border-[#3f4a67]/40 text-slate-500 hover:border-slate-600"
                           }`}
                         >
-                          <span className={`text-sm font-black tracking-wider ${exportQuality === q ? "text-cyan-400" : "text-slate-500"}`}>{q}</span>
+                          <span className={`text-sm font-black tracking-wider ${exportQuality === q ? "text-purple-400" : "text-slate-500"}`}>{q}</span>
                           {q === "4K" && (
                             <div className="flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20">
                               <Crown className="w-2.5 h-2.5 text-amber-500" />
                               <span className="text-[7px] font-black uppercase tracking-widest text-amber-500">Premium</span>
                             </div>
                           )}
-                          {exportQuality === q && <div className="absolute top-2 right-2"><Check className="w-3 h-3 text-cyan-400" /></div>}
+                          {exportQuality === q && <div className="absolute top-2 right-2"><Check className="w-3 h-3 text-purple-400" /></div>}
                         </button>
                       ))}
                     </div>
@@ -793,7 +793,7 @@ export function ImagesToVideoUploadScreen() {
                   {/* Frame Rate */}
                   <div>
                     <div className="flex items-center gap-2 mb-4 text-slate-400">
-                      <Zap className="w-4 h-4 text-cyan-400" />
+                      <Zap className="w-4 h-4 text-purple-400" />
                       <span className="text-[10px] font-black uppercase tracking-[0.2em]">Target Frame Rate</span>
                     </div>
                     <div className="grid grid-cols-3 gap-3">
@@ -803,18 +803,18 @@ export function ImagesToVideoUploadScreen() {
                           onClick={() => setFrameRate(fps)}
                           className={`relative flex flex-col items-center justify-center py-5 rounded-2xl border transition-all duration-300 ${
                             frameRate === fps
-                              ? "bg-purple-500/10 border-purple-400 shadow-[0_0_20px_rgba(168,85,247,0.15)]"
+                              ? "bg-fuchsia-500/10 border-fuchsia-400 shadow-[0_0_20px_rgba(168,85,247,0.15)]"
                               : "bg-[#1a1b2e]/60 border-[#3f4a67]/40 text-slate-500 hover:border-slate-600"
                           }`}
                         >
-                          <span className={`text-sm font-black tracking-wider ${frameRate === fps ? "text-purple-400" : "text-slate-500"}`}>{fps}</span>
+                          <span className={`text-sm font-black tracking-wider ${frameRate === fps ? "text-fuchsia-400" : "text-slate-500"}`}>{fps}</span>
                           {fps === "60 FPS" && (
                             <div className="flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20">
                               <Crown className="w-2.5 h-2.5 text-amber-500" />
                               <span className="text-[7px] font-black uppercase tracking-widest text-amber-500">Premium</span>
                             </div>
                           )}
-                          {frameRate === fps && <div className="absolute top-2 right-2"><Check className="w-3 h-3 text-purple-400" /></div>}
+                          {frameRate === fps && <div className="absolute top-2 right-2"><Check className="w-3 h-3 text-fuchsia-400" /></div>}
                         </button>
                       ))}
                     </div>
@@ -840,7 +840,7 @@ export function ImagesToVideoUploadScreen() {
                       
                       <button 
                         onClick={() => setIsWatermarkEnabled(!isWatermarkEnabled)}
-                        className={`relative w-14 h-7 rounded-full transition-colors duration-500 ${isWatermarkEnabled ? 'bg-cyan-500' : 'bg-slate-700'}`}
+                        className={`relative w-14 h-7 rounded-full transition-colors duration-500 ${isWatermarkEnabled ? 'bg-purple-500' : 'bg-slate-700'}`}
                       >
                         <motion.div 
                           animate={{ x: isWatermarkEnabled ? 30 : 4 }}

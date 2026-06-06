@@ -139,7 +139,7 @@ export function VideoTypePage() {
   };
 
   return (
-    <div className="h-screen w-screen overflow-hidden flex flex-col relative bg-gradient-to-b from-[#130E24] to-[#0B0815] font-sans selection:bg-cyan-500/30 selection:text-white">
+    <div className="h-screen w-screen overflow-hidden flex flex-col relative bg-gradient-to-b from-[#130E24] to-[#0B0815] font-sans selection:bg-purple-500/30 selection:text-white">
       {/* Global CSS to strictly prevent scrolling and add custom animations */}
       <style>{`
         html, body { overflow: hidden !important; height: 100vh !important; margin: 0; padding: 0; }
@@ -153,7 +153,7 @@ export function VideoTypePage() {
         }
         .glow-hover:hover {
           transform: translateY(-4px) scale(1.02) !important;
-          box-shadow: 0 8px 30px rgba(99, 102, 241, 0.4), 0 0 20px rgba(99, 102, 241, 0.3) !important;
+          box-shadow: 0 8px 30px rgba(168, 85, 247, 0.4), 0 0 20px rgba(168, 85, 247, 0.3) !important;
         }
       `}</style>
       
@@ -166,13 +166,13 @@ export function VideoTypePage() {
           style={{ x: glowX, y: glowY }}
           animate={{ scale: [1, 1.1, 1] }}
           transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-[10%] left-[20%] w-[40vw] h-[40vh] bg-indigo-600/10 rounded-full blur-[100px]"
+          className="absolute top-[10%] left-[20%] w-[40vw] h-[40vh] bg-purple-600/10 rounded-full blur-[100px]"
         />
         <motion.div 
           style={{ x: useTransform(smoothMouseX, [-1, 1], [50, -50]), y: useTransform(smoothMouseY, [-1, 1], [50, -50]) }}
           animate={{ scale: [1, 1.1, 1] }}
           transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute bottom-[10%] right-[20%] w-[50vw] h-[50vh] bg-cyan-600/10 rounded-full blur-[120px]"
+          className="absolute bottom-[10%] right-[20%] w-[50vw] h-[50vh] bg-purple-600/10 rounded-full blur-[120px]"
         />
         
         {/* Particles with Parallax */}
@@ -180,7 +180,7 @@ export function VideoTypePage() {
           {mounted && particles.map((_, i) => (
             <motion.div
               key={i}
-              className="absolute rounded-full bg-cyan-400/20"
+              className="absolute rounded-full bg-purple-400/20"
               style={{
                 width: Math.random() * 3 + 1,
                 height: Math.random() * 3 + 1,
@@ -206,14 +206,14 @@ export function VideoTypePage() {
         <div className="flex items-center gap-2 cursor-pointer group" onClick={() => window.location.reload()}>
           <BrandLogo size={32} className="group-hover:scale-105 transition-transform" />
           <span className="text-xl font-black tracking-tight text-white drop-shadow-md">
-            VEYTRIX<span className="text-cyan-400">.AI</span>
+            VEYTRIX<span className="text-purple-400">.AI</span>
           </span>
         </div>
         
         <nav className="hidden md:flex gap-8 text-sm font-semibold text-gray-400">
-          <a href="#" className="hover:text-cyan-400 hover:drop-shadow-[0_0_10px_rgba(34,211,238,0.5)] transition-all">Features</a>
-          <a href="#" className="hover:text-cyan-400 hover:drop-shadow-[0_0_10px_rgba(34,211,238,0.5)] transition-all">Workflow</a>
-          <a href="#" className="hover:text-cyan-400 hover:drop-shadow-[0_0_10px_rgba(34,211,238,0.5)] transition-all">Pricing</a>
+          <a href="#" className="hover:text-purple-400 hover:drop-shadow-[0_0_10px_rgba(168, 85, 247,0.5)] transition-all">Features</a>
+          <a href="#" className="hover:text-purple-400 hover:drop-shadow-[0_0_10px_rgba(168, 85, 247,0.5)] transition-all">Workflow</a>
+          <a href="#" className="hover:text-purple-400 hover:drop-shadow-[0_0_10px_rgba(168, 85, 247,0.5)] transition-all">Pricing</a>
         </nav>
 
         <div className="flex items-center gap-4">
@@ -228,7 +228,7 @@ export function VideoTypePage() {
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                   className="flex items-center gap-2 bg-white/5 hover:bg-white/10 px-4 py-2 rounded-full border border-white/10 transition-all text-sm font-bold text-white group"
                 >
-                  <User className="w-4 h-4 text-cyan-400" />
+                  <User className="w-4 h-4 text-purple-400" />
                   {userName}
                 </button>
               </div>
@@ -237,7 +237,7 @@ export function VideoTypePage() {
                 <button onClick={() => setIsLoginOpen(true)} className="text-sm font-bold text-gray-300 hover:text-white transition-colors">
                   Login
                 </button>
-                <button onClick={() => setIsLoginOpen(true)} className="px-5 py-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 text-sm font-bold text-white transition-all hover:shadow-[0_0_15px_rgba(34,211,238,0.3)]">
+                <button onClick={() => setIsLoginOpen(true)} className="px-5 py-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 text-sm font-bold text-white transition-all hover:shadow-[0_0_15px_rgba(168, 85, 247,0.3)]">
                   Start Free
                 </button>
               </>
@@ -252,7 +252,7 @@ export function VideoTypePage() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 10 }}
-              className="absolute right-6 top-[calc(100%+0.5rem)] w-48 bg-[#0b0d1f]/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden"
+              className="absolute right-6 top-[calc(100%+0.5rem)] w-48 bg-[#0B1020]/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden"
             >
               <div className="p-1">
                 {!isLoggedIn && (
@@ -277,7 +277,7 @@ export function VideoTypePage() {
         {/* LAYER 2: Cinematic Glow Behind Heading */}
         <motion.div 
           style={{ x: glowX, y: glowY }}
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[70%] h-[50%] bg-gradient-to-r from-indigo-500/30 to-purple-600/30 blur-[120px] rounded-full pointer-events-none -z-10 mix-blend-screen"
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[70%] h-[50%] bg-gradient-to-r from-purple-500/30 to-fuchsia-600/30 blur-[120px] rounded-full pointer-events-none -z-10 mix-blend-screen"
         />
 
         {/* --- LAYER 3: FLOATING WIDGETS --- */}
@@ -291,7 +291,7 @@ export function VideoTypePage() {
             <span>00:14</span><span>00:48</span>
           </div>
           <div className="w-full h-1 bg-black/50 rounded-full overflow-hidden mb-2">
-            <div className="h-full bg-indigo-500 w-[35%] rounded-full" />
+            <div className="h-full bg-purple-500 w-[35%] rounded-full" />
           </div>
           <div className="flex items-center gap-1.5 text-[10px] font-bold text-pink-400">
             <Music className="w-3 h-3" /> Beat Sync: Enabled
@@ -303,11 +303,11 @@ export function VideoTypePage() {
           animate={{ y: [0, 8, 0] }} transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
           className="hidden lg:flex flex-col absolute bottom-[25%] left-[6%] w-48 bg-white/[0.03] backdrop-blur-[12px] border border-white/10 p-3 rounded-xl shadow-xl glow-hover z-30"
         >
-          <div className="flex items-center gap-1.5 text-[10px] font-bold text-cyan-400 mb-2">
+          <div className="flex items-center gap-1.5 text-[10px] font-bold text-purple-400 mb-2">
             <Camera className="w-3 h-3" /> Dynamic Camera
           </div>
-          <div className="w-full h-1 bg-gradient-to-r from-transparent via-cyan-500 to-transparent mb-2 relative">
-            <div className="absolute right-[20%] -top-1 w-3 h-3 rounded-full bg-cyan-400 shadow-[0_0_10px_#22d3ee]" />
+          <div className="w-full h-1 bg-gradient-to-r from-transparent via-purple-500 to-transparent mb-2 relative">
+            <div className="absolute right-[20%] -top-1 w-3 h-3 rounded-full bg-purple-400 shadow-[0_0_10px_#A855F7]" />
           </div>
           <div className="text-[10px] text-gray-400 font-semibold tracking-wider text-center">
             Pan • Zoom • Tilt
@@ -320,17 +320,17 @@ export function VideoTypePage() {
           className="hidden xl:flex flex-col absolute top-[18%] right-[4%] w-56 bg-white/[0.03] backdrop-blur-[12px] border border-white/10 p-2 rounded-xl shadow-xl glow-hover z-30"
         >
           <div className="relative w-full h-28 bg-[#0B0815] rounded-lg mb-2 overflow-hidden flex items-center justify-center border border-white/5">
-            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/20 to-purple-500/20" />
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/20 to-fuchsia-500/20" />
             <PlayCircle className="w-8 h-8 text-white/50" />
             <div className="absolute bottom-1 left-1 right-1 h-1 bg-black/60 rounded-full overflow-hidden">
-              <div className="h-full bg-cyan-400 w-[67%]" />
+              <div className="h-full bg-purple-400 w-[67%]" />
             </div>
             <div className="absolute top-2 left-2 text-[8px] font-bold bg-black/60 px-1.5 py-0.5 rounded text-white backdrop-blur-md">
               PREVIEW
             </div>
           </div>
           <div className="flex justify-between items-center text-[9px] font-bold text-gray-400 px-1">
-            <span className="flex items-center gap-1"><MonitorPlay className="w-3 h-3 text-cyan-400" /> 4K</span>
+            <span className="flex items-center gap-1"><MonitorPlay className="w-3 h-3 text-purple-400" /> 4K</span>
             <span>60fps</span>
             <span>Vol.</span>
           </div>
@@ -341,14 +341,14 @@ export function VideoTypePage() {
           animate={{ y: [0, 12, 0] }} transition={{ duration: 4.8, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
           className="hidden lg:flex flex-col absolute bottom-[28%] right-[6%] w-48 bg-white/[0.03] backdrop-blur-[12px] border border-white/10 p-3 rounded-xl shadow-xl glow-hover z-30"
         >
-          <div className="flex items-center gap-1.5 text-[10px] font-bold text-purple-400 mb-2">
+          <div className="flex items-center gap-1.5 text-[10px] font-bold text-fuchsia-400 mb-2">
             <BrainCircuit className="w-3 h-3" /> AI Engine Active
           </div>
           <div className="text-[10px] text-gray-300 font-semibold mb-1">
             Neural Networks: <span className="text-white">12 Active</span>
           </div>
           <div className="text-[9px] text-gray-500 flex items-center gap-1">
-            <Activity className="w-3 h-3 animate-pulse text-indigo-400" /> Processing Frames...
+            <Activity className="w-3 h-3 animate-pulse text-purple-400" /> Processing Frames...
           </div>
         </motion.div>
 
@@ -384,8 +384,8 @@ export function VideoTypePage() {
                 onClick={() => setActiveMode(mode)}
                 className={`text-[10px] md:text-xs font-bold px-3 py-1.5 rounded-full transition-all duration-200 ${
                   activeMode === mode
-                    ? 'bg-indigo-500 text-white shadow-[0_0_15px_rgba(99,102,241,0.5)] border border-indigo-400'
-                    : 'bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10 hover:text-indigo-300 hover:shadow-[0_0_10px_rgba(99,102,241,0.3)]'
+                    ? 'bg-purple-500 text-white shadow-[0_0_15px_rgba(168, 85, 247,0.5)] border border-purple-400'
+                    : 'bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10 hover:text-purple-300 hover:shadow-[0_0_10px_rgba(168, 85, 247,0.3)]'
                 }`}
               >
                 {mode}
@@ -393,13 +393,13 @@ export function VideoTypePage() {
             ))}
           </div>
 
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-indigo-500/30 bg-indigo-500/10 text-indigo-300 text-xs font-bold tracking-widest uppercase mb-3 shadow-[0_0_15px_rgba(99,102,241,0.2)] glow-hover">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-purple-500/30 bg-purple-500/10 text-purple-300 text-xs font-bold tracking-widest uppercase mb-3 shadow-[0_0_15px_rgba(168, 85, 247,0.2)] glow-hover">
             <Sparkles className="w-3 h-3 animate-pulse" /> AI-Powered Video Creation
           </div>
           
           <h1 className="text-[clamp(2.5rem,5vw,4.5rem)] font-black leading-[1.05] tracking-tighter text-white mb-3 drop-shadow-2xl">
             From Prompt To <br className="hidden md:block" />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400 drop-shadow-[0_0_20px_rgba(34,211,238,0.3)]">Professional Video</span>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-purple-400 drop-shadow-[0_0_20px_rgba(168, 85, 247,0.3)]">Professional Video</span>
           </h1>
           
           <p className="text-xs md:text-base text-gray-400 font-medium mb-6 max-w-2xl drop-shadow-md">
@@ -407,7 +407,7 @@ export function VideoTypePage() {
           </p>
 
           {/* Interactive Prompt Box */}
-          <div className="w-full max-w-2xl bg-[#130E24]/80 backdrop-blur-xl border border-indigo-500/30 rounded-2xl p-4 md:p-5 shadow-[0_10px_40px_rgba(0,0,0,0.5)] glow-hover transition-all mb-6 text-left relative overflow-hidden">
+          <div className="w-full max-w-2xl bg-[#130E24]/80 backdrop-blur-xl border border-purple-500/30 rounded-2xl p-4 md:p-5 shadow-[0_10px_40px_rgba(0,0,0,0.5)] glow-hover transition-all mb-6 text-left relative overflow-hidden">
             
             {/* Live Indicator inside prompt box (Top Right) */}
             <div className="absolute top-4 right-4 flex items-center gap-1.5 bg-black/40 px-2 py-1 rounded border border-white/5">
@@ -416,8 +416,8 @@ export function VideoTypePage() {
             </div>
 
             <div className="flex items-center gap-2 mb-2">
-              <div className={`w-2 h-2 rounded-full ${promptPhase === 'success' ? 'bg-green-400' : 'bg-indigo-400'} animate-pulse`} />
-              <span className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-indigo-300/70">
+              <div className={`w-2 h-2 rounded-full ${promptPhase === 'success' ? 'bg-green-400' : 'bg-purple-400'} animate-pulse`} />
+              <span className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-purple-300/70">
                 {promptPhase === 'typing' && "AI Vision Input"}
                 {promptPhase === 'loading' && "Neural Processing..."}
                 {promptPhase === 'progress' && "Generating Cinematic Video..."}
@@ -427,17 +427,17 @@ export function VideoTypePage() {
             
             <div className="h-12 md:h-14 flex flex-col justify-center">
               {promptPhase === 'typing' && (
-                <p className="text-sm md:text-base font-mono text-indigo-100 leading-snug">
+                <p className="text-sm md:text-base font-mono text-purple-100 leading-snug">
                   {promptText}
-                  <span className="inline-block w-2 h-4 ml-1 bg-indigo-400 animate-pulse align-middle" />
+                  <span className="inline-block w-2 h-4 ml-1 bg-purple-400 animate-pulse align-middle" />
                 </p>
               )}
               {promptPhase === 'loading' && (
-                <div className="flex items-center gap-3 text-indigo-200">
+                <div className="flex items-center gap-3 text-purple-200">
                   <div className="flex gap-1">
-                    <span className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce [animation-delay:-0.3s]" />
-                    <span className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce [animation-delay:-0.15s]" />
-                    <span className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce" />
+                    <span className="w-2 h-2 bg-purple-500 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                    <span className="w-2 h-2 bg-purple-500 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                    <span className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" />
                   </div>
                   <span className="font-semibold text-sm md:text-base">Analyzing Prompt & Style...</span>
                 </div>
@@ -446,12 +446,12 @@ export function VideoTypePage() {
                 <div className="w-full flex items-center gap-4">
                   <div className="flex-1">
                     <div className="flex justify-between text-xs font-bold mb-1">
-                      <span className="text-indigo-300">Rendering Assets...</span>
+                      <span className="text-purple-300">Rendering Assets...</span>
                       <span className="text-white">{progressValue}%</span>
                     </div>
                     <div className="w-full h-1.5 bg-black/50 rounded-full overflow-hidden">
                       <motion.div 
-                        className="h-full bg-gradient-to-r from-indigo-500 to-cyan-400 rounded-full"
+                        className="h-full bg-gradient-to-r from-purple-500 to-purple-400 rounded-full"
                         initial={{ width: 0 }}
                         animate={{ width: `${progressValue}%` }}
                         transition={{ duration: 0.3 }}
@@ -464,7 +464,7 @@ export function VideoTypePage() {
                     {[1,2,3,4,5].map(i => (
                       <div
                         key={i}
-                        className="w-1 bg-cyan-400 rounded-t-sm"
+                        className="w-1 bg-purple-400 rounded-t-sm"
                         style={{
                           animation: `wave ${0.5 + Math.random() * 0.5}s ease-in-out ${i * 0.1}s infinite alternate`,
                           transformOrigin: 'bottom',
@@ -487,12 +487,12 @@ export function VideoTypePage() {
           <div className="flex flex-row gap-4 justify-center items-center mb-3">
             <Button 
               onClick={handleStartCreating} 
-              className="h-10 md:h-12 px-6 md:px-8 rounded-full bg-gradient-to-r from-indigo-600 to-cyan-600 border-0 shadow-[0_0_20px_rgba(99,102,241,0.4)] hover:shadow-[0_0_30px_rgba(99,102,241,0.7)] hover:-translate-y-1 transition-all text-white font-bold text-sm group"
+              className="h-10 md:h-12 px-6 md:px-8 rounded-full bg-gradient-to-r from-purple-600 to-purple-600 border-0 shadow-[0_0_20px_rgba(168, 85, 247,0.4)] hover:shadow-[0_0_30px_rgba(168, 85, 247,0.7)] hover:-translate-y-1 transition-all text-white font-bold text-sm group"
             >
               Start Creating <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
             </Button>
             <Button 
-              className="h-10 md:h-12 px-6 md:px-8 rounded-full bg-white/5 border border-white/20 hover:bg-white/10 hover:border-indigo-400 hover:shadow-[0_0_20px_rgba(99,102,241,0.3)] transition-all text-white font-bold text-sm glow-hover"
+              className="h-10 md:h-12 px-6 md:px-8 rounded-full bg-white/5 border border-white/20 hover:bg-white/10 hover:border-purple-400 hover:shadow-[0_0_20px_rgba(168, 85, 247,0.3)] transition-all text-white font-bold text-sm glow-hover"
             >
               Watch Demo
             </Button>
@@ -512,21 +512,21 @@ export function VideoTypePage() {
         {/* Showcase Text */}
         <div className="flex justify-center items-center gap-2 md:gap-4 mb-3 md:mb-5 text-[9px] md:text-[10px] font-bold text-gray-400 uppercase tracking-widest">
           <span className="hover:text-white transition-colors cursor-default">Prompt</span>
-          <ArrowRight className="w-3 h-3 text-indigo-500 animate-pulse" />
-          <span className="hover:text-indigo-400 transition-colors cursor-default flex items-center gap-1"><Zap className="w-3 h-3" /> AI</span>
-          <ArrowRight className="w-3 h-3 text-cyan-500 animate-pulse [animation-delay:0.2s]" />
-          <span className="hover:text-cyan-400 transition-colors cursor-default flex items-center gap-1"><MonitorPlay className="w-3 h-3" /> Render</span>
+          <ArrowRight className="w-3 h-3 text-purple-500 animate-pulse" />
+          <span className="hover:text-purple-400 transition-colors cursor-default flex items-center gap-1"><Zap className="w-3 h-3" /> AI</span>
+          <ArrowRight className="w-3 h-3 text-purple-500 animate-pulse [animation-delay:0.2s]" />
+          <span className="hover:text-purple-400 transition-colors cursor-default flex items-center gap-1"><MonitorPlay className="w-3 h-3" /> Render</span>
           <ArrowRight className="w-3 h-3 text-green-500 animate-pulse [animation-delay:0.4s]" />
           <span className="hover:text-green-400 transition-colors cursor-default flex items-center gap-1"><Rocket className="w-3 h-3" /> Export</span>
         </div>
 
         {/* Bottom Feature Strip */}
         <div className="w-full border-t border-white/10 bg-[#0B0815]/80 backdrop-blur-md flex flex-wrap justify-center md:justify-between items-center px-4 md:px-10 py-3 md:py-4 gap-2 md:gap-4">
-          <div className="flex items-center gap-1.5 text-[9px] md:text-xs font-bold text-gray-300 glow-hover cursor-default px-2 py-1 rounded-full"><Zap className="w-3 h-3 text-indigo-400" /> AI Powered</div>
-          <div className="flex items-center gap-1.5 text-[9px] md:text-xs font-bold text-gray-300 glow-hover cursor-default px-2 py-1 rounded-full"><MonitorPlay className="w-3 h-3 text-cyan-400" /> 4K Export</div>
+          <div className="flex items-center gap-1.5 text-[9px] md:text-xs font-bold text-gray-300 glow-hover cursor-default px-2 py-1 rounded-full"><Zap className="w-3 h-3 text-purple-400" /> AI Powered</div>
+          <div className="flex items-center gap-1.5 text-[9px] md:text-xs font-bold text-gray-300 glow-hover cursor-default px-2 py-1 rounded-full"><MonitorPlay className="w-3 h-3 text-purple-400" /> 4K Export</div>
           <div className="flex items-center gap-1.5 text-[9px] md:text-xs font-bold text-gray-300 glow-hover cursor-default px-2 py-1 rounded-full"><Rocket className="w-3 h-3 text-blue-400" /> Fast Render</div>
           <div className="flex items-center gap-1.5 text-[9px] md:text-xs font-bold text-gray-300 glow-hover cursor-default px-2 py-1 rounded-full"><Sparkles className="w-3 h-3 text-pink-400" /> 60+ Effects</div>
-          <div className="flex items-center gap-1.5 text-[9px] md:text-xs font-bold text-gray-300 glow-hover cursor-default px-2 py-1 rounded-full"><Cloud className="w-3 h-3 text-teal-400" /> Cloud</div>
+          <div className="flex items-center gap-1.5 text-[9px] md:text-xs font-bold text-gray-300 glow-hover cursor-default px-2 py-1 rounded-full"><Cloud className="w-3 h-3 text-fuchsia-400" /> Cloud</div>
           <div className="flex items-center gap-1.5 text-[9px] md:text-xs font-bold text-gray-300 glow-hover cursor-default px-2 py-1 rounded-full"><Lock className="w-3 h-3 text-green-400" /> No Watermark</div>
         </div>
       </div>

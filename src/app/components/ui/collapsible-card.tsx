@@ -26,13 +26,13 @@ export const CollapsibleCard: React.FC<CollapsibleCardProps> = ({
         className="w-full flex items-center justify-between p-5 hover:bg-white/5 transition-colors group"
       >
         <div className="flex items-center gap-3">
-          {icon && <div className="text-cyan-400 group-hover:scale-110 transition-transform duration-300">{icon}</div>}
+          {icon && <div className="text-purple-400 group-hover:scale-110 transition-transform duration-300">{icon}</div>}
           <span className="text-sm font-bold uppercase tracking-widest text-[#cbd5e1]">{title}</span>
         </div>
         <motion.div
           animate={{ rotate: isOpen ? 180 : 0 }}
           transition={{ duration: 0.3, ease: "easeInOut" }}
-          className="text-[#64748b] group-hover:text-cyan-400"
+          className="text-[#64748b] group-hover:text-purple-400"
         >
           <ChevronDown className="w-5 h-5" />
         </motion.div>

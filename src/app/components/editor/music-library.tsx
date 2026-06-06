@@ -90,12 +90,12 @@ export const MusicLibrary: React.FC<MusicLibraryProps> = ({ videoDuration, onSel
   const TrackCard = ({ track }: { track: MusicTrack }) => (
     <div
       onClick={() => handleSelectTrack(track)}
-      className="group bg-[#0f1724] border border-white/5 rounded-lg p-3 cursor-pointer hover:border-cyan-400/30 transition-all hover:bg-[#0f1724]/80 space-y-2"
+      className="group bg-[#0f1724] border border-white/5 rounded-lg p-3 cursor-pointer hover:border-purple-400/30 transition-all hover:bg-[#0f1724]/80 space-y-2"
     >
       {/* Track Header */}
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
-          <h4 className="text-sm font-semibold truncate text-white group-hover:text-cyan-400 transition">
+          <h4 className="text-sm font-semibold truncate text-white group-hover:text-purple-400 transition">
             {track.name}
           </h4>
           <p className="text-xs text-white/60 truncate">{track.artist}</p>
@@ -107,9 +107,9 @@ export const MusicLibrary: React.FC<MusicLibraryProps> = ({ videoDuration, onSel
           className="h-8 w-8 p-0"
         >
           {playingTrackId === track.id && isPreviewPlaying ? (
-            <Pause className="w-4 h-4 text-cyan-400" />
+            <Pause className="w-4 h-4 text-purple-400" />
           ) : (
-            <Play className="w-4 h-4 text-white/60 group-hover:text-cyan-400" />
+            <Play className="w-4 h-4 text-white/60 group-hover:text-purple-400" />
           )}
         </Button>
       </div>
@@ -119,7 +119,7 @@ export const MusicLibrary: React.FC<MusicLibraryProps> = ({ videoDuration, onSel
         <Badge variant="outline" className="text-xs bg-blue-500/10 border-blue-500/30 text-blue-300">
           {track.genre}
         </Badge>
-        <Badge variant="outline" className="text-xs bg-purple-500/10 border-purple-500/30 text-purple-300">
+        <Badge variant="outline" className="text-xs bg-fuchsia-500/10 border-fuchsia-500/30 text-fuchsia-300">
           {track.mood}
         </Badge>
         {track.bpm && (
@@ -144,12 +144,12 @@ export const MusicLibrary: React.FC<MusicLibraryProps> = ({ videoDuration, onSel
   const TrackListItem = ({ track }: { track: MusicTrack }) => (
     <div
       onClick={() => handleSelectTrack(track)}
-      className="group bg-[#0f1724] border border-white/5 rounded-lg p-3 cursor-pointer hover:border-cyan-400/30 transition-all flex items-center justify-between"
+      className="group bg-[#0f1724] border border-white/5 rounded-lg p-3 cursor-pointer hover:border-purple-400/30 transition-all flex items-center justify-between"
     >
       <div className="flex-1 min-w-0 flex items-center gap-3">
         <div className="flex-shrink-0">
-          <div className="w-10 h-10 bg-gradient-to-br from-cyan-500/20 to-blue-500/20 rounded-lg flex items-center justify-center">
-            <Music className="w-5 h-5 text-cyan-400" />
+          <div className="w-10 h-10 bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-lg flex items-center justify-center">
+            <Music className="w-5 h-5 text-purple-400" />
           </div>
         </div>
         <div className="flex-1 min-w-0">
@@ -175,7 +175,7 @@ export const MusicLibrary: React.FC<MusicLibraryProps> = ({ videoDuration, onSel
           className="h-8 w-8 p-0"
         >
           {playingTrackId === track.id && isPreviewPlaying ? (
-            <Pause className="w-4 h-4 text-cyan-400" />
+            <Pause className="w-4 h-4 text-purple-400" />
           ) : (
             <Play className="w-4 h-4 text-white/60" />
           )}
