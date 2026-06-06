@@ -323,7 +323,11 @@ if (USE_MOCK_API) {
 }
 
 // ✅ TEST ROUTE
-app.get("/", (req, res) => {
+app.get("/", (req, res, next) => {
+  const distPath = path.resolve(__dirname, "dist");
+  if (fs.existsSync(distPath)) {
+    return next();
+  }
   res.send("Server is alive");
 });
 
@@ -4497,9 +4501,32 @@ app.post("/api/audio-metadata", upload.single("audioFile"), async (req, res) => 
 // ✅ DEVELOPER PORTAL API
 app.use(developerPortalAPI);
 
+// ✅ Serve static files from Vite build in production
+const distPath = path.resolve(__dirname, "dist");
+if (fs.existsSync(distPath)) {
+  console.log("📦 Serving static files from:", distPath);
+  app.use(express.static(distPath));
+
+  // SPA fallback: serve index.html for any non-API route (Express 5 compatible)
+  app.use((req, res, next) => {
+    if (
+      req.path.startsWith("/api") ||
+      req.path === "/search-image" ||
+      req.path === "/generate" ||
+      req.path === "/test"
+    ) {
+      return next();
+    }
+    res.sendFile(path.join(distPath, "index.html"));
+  });
+} else {
+  console.log("⚠️ dist directory not found. Static files not served.");
+}
+
 // ✅ START SERVER
-app.listen(5000, () => {
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, "0.0.0.0", () => {
   console.log("SERVER LISTENING");
   console.log("SERVER RUNNING");
-  console.log("✅ Server running on http://localhost:5000");
+  console.log(`✅ Server running on port ${PORT}`);
 });

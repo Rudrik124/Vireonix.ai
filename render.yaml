@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: vireonix-ai
+    env: node
+    plan: starter
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: SUPABASE_URL
+        placeholder: "Your Supabase project URL"
+      - key: SUPABASE_ANON_KEY
+        placeholder: "Your Supabase anonymous key"
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        placeholder: "Your Supabase service role key"
+      - key: SUPABASE_STORAGE_BUCKET
+        placeholder: "Your Supabase storage bucket name"
+      - key: FAL_API_KEY
+        placeholder: "Optional: Fal AI API Key"
+      - key: JSON2VIDEO_API_KEY
+        placeholder: "Optional: JSON2Video API Key"
+      - key: REPLICATE_API_TOKEN
+        placeholder: "Optional: Replicate API Token"
+      - key: OPENROUTER_API_KEY
+        placeholder: "Optional: OpenRouter API Key"
+      - key: GEMINI_API_KEY
+        placeholder: "Optional: Gemini API Key"
