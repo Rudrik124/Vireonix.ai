@@ -87,6 +87,7 @@ export function DeveloperTesterCreditsPage() {
 
   const handleSelectTester = async (tester: Tester) => {
     setSelectedTester(tester);
+    setShowForm(false);
     try {
       const historyData = await fetchTesterCreditHistory(tester.id);
       setHistory(historyData.transactions || []);
@@ -261,21 +262,30 @@ export function DeveloperTesterCreditsPage() {
               ) : (
                 <div className="space-y-2 max-h-96 overflow-y-auto">
                   {testers.map((tester) => (
-                    <button
+                    <div
                       key={tester.id}
-                      onClick={() => handleSelectTester(tester)}
                       className={`w-full text-left p-3 rounded transition ${
                         selectedTester?.id === tester.id
                           ? "bg-blue-600 border-2 border-yellow-400"
                           : "bg-blue-600 hover:bg-blue-500 border-2 border-transparent"
                       }`}
                     >
-                      <p className="font-semibold text-white text-sm">{tester.name || tester.email}</p>
-                      <p className="text-blue-200 text-xs truncate">{tester.email}</p>
-                      <div className="mt-2 flex justify-between items-center">
-                        <span className="text-yellow-300 font-bold text-sm">
+                      <button
+                        type="button"
+                        onClick={() => handleSelectTester(tester)}
+                        className="w-full text-left"
+                      >
+                        <p className="font-semibold text-white text-sm">{tester.name || tester.email}</p>
+                        <p className="text-blue-200 text-xs truncate">{tester.email}</p>
+                      </button>
+                      <div className="mt-2 flex items-center justify-between gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleSelectTester(tester)}
+                          className="text-yellow-300 font-bold text-sm hover:text-yellow-200"
+                        >
                           {tester.currentCredits} credits
-                        </span>
+                        </button>
                         <span
                           className={`text-xs px-2 py-1 rounded ${
                             tester.status === "active"
@@ -286,7 +296,17 @@ export function DeveloperTesterCreditsPage() {
                           {tester.status}
                         </span>
                       </div>
-                    </button>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          await handleSelectTester(tester);
+                          setShowForm(true);
+                        }}
+                        className="mt-3 w-full rounded bg-green-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-green-700"
+                      >
+                        Assign Credits
+                      </button>
+                    </div>
                   ))}
                 </div>
               )}

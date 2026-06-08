@@ -27,6 +27,162 @@ const TESTER_PERMISSIONS = [
 
 const TESTER_PORTAL_ACCESS = ["tester", "user"];
 
+const PROFILE_SELECTS = [
+  "id, email, full_name, role, user_credits, developer_credits, created_at, subscription_status, portal_access",
+  "id, email, full_name, user_credits, developer_credits, created_at, subscription_status, portal_access",
+  "id, email, full_name, created_at",
+  "id, email",
+];
+
+const getInternalFallbackProfile = (user) => {
+  const email = user.email?.toLowerCase();
+
+  if (email === "admin@veytrix.ai") {
+    return { id: user.id, email: user.email, role: "admin" };
+  }
+
+  if (email === "developer@veytrix.ai") {
+    return { id: user.id, email: user.email, role: "developer" };
+  }
+
+  if (email === "tester@veeytrix.ai" || email === "tester@veytrix.ai") {
+    return { id: user.id, email: user.email, role: "tester" };
+  }
+
+  return null;
+};
+
+const findInternalProfile = async (user) => {
+  const selectProfile = async (tableName) => {
+    for (const columns of ["id, email, role", "id, email"]) {
+      const { data, error } = await getSupabaseClient()
+        .from(tableName)
+        .select(columns)
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (!error) {
+        const fallbackProfile = getInternalFallbackProfile(user);
+        return data ? { ...data, role: data.role || fallbackProfile?.role || "user" } : null;
+      }
+
+      const message = error.message?.toLowerCase() || "";
+      const isMissingColumn = error.code === "42703";
+      const isMissingTable = error.code === "PGRST116" || message.includes("does not exist");
+
+      if (isMissingColumn) {
+        continue;
+      }
+
+      if (!isMissingTable) {
+        console.warn(`Failed to load internal profile from ${tableName}:`, error.message);
+      }
+
+      return null;
+    }
+  };
+
+  return (await selectProfile("app_profiles")) || (await selectProfile("profiles")) || getInternalFallbackProfile(user);
+};
+
+const selectAppProfiles = async ({ ids, offset, limit }) => {
+  for (const columns of PROFILE_SELECTS) {
+    let query = getSupabaseClient().from("app_profiles").select(columns);
+
+    if (ids) {
+      query = query.in("id", ids);
+    } else {
+      query = query.order("created_at", { ascending: false }).range(offset, offset + limit - 1);
+    }
+
+    const { data, error } = await query;
+
+    if (!error) {
+      return data || [];
+    }
+
+    if (error.code !== "42703") {
+      throw error;
+    }
+  }
+
+  return [];
+};
+
+const selectAppProfileById = async (id) => {
+  const profiles = await selectAppProfiles({ ids: [id] });
+  return profiles[0] || null;
+};
+
+const isTesterAccount = (authUser, profile) => {
+  const email = (profile?.email || authUser?.email || "").toLowerCase();
+  const metadataRole = authUser?.user_metadata?.role || authUser?.app_metadata?.role;
+  const portalAccess = profile?.portal_access || authUser?.user_metadata?.portal_access || [];
+
+  return (
+    profile?.role === "tester" ||
+    metadataRole === "tester" ||
+    portalAccess.includes?.("tester") ||
+    email === "tester@veeytrix.ai" ||
+    email === "tester@veytrix.ai" ||
+    email.includes("tester") ||
+    email.includes("qa")
+  );
+};
+
+const getDeveloperCreditBalance = async (userId, profile) => {
+  const { data: wallet } = await getSupabaseClient()
+    .from("credit_wallets")
+    .select("balance")
+    .eq("user_id", userId)
+    .eq("wallet_type", "developer_credits")
+    .maybeSingle();
+
+  return Number(wallet?.balance ?? profile?.developer_credits ?? 0);
+};
+
+const upsertTesterProfile = async ({ id, email, fullName, developerCredits }) => {
+  const payloads = [
+    {
+      id,
+      email,
+      full_name: fullName,
+      role: "tester",
+      portal_access: TESTER_PORTAL_ACCESS,
+      permissions: TESTER_PERMISSIONS,
+      subscription_status: "active",
+      user_credits: 0,
+      developer_credits: developerCredits,
+    },
+    {
+      id,
+      email,
+      full_name: fullName,
+      subscription_status: "active",
+      user_credits: 0,
+      developer_credits: developerCredits,
+    },
+    {
+      id,
+      email,
+      full_name: fullName,
+    },
+    {
+      id,
+      email,
+    },
+  ];
+
+  for (const payload of payloads) {
+    const { error } = await getSupabaseClient()
+      .from("app_profiles")
+      .upsert(payload, { onConflict: "id" });
+
+    if (!error) return;
+    if (error.code !== "42703") throw error;
+  }
+};
+
 const authenticateInternalRequest = async (req, res) => {
   const token = req.headers.authorization?.replace("Bearer ", "");
   if (!token) {
@@ -43,13 +199,8 @@ const authenticateInternalRequest = async (req, res) => {
     return null;
   }
 
-  const { data: profile, error: profileError } = await getSupabaseClient()
-    .from("app_profiles")
-    .select("id, email, role")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (profileError || !profile) {
+  const profile = await findInternalProfile(user);
+  if (!profile) {
     res.status(403).json({ error: "Profile not found" });
     return null;
   }
@@ -162,6 +313,111 @@ router.get("/api/developer/users", verifyDeveloperAccess, async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
     const offset = (page - 1) * limit;
+    const search = String(req.query.search || "").trim().toLowerCase();
+
+    const authResult = await getSupabaseClient().auth.admin.listUsers({
+      page,
+      perPage: limit,
+    });
+
+    if (authResult.error) {
+      console.warn("Supabase auth users lookup failed, falling back to app_profiles:", authResult.error.message);
+      const profileUsers = await selectAppProfiles({ offset, limit });
+
+      const { count: totalCount } = await getSupabaseClient()
+        .from("app_profiles")
+        .select("*", { count: "exact", head: true });
+
+      const users = (profileUsers || [])
+        .filter((user) => {
+          if (!search) return true;
+          return (
+            user.email?.toLowerCase().includes(search) ||
+            user.full_name?.toLowerCase().includes(search)
+          );
+        })
+        .map((user) => ({
+          id: user.id,
+          email: user.email,
+          name: user.full_name || user.email?.split("@")[0] || "N/A",
+          role: user.role || "user",
+          status: user.subscription_status === "suspended" ? "suspended" : "active",
+          credits: user.user_credits || 0,
+          developerCredits: user.developer_credits || 0,
+          portalAccess: user.portal_access || [],
+          videos: 0,
+          joinDate: user.created_at ? new Date(user.created_at).toLocaleDateString() : "N/A",
+          lastLogin: "N/A",
+        }));
+
+      return res.json({
+        users,
+        totalCount: totalCount || users.length,
+        page,
+        limit,
+        totalPages: Math.ceil((totalCount || users.length) / limit),
+      });
+    }
+
+    const authUsers = authResult.data?.users || [];
+    const userIds = authUsers.map((user) => user.id);
+
+    const profiles = userIds.length ? await selectAppProfiles({ ids: userIds }) : [];
+
+    const profileById = new Map((profiles || []).map((profile) => [profile.id, profile]));
+
+    const users = authUsers
+      .map((authUser) => {
+        const profile = profileById.get(authUser.id);
+        const email = profile?.email || authUser.email || "";
+        const name =
+          profile?.full_name ||
+          authUser.user_metadata?.full_name ||
+          authUser.user_metadata?.name ||
+          email.split("@")[0] ||
+          "N/A";
+
+        return {
+          id: authUser.id,
+          email,
+          name,
+          role: profile?.role || "user",
+          status: profile?.subscription_status === "suspended" ? "suspended" : "active",
+          credits: profile?.user_credits || 0,
+          developerCredits: profile?.developer_credits || 0,
+          portalAccess: profile?.portal_access || ["user"],
+          videos: 0,
+          joinDate: new Date(profile?.created_at || authUser.created_at).toLocaleDateString(),
+          lastLogin: authUser.last_sign_in_at ? new Date(authUser.last_sign_in_at).toLocaleString() : "Never",
+        };
+      })
+      .filter((user) => {
+        if (!search) return true;
+        return user.email.toLowerCase().includes(search) || user.name.toLowerCase().includes(search);
+      });
+
+    res.json({
+      users,
+      totalCount: authResult.data?.total || users.length,
+      page,
+      limit,
+      totalPages: Math.ceil((authResult.data?.total || users.length) / limit),
+    });
+  } catch (error) {
+    console.error("Users list error:", error);
+    res.status(500).json({ error: error.message || "Failed to fetch users" });
+  }
+});
+
+/**
+ * GET /api/developer/profile-users
+ * Returns app profile users with pagination
+ */
+router.get("/api/developer/profile-users", verifyDeveloperAccess, async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const offset = (page - 1) * limit;
 
     const { data: users, error } = await getSupabaseClient()
       .from("app_profiles")
@@ -193,7 +449,7 @@ router.get("/api/developer/users", verifyDeveloperAccess, async (req, res) => {
       totalPages: Math.ceil((totalCount || 0) / limit),
     });
   } catch (error) {
-    console.error("Users list error:", error);
+    console.error("Profile users list error:", error);
     res.status(500).json({ error: "Failed to fetch users" });
   }
 });
@@ -436,30 +692,43 @@ router.get("/api/developer/credits/transactions", verifyDeveloperAccess, async (
 
 router.get("/api/developer/testers", verifyDeveloperAccess, async (_req, res) => {
   try {
-    const { data: testerProfiles, error } = await getSupabaseClient()
-      .from("app_profiles")
-      .select("id, email, full_name, developer_credits, subscription_status")
-      .eq("role", "tester")
-      .order("created_at", { ascending: false });
+    const authResult = await getSupabaseClient().auth.admin.listUsers({
+      page: 1,
+      perPage: 1000,
+    });
 
-    if (error) throw error;
+    if (authResult.error) throw authResult.error;
+
+    const authUsers = authResult.data?.users || [];
+    const profiles = authUsers.length ? await selectAppProfiles({ ids: authUsers.map((user) => user.id) }) : [];
+    const profileById = new Map((profiles || []).map((profile) => [profile.id, profile]));
+    const testerUsers = authUsers.filter((authUser) => isTesterAccount(authUser, profileById.get(authUser.id)));
 
     const testers = await Promise.all(
-      (testerProfiles || []).map(async (profile) => {
+      testerUsers.map(async (authUser) => {
+        const profile = profileById.get(authUser.id);
         const { count: totalUsed } = await getSupabaseClient()
           .from("usage_logs")
           .select("*", { count: "exact", head: true })
-          .eq("user_id", profile.id)
+          .eq("user_id", authUser.id)
           .eq("wallet_type", "developer_credits");
 
+        const email = profile?.email || authUser.email || "";
+        const name =
+          profile?.full_name ||
+          authUser.user_metadata?.full_name ||
+          authUser.user_metadata?.name ||
+          email.split("@")[0] ||
+          email;
+
         return {
-          id: profile.id,
-          email: profile.email,
-          name: profile.full_name || profile.email,
-          currentCredits: profile.developer_credits || 0,
+          id: authUser.id,
+          email,
+          name,
+          currentCredits: await getDeveloperCreditBalance(authUser.id, profile),
           weeklyAllocation: 500,
           totalUsed: totalUsed || 0,
-          status: profile.subscription_status === "active" ? "active" : "inactive",
+          status: profile?.subscription_status === "suspended" ? "inactive" : "active",
         };
       }),
     );
@@ -494,19 +763,12 @@ router.post("/api/developer/testers", verifyDeveloperAccess, async (req, res) =>
     if (existingProfileError) throw existingProfileError;
 
     if (existingProfile) {
-      const { error: updateError } = await getSupabaseClient()
-        .from("app_profiles")
-        .update({
-          email,
-          full_name: fullName,
-          role: "tester",
-          portal_access: TESTER_PORTAL_ACCESS,
-          permissions: TESTER_PERMISSIONS,
-          subscription_status: "active",
-        })
-        .eq("id", existingProfile.id);
-
-      if (updateError) throw updateError;
+      await upsertTesterProfile({
+        id: existingProfile.id,
+        email,
+        fullName,
+        developerCredits: 0,
+      });
 
       return res.json({
         success: true,
@@ -531,21 +793,12 @@ router.post("/api/developer/testers", verifyDeveloperAccess, async (req, res) =>
 
     const testerId = createdUserData.user.id;
 
-    const { error: insertProfileError } = await getSupabaseClient()
-      .from("app_profiles")
-      .insert({
-        id: testerId,
-        email,
-        full_name: fullName,
-        role: "tester",
-        portal_access: TESTER_PORTAL_ACCESS,
-        permissions: TESTER_PERMISSIONS,
-        subscription_status: "active",
-        user_credits: 0,
-        developer_credits: 0,
-      });
-
-    if (insertProfileError) throw insertProfileError;
+    await upsertTesterProfile({
+      id: testerId,
+      email,
+      fullName,
+      developerCredits: 0,
+    });
 
     await getSupabaseClient().from("credit_wallets").upsert(
       [
@@ -670,30 +923,44 @@ router.post("/api/developer/testers/:testerId/credits/assign", verifyDeveloperAc
   try {
     const { testerId } = req.params;
     const { amount, reason } = req.body;
+    const creditAmount = Number(amount);
 
-    if (!amount || amount <= 0) {
+    if (!creditAmount || creditAmount <= 0) {
       return res.status(400).json({ error: "Invalid amount" });
     }
 
-    const { data: tester, error: fetchError } = await getSupabaseClient()
-      .from("app_profiles")
-      .select("id, email, developer_credits")
-      .eq("id", testerId)
-      .eq("role", "tester")
-      .maybeSingle();
-
-    if (fetchError || !tester) {
+    const { data: authUserData, error: authUserError } = await getSupabaseClient().auth.admin.getUserById(testerId);
+    if (authUserError || !authUserData?.user) {
       return res.status(404).json({ error: "Tester not found" });
     }
 
-    const newBalance = (tester.developer_credits || 0) + amount;
+    const existingProfile = await selectAppProfileById(testerId);
+    if (!isTesterAccount(authUserData.user, existingProfile)) {
+      return res.status(404).json({ error: "Tester not found" });
+    }
 
-    const { error: updateError } = await getSupabaseClient()
-      .from("app_profiles")
-      .update({ developer_credits: newBalance })
-      .eq("id", testerId);
+    const testerEmail = existingProfile?.email || authUserData.user.email || "";
+    const testerName =
+      existingProfile?.full_name ||
+      authUserData.user.user_metadata?.full_name ||
+      authUserData.user.user_metadata?.name ||
+      testerEmail.split("@")[0] ||
+      testerEmail;
+    const newBalance = (await getDeveloperCreditBalance(testerId, existingProfile)) + creditAmount;
 
-    if (updateError) throw updateError;
+    const { error: walletError } = await getSupabaseClient()
+      .from("credit_wallets")
+      .upsert(
+        {
+          user_id: testerId,
+          wallet_type: "developer_credits",
+          balance: newBalance,
+          is_unlimited: false,
+        },
+        { onConflict: "user_id,wallet_type" },
+      );
+
+    if (walletError) throw walletError;
 
     await getSupabaseClient().from("usage_logs").insert({
       user_id: testerId,
@@ -703,7 +970,7 @@ router.post("/api/developer/testers/:testerId/credits/assign", verifyDeveloperAc
       wallet_type: "developer_credits",
       feature_key: "credit_added",
       credits_requested: 0,
-      credits_charged: -amount,
+      credits_charged: -creditAmount,
       status: "completed",
       metadata: {
         reason: reason || "Manual tester credit assignment",

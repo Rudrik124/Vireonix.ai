@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
@@ -84,50 +84,70 @@ export function useRealtime(subscriptions: RealtimeSubscription[]) {
  * Hook for listening to usage_logs changes (for analytics)
  */
 export function useUsageLogsRealtime(callback: (payload: any) => void) {
-  return useRealtime([
-    {
-      table: 'usage_logs',
-      event: 'INSERT',
-      callback,
-    },
-  ]);
+  const subscriptions = useMemo(
+    () => [
+      {
+        table: 'usage_logs',
+        event: 'INSERT' as const,
+        callback,
+      },
+    ],
+    [callback]
+  );
+
+  return useRealtime(subscriptions);
 }
 
 /**
  * Hook for listening to error_logs changes
  */
 export function useErrorLogsRealtime(callback: (payload: any) => void) {
-  return useRealtime([
-    {
-      table: 'error_logs',
-      event: 'INSERT',
-      callback,
-    },
-  ]);
+  const subscriptions = useMemo(
+    () => [
+      {
+        table: 'error_logs',
+        event: 'INSERT' as const,
+        callback,
+      },
+    ],
+    [callback]
+  );
+
+  return useRealtime(subscriptions);
 }
 
 /**
  * Hook for listening to app_profiles changes (new users)
  */
 export function useNewUsersRealtime(callback: (payload: any) => void) {
-  return useRealtime([
-    {
-      table: 'app_profiles',
-      event: 'INSERT',
-      callback,
-    },
-  ]);
+  const subscriptions = useMemo(
+    () => [
+      {
+        table: 'app_profiles',
+        event: 'INSERT' as const,
+        callback,
+      },
+    ],
+    [callback]
+  );
+
+  return useRealtime(subscriptions);
 }
 
 /**
  * Hook for listening to credit_wallets changes
  */
 export function useCreditWalletsRealtime(callback: (payload: any) => void) {
-  return useRealtime([
-    {
-      table: 'credit_wallets',
-      event: 'UPDATE',
-      callback,
-    },
-  ]);
+  const subscriptions = useMemo(
+    () => [
+      {
+        table: 'credit_wallets',
+        event: 'UPDATE' as const,
+        callback,
+      },
+    ],
+    [callback]
+  );
+
+  return useRealtime(subscriptions);
 }

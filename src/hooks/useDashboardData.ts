@@ -25,13 +25,24 @@ export function useDashboardStats() {
     revenue: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const loadStats = useCallback(async () => {
-    const data = await fetchDashboardStats();
-    if (data) {
-      setStats(data);
+    try {
+      setError(null);
+      const data = await fetchDashboardStats();
+      if (data) {
+        setStats((previousStats: any) => ({
+          ...previousStats,
+          ...data,
+        }));
+      }
+    } catch (statsError) {
+      console.error('Failed to load dashboard stats:', statsError);
+      setError(statsError instanceof Error ? statsError.message : 'Failed to load dashboard stats');
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, []);
 
   useEffect(() => {
@@ -54,7 +65,7 @@ export function useDashboardStats() {
     loadStats();
   });
 
-  return { stats, isLoading, refetch: loadStats };
+  return { stats, isLoading, error, refetch: loadStats };
 }
 
 /**
@@ -90,13 +101,22 @@ export function useAnalyticsData(timeRange: '7d' | '30d' | '90d' = '7d') {
 export function useUserList(page: number = 1, limit: number = 20) {
   const [users, setUsers] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const loadUsers = useCallback(async () => {
-    const data = await fetchUsers(page, limit);
-    if (data) {
-      setUsers(data);
+    try {
+      setError(null);
+      const data = await fetchUsers(page, limit);
+      if (data) {
+        setUsers(data);
+      }
+    } catch (usersError) {
+      console.error('Failed to fetch users:', usersError);
+      setError(usersError instanceof Error ? usersError.message : 'Failed to fetch users');
+      setUsers(null);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, [page, limit]);
 
   useEffect(() => {
@@ -108,7 +128,7 @@ export function useUserList(page: number = 1, limit: number = 20) {
     loadUsers();
   });
 
-  return { users, isLoading, refetch: loadUsers };
+  return { users, isLoading, error, refetch: loadUsers };
 }
 
 /**

@@ -1,12 +1,28 @@
 import { useNavigate } from "react-router";
+import type { ComponentType } from "react";
+import {
+  Activity,
+  AlertCircle,
+  BarChart3,
+  CheckCircle2,
+  FlaskConical,
+  LogOut,
+  MessageSquare,
+  RefreshCcw,
+  Settings,
+  Users,
+  Wallet,
+  Zap,
+} from "lucide-react";
 import { useAuth } from "../../../app/context/auth-context";
-import { Users, Zap, AlertCircle, BarChart3, LogOut, Wallet } from "lucide-react";
 import { useDashboardStats } from "../../../hooks/useDashboardData";
+
+type DashboardIcon = ComponentType<{ className?: string }>;
 
 export function DeveloperDashboardPage() {
   const { profile, logout } = useAuth();
   const navigate = useNavigate();
-  const { stats, isLoading } = useDashboardStats();
+  const { stats, isLoading, error, refetch } = useDashboardStats();
 
   const handleLogout = async () => {
     await logout();
@@ -17,28 +33,36 @@ export function DeveloperDashboardPage() {
     { label: "Users", path: "/developer/users", icon: Users },
     { label: "Credits", path: "/developer/credits", icon: Zap },
     { label: "Tester Credits", path: "/developer/tester-credits", icon: Wallet },
-    { label: "AI Testing Lab", path: "/developer/testing-lab", icon: "⚗️" },
+    { label: "AI Testing Lab", path: "/developer/testing-lab", icon: FlaskConical },
     { label: "Error Logs", path: "/developer/error-logs", icon: AlertCircle },
     { label: "Analytics", path: "/developer/analytics", icon: BarChart3 },
-    { label: "Feedback", path: "/developer/feedback", icon: "💬" },
-    { label: "Settings", path: "/developer/settings", icon: "⚙️" },
+    { label: "Feedback", path: "/developer/feedback", icon: MessageSquare },
+    { label: "Settings", path: "/developer/settings", icon: Settings },
+  ];
+
+  const statCards = [
+    { label: "Total Users", value: stats.totalUsers.toLocaleString(), icon: Users },
+    { label: "Active Users", value: stats.activeUsers.toLocaleString(), icon: Activity },
+    { label: "New Users (7d)", value: stats.newUsers.toLocaleString(), icon: Users },
+    { label: "AI Requests", value: stats.aiRequests.toLocaleString(), icon: BarChart3 },
+    { label: "Credits Consumed", value: stats.creditsConsumed.toLocaleString(), icon: Zap },
+    { label: "Revenue", value: `$${stats.revenue.toLocaleString()}`, icon: Wallet },
   ];
 
   return (
     <div className="min-h-screen bg-slate-900 text-white">
-      {/* Header */}
       <div className="border-b border-slate-700 bg-slate-800">
         <div className="mx-auto max-w-7xl px-6 py-6">
-          <div className="flex justify-between items-center">
+          <div className="flex items-center justify-between gap-4">
             <div>
               <h1 className="text-3xl font-bold">Developer Portal</h1>
-              <p className="text-sm text-slate-400 mt-1">Admin & Analytics Dashboard</p>
+              <p className="mt-1 text-sm text-slate-400">Admin & Analytics Dashboard</p>
             </div>
             <button
               onClick={handleLogout}
-              className="flex items-center gap-2 bg-red-600 hover:bg-red-700 px-4 py-2 rounded transition"
+              className="flex items-center gap-2 rounded bg-red-600 px-4 py-2 transition hover:bg-red-700"
             >
-              <LogOut className="w-4 h-4" />
+              <LogOut className="h-4 w-4" />
               Logout
             </button>
           </div>
@@ -46,66 +70,74 @@ export function DeveloperDashboardPage() {
       </div>
 
       <div className="mx-auto max-w-7xl px-6 py-8">
-        {/* User Info */}
-        <div className="mb-8 p-4 bg-slate-800 rounded border border-slate-700">
+        <div className="mb-8 rounded border border-slate-700 bg-slate-800 p-4">
           <p className="text-sm text-slate-400">Signed in as</p>
           <p className="text-lg font-bold">{profile?.email}</p>
-          <p className="text-sm text-slate-400 mt-1">Role: {profile?.role?.replace("_", " ") || "Developer"}</p>
+          <p className="mt-1 text-sm text-slate-400">
+            Role: {profile?.role?.replace("_", " ") || "Developer"}
+          </p>
         </div>
 
-        {/* Stats Grid */}
-        {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="h-24 bg-slate-800 rounded border border-slate-700 animate-pulse"></div>
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-            <StatCard label="Total Users" value={stats.totalUsers.toLocaleString()} />
-            <StatCard label="Active Users" value={stats.activeUsers.toLocaleString()} />
-            <StatCard label="New Users (7d)" value={stats.newUsers} />
-            <StatCard label="AI Requests" value={stats.aiRequests.toLocaleString()} />
-            <StatCard label="Credits Consumed" value={stats.creditsConsumed.toLocaleString()} />
-            <StatCard label="Revenue" value={`$${stats.revenue.toLocaleString()}`} />
+        {error && (
+          <div className="mb-4 flex items-center justify-between gap-4 rounded border border-amber-500/40 bg-amber-500/10 p-4 text-amber-100">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="h-5 w-5 flex-shrink-0" />
+              <p className="text-sm">Dashboard stats could not load: {error}</p>
+            </div>
+            <button
+              onClick={refetch}
+              className="flex items-center gap-2 rounded bg-amber-500 px-3 py-2 text-sm font-semibold text-slate-950 transition hover:bg-amber-400"
+            >
+              <RefreshCcw className="h-4 w-4" />
+              Retry
+            </button>
           </div>
         )}
 
-        {/* Recent Activity */}
-        <div className="mb-8 p-4 bg-slate-800 rounded border border-slate-700">
-          <h2 className="text-lg font-bold mb-4">System Status</h2>
+        {isLoading ? (
+          <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {[...Array(6)].map((_, index) => (
+              <div key={index} className="h-24 rounded border border-slate-700 bg-slate-800 p-4">
+                <div className="mb-4 h-4 w-24 animate-pulse rounded bg-slate-700" />
+                <div className="h-7 w-16 animate-pulse rounded bg-slate-700" />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {statCards.map((stat) => (
+              <StatCard key={stat.label} label={stat.label} value={stat.value} icon={stat.icon} />
+            ))}
+          </div>
+        )}
+
+        <div className="mb-8 rounded border border-slate-700 bg-slate-800 p-4">
+          <h2 className="mb-4 text-lg font-bold">System Status</h2>
           <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-slate-400">API Health</span>
-              <span className="text-green-400">✓ Operational</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-400">Database</span>
-              <span className="text-green-400">✓ Operational</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-400">Storage</span>
-              <span className="text-green-400">✓ Operational</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-400">Queue</span>
-              <span className="text-green-400">✓ Operational</span>
-            </div>
+            {["API Health", "Database", "Storage", "Queue"].map((item) => (
+              <div key={item} className="flex justify-between gap-4">
+                <span className="text-slate-400">{item}</span>
+                <span className="flex items-center gap-1 text-green-400">
+                  <CheckCircle2 className="h-4 w-4" />
+                  Operational
+                </span>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Navigation */}
         <div className="mb-8">
-          <h2 className="text-lg font-bold mb-4">Portal Sections</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+          <h2 className="mb-4 text-lg font-bold">Portal Sections</h2>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
             {menuItems.map((item) => (
               <button
                 key={item.path}
                 onClick={() => navigate(item.path)}
-                className="p-4 bg-slate-800 hover:bg-slate-700 rounded border border-slate-700 hover:border-slate-600 transition text-left"
+                className="rounded border border-slate-700 bg-slate-800 p-4 text-left transition hover:border-slate-600 hover:bg-slate-700"
               >
+                <item.icon className="mb-3 h-5 w-5 text-cyan-300" />
                 <p className="text-sm font-bold">{item.label}</p>
-                <p className="text-xs text-slate-400 mt-1">Manage {item.label.toLowerCase()}</p>
+                <p className="mt-1 text-xs text-slate-400">Manage {item.label.toLowerCase()}</p>
               </button>
             ))}
           </div>
@@ -115,11 +147,22 @@ export function DeveloperDashboardPage() {
   );
 }
 
-function StatCard({ label, value }: { label: string; value: string | number }) {
+function StatCard({
+  label,
+  value,
+  icon: Icon,
+}: {
+  label: string;
+  value: string | number;
+  icon: DashboardIcon;
+}) {
   return (
-    <div className="p-4 bg-slate-800 rounded border border-slate-700">
-      <p className="text-sm text-slate-400">{label}</p>
-      <p className="text-2xl font-bold mt-2">{value}</p>
+    <div className="rounded border border-slate-700 bg-slate-800 p-4">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm text-slate-400">{label}</p>
+        <Icon className="h-5 w-5 text-cyan-300" />
+      </div>
+      <p className="mt-2 text-2xl font-bold">{value}</p>
     </div>
   );
 }

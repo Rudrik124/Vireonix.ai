@@ -11,8 +11,11 @@ interface User {
   role: string;
   status: 'active' | 'suspended';
   credits: number;
+  developerCredits?: number;
   portalAccess: string[];
+  videos: number;
   joinDate: string;
+  lastLogin: string;
 }
 
 export function DeveloperUsersPage() {
@@ -22,7 +25,7 @@ export function DeveloperUsersPage() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [page, setPage] = useState(1);
 
-  const { users: allUsers, isLoading } = useUserList(page, 20);
+  const { users: allUsers, isLoading, error, refetch } = useUserList(page, 20);
 
   const filteredUsers = (allUsers?.users || []).filter(
     (user) =>
@@ -197,8 +200,40 @@ export function DeveloperUsersPage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredUsers.map((user, idx) => (
-                  <tr key={idx} className="border-b border-slate-700 hover:bg-slate-700/50 transition">
+                {isLoading && (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-8 text-center text-sm text-slate-400">
+                      Loading Supabase users...
+                    </td>
+                  </tr>
+                )}
+
+                {!isLoading && error && (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-8 text-center text-sm text-red-300">
+                      <div className="flex flex-col items-center gap-3">
+                        <span>Failed to load Supabase users: {error}</span>
+                        <button
+                          onClick={refetch}
+                          className="rounded bg-red-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-red-700"
+                        >
+                          Retry
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+
+                {!isLoading && !error && filteredUsers.length === 0 && (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-8 text-center text-sm text-slate-400">
+                      No Supabase users found.
+                    </td>
+                  </tr>
+                )}
+
+                {!isLoading && !error && filteredUsers.map((user) => (
+                  <tr key={user.id} className="border-b border-slate-700 hover:bg-slate-700/50 transition">
                     <td className="px-6 py-3 text-sm">{user.email}</td>
                     <td className="px-6 py-3 text-sm">{user.name}</td>
                     <td className="px-6 py-3 text-sm">
