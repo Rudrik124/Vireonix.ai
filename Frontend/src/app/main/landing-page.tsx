@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { ConfigProvider, theme, Button, Modal, Row, Col, Card, Switch, Typography, Progress } from 'antd';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircleOutlined, GithubOutlined, TwitterOutlined, RocketOutlined, SearchOutlined, CloudUploadOutlined, CloudDownloadOutlined, ThunderboltOutlined, PictureOutlined, CodeOutlined, PlayCircleOutlined, ScissorOutlined, MessageOutlined, AudioOutlined, BgColorsOutlined, MobileOutlined, SoundOutlined, BulbOutlined, RobotOutlined, FieldTimeOutlined, SafetyCertificateOutlined, CloudServerOutlined, VideoCameraOutlined, CopyOutlined, FileImageOutlined, EditOutlined, CloseOutlined, SlidersOutlined, DiscordOutlined, ArrowRightOutlined } from '@ant-design/icons';
+import { CheckCircleOutlined, GithubOutlined, TwitterOutlined, RocketOutlined, SearchOutlined, CloudUploadOutlined, CloudDownloadOutlined, ThunderboltOutlined, PictureOutlined, CodeOutlined, PlayCircleOutlined, ScissorOutlined, MessageOutlined, AudioOutlined, BgColorsOutlined, MobileOutlined, SoundOutlined, BulbOutlined, FieldTimeOutlined, SafetyCertificateOutlined, CloudServerOutlined, VideoCameraOutlined, CopyOutlined, FileImageOutlined, EditOutlined, CloseOutlined, SlidersOutlined, DiscordOutlined, ArrowRightOutlined } from '@ant-design/icons';
 import { LoginModal } from '../components/login-modal';
 import { Sparkles, Play, Video, Image as ImageIcon, Wand2, Music, CheckCircle2, Menu, Loader2, Star, Zap, Clapperboard, Globe, ShieldCheck, User, ChevronRight, ChevronDown, LogOut } from 'lucide-react';
 import { useAuth } from '../context/auth-context';
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text } = Typography;
 
 // Custom SEO hook for manipulating the document head
 function useSEO(title: string, description: string) {
@@ -83,12 +83,12 @@ export function LandingPage() {
 
   useEffect(() => {
     let timeout: ReturnType<typeof setTimeout>;
-    
+
     const runSequence = () => {
       setPromptText("");
       setPromptPhase("typing");
       setProgressValue(0);
-      
+
       let charIndex = 0;
       const typeInterval = setInterval(() => {
         if (charIndex <= fullPrompt.length) {
@@ -117,7 +117,7 @@ export function LandingPage() {
           }, 1000);
         }
       }, 50);
-      
+
       return () => clearInterval(typeInterval);
     };
 
@@ -196,9 +196,9 @@ export function LandingPage() {
   return (
     <ConfigProvider theme={currentTheme}>
       <div className={`min-h-screen transition-colors duration-500 font-sans ${isDarkMode ? 'bg-[#0a0a0a] text-white' : 'bg-white text-black'}`}>
-        
+
         {/* MOUSE FOLLOW LIGHT EFFECT */}
-        <div 
+        <div
           className="pointer-events-none fixed inset-0 z-0 transition-opacity duration-300"
           style={{
             background: `radial-gradient(600px circle at ${mousePosition.x}px ${mousePosition.y}px, rgba(139, 92, 246, 0.08), transparent 40%)`
@@ -209,16 +209,16 @@ export function LandingPage() {
         <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 bg-[#0B0A10]">
           {/* Grid Glow */}
           <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:60px_60px] [perspective:1000px] [transform-style:preserve-3d]">
-             <div className="absolute inset-0 bg-gradient-to-t from-[#0B0A10] via-transparent to-[#0B0A10]" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0B0A10] via-transparent to-[#0B0A10]" />
           </div>
-          
+
           {/* Gradient Blobs */}
-          <motion.div 
+          <motion.div
             animate={{ x: [0, 100, 0], y: [0, -50, 0], scale: [1, 1.2, 1] }}
             transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
             className="absolute top-0 right-1/4 w-[800px] h-[800px] bg-fuchsia-600/10 rounded-full blur-[120px]"
           />
-          <motion.div 
+          <motion.div
             animate={{ x: [0, -100, 0], y: [0, 50, 0], scale: [1, 1.1, 1] }}
             transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
             className="absolute bottom-0 left-1/4 w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-[100px]"
@@ -235,7 +235,7 @@ export function LandingPage() {
               </div>
               <span className="text-white drop-shadow-md">VEYTRIX<span className="text-fuchsia-400">.AI</span></span>
             </div>
-            
+
             {/* Navigation */}
             <nav className="hidden md:flex items-center justify-center gap-8 text-sm font-semibold opacity-80 text-white">
               <a href="#features" className="hover:text-fuchsia-400 hover:opacity-100 transition-colors relative group">
@@ -289,7 +289,7 @@ export function LandingPage() {
                 Dashboard
               </button>
             </div>
-            
+
             {/* Mobile Menu */}
             <button className="md:hidden text-white opacity-80">
               <Menu className="w-6 h-6" />
@@ -300,11 +300,11 @@ export function LandingPage() {
         {/* HERO SECTION */}
         <section className="relative min-h-screen pt-32 pb-20 px-6 flex flex-col justify-center overflow-hidden z-10">
           <div className="max-w-7xl mx-auto w-full grid lg:grid-cols-[60%_40%] gap-16 items-center">
-            
+
             {/* LEFT COLUMN: MAIN CONTENT */}
-            <motion.div 
-              initial={{ opacity: 0, y: 30 }} 
-              animate={{ opacity: 1, y: 0 }} 
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
               className="text-left z-20"
             >
@@ -312,12 +312,12 @@ export function LandingPage() {
               <div className="mb-6 inline-flex items-center gap-2 px-4 py-2 rounded-full border border-fuchsia-500/30 bg-fuchsia-500/10 text-fuchsia-400 text-xs font-bold tracking-widest uppercase shadow-[0_0_20px_rgba(139,92,246,0.2)]">
                 <Sparkles className="w-3 h-3 animate-pulse" /> AI-Powered Video Creation
               </div>
-              
+
               {/* Heading */}
               <h1 className="text-[clamp(2.5rem,4vw,4rem)] font-black leading-[1.1] mb-6 tracking-tight text-white drop-shadow-xl">
                 Turn prompts, images, and ideas into <span className="text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-400 to-purple-400 drop-shadow-[0_0_30px_rgba(139,92,246,0.4)]">studio-quality videos</span> instantly.
               </h1>
-              
+
               {/* Subheading */}
               <p className="text-lg md:text-xl mb-10 text-gray-400 max-w-xl font-medium leading-relaxed">
                 Create stunning cinematic content with intelligent AI workflows. Generate, edit, and export professional videos in minutes.
@@ -327,7 +327,7 @@ export function LandingPage() {
               <div className="mb-10 w-full max-w-xl relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-fuchsia-600/20 to-purple-600/20 blur-xl rounded-2xl" />
                 <div className="relative bg-[#130E24]/80 backdrop-blur-xl border border-fuchsia-500/30 rounded-2xl p-5 shadow-2xl">
-                  
+
                   {/* Status Indicator */}
                   <div className="flex justify-between items-center mb-3">
                     <div className="flex items-center gap-2">
@@ -349,7 +349,7 @@ export function LandingPage() {
                         <span className="inline-block w-2 h-4 ml-1 bg-fuchsia-400 animate-pulse align-middle" />
                       </p>
                     )}
-                    
+
                     {promptPhase === 'loading' && (
                       <div className="flex items-center gap-4 text-fuchsia-200">
                         <Loader2 className="w-6 h-6 animate-spin text-fuchsia-500" />
@@ -364,7 +364,7 @@ export function LandingPage() {
                           <span className="text-white">{progressValue}%</span>
                         </div>
                         <div className="w-full h-2 bg-purple-900/50 rounded-full overflow-hidden">
-                          <motion.div 
+                          <motion.div
                             className="h-full bg-gradient-to-r from-fuchsia-500 to-purple-400 rounded-full"
                             initial={{ width: 0 }}
                             animate={{ width: `${progressValue}%` }}
@@ -386,26 +386,26 @@ export function LandingPage() {
 
               {/* CTAs */}
               <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-                <Button 
-                  onClick={handleStartCreating} 
-                  type="primary" 
-                  size="large" 
-                  shape="round" 
+                <Button
+                  onClick={handleStartCreating}
+                  type="primary"
+                  size="large"
+                  shape="round"
                   className="h-14 px-10 text-lg font-bold bg-gradient-to-r from-fuchsia-600 to-purple-600 border-0 shadow-[0_0_30px_rgba(139,92,246,0.4)] hover:shadow-[0_0_40px_rgba(139,92,246,0.6)] group relative overflow-hidden text-white hover:text-white"
                 >
                   <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
                   <span className="relative z-10 flex items-center gap-2">Start Creating <ChevronRight className="w-5 h-5" /></span>
                 </Button>
-                <Button 
-                  size="large" 
-                  shape="round" 
+                <Button
+                  size="large"
+                  shape="round"
                   className="h-14 px-10 text-lg font-bold bg-transparent border-2 border-white/20 text-white hover:border-fuchsia-500 hover:text-fuchsia-400 transition-all hover:bg-white/5"
                   onClick={() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })}
                 >
                   Watch Demo
                 </Button>
               </div>
-              
+
               {/* Social Proof */}
               <div className="mt-8 flex items-center gap-4 opacity-70 text-white">
                 <div className="flex -space-x-3">
@@ -426,9 +426,9 @@ export function LandingPage() {
 
             {/* RIGHT COLUMN: VISUAL AREA */}
             <div className="relative w-full h-[500px] lg:h-[600px] hidden lg:block z-10 perspective-[1000px]">
-              
+
               {/* Main Video Preview Window */}
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, rotateY: -10, z: -100 }}
                 animate={{ opacity: 1, rotateY: -5, z: 0 }}
                 transition={{ duration: 1, ease: "easeOut" }}
@@ -441,7 +441,7 @@ export function LandingPage() {
                   <div className="w-2.5 h-2.5 rounded-full bg-green-500/80" />
                   <div className="mx-auto text-[10px] font-mono text-white/40 tracking-widest">VEYTRIX.AI / OUTPUT</div>
                 </div>
-                
+
                 {/* Video Area */}
                 <div className="relative aspect-video bg-black flex items-center justify-center overflow-hidden">
                   <img loading="lazy" decoding="async" src="https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=1000&auto=format&fit=crop" alt="Cinematic Output" className="w-full h-full object-cover opacity-80" />
@@ -456,7 +456,7 @@ export function LandingPage() {
                     0:30
                   </div>
                 </div>
-                
+
                 {/* Floating Timeline UI */}
                 <div className="p-4 bg-black/20">
                   <div className="flex items-center gap-2 mb-2">
@@ -480,7 +480,7 @@ export function LandingPage() {
               </motion.div>
 
               {/* Floating Cards */}
-              <motion.div 
+              <motion.div
                 animate={{ y: [0, -15, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
                 className="absolute top-10 -left-10 bg-white/10 backdrop-blur-xl border border-white/20 p-3 rounded-2xl shadow-xl shadow-purple-900/20 flex items-center gap-3 z-20"
               >
@@ -490,7 +490,7 @@ export function LandingPage() {
                 <div className="font-bold text-sm whitespace-nowrap text-white">AI Video Gen</div>
               </motion.div>
 
-              <motion.div 
+              <motion.div
                 animate={{ y: [0, 20, 0] }} transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
                 className="absolute bottom-32 -right-8 bg-white/10 backdrop-blur-xl border border-white/20 p-3 rounded-2xl shadow-xl shadow-purple-900/20 flex items-center gap-3 z-20"
               >
@@ -500,7 +500,7 @@ export function LandingPage() {
                 <div className="font-bold text-sm whitespace-nowrap text-white">Smart Editing</div>
               </motion.div>
 
-              <motion.div 
+              <motion.div
                 animate={{ y: [0, -10, 0] }} transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut", delay: 2 }}
                 className="absolute -top-4 right-10 bg-white/10 backdrop-blur-xl border border-white/20 p-3 rounded-2xl shadow-xl shadow-pink-900/20 flex items-center gap-3 z-20"
               >
@@ -510,7 +510,7 @@ export function LandingPage() {
                 <div className="font-bold text-sm whitespace-nowrap text-white">Image Animation</div>
               </motion.div>
 
-              <motion.div 
+              <motion.div
                 animate={{ y: [0, 15, 0] }} transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
                 className="absolute bottom-10 left-0 bg-white/10 backdrop-blur-xl border border-white/20 p-3 rounded-2xl shadow-xl shadow-blue-900/20 flex items-center gap-3 z-20"
               >
@@ -522,12 +522,12 @@ export function LandingPage() {
 
             </div>
           </div>
-          
+
           {/* Trust Stats Strip */}
           <div className="max-w-7xl mx-auto w-full mt-24 z-20">
             <div className="flex flex-wrap justify-center md:justify-between items-center gap-6 py-6 px-10 rounded-2xl bg-white/5 backdrop-blur-lg border border-white/5 shadow-2xl relative overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-fuchsia-500/10 to-transparent translate-x-[-100%] animate-[shimmer_3s_infinite]" />
-              
+
               <div className="flex items-center gap-2 text-sm font-bold text-gray-300 relative z-10"><Zap className="w-4 h-4 text-yellow-400" /> AI Powered</div>
               <div className="hidden md:block w-px h-6 bg-white/10 relative z-10" />
               <div className="flex items-center gap-2 text-sm font-bold text-gray-300 relative z-10"><Clapperboard className="w-4 h-4 text-fuchsia-400" /> 4K Export</div>
@@ -557,11 +557,10 @@ export function LandingPage() {
                   key={workflow.id}
                   whileHover={{ scale: 1.02 }}
                   onClick={() => setActiveWorkflowModal(workflow.id)}
-                  className={`cursor-pointer p-8 md:p-10 rounded-[24px] border transition-all duration-300 ${
-                    isDarkMode 
-                      ? `bg-[#130E24] border-fuchsia-500/20 hover:bg-[#1A1333] hover:${workflow.borderColor} hover:${workflow.glowColor}` 
+                  className={`cursor-pointer p-8 md:p-10 rounded-[24px] border transition-all duration-300 ${isDarkMode
+                      ? `bg-[#130E24] border-fuchsia-500/20 hover:bg-[#1A1333] hover:${workflow.borderColor} hover:${workflow.glowColor}`
                       : 'bg-white border-black/5 hover:bg-gray-50 hover:shadow-xl'
-                  }`}
+                    }`}
                 >
                   <div className="flex flex-col h-full">
                     <div className="flex flex-col items-center text-center mb-6">
@@ -571,7 +570,7 @@ export function LandingPage() {
                       <h3 className="text-2xl font-black mb-3">{workflow.title}</h3>
                       <p className="opacity-70 font-medium text-[13px] md:text-sm leading-relaxed max-w-md">{workflow.description}</p>
                     </div>
-                    
+
                     <div className="grid grid-cols-2 gap-x-2 gap-y-3 mb-8">
                       {workflow.features.map(feature => (
                         <div key={feature} className="flex items-start gap-2 text-xs font-medium opacity-80">
@@ -620,7 +619,7 @@ export function LandingPage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 lg:gap-8 relative">
               {/* Connecting Line for Desktop */}
               <div className="hidden lg:block absolute top-24 left-[15%] right-[15%] h-0.5 bg-gradient-to-r from-fuchsia-500/0 via-fuchsia-500/30 to-fuchsia-500/0 z-0">
-                <motion.div 
+                <motion.div
                   className="absolute top-0 bottom-0 left-0 w-full bg-gradient-to-r from-transparent via-fuchsia-400 to-transparent opacity-50"
                   animate={{ x: ['-100%', '100%'] }}
                   transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
@@ -628,7 +627,7 @@ export function LandingPage() {
               </div>
 
               {/* Step 1 */}
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }}
                 whileHover={{ y: -5 }}
                 className={`relative z-10 p-10 rounded-3xl border transition-all ${isDarkMode ? 'bg-[#130E24] border-fuchsia-500/20 shadow-[0_8px_30px_rgb(168,85,247,0.1)] hover:bg-[#1A1333]' : 'bg-white border-black/5 hover:bg-gray-50'}`}
@@ -646,7 +645,7 @@ export function LandingPage() {
               </motion.div>
 
               {/* Step 2 */}
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.3 }}
                 whileHover={{ y: -5 }}
                 className={`relative z-10 p-10 rounded-3xl border transition-all ${isDarkMode ? 'bg-[#130E24] border-fuchsia-500/20 shadow-[0_8px_30px_rgb(249,115,22,0.1)] hover:bg-[#1A1333]' : 'bg-white border-black/5 hover:bg-gray-50'}`}
@@ -664,7 +663,7 @@ export function LandingPage() {
               </motion.div>
 
               {/* Step 3 */}
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.5 }}
                 whileHover={{ y: -5 }}
                 className={`relative z-10 p-10 rounded-3xl border transition-all ${isDarkMode ? 'bg-[#130E24] border-fuchsia-500/20 shadow-[0_8px_30px_rgb(20,184,166,0.1)] hover:bg-[#1A1333]' : 'bg-white border-black/5 hover:bg-gray-50'}`}
@@ -694,7 +693,7 @@ export function LandingPage() {
                 The ultimate AI-powered toolset designed to accelerate your video creation workflow while maintaining cinema-grade quality.
               </p>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {[
                 { icon: <PlayCircleOutlined />, title: "AI Auto Editing", desc: "Smart cuts, automatically", color: "from-blue-500 to-purple-500" },
@@ -710,20 +709,19 @@ export function LandingPage() {
                 <motion.div
                   key={i}
                   whileHover={{ scale: 1.03, y: -5 }}
-                  className={`p-8 rounded-3xl border transition-all cursor-default ${
-                    isDarkMode 
-                      ? 'bg-[#130E24] border-fuchsia-500/20 hover:bg-[#1A1333] hover:shadow-[0_8px_30px_rgb(168,85,247,0.15)]' 
+                  className={`p-8 rounded-3xl border transition-all cursor-default ${isDarkMode
+                      ? 'bg-[#130E24] border-fuchsia-500/20 hover:bg-[#1A1333] hover:shadow-[0_8px_30px_rgb(168,85,247,0.15)]'
                       : 'bg-white border-black/5 hover:shadow-[0_15px_40px_rgb(0,0,0,0.08)]'
-                  }`}
+                    }`}
                 >
-                <div className={`w-16 h-16 rounded-2xl mb-6 flex items-center justify-center text-3xl text-white bg-gradient-to-br ${feature.color}`}>
-                  {feature.icon}
-                </div>
-                <h3 className="text-2xl font-bold mb-3">{feature.title}</h3>
-                <p className="opacity-70 font-medium text-lg leading-relaxed">{feature.desc}</p>
-              </motion.div>
-            ))}
-          </div>
+                  <div className={`w-16 h-16 rounded-2xl mb-6 flex items-center justify-center text-3xl text-white bg-gradient-to-br ${feature.color}`}>
+                    {feature.icon}
+                  </div>
+                  <h3 className="text-2xl font-bold mb-3">{feature.title}</h3>
+                  <p className="opacity-70 font-medium text-lg leading-relaxed">{feature.desc}</p>
+                </motion.div>
+              ))}
+            </div>
           </div>
         </section>
 
@@ -738,7 +736,7 @@ export function LandingPage() {
                 </p>
               </motion.div>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {/* 10x Faster Rendering */}
               <motion.div whileHover={{ scale: 1.02 }} className={`p-8 rounded-3xl border transition-all ${isDarkMode ? 'bg-[#130E24] border-fuchsia-500/20 hover:bg-[#1A1333]' : 'bg-white border-black/5'} col-span-1 md:col-span-2 lg:col-span-2 shadow-2xl shadow-purple-900/20`}>
@@ -765,9 +763,9 @@ export function LandingPage() {
 
               {/* 95% Editing Automation */}
               <motion.div whileHover={{ scale: 1.02 }} className={`p-8 rounded-3xl border transition-all flex flex-col items-center text-center justify-center ${isDarkMode ? 'bg-[#130E24] border-fuchsia-500/20 hover:bg-[#1A1333]' : 'bg-white border-black/5'} shadow-2xl shadow-blue-900/20`}>
-                 <Progress type="circle" percent={95} size={150} strokeColor={{ '0%': '#3b82f6', '100%': '#06b6d4' }} format={(p) => <span className={`text-3xl font-black ${isDarkMode ? 'text-white' : 'text-black'}`}>{p}%</span>} />
-                 <h3 className="text-2xl font-bold mt-6 mb-2">Editing Automation</h3>
-                 <p className="opacity-70 font-medium text-lg">Automated editing tasks</p>
+                <Progress type="circle" percent={95} size={150} strokeColor={{ '0%': '#3b82f6', '100%': '#06b6d4' }} format={(p) => <span className={`text-3xl font-black ${isDarkMode ? 'text-white' : 'text-black'}`}>{p}%</span>} />
+                <h3 className="text-2xl font-bold mt-6 mb-2">Editing Automation</h3>
+                <p className="opacity-70 font-medium text-lg">Automated editing tasks</p>
               </motion.div>
 
               {/* Export in 4K */}
@@ -803,56 +801,55 @@ export function LandingPage() {
         {/* 5. PRICING */}
         <section className={`py-32 px-6 ${isDarkMode ? 'bg-gradient-to-b from-[#130E24] to-[#0B0815]' : 'bg-gradient-to-b from-gray-50 to-white'}`}>
           <div className="max-w-7xl mx-auto">
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeInUp} className="text-center mb-20">
-            <h2 className="text-[clamp(2rem,5vw,3.5rem)] font-black mb-4">Simple, transparent pricing</h2>
-            <p className="text-xl opacity-70">Scale effortlessly with plans that grow with your traffic.</p>
-          </motion.div>
-          
-          <Row gutter={[32, 32]} justify="center" align="middle">
-            {[
-              { name: 'Starter', price: 'Free', features: ['Basic automated auditing', 'Community forum support', '1 Active Project', '10GB Bandwidth'] },
-              { name: 'Pro', price: '$29/mo', featured: true, features: ['Advanced optimization engine', 'Priority email support', 'Unlimited Projects', 'Custom domains & SSL'] },
-              { name: 'Enterprise', price: 'Custom', features: ['Dedicated global infrastructure', '99.99% Uptime SLA', '24/7 Phone & Slack support', 'Custom API integrations'] }
-            ].map((plan, i) => (
-              <Col xs={24} md={8} key={i}>
-                <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeInUp}>
-                  <Card 
-                    variant={plan.featured ? "outlined" : "borderless"} 
-                    className={`h-full text-center rounded-3xl transition-all duration-300 ${
-                      plan.featured 
-                        ? 'border-fuchsia-500 shadow-2xl shadow-fuchsia-500/20 scale-100 md:scale-110 z-10 relative py-4' 
-                        : 'border-transparent shadow-md'
-                    }`}
-                  >
-                    {plan.featured && (
-                      <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-gradient-to-r from-fuchsia-500 to-fuchsia-600 text-white px-6 py-1.5 rounded-full text-xs font-bold tracking-widest uppercase shadow-lg">
-                        Most Popular
-                      </div>
-                    )}
-                    <Title level={3} className="mt-6 mb-2">{plan.name}</Title>
-                    <div className="text-5xl font-black my-8">{plan.price}</div>
-                    <ul className="text-left space-y-5 mb-10 px-4">
-                      {plan.features.map((f, j) => (
-                        <li key={j} className="flex items-start gap-3 text-base font-medium">
-                          <CheckCircleOutlined className="text-fuchsia-500 text-xl shrink-0 mt-0.5" /> 
-                          <span className="opacity-80">{f}</span>
-                        </li>
-                      ))}
-                    </ul>
-                    <Button 
-                      type={plan.featured ? "primary" : "default"} 
-                      size="large" 
-                      block 
-                      shape="round" 
-                      className={`h-14 font-bold text-lg ${plan.featured ? 'shadow-lg shadow-fuchsia-500/30' : ''}`}
+            <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeInUp} className="text-center mb-20">
+              <h2 className="text-[clamp(2rem,5vw,3.5rem)] font-black mb-4">Simple, transparent pricing</h2>
+              <p className="text-xl opacity-70">Scale effortlessly with plans that grow with your traffic.</p>
+            </motion.div>
+
+            <Row gutter={[32, 32]} justify="center" align="middle">
+              {[
+                { name: 'Starter', price: 'Free', features: ['Basic automated auditing', 'Community forum support', '1 Active Project', '10GB Bandwidth'] },
+                { name: 'Pro', price: '$29/mo', featured: true, features: ['Advanced optimization engine', 'Priority email support', 'Unlimited Projects', 'Custom domains & SSL'] },
+                { name: 'Enterprise', price: 'Custom', features: ['Dedicated global infrastructure', '99.99% Uptime SLA', '24/7 Phone & Slack support', 'Custom API integrations'] }
+              ].map((plan, i) => (
+                <Col xs={24} md={8} key={i}>
+                  <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeInUp}>
+                    <Card
+                      variant={plan.featured ? "outlined" : "borderless"}
+                      className={`h-full text-center rounded-3xl transition-all duration-300 ${plan.featured
+                          ? 'border-fuchsia-500 shadow-2xl shadow-fuchsia-500/20 scale-100 md:scale-110 z-10 relative py-4'
+                          : 'border-transparent shadow-md'
+                        }`}
                     >
-                      Choose {plan.name}
-                    </Button>
-                  </Card>
-                </motion.div>
-              </Col>
-            ))}
-          </Row>
+                      {plan.featured && (
+                        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-gradient-to-r from-fuchsia-500 to-fuchsia-600 text-white px-6 py-1.5 rounded-full text-xs font-bold tracking-widest uppercase shadow-lg">
+                          Most Popular
+                        </div>
+                      )}
+                      <Title level={3} className="mt-6 mb-2">{plan.name}</Title>
+                      <div className="text-5xl font-black my-8">{plan.price}</div>
+                      <ul className="text-left space-y-5 mb-10 px-4">
+                        {plan.features.map((f, j) => (
+                          <li key={j} className="flex items-start gap-3 text-base font-medium">
+                            <CheckCircleOutlined className="text-fuchsia-500 text-xl shrink-0 mt-0.5" />
+                            <span className="opacity-80">{f}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      <Button
+                        type={plan.featured ? "primary" : "default"}
+                        size="large"
+                        block
+                        shape="round"
+                        className={`h-14 font-bold text-lg ${plan.featured ? 'shadow-lg shadow-fuchsia-500/30' : ''}`}
+                      >
+                        Choose {plan.name}
+                      </Button>
+                    </Card>
+                  </motion.div>
+                </Col>
+              ))}
+            </Row>
           </div>
         </section>
 
@@ -878,7 +875,7 @@ export function LandingPage() {
         <footer className={`pt-20 pb-8 px-6 border-t ${isDarkMode ? 'border-white/10 bg-[#0B0815]' : 'border-black/10 bg-white'}`}>
           <div className="max-w-7xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-12 gap-12 mb-16">
-              
+
               {/* Left Column (25%) */}
               <div className="md:col-span-3 flex flex-col gap-4">
                 <div className="flex items-center gap-3 font-black text-2xl tracking-tighter">
@@ -921,15 +918,15 @@ export function LandingPage() {
               <div className="md:col-span-4 flex flex-col md:items-end gap-6 text-left md:text-right">
                 <div className={`flex items-center justify-start md:justify-end gap-4 px-4 py-2 rounded-full w-fit ${isDarkMode ? 'bg-white/5' : 'bg-black/5'}`}>
                   <Text className={`font-semibold text-xs uppercase tracking-widest ${isDarkMode ? 'text-white' : 'text-black'}`}>Theme</Text>
-                  <Switch 
-                    checked={isDarkMode} 
-                    onChange={setIsDarkMode} 
-                    checkedChildren="Dark" 
-                    unCheckedChildren="Light" 
+                  <Switch
+                    checked={isDarkMode}
+                    onChange={setIsDarkMode}
+                    checkedChildren="Dark"
+                    unCheckedChildren="Light"
                     className={isDarkMode ? 'bg-fuchsia-500' : ''}
                   />
                 </div>
-                
+
                 <Button type="primary" shape="round" className="h-12 px-8 font-bold bg-fuchsia-600 hover:bg-fuchsia-500 shadow-[0_0_15px_rgba(147,51,234,0.2)] hover:shadow-[0_0_25px_rgba(147,51,234,0.4)] transition-all w-fit border-none">
                   Start Free Trial
                 </Button>
@@ -981,7 +978,7 @@ export function LandingPage() {
               {(() => {
                 const workflow = workflows.find(w => w.id === activeWorkflowModal);
                 if (!workflow) return null;
-                
+
                 return (
                   <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.3 }} className="overflow-hidden rounded-[24px]">
                     {/* Header Banner */}
@@ -993,7 +990,7 @@ export function LandingPage() {
                       <h2 className="text-3xl md:text-4xl font-black mb-4 relative z-10">{workflow.title}</h2>
                       <p className="opacity-80 text-lg max-w-2xl mx-auto relative z-10 leading-relaxed">{workflow.description}</p>
                     </div>
-                    
+
                     {/* Content Area */}
                     <div className={`p-10 ${isDarkMode ? 'bg-[#130E24]' : 'bg-white'}`}>
                       <div className="grid md:grid-cols-2 gap-10 mb-10">
@@ -1026,7 +1023,7 @@ export function LandingPage() {
                           </div>
                         </div>
                       </div>
-                      
+
                       <div className="flex justify-center">
                         <Button type="primary" size="large" shape="round" className="h-14 px-12 text-lg font-bold bg-fuchsia-500 hover:bg-fuchsia-600 shadow-[0_10px_30px_rgba(168,85,247,0.4)] border-0" onClick={() => { setActiveWorkflowModal(null); navigate('/video-type'); }}>
                           Try {workflow.title} Free
