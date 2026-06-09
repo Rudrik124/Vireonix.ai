@@ -27,8 +27,15 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const loadEnvFiles = () => {
-  dotenv.config({ path: "./.env", override: false });
-  dotenv.config({ path: "./src/.env", override: true });
+  // Try current directory first
+  dotenv.config({ path: path.join(process.cwd(), ".env"), override: false });
+  dotenv.config({ path: path.join(process.cwd(), "src", ".env"), override: true });
+  
+  // Try relative to server.js directory (__dirname)
+  dotenv.config({ path: path.join(__dirname, ".env"), override: false });
+  dotenv.config({ path: path.join(__dirname, "..", ".env"), override: false });
+  dotenv.config({ path: path.join(__dirname, "../src/.env"), override: true });
+  dotenv.config({ path: path.join(__dirname, "../Frontend/src/.env"), override: true });
 };
 
 // Load environment variables (including JSON2VIDEO_API_KEY and Supabase keys)
@@ -1453,9 +1460,10 @@ const applyEffectsToVideo = async (inputPath, effects, durationSeconds = 10) => 
   const videoFilters = [];
   let audioFilter = "";
 
+  const safeDurationForFade = Number.isFinite(Number(durationSeconds)) && Number(durationSeconds) > 0 ? Number(durationSeconds) : 10;
   if (selectedEffect === "fade-in" || selectedEffect === "transition") {
-    const fadeDuration = Math.min(4, Math.max(2, Number(durationSeconds || 10) * 0.4));
-    const fadeOutStart = Math.max(0, Number(durationSeconds || 10) - fadeDuration);
+    const fadeDuration = Math.min(4, Math.max(2, safeDurationForFade * 0.4));
+    const fadeOutStart = Math.max(0, safeDurationForFade - fadeDuration);
     videoFilters.push(`fade=t=in:st=0:d=${fadeDuration}`);
     videoFilters.push(`fade=t=out:st=${fadeOutStart}:d=${fadeDuration}`);
   }
@@ -1654,16 +1662,23 @@ const applyEffectsToVideo = async (inputPath, effects, durationSeconds = 10) => 
     audioFilter: audioFilter || "none",
   });
 
+  const hasAudio = await hasAudioStream(inputPath);
+
   await new Promise((resolve, reject) => {
     let command = ffmpeg().input(inputPath);
 
-    const outputOptions = ["-c:v libx264", "-pix_fmt yuv420p", "-c:a aac", "-movflags +faststart"];
+    const outputOptions = ["-c:v libx264", "-pix_fmt yuv420p", "-movflags +faststart"];
+    if (hasAudio) {
+      outputOptions.push("-c:a aac");
+    } else {
+      outputOptions.push("-an");
+    }
 
     if (videoFilters.length) {
       outputOptions.push("-vf", videoFilters.join(","));
     }
 
-    if (audioFilter) {
+    if (hasAudio && audioFilter) {
       outputOptions.push("-af", audioFilter);
     }
 
@@ -1815,18 +1830,16 @@ const ensureAudioStream = (inputPath, outputPath) => {
       } else {
         // No audio – synthesize a silent track for the same duration
         const duration = Number(meta?.format?.duration || 10);
+        const safeDuration = duration > 0 ? duration.toFixed(3) : "10";
         ffmpeg(inputPath)
-          .inputOptions(["-f lavfi", "-i anullsrc=cl=stereo:r=44100"])
-          .complexFilter([
-            "[0:v]copy[v]",
-            `[1:a]atrim=0:${duration.toFixed(4)},asetpts=PTS-STARTPTS[a]`,
-          ])
+          .input("anullsrc=cl=stereo:r=44100")
+          .inputFormat("lavfi")
           .outputOptions([
-            "-map", "[v]",
-            "-map", "[a]",
+            "-map", "0:v:0",
+            "-map", "1:a:0",
             "-c:v", "copy",
             "-c:a", "aac",
-            "-shortest",
+            "-t", safeDuration
           ])
           .output(outputPath)
           .on("end", () => resolve(outputPath))
@@ -1872,6 +1885,18 @@ const mergeSegmentsWithTransitions = async (segmentPaths, transitions, outputPat
     const result = await ensureAudioStream(segmentPaths[i], ap);
     audioReadyPaths.push(result);
   }
+
+  const cleanupAudioReady = () => {
+    audioReadyPaths.forEach((p) => {
+      if (p.includes("-ar") && fs.existsSync(p)) {
+        try {
+          fs.unlinkSync(p);
+        } catch (e) {
+          console.warn("⚠️ [MERGE] Failed to cleanup temp audio track:", p, e.message);
+        }
+      }
+    });
+  };
 
   // Multiple segments - check if transitions needed
   // transitions[i] = transition applied to clip i (entering transition from clip i-1 → i)
@@ -1933,10 +1958,12 @@ const mergeSegmentsWithTransitions = async (segmentPaths, transitions, outputPat
         .output(outputPath)
         .on("end", () => {
           console.log("✅ [MERGE] Concat merge complete (with audio)");
+          cleanupAudioReady();
           resolve();
         })
         .on("error", (err) => {
           console.error("❌ [MERGE] Concat merge failed:", err.message);
+          cleanupAudioReady();
           reject(err);
         })
         .on("stderr", (line) => {
@@ -2031,10 +2058,12 @@ const mergeSegmentsWithTransitions = async (segmentPaths, transitions, outputPat
       .output(outputPath)
       .on("end", () => {
         console.log("✅ [MERGE] Xfade+Acrossfade merge complete (with audio)");
+        cleanupAudioReady();
         resolve();
       })
       .on("error", (err) => {
         console.error("❌ [MERGE] Xfade merge failed:", err.message);
+        cleanupAudioReady();
         reject(err);
       })
       .on("stderr", (line) => {
@@ -3564,7 +3593,30 @@ app.post(
             await createVideoFromImage(media.path, segmentPath, 3, aspect);
           }
 
-          segmentPaths.push(segmentPath);
+          let finalSegmentPath = segmentPath;
+          const clipEffect = mediaMeta?.effect || "none";
+          const clipEffectSettings = mediaMeta?.effectSettings || {};
+          if (clipEffect && clipEffect !== "none") {
+            let clipDuration = trimDuration || Number(mediaMeta?.duration);
+            if (!Number.isFinite(clipDuration) || clipDuration <= 0) {
+              clipDuration = media.mimetype?.startsWith("image/") ? 3 : await getVideoDuration(segmentPath);
+            }
+            console.log(`🎬 [API-MEDIA] Applying per-clip effect to segment ${i}:`, {
+              effect: clipEffect,
+              duration: clipDuration,
+            });
+            const effectedSegmentPath = await applyEffectsToVideo(
+              segmentPath,
+              { selectedEffect: clipEffect, settings: clipEffectSettings },
+              clipDuration
+            );
+            if (effectedSegmentPath !== segmentPath) {
+              generatedTempFiles.push(effectedSegmentPath);
+              finalSegmentPath = effectedSegmentPath;
+            }
+          }
+
+          segmentPaths.push(finalSegmentPath);
           generatedTempFiles.push(segmentPath);
         }
 
@@ -3636,12 +3688,52 @@ app.post(
           // Preserve full uploaded video for Quick Edit.
           await processVideoRange(videoFile.path, baseOutputPath, primaryTrimStart, primaryTrimDuration);
           seconds = await getVideoDuration(baseOutputPath);
+
+          const primaryMediaMeta = resolvedEditorSelections?.media?.items?.[0] || {};
+          const primaryClipEffect = primaryMediaMeta?.effect || "none";
+          const primaryClipEffectSettings = primaryMediaMeta?.effectSettings || {};
+          if (primaryClipEffect && primaryClipEffect !== "none") {
+            console.log(`🎬 [API-MEDIA] Applying single video clip effect:`, {
+              effect: primaryClipEffect,
+              duration: seconds,
+            });
+            const effectedPath = await applyEffectsToVideo(
+              baseOutputPath,
+              { selectedEffect: primaryClipEffect, settings: primaryClipEffectSettings },
+              seconds
+            );
+            if (effectedPath !== baseOutputPath) {
+              generatedTempFiles.push(effectedPath);
+              baseOutputPath = effectedPath;
+            }
+          }
         } else {
           await processVideoRange(videoFile.path, baseOutputPath, primaryTrimStart, seconds);
         }
       } else if (imageFiles.length === 1) {
         console.log("🖼️ [API-MEDIA] Using single uploaded image as source:", imageFiles[0].originalname);
         await createVideoFromImage(imageFiles[0].path, baseOutputPath, seconds, aspect);
+
+        if (isQuickEditMode) {
+          const primaryMediaMeta = resolvedEditorSelections?.media?.items?.[0] || {};
+          const primaryClipEffect = primaryMediaMeta?.effect || "none";
+          const primaryClipEffectSettings = primaryMediaMeta?.effectSettings || {};
+          if (primaryClipEffect && primaryClipEffect !== "none") {
+            console.log(`🎬 [API-MEDIA] Applying single image clip effect:`, {
+              effect: primaryClipEffect,
+              duration: seconds,
+            });
+            const effectedPath = await applyEffectsToVideo(
+              baseOutputPath,
+              { selectedEffect: primaryClipEffect, settings: primaryClipEffectSettings },
+              seconds
+            );
+            if (effectedPath !== baseOutputPath) {
+              generatedTempFiles.push(effectedPath);
+              baseOutputPath = effectedPath;
+            }
+          }
+        }
       } else if (imageFiles.length > 1) {
         console.log("🖼️ [API-MEDIA] Building slideshow from", imageFiles.length, "images");
         const perImageSeconds = Math.max(1, Math.floor(seconds / imageFiles.length) || 1);
@@ -3775,33 +3867,37 @@ app.post(
       }
 
       // STEP 4.1: Apply deterministic post-processing effects for export output
-      console.log("🎛️ [API-MEDIA] Applying export post-processing", {
-        effect: effects.selectedEffect || "none",
-        filter: resolvedSelectedFilter,
-        textOverlay: Boolean(resolvedTextOverlay?.enabled && String(resolvedTextOverlay?.text || "").trim()),
-      });
-
-      const effectedPath = await applyEffectsToVideo(finalOutputPath, effects, seconds);
-      if (effectedPath !== finalOutputPath) {
-        generatedTempFiles.push(finalOutputPath);
-        finalOutputPath = effectedPath;
-      }
-
-      // Apply selected filter as an additional pass so filter + effect can both appear in exports.
-      if (resolvedSelectedFilter !== "none" && resolvedSelectedFilter !== effects.selectedEffect) {
-        console.log("🎨 [API-MEDIA] Applying dedicated filter pass", {
-          selectedFilter: resolvedSelectedFilter,
-          baseEffect: effects.selectedEffect || "none",
+      if (!isQuickEditMode) {
+        console.log("🎛️ [API-MEDIA] Applying export post-processing", {
+          effect: effects.selectedEffect || "none",
+          filter: resolvedSelectedFilter,
+          textOverlay: Boolean(resolvedTextOverlay?.enabled && String(resolvedTextOverlay?.text || "").trim()),
         });
-        const filteredPath = await applyEffectsToVideo(
-          finalOutputPath,
-          { selectedEffect: resolvedSelectedFilter, settings: resolvedEffectSettings },
-          seconds,
-        );
-        if (filteredPath !== finalOutputPath) {
+
+        const effectedPath = await applyEffectsToVideo(finalOutputPath, effects, seconds);
+        if (effectedPath !== finalOutputPath) {
           generatedTempFiles.push(finalOutputPath);
-          finalOutputPath = filteredPath;
+          finalOutputPath = effectedPath;
         }
+
+        // Apply selected filter as an additional pass so filter + effect can both appear in exports.
+        if (resolvedSelectedFilter !== "none" && resolvedSelectedFilter !== effects.selectedEffect) {
+          console.log("🎨 [API-MEDIA] Applying dedicated filter pass", {
+            selectedFilter: resolvedSelectedFilter,
+            baseEffect: effects.selectedEffect || "none",
+          });
+          const filteredPath = await applyEffectsToVideo(
+            finalOutputPath,
+            { selectedEffect: resolvedSelectedFilter, settings: resolvedEffectSettings },
+            seconds,
+          );
+          if (filteredPath !== finalOutputPath) {
+            generatedTempFiles.push(finalOutputPath);
+            finalOutputPath = filteredPath;
+          }
+        }
+      } else {
+        console.log("🎛️ [API-MEDIA] Skipping global export post-processing effect and filter in Quick Edit mode");
       }
 
       const textOverlayPath = await applyTextOverlayToVideo(finalOutputPath, resolvedTextOverlay);

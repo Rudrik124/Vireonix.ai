@@ -2889,6 +2889,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
   const audioRef = useRef<HTMLAudioElement>(null);
   const bgMusicRef = useRef<HTMLAudioElement>(null);
   const thumbnailVideoRefs = useRef<Record<string, HTMLVideoElement | null>>({});
+  const lastLoadedIdRef = useRef<string | null>(null);
 
   const activePreviewItem = mediaItems.find((i) => i.id === activePreviewId) || null;
 
@@ -2946,11 +2947,14 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
     setSaturation(settings.saturation ?? 1);
     setSlowMotionSpeed(settings.slowMotionSpeed ?? 0.25);
     setGlitchIntensity(settings.glitchIntensity ?? 1);
+
+    lastLoadedIdRef.current = activePreviewId;
   }, [activePreviewId]);
 
   // Sync state changes to clipSettings per clip
   useEffect(() => {
     if (!activePreviewId) return;
+    if (lastLoadedIdRef.current !== activePreviewId) return;
     setClipSettings(prev => {
       const current = prev[activePreviewId] || {};
       if (
@@ -4063,12 +4067,24 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
 
     const mediaForProcessing = mediaItems
       .filter((item) => item.file)
-      .map((item) => ({
-        id: item.id,
-        file: item.file,
-        type: item.type,
-        duration: item.duration,
-      }));
+      .map((item) => {
+        const settings = clipSettings[item.id] || {};
+        return {
+          id: item.id,
+          file: item.file,
+          type: item.type,
+          duration: item.duration,
+          effect: settings.selectedEffect || 'none',
+          effectSettings: {
+            blurAmount: settings.blurAmount ?? 10,
+            brightness: settings.brightness ?? 1,
+            contrast: settings.contrast ?? 1,
+            saturation: settings.saturation ?? 1,
+            slowMotionSpeed: settings.slowMotionSpeed ?? 0.25,
+            glitchIntensity: settings.glitchIntensity ?? 1,
+          },
+        };
+      });
 
     const transitionPlan = mediaForProcessing.map((item, index) => ({
       index,
@@ -4177,7 +4193,13 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
       aiOptions,
       prompt,
       media: {
-        items: mediaForProcessing.map((item) => ({ id: item.id, type: item.type, duration: item.duration })),
+        items: mediaForProcessing.map((item) => ({
+          id: item.id,
+          type: item.type,
+          duration: item.duration,
+          effect: item.effect,
+          effectSettings: item.effectSettings,
+        })),
         count: mediaForProcessing.length,
       },
       audio: {
