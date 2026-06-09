@@ -12,8 +12,8 @@
     "resolveJsonModule": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["Frontend/src/*"]
+      "@/*": ["src/*"]
     }
   },
-  "include": ["Frontend/src/**/*", "Frontend/main.tsx", "Frontend/vite.config.ts", "vite.config.ts"]
+  "include": ["src/**/*", "main.tsx", "vite.config.ts"]
 }
