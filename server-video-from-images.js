@@ -230,7 +230,16 @@ export async function createVideoFromImages(imageUrls, outputPath, options = {})
     scaleEnd = 1.3, // Increased zoom for more cinematic feel
     panOffsets = [], // Array of {x, y} pan offsets for each image
     captions = [], // Array of caption texts for each image
+    maxTotalFrames = 8000, // safety cap to avoid long processing / timeouts
   } = options;
+
+  // Calculate estimated total frames and enforce safety limit
+  const estimatedImageFrames = Math.round(imageDuration * fps);
+  const estimatedTransitionFrames = Math.round(transitionDuration * fps);
+  const estimatedTotalFrames = (estimatedImageFrames + estimatedTransitionFrames) * (imageUrls.length - 1);
+  if (estimatedTotalFrames > maxTotalFrames) {
+    throw new Error(`Estimated total frames (${estimatedTotalFrames}) exceed safety limit (${maxTotalFrames}). Reduce imageDuration, transitionDuration, or fps.`);
+  }
 
   if (!imageUrls || imageUrls.length < 2) {
     throw new Error("Minimum 2 images required to create video");

@@ -510,7 +510,7 @@ const adjustVideoToFrame = async (inputPath, frame) => {
   await new Promise((resolve, reject) => {
     ffmpeg(inputPath)
       .videoFilters(
-        `scale=${w}:${h}:force_original_aspect_ratio=cover,crop=${w}:${h}`,
+        `scale=${w}:${h}:force_original_aspect_ratio=increase,crop=${w}:${h}`,
       )
       .outputOptions(["-c:a copy"])
       .output(outputPath)
@@ -1363,19 +1363,19 @@ const applyEditorAdjustments = async (inputPath, editorSelections) => {
       }
     }
 
-    if (videoFilters.length) {
-      command = command.videoFilters(videoFilters);
-    }
-
-    if (safeAudioFilters.length) {
-      command = command.audioFilters(safeAudioFilters);
-    }
-
     const outputOptions = ["-c:v libx264", "-pix_fmt yuv420p", "-movflags +faststart"];
     if (hasAudio) {
       outputOptions.push("-c:a aac");
     } else {
       outputOptions.push("-an");
+    }
+
+    if (videoFilters.length) {
+      outputOptions.push("-vf", videoFilters.join(","));
+    }
+
+    if (safeAudioFilters.length) {
+      outputOptions.push("-af", safeAudioFilters.join(","));
     }
 
     command
@@ -1405,6 +1405,39 @@ const escapeDrawtext = (text = "") => {
     .replace(/\]/g, "\\]");
 };
 
+const getVideoMetadata = (inputPath) => {
+  return new Promise((resolve) => {
+    ffmpeg.ffprobe(inputPath, (err, metadata) => {
+      if (err) {
+        resolve({ width: 1280, height: 720, fps: 30 });
+        return;
+      }
+      const videoStream = metadata?.streams?.find((s) => s.codec_type === "video");
+      const width = Number(videoStream?.width || 1280);
+      const height = Number(videoStream?.height || 720);
+      
+      let fps = 30;
+      const rFrameRate = videoStream?.r_frame_rate || videoStream?.avg_frame_rate;
+      if (rFrameRate) {
+        const parts = rFrameRate.split("/");
+        if (parts.length === 2) {
+          const num = Number(parts[0]);
+          const den = Number(parts[1]);
+          if (den > 0) {
+            fps = Math.round(num / den);
+          }
+        } else {
+          const val = Number(rFrameRate);
+          if (Number.isFinite(val) && val > 0) {
+            fps = Math.round(val);
+          }
+        }
+      }
+      resolve({ width, height, fps: fps || 30 });
+    });
+  });
+};
+
 const applyEffectsToVideo = async (inputPath, effects, durationSeconds = 10) => {
   const selectedEffect = String(effects?.selectedEffect || "none");
   const settings = effects?.settings || {};
@@ -1413,6 +1446,8 @@ const applyEffectsToVideo = async (inputPath, effects, durationSeconds = 10) => 
     console.log("ℹ️ [API-MEDIA] No deterministic effect applied. selectedEffect=", selectedEffect);
     return inputPath;
   }
+
+  const metadata = await getVideoMetadata(inputPath);
 
   const outputPath = makeTempFilePath("effect.mp4");
   const videoFilters = [];
@@ -1552,7 +1587,7 @@ const applyEffectsToVideo = async (inputPath, effects, durationSeconds = 10) => 
 
   if (selectedEffect === "smooth-zoom") {
     const dur = Number(durationSeconds) || 10;
-    videoFilters.push(`crop=iw/(1+0.12*sin(PI*t/${dur})):ih/(1+0.12*sin(PI*t/${dur})):(iw-ow)/2:(ih-oh)/2,scale=iw:ih,eq=contrast=1.1`);
+    videoFilters.push(`zoompan=z='1+0.12*sin(PI*time/${dur})':x='iw/2-(iw/zoom)/2':y='ih/2-(ih/zoom)/2':d=1:s=${metadata.width}x${metadata.height}:fps=${metadata.fps}`);
   }
 
   if (selectedEffect === "film-grain") {
@@ -1622,23 +1657,26 @@ const applyEffectsToVideo = async (inputPath, effects, durationSeconds = 10) => 
   await new Promise((resolve, reject) => {
     let command = ffmpeg().input(inputPath);
 
+    const outputOptions = ["-c:v libx264", "-pix_fmt yuv420p", "-c:a aac", "-movflags +faststart"];
+
     if (videoFilters.length) {
-      command = command.videoFilters(videoFilters);
+      outputOptions.push("-vf", videoFilters.join(","));
     }
 
     if (audioFilter) {
-      command = command.audioFilters([audioFilter]);
+      outputOptions.push("-af", audioFilter);
     }
 
     command
-      .outputOptions(["-c:v libx264", "-pix_fmt yuv420p", "-c:a aac", "-movflags +faststart"])
+      .outputOptions(outputOptions)
       .output(outputPath)
       .on("end", () => {
         console.log("✅ [API-MEDIA] Effect rendering complete:", selectedEffect);
         resolve();
       })
-      .on("error", (err) => {
+      .on("error", (err, stdout, stderr) => {
         console.error("❌ [API-MEDIA] Effect rendering failed:", err);
+        console.error("📢 [FFmpeg STDERR]:", stderr);
         reject(err);
       })
       .run();

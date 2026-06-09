@@ -195,7 +195,7 @@ export function QuickEditProcessingScreen() {
         }
 
         const controller = new AbortController();
-        const timeoutMs = 180000; // 3 minutes
+        const timeoutMs = 600000; // 10 minutes
         const timeoutHandle = window.setTimeout(() => controller.abort(), timeoutMs);
 
         const response = await fetch(buildApiUrl("/api/generate-from-media"), {
