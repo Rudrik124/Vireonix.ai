@@ -16,6 +16,8 @@ export function TesterProfilePage() {
   const [editMode, setEditMode] = useState(false);
   const [timezone, setTimezone] = useState(profile?.timezone || "UTC");
   const [contactEmail, setContactEmail] = useState(profile?.email || "");
+  const [testingModeEnabled, setTestingModeEnabled] = useState(profile?.testingModeEnabled || false);
+  const [togglingTestingMode, setTogglingTestingMode] = useState(false);
 
   const [activityLog] = useState<ActivityLog[]>([
     {
@@ -73,6 +75,40 @@ export function TesterProfilePage() {
   const handleSaveProfile = () => {
     setEditMode(false);
     // Save would happen here
+  };
+
+  const handleToggleTestingMode = async () => {
+    setTogglingTestingMode(true);
+    try {
+      // Get the access token from the session
+      const token = session?.session?.access_token;
+      if (!token) {
+        console.error("No access token available");
+        setTogglingTestingMode(false);
+        return;
+      }
+
+      // Call API to toggle testing mode
+      const response = await fetch("/api/tester/toggle-testing-mode", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({ enabled: !testingModeEnabled }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setTestingModeEnabled(data.testingModeEnabled);
+      } else {
+        console.error("Failed to toggle testing mode");
+      }
+    } catch (error) {
+      console.error("Error toggling testing mode:", error);
+    } finally {
+      setTogglingTestingMode(false);
+    }
   };
 
   const roleColors = {
@@ -139,7 +175,17 @@ export function TesterProfilePage() {
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-purple-200 text-sm">Testing Mode</span>
-                  <span className="text-blue-400 font-semibold">{profile.testingModeEnabled ? "Enabled" : "Disabled"}</span>
+                  <button
+                    onClick={handleToggleTestingMode}
+                    disabled={togglingTestingMode}
+                    className={`px-3 py-1 rounded font-semibold text-sm transition ${
+                      testingModeEnabled
+                        ? "bg-green-600 hover:bg-green-700 text-white"
+                        : "bg-red-600 hover:bg-red-700 text-white"
+                    } ${togglingTestingMode ? "opacity-50 cursor-not-allowed" : ""}`}
+                  >
+                    {togglingTestingMode ? "..." : testingModeEnabled ? "Enabled" : "Disabled"}
+                  </button>
                 </div>
               </div>
             </div>

@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { useAuth } from "../../context/auth-context";
 import { HistoryDialog, HistoryItem } from "../../components/history-dialog";
 import { BrandLogo } from "../../components/brand-logo";
+import { useRedirectParam } from "../../lib/useRedirectParam";
 
 const particles = Array.from({ length: 40 });
 
@@ -30,6 +31,7 @@ const CONFIG = {
 
 export function QuickEditUploadScreen() {
   const navigate = useNavigate();
+  const redirectTo = useRedirectParam();
   const { isLoggedIn, session, logout } = useAuth();
   
   const [dragOver, setDragOver] = useState(false);
@@ -525,11 +527,11 @@ export function QuickEditUploadScreen() {
         {/* ===== NAVBAR ===== */}
         <nav style={styles.navbar}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-            <div style={styles.logo} onClick={() => navigate("/features")}>
+            <div style={styles.logo} onClick={() => navigate(redirectTo || "/features")}>
               <BrandLogo size={32} />
               <span style={{ marginLeft: '8px', background: CONFIG.gradient, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>VEYTRIX.AI</span>
             </div>
-            <button style={styles.navBtn} onClick={() => navigate("/features")}>
+            <button style={styles.navBtn} onClick={() => navigate(redirectTo || "/features")}>
               <ArrowLeft size={16} />
               <span className="hidden md:inline">Back</span>
             </button>

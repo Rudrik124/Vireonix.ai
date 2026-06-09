@@ -36,6 +36,7 @@ import { CollapsibleCard } from "../../components/ui/collapsible-card";
 import { Toggle } from "../../components/ui/toggle";
 import { PremiumModal } from "../../components/premium-modal";
 import { HistoryDialog, HistoryItem, saveToHistory } from "../../components/history-dialog";
+import { useRedirectParam } from "../../lib/useRedirectParam";
 import {
   Dialog,
   DialogContent,
@@ -66,6 +67,7 @@ const getFrameType = (ratio: string) => {
 export function ReferenceVideoSetupScreen() {
   const navigate = useNavigate();
   const location = useLocation();
+  const redirectTo = useRedirectParam();
   const { isLoggedIn, session, logout } = useAuth();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userName = session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || "User";
@@ -195,7 +197,7 @@ export function ReferenceVideoSetupScreen() {
             </div>
             <div className="h-8 w-[1px] bg-white/10 hidden md:block" />
             <button
-              onClick={() => navigate("/features")}
+              onClick={() => navigate(redirectTo || "/features")}
               className="flex items-center gap-2 text-[#94a3b8] hover:text-white transition-all group px-3 py-1.5 rounded-lg hover:bg-white/5"
             >
               <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />

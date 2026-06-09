@@ -114,6 +114,37 @@ const selectAppProfileById = async (id) => {
   return profiles[0] || null;
 };
 
+/**
+ * Get video counts for specified users from usage logs
+ */
+const getVideoCountsForUsers = async (userIds) => {
+  if (!userIds.length) return new Map();
+
+  try {
+    const { data: usageLogs, error } = await getSupabaseClient()
+      .from("usage_logs")
+      .select("user_id")
+      .in("user_id", userIds)
+      .in("feature_key", ["video_generation", "ai_video_generation", "scene_generation"]);
+
+    if (error) {
+      console.warn("Failed to fetch video counts:", error.message);
+      return new Map();
+    }
+
+    const videoCounts = new Map();
+    (usageLogs || []).forEach((log) => {
+      const count = videoCounts.get(log.user_id) || 0;
+      videoCounts.set(log.user_id, count + 1);
+    });
+
+    return videoCounts;
+  } catch (err) {
+    console.warn("Error calculating video counts:", err);
+    return new Map();
+  }
+};
+
 const isTesterAccount = (authUser, profile) => {
   const email = (profile?.email || authUser?.email || "").toLowerCase();
   const metadataRole = authUser?.user_metadata?.role || authUser?.app_metadata?.role;
@@ -142,44 +173,27 @@ const getDeveloperCreditBalance = async (userId, profile) => {
 };
 
 const upsertTesterProfile = async ({ id, email, fullName, developerCredits }) => {
-  const payloads = [
-    {
-      id,
-      email,
-      full_name: fullName,
-      role: "tester",
-      portal_access: TESTER_PORTAL_ACCESS,
-      permissions: TESTER_PERMISSIONS,
-      subscription_status: "active",
-      user_credits: 0,
-      developer_credits: developerCredits,
-    },
-    {
-      id,
-      email,
-      full_name: fullName,
-      subscription_status: "active",
-      user_credits: 0,
-      developer_credits: developerCredits,
-    },
-    {
-      id,
-      email,
-      full_name: fullName,
-    },
-    {
-      id,
-      email,
-    },
-  ];
-
-  for (const payload of payloads) {
+  try {
+    // Try simple upsert with basic required columns
     const { error } = await getSupabaseClient()
       .from("app_profiles")
-      .upsert(payload, { onConflict: "id" });
+      .upsert({
+        id,
+        email,
+        full_name: fullName,
+        role: "tester",
+        subscription_status: "active",
+        user_credits: 0,
+        developer_credits: developerCredits || 0,
+      }, { onConflict: "id" });
 
-    if (!error) return;
-    if (error.code !== "42703") throw error;
+    if (error) {
+      console.error("Upsert profile error:", error);
+      throw error;
+    }
+  } catch (err) {
+    console.error("Failed to upsert tester profile:", err);
+    throw err;
   }
 };
 
@@ -201,10 +215,12 @@ const authenticateInternalRequest = async (req, res) => {
 
   const profile = await findInternalProfile(user);
   if (!profile) {
+    console.error("Profile not found for user:", user.email);
     res.status(403).json({ error: "Profile not found" });
     return null;
   }
 
+  console.log("Auth successful - User:", user.email, "Profile Role:", profile.role);
   req.user = user;
   req.profile = profile;
   return { user, profile };
@@ -216,7 +232,10 @@ const verifyDeveloperAccess = async (req, res, next) => {
     const auth = await authenticateInternalRequest(req, res);
     if (!auth) return;
 
+    console.log("Developer access check - User:", auth.user.email, "Role:", auth.profile.role);
+
     if (!["admin", "super_admin", "developer"].includes(auth.profile.role)) {
+      console.warn("Insufficient permissions - Role not in allowed list:", auth.profile.role);
       return res.status(403).json({ error: "Insufficient permissions" });
     }
 
@@ -256,24 +275,35 @@ const verifyTesterOrDeveloperAccess = async (req, res, next) => {
  */
 router.get("/api/developer/dashboard/stats", verifyDeveloperAccess, async (req, res) => {
   try {
-    // Get total users
-    const { count: totalUsers } = await getSupabaseClient()
-      .from("app_profiles")
-      .select("*", { count: "exact", head: true });
+    // Get total users from auth
+    let totalUsers = 0;
+    try {
+      const authResult = await getSupabaseClient().auth.admin.listUsers({ perPage: 1 });
+      totalUsers = authResult.data?.total || 0;
+    } catch (err) {
+      console.warn("Failed to get auth users count, falling back to app_profiles:", err.message);
+      const { count } = await getSupabaseClient()
+        .from("app_profiles")
+        .select("*", { count: "exact", head: true });
+      totalUsers = count || 0;
+    }
 
-    // Get active users (logged in last 7 days)
+    // Get active users (distinct users with activity in last 7 days)
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-    const { count: activeUsers } = await getSupabaseClient()
+    const { data: activeUserLogs } = await getSupabaseClient()
       .from("usage_logs")
-      .select("*", { count: "exact", head: true })
-      .gt("created_at", sevenDaysAgo);
+      .select("user_id")
+      .gt("created_at", sevenDaysAgo)
+      .neq("user_id", null);
 
-    // Get new users (registered in last 24 hours)
-    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const activeUsers = new Set((activeUserLogs || []).map(log => log.user_id)).size;
+
+    // Get new users (registered in last 7 days)
+    const sevenDaysAgoDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     const { count: newUsers } = await getSupabaseClient()
       .from("app_profiles")
       .select("*", { count: "exact", head: true })
-      .gt("created_at", oneDayAgo);
+      .gt("created_at", sevenDaysAgoDate);
 
     // Get total credits consumed (sum of all usage logs)
     const { data: creditData } = await getSupabaseClient()
@@ -282,11 +312,13 @@ router.get("/api/developer/dashboard/stats", verifyDeveloperAccess, async (req, 
 
     const creditsConsumed = (creditData || []).reduce((sum, log) => sum + (log.credits_charged || 0), 0);
 
-    // Get AI requests count
-    const { count: aiRequests } = await getSupabaseClient()
+    // Get AI requests count (distinct usage logs)
+    const { data: aiRequestsData } = await getSupabaseClient()
       .from("usage_logs")
-      .select("*", { count: "exact", head: true })
+      .select("id")
       .eq("usage_type", "production");
+
+    const aiRequests = (aiRequestsData || []).length;
 
     res.json({
       totalUsers: totalUsers || 0,
@@ -323,6 +355,9 @@ router.get("/api/developer/users", verifyDeveloperAccess, async (req, res) => {
     if (authResult.error) {
       console.warn("Supabase auth users lookup failed, falling back to app_profiles:", authResult.error.message);
       const profileUsers = await selectAppProfiles({ offset, limit });
+      const profileUserIds = (profileUsers || []).map((u) => u.id);
+
+      const videoCounts = profileUserIds.length ? await getVideoCountsForUsers(profileUserIds) : new Map();
 
       const { count: totalCount } = await getSupabaseClient()
         .from("app_profiles")
@@ -345,7 +380,7 @@ router.get("/api/developer/users", verifyDeveloperAccess, async (req, res) => {
           credits: user.user_credits || 0,
           developerCredits: user.developer_credits || 0,
           portalAccess: user.portal_access || [],
-          videos: 0,
+          videos: videoCounts.get(user.id) || 0,
           joinDate: user.created_at ? new Date(user.created_at).toLocaleDateString() : "N/A",
           lastLogin: "N/A",
         }));
@@ -363,6 +398,7 @@ router.get("/api/developer/users", verifyDeveloperAccess, async (req, res) => {
     const userIds = authUsers.map((user) => user.id);
 
     const profiles = userIds.length ? await selectAppProfiles({ ids: userIds }) : [];
+    const videoCounts = userIds.length ? await getVideoCountsForUsers(userIds) : new Map();
 
     const profileById = new Map((profiles || []).map((profile) => [profile.id, profile]));
 
@@ -386,7 +422,7 @@ router.get("/api/developer/users", verifyDeveloperAccess, async (req, res) => {
           credits: profile?.user_credits || 0,
           developerCredits: profile?.developer_credits || 0,
           portalAccess: profile?.portal_access || ["user"],
-          videos: 0,
+          videos: videoCounts.get(authUser.id) || 0,
           joinDate: new Date(profile?.created_at || authUser.created_at).toLocaleDateString(),
           lastLogin: authUser.last_sign_in_at ? new Date(authUser.last_sign_in_at).toLocaleString() : "Never",
         };
@@ -844,6 +880,9 @@ router.get("/api/developer/testers/:testerId/credits", verifyTesterOrDeveloperAc
       return res.status(404).json({ error: "Tester not found" });
     }
 
+    // Get current balance from credit_wallets (the source of truth)
+    const currentBalance = await getDeveloperCreditBalance(testerId, tester);
+
     const now = Date.now();
     const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString();
     const monthAgo = new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString();
@@ -866,7 +905,7 @@ router.get("/api/developer/testers/:testerId/credits", verifyTesterOrDeveloperAc
     const monthlyUsed = (monthlyLogs || []).reduce((sum, log) => sum + Math.max(log.credits_charged || 0, 0), 0);
 
     res.json({
-      currentBalance: tester.developer_credits || 0,
+      currentBalance: currentBalance || 0,
       weeklyAllocation: 500,
       weeklyUsed,
       monthlyUsed,
@@ -946,6 +985,43 @@ router.post("/api/developer/testers/:testerId/credits/assign", verifyDeveloperAc
       authUserData.user.user_metadata?.name ||
       testerEmail.split("@")[0] ||
       testerEmail;
+    
+    // Ensure tester profile exists in app_profiles before creating wallet
+    if (!existingProfile) {
+      console.log("Creating tester profile for:", testerEmail);
+      await upsertTesterProfile({
+        id: testerId,
+        email: testerEmail,
+        fullName: testerName,
+        developerCredits: 0,
+      });
+    }
+    
+    // Ensure wallet exists before updating balance
+    const { data: existingWallet } = await getSupabaseClient()
+      .from("credit_wallets")
+      .select("id")
+      .eq("user_id", testerId)
+      .eq("wallet_type", "developer_credits")
+      .maybeSingle();
+
+    if (!existingWallet) {
+      // Initialize wallet if it doesn't exist
+      const { error: initError } = await getSupabaseClient()
+        .from("credit_wallets")
+        .insert({
+          user_id: testerId,
+          wallet_type: "developer_credits",
+          balance: 0,
+          is_unlimited: false,
+        });
+
+      if (initError) {
+        console.error("Wallet initialization error:", initError);
+        throw initError;
+      }
+    }
+
     const newBalance = (await getDeveloperCreditBalance(testerId, existingProfile)) + creditAmount;
 
     const { error: walletError } = await getSupabaseClient()
@@ -960,9 +1036,12 @@ router.post("/api/developer/testers/:testerId/credits/assign", verifyDeveloperAc
         { onConflict: "user_id,wallet_type" },
       );
 
-    if (walletError) throw walletError;
+    if (walletError) {
+      console.error("Wallet upsert error:", walletError);
+      throw walletError;
+    }
 
-    await getSupabaseClient().from("usage_logs").insert({
+    const { error: logError } = await getSupabaseClient().from("usage_logs").insert({
       user_id: testerId,
       actor_role: req.profile.role,
       portal: "internal",
@@ -979,10 +1058,15 @@ router.post("/api/developer/testers/:testerId/credits/assign", verifyDeveloperAc
       },
     });
 
+    if (logError) {
+      console.error("Usage log insert error:", logError);
+      throw logError;
+    }
+
     res.json({ success: true, newBalance });
   } catch (error) {
     console.error("Assign tester credits error:", error);
-    res.status(500).json({ error: "Failed to assign tester credits" });
+    res.status(500).json({ error: error?.message || "Failed to assign tester credits" });
   }
 });
 
@@ -1322,6 +1406,48 @@ router.post("/api/developer/debug/simulate-usage", async (req, res) => {
     });
   } catch (error) {
     console.error("Simulate usage error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Toggle testing mode for tester accounts
+router.post("/api/tester/toggle-testing-mode", async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const token = authHeader.slice(7);
+    const supabaseClient = getSupabaseClient();
+    
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
+    if (authError || !user) {
+      return res.status(401).json({ error: "Invalid token" });
+    }
+
+    const enabled = req.body?.enabled !== undefined ? req.body.enabled : true;
+
+    // Update the user's profile in app_profiles table
+    const { data: profile, error: updateError } = await supabaseClient
+      .from("app_profiles")
+      .update({ testing_mode_enabled: enabled })
+      .eq("id", user.id)
+      .select()
+      .single();
+
+    if (updateError) {
+      console.error("Testing mode toggle error:", updateError);
+      return res.status(500).json({ error: "Failed to update testing mode" });
+    }
+
+    res.json({
+      success: true,
+      testingModeEnabled: profile.testing_mode_enabled,
+      message: `Testing mode ${enabled ? "enabled" : "disabled"}`,
+    });
+  } catch (error) {
+    console.error("Toggle testing mode error:", error);
     res.status(500).json({ error: error.message });
   }
 });

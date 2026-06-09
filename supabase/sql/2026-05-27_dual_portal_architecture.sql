@@ -238,8 +238,8 @@ drop policy if exists "wallets_internal_manage" on public.credit_wallets;
 create policy "wallets_internal_manage"
 on public.credit_wallets
 for all
-using (public.current_app_role() in ('super_admin', 'admin'))
-with check (public.current_app_role() in ('super_admin', 'admin'));
+using (public.current_app_role() in ('super_admin', 'admin', 'developer'))
+with check (public.current_app_role() in ('super_admin', 'admin', 'developer'));
 
 drop policy if exists "usage_logs_self_or_internal" on public.usage_logs;
 create policy "usage_logs_self_or_internal"

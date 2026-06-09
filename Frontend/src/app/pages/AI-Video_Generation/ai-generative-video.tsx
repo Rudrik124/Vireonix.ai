@@ -38,6 +38,7 @@ import { Switch } from "../../components/ui/switch";
 import { PremiumModal } from "../../components/premium-modal";
 import { generateVideo } from "../../../api/generatevideo";
 import { usePortalTestingContext } from "../../../shared/portal/testing-context";
+import { useRedirectParam } from "../../lib/useRedirectParam";
 
 const frameStyleOptions = [
   { label: "16:9", width: 32, height: 18 },
@@ -159,6 +160,7 @@ const ParticleBackground = memo(() => {
 
 export function AIGenerativeVideoPage() {
   const navigate = useNavigate();
+  const redirectTo = useRedirectParam();
   const { isLoggedIn, session, logout } = useAuth();
   const { isDeveloperTestMode, usageContext } = usePortalTestingContext();
   const [isLoginOpen, setIsLoginOpen] = useState(false);
@@ -547,7 +549,7 @@ export function AIGenerativeVideoPage() {
           className="mb-8"
         >
           <button
-            onClick={() => navigate("/features")}
+            onClick={() => navigate(redirectTo || "/features")}
             className="inline-flex items-center gap-2 text-[#94a3b8] hover:text-purple-300 transition-colors group"
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />

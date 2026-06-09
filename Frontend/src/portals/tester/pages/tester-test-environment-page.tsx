@@ -31,50 +31,62 @@ export function TesterTestEnvironmentPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Video Generation Test */}
-          <div className="bg-purple-700 p-6 rounded-lg">
-            <h2 className="text-2xl font-semibold text-white mb-4">Video Generation Test</h2>
-            <p className="text-purple-200 mb-4">Test the video generation pipeline with unlimited credits</p>
-            <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded transition">
-              Start Test
+          {/* Test AI Generate Video */}
+          <div className="bg-purple-700 p-6 rounded-lg hover:bg-purple-600 transition">
+            <h2 className="text-2xl font-semibold text-white mb-4">Test AI Generate Video</h2>
+            <p className="text-purple-200 mb-4">Create videos from text prompts using AI with unlimited credits</p>
+            <button 
+              onClick={() => navigate("/create?redirect=/tester/test-environment")}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded transition"
+            >
+              Open Generator
             </button>
           </div>
 
-          {/* API Testing */}
-          <div className="bg-purple-700 p-6 rounded-lg">
-            <h2 className="text-2xl font-semibold text-white mb-4">API Testing</h2>
-            <p className="text-purple-200 mb-4">Test API endpoints with sample requests</p>
-            <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded transition">
-              Open API Tester
+          {/* Reference Video */}
+          <div className="bg-purple-700 p-6 rounded-lg hover:bg-purple-600 transition">
+            <h2 className="text-2xl font-semibold text-white mb-4">Reference Video</h2>
+            <p className="text-purple-200 mb-4">Create videos based on reference footage and styling</p>
+            <button 
+              onClick={() => navigate("/reference-video/setup?redirect=/tester/test-environment")}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded transition"
+            >
+              Start Reference Video
             </button>
           </div>
 
-          {/* UI Component Testing */}
-          <div className="bg-purple-700 p-6 rounded-lg">
-            <h2 className="text-2xl font-semibold text-white mb-4">UI Components</h2>
-            <p className="text-purple-200 mb-4">Test and interact with all UI components</p>
-            <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded transition">
-              View Components
+          {/* Direct Pic to Video */}
+          <div className="bg-purple-700 p-6 rounded-lg hover:bg-purple-600 transition">
+            <h2 className="text-2xl font-semibold text-white mb-4">Direct Pic to Video</h2>
+            <p className="text-purple-200 mb-4">Convert your images directly into animated videos</p>
+            <button 
+              onClick={() => navigate("/images-to-video/upload?redirect=/tester/test-environment")}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded transition"
+            >
+              Upload Images
             </button>
           </div>
 
-          {/* Performance Testing */}
-          <div className="bg-purple-700 p-6 rounded-lg">
-            <h2 className="text-2xl font-semibold text-white mb-4">Performance Testing</h2>
-            <p className="text-purple-200 mb-4">Monitor app performance and metrics</p>
-            <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded transition">
-              View Metrics
+          {/* Manual Edit */}
+          <div className="bg-purple-700 p-6 rounded-lg hover:bg-purple-600 transition">
+            <h2 className="text-2xl font-semibold text-white mb-4">Manual Edit</h2>
+            <p className="text-purple-200 mb-4">Manually edit and fine-tune your videos with precision controls</p>
+            <button 
+              onClick={() => navigate("/quick-edit/upload?redirect=/tester/test-environment")}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded transition"
+            >
+              Open Editor
             </button>
           </div>
         </div>
 
         <div className="mt-8 p-6 bg-purple-700 rounded-lg">
-          <h2 className="text-xl font-semibold text-white mb-4">Testing Mode Info</h2>
+          <h2 className="text-xl font-semibold text-white mb-4">Testing Mode Benefits</h2>
           <div className="space-y-2 text-purple-200">
-            <p>✓ Unlimited credits for testing</p>
-            <p>✓ Access to all beta features</p>
-            <p>✓ Real-time error reporting</p>
-            <p>✓ Performance monitoring enabled</p>
+            <p>✓ Unlimited credits for all features</p>
+            <p>✓ Full access to all video creation tools</p>
+            <p>✓ Real-time error reporting and feedback</p>
+            <p>✓ Priority support and testing environment</p>
           </div>
         </div>
       </div>

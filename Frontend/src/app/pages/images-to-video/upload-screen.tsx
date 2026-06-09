@@ -15,6 +15,7 @@ import { Input } from "../../components/ui/input";
 import { Textarea } from "../../components/ui/textarea";
 import { LoadingModal, type LoadingState } from "../../components/loading-modal";
 import { HistoryDialog, type HistoryItem, saveToHistory } from "../../components/history-dialog";
+import { useRedirectParam } from "../../lib/useRedirectParam";
 import { 
   Dialog, 
   DialogContent, 
@@ -52,6 +53,7 @@ const EmojiIcon = ({ icon: Icon, size = "md", className = "" }: { icon: LucideIc
 
 export function ImagesToVideoUploadScreen() {
   const navigate = useNavigate();
+  const redirectTo = useRedirectParam();
   const { isLoggedIn, session, logout } = useAuth();
   const { isDeveloperTestMode, usageContext } = usePortalTestingContext();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -259,7 +261,7 @@ export function ImagesToVideoUploadScreen() {
             </div>
 
             <button
-              onClick={() => navigate("/features")}
+              onClick={() => navigate(redirectTo || "/features")}
               className="flex items-center gap-2 text-[#94a3b8] hover:text-purple-400 transition-colors group"
             >
               <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
