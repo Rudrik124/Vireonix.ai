@@ -330,15 +330,16 @@ export function DeveloperErrorLogsPage() {
       <div className="mx-auto max-w-7xl px-6 py-8">
         {activeTab === 'errors' ? (
           selectedError ? (
-            <button
-              onClick={() => setSelectedError(null)}
-              className="flex items-center gap-2 text-sm text-slate-400 hover:text-white mb-6"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              Back to List
-            </button>
+            <>
+              <button
+                onClick={() => setSelectedError(null)}
+                className="flex items-center gap-2 text-sm text-slate-400 hover:text-white mb-6"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Back to List
+              </button>
 
-            <div className="space-y-6">
+              <div className="space-y-6">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <p className="text-sm text-slate-400">Error Message</p>
@@ -425,9 +426,8 @@ export function DeveloperErrorLogsPage() {
                   Delete
                 </button>
               </div>
-            </div>
-          </div>
-        ) : (
+            </>
+          ) : (
           // Error List View
           <div className="space-y-6">
             {/* Filters */}
