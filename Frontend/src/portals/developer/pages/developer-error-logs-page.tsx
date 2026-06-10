@@ -96,34 +96,6 @@ export function DeveloperErrorLogsPage() {
     }
   };
 
-  // Filter logs by search query and time range
-  const filteredErrors = errorLogs.filter((log) => {
-    // Time range filter
-    if (timeRange === 'today') {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      if (new Date(log.created_at) < today) return false;
-    } else if (timeRange === 'last7days') {
-      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-      if (new Date(log.created_at) < sevenDaysAgo) return false;
-    }
-
-    // Status filter
-    if (!statusFilter.includes(log.status as ErrorStatus)) return false;
-
-    // Search query
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      return (
-        log.error_message.toLowerCase().includes(query) ||
-        log.module.toLowerCase().includes(query) ||
-        log.route.toLowerCase().includes(query)
-      );
-    }
-
-    return true;
-  });
-
   const handleResolveError = async (errorId: string) => {
     if (!profile?.id) return;
     setIsUpdating(true);
