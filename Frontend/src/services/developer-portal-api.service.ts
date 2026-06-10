@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { buildApiUrl } from '../lib/api';
 
 /**
  * Base fetch function for developer portal APIs
@@ -62,7 +63,7 @@ async function callDeveloperAPI(endpoint: string, options?: RequestInit) {
     console.warn('Unable to read auth token from storage/supabase', e);
   }
 
-  const response = await fetch(`/api/developer${endpoint}`, {
+  const response = await fetch(buildApiUrl(`/api/developer${endpoint}`), {
     ...options,
     headers: {
       'Content-Type': 'application/json',

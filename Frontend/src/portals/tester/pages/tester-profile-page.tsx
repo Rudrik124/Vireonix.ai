@@ -89,7 +89,7 @@ export function TesterProfilePage() {
       }
 
       // Call API to toggle testing mode
-      const response = await fetch("/api/tester/toggle-testing-mode", {
+      const response = await fetch(buildApiUrl("/api/tester/toggle-testing-mode"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

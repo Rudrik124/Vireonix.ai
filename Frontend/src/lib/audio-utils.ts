@@ -1,4 +1,5 @@
 import { SelectedMusic } from "../app/context/music-context";
+import { buildApiUrl } from './api';
 
 /**
  * Audio processing utilities for video export with music
@@ -49,6 +50,8 @@ export async function prepareAudioForExport(
   return { musicData: formData, config };
 }
 
+import { buildApiUrl } from './api';
+
 /**
  * Merge video with audio during export
  * Call on backend endpoint
@@ -77,7 +80,7 @@ export async function mergeVideoWithAudio(
     if (options.muteOriginal !== undefined) formData.append("muteOriginal", String(options.muteOriginal));
   }
 
-  const response = await fetch("/api/merge-audio", {
+  const response = await fetch(buildApiUrl("/api/merge-audio"), {
     method: "POST",
     body: formData,
   });
@@ -165,7 +168,7 @@ export async function createAudioPreview(
   formData.append("endTime", String(endTime));
   formData.append("volume", String(volume));
 
-  const response = await fetch("/api/process-audio-preview", {
+  const response = await fetch(buildApiUrl("/api/process-audio-preview"), {
     method: "POST",
     body: formData,
   });
@@ -189,7 +192,7 @@ export async function convertAudioFormat(
   formData.append("audioFile", file);
   formData.append("format", targetFormat);
 
-  const response = await fetch("/api/convert-audio", {
+  const response = await fetch(buildApiUrl("/api/convert-audio"), {
     method: "POST",
     body: formData,
   });

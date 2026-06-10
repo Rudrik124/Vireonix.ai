@@ -1,4 +1,5 @@
 import { SelectedMusic } from "../app/context/music-context";
+import { buildApiUrl } from "./api";
 
 /**
  * Export utilities for video with music and captions
@@ -76,7 +77,7 @@ export async function exportVideoWithMusic(options: ExportOptions): Promise<Expo
       }
 
       try {
-        const response = await fetch("/api/merge-audio", {
+        const response = await fetch(buildApiUrl("/api/merge-audio"), {
           method: "POST",
           body: formData,
         });
@@ -154,7 +155,7 @@ export async function burnCaptions(
   formData.append("videoPath", videoPath);
   formData.append("captions", JSON.stringify(captions));
 
-  const response = await fetch("/api/burn-captions", {
+  const response = await fetch(buildApiUrl("/api/burn-captions"), {
     method: "POST",
     body: formData,
   });
@@ -175,7 +176,7 @@ export async function uploadExportedVideo(
   formData.append("filename", filename);
   formData.append("bucket", "quick_edits");
 
-  const response = await fetch("/api/upload-export", {
+  const response = await fetch(buildApiUrl("/api/upload-export"), {
     method: "POST",
     body: formData,
   });
