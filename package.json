@@ -6,7 +6,7 @@
   "scripts": {
     "build": "vite build",
     "dev": "vite",
-    "start": "node server.js"
+    "start": "node Backend/server.js"
   },
   "dependencies": {
     "@ant-design/icons": "^6.2.3",

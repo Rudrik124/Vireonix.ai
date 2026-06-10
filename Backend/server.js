@@ -116,7 +116,25 @@ const buildSrt = (captions) => {
     .join("\n");
 };
 
-const normalizeSubtitlePath = (filePath) => filePath.replace(/\\/g, "/");
+const normalizeSubtitlePath = (filePath) => {
+  let normalized = filePath.replace(/\\/g, "/");
+  if (/^[a-zA-Z]:/.test(normalized)) {
+    normalized = normalized.charAt(0) + "\\:" + normalized.substring(2);
+  }
+  return normalized;
+};
+
+const convertHexToAssColor = (hex) => {
+  if (!hex || !hex.startsWith("#")) return "&HFFFFFF&";
+  const clean = hex.replace("#", "");
+  if (clean.length === 6) {
+    const rr = clean.substring(0, 2);
+    const gg = clean.substring(2, 4);
+    const bb = clean.substring(4, 6);
+    return `&H${bb}${gg}${rr}&`;
+  }
+  return "&HFFFFFF&";
+};
 
 // ✅ INIT SUPABASE (env-only, no hardcoded secrets)
 const supabaseUrl = readEnv("SUPABASE_URL");
@@ -1668,32 +1686,6 @@ const applyEffectsToVideo = async (inputPath, effects, durationSeconds = 10) => 
     videoFilters.push("eq=contrast=1.55:brightness=0.08:saturation=1.45,unsharp=5:5:1.2:5:5:0.0");
   }
 
-  // ─── NEW EFFECTS (Film Grain / Vignette / Soft Glow / RGB Split / Motion Trails / Strobe / Old TV / Scanlines / Zoom Punch) ───
-
-  if (selectedEffect === "vignette") {
-    const strength = Math.max(0.1, Math.min(1.0, Number(settings.vignetteStrength) ?? 0.5));
-    // angle controls the vignette spread: smaller = stronger vignette. Range: ~0.1 (strong) to 1.2 (light)
-    const angle = (1.2 - strength).toFixed(3);
-    videoFilters.push(`vignette=angle=${angle}:mode=forward`);
-  }
-
-  if (selectedEffect === "motion-trails") {
-    const frames = Math.max(2, Math.min(15, Number(settings.motionTrailsFrames) ?? 6));
-    const decay = Math.max(0.05, Math.min(0.95, Number(settings.motionTrailsDecay) ?? 0.5));
-    // tmix blends multiple frames together, creating a ghosting/trail effect
-    videoFilters.push(`tmix=frames=${frames}:weights='${Array.from({length: frames}, (_, i) => (Math.pow(decay, frames - 1 - i)).toFixed(3)).join(' ')}'`);
-  }
-
-  if (selectedEffect === "strobe") {
-    const rate = Math.max(1, Math.min(30, Number(settings.strobeRate) ?? 8));
-    const fps = metadata.fps || 30;
-    const skipFrames = Math.max(2, Math.round(fps / rate));
-    // tblend difference creates stroboscopic effect by blending frames with offset weights
-    // Use equal weights for a frozen-frame look
-    const weights = Array.from({length: skipFrames}, (_, i) => i === 0 ? '1' : '0').join(' ');
-    videoFilters.push(`tmix=frames=${skipFrames}:weights='${weights}'`);
-  }
-
   if (selectedEffect === "old-tv") {
     // Old TV: scanlines + noise + color shift + vignette
     videoFilters.push("noise=alls=14:allf=t+u");
@@ -1701,26 +1693,6 @@ const applyEffectsToVideo = async (inputPath, effects, durationSeconds = 10) => 
     videoFilters.push("chromashift=cbh=3:cbv=2:crh=-3:crv=-2");
     videoFilters.push("vignette=angle=0.6:mode=forward");
     videoFilters.push("hue=h=4");
-  }
-
-  if (selectedEffect === "scanlines") {
-    const opacity = Math.max(0.02, Math.min(0.6, Number(settings.scanlinesOpacity) ?? 0.25));
-    const spacing = Math.max(2, Math.min(8, Math.round(Number(settings.scanlinesSpacing ?? 4))));
-
-    // geq creates repeating scanlines by darkening every Nth row
-    const alpha = (1 - opacity).toFixed(3);
-    videoFilters.push(`geq=r='r(X,Y)*if(mod(Y\,${spacing}),1,${alpha})':g='g(X,Y)*if(mod(Y\,${spacing}),1,${alpha})':b='b(X,Y)*if(mod(Y\,${spacing}),1,${alpha})'`);
-    videoFilters.push("eq=contrast=1.08:brightness=0.02");
-  }
-
-  if (selectedEffect === "zoom-punch") {
-    const strength = Math.max(0.02, Math.min(0.35, Number(settings.zoomPunchStrength) ?? 0.12));
-    const fps = metadata.fps || 30;
-    const w = metadata.width || 1280;
-    const h = metadata.height || 720;
-    // Rhythmic zoom using zoompan — pulses at ~0.5Hz (one pulse per 2 seconds)
-    const zoomExpr = `1+${strength.toFixed(3)}*abs(sin(2*3.14159*on/(${fps}*2)))`;
-    videoFilters.push(`zoompan=z='${zoomExpr}':x='iw/2-(iw/zoom)/2':y='ih/2-(ih/zoom)/2':d=1:s=${w}x${h}:fps=${fps}`);
   }
 
   if (!videoFilters.length && !audioFilter) {
@@ -3669,7 +3641,7 @@ app.post(
       }
 
       const fileName = `direct-media-${Date.now()}.mp4`;
-      const baseOutputPath = makeTempFilePath(fileName);
+      let baseOutputPath = makeTempFilePath(fileName);
       let finalOutputPath = baseOutputPath;
       const generatedTempFiles = [];
 
@@ -3691,13 +3663,26 @@ app.post(
           const trimEnd = Number.isFinite(trimEndRaw) ? Math.max(trimStart + 0.01, trimEndRaw) : null;
           const trimDuration = trimEnd == null ? null : Math.max(0.01, trimEnd - trimStart);
 
-          // Log trim details for this clip
+          const clipEffect = mediaMeta?.effect && mediaMeta.effect !== "none"
+            ? mediaMeta.effect
+            : "none";
+          const clipFilter = mediaMeta?.filter && mediaMeta.filter !== "none"
+            ? mediaMeta.filter
+            : "none";
+          const clipEffectSettings = mediaMeta?.effectSettings && Object.keys(mediaMeta.effectSettings).length > 0
+            ? mediaMeta.effectSettings
+            : (effects?.settings || {});
+
+          // Log details for this clip including effects/filters
           console.log(`✂️  [API-MEDIA] Clip ${i} (${media.originalname}):`, {
             mediaId: mediaId?.slice(0, 8),
             hasTrim: !!rawClipTrim,
             trimStart: trimStart,
             trimEnd: trimEnd,
             trimDuration: trimDuration?.toFixed(2),
+            effect: clipEffect,
+            filter: clipFilter,
+            effectSettings: clipEffectSettings,
           });
 
           if (media.mimetype?.startsWith("video/")) {
@@ -3707,12 +3692,6 @@ app.post(
           }
 
           let finalSegmentPath = segmentPath;
-          const clipEffect = mediaMeta?.effect && mediaMeta.effect !== "none"
-            ? mediaMeta.effect
-            : (effects?.selectedEffect || "none");
-          const clipEffectSettings = mediaMeta?.effectSettings && Object.keys(mediaMeta.effectSettings).length > 0
-            ? mediaMeta.effectSettings
-            : (effects?.settings || {});
 
           if (clipEffect && clipEffect !== "none") {
             let clipDuration = trimDuration || Number(mediaMeta?.duration);
@@ -3733,10 +3712,6 @@ app.post(
               finalSegmentPath = effectedSegmentPath;
             }
           }
-
-          const clipFilter = mediaMeta?.filter && mediaMeta.filter !== "none"
-            ? mediaMeta.filter
-            : (resolvedSelectedFilter || "none");
 
           if (clipFilter && clipFilter !== "none") {
             let clipDuration = trimDuration || Number(mediaMeta?.duration);
@@ -3834,7 +3809,7 @@ app.post(
           const primaryMediaMeta = resolvedEditorSelections?.media?.items?.[0] || {};
           const primaryClipEffect = primaryMediaMeta?.effect && primaryMediaMeta.effect !== "none"
             ? primaryMediaMeta.effect
-            : (effects?.selectedEffect || "none");
+            : "none";
           const primaryClipEffectSettings = primaryMediaMeta?.effectSettings && Object.keys(primaryMediaMeta.effectSettings).length > 0
             ? primaryMediaMeta.effectSettings
             : (effects?.settings || {});
@@ -3857,7 +3832,7 @@ app.post(
 
           const primaryClipFilter = primaryMediaMeta?.filter && primaryMediaMeta.filter !== "none"
             ? primaryMediaMeta.filter
-            : (resolvedSelectedFilter || "none");
+            : "none";
 
           if (primaryClipFilter && primaryClipFilter !== "none") {
             console.log(`🎬 [API-MEDIA] Applying single video clip filter:`, {
@@ -3885,7 +3860,7 @@ app.post(
           const primaryMediaMeta = resolvedEditorSelections?.media?.items?.[0] || {};
           const primaryClipEffect = primaryMediaMeta?.effect && primaryMediaMeta.effect !== "none"
             ? primaryMediaMeta.effect
-            : (effects?.selectedEffect || "none");
+            : "none";
           const primaryClipEffectSettings = primaryMediaMeta?.effectSettings && Object.keys(primaryMediaMeta.effectSettings).length > 0
             ? primaryMediaMeta.effectSettings
             : (effects?.settings || {});
@@ -3908,7 +3883,7 @@ app.post(
 
           const primaryClipFilter = primaryMediaMeta?.filter && primaryMediaMeta.filter !== "none"
             ? primaryMediaMeta.filter
-            : (resolvedSelectedFilter || "none");
+            : "none";
 
           if (primaryClipFilter && primaryClipFilter !== "none") {
             console.log(`🎬 [API-MEDIA] Applying single image clip filter:`, {
@@ -4089,37 +4064,36 @@ app.post(
       }
 
       // STEP 4.1: Apply deterministic post-processing effects for export output
-      if (!isQuickEditMode) {
-        console.log("🎛️ [API-MEDIA] Applying export post-processing", {
-          effect: effects.selectedEffect || "none",
-          filter: resolvedSelectedFilter,
-          textOverlay: Boolean(resolvedTextOverlay?.enabled && String(resolvedTextOverlay?.text || "").trim()),
-        });
+      console.log("🎛️ [API-MEDIA] Applying export post-processing", {
+        effect: effects.selectedEffect || "none",
+        filter: resolvedSelectedFilter,
+        textOverlay: Boolean(resolvedTextOverlay?.enabled && String(resolvedTextOverlay?.text || "").trim()),
+        isQuickEditMode,
+      });
 
+      if (effects.selectedEffect && effects.selectedEffect !== "none") {
         const effectedPath = await applyEffectsToVideo(finalOutputPath, effects, seconds);
         if (effectedPath !== finalOutputPath) {
           generatedTempFiles.push(finalOutputPath);
           finalOutputPath = effectedPath;
         }
+      }
 
-        // Apply selected filter as an additional pass so filter + effect can both appear in exports.
-        if (resolvedSelectedFilter !== "none" && resolvedSelectedFilter !== effects.selectedEffect) {
-          console.log("🎨 [API-MEDIA] Applying dedicated filter pass", {
-            selectedFilter: resolvedSelectedFilter,
-            baseEffect: effects.selectedEffect || "none",
-          });
-          const filteredPath = await applyEffectsToVideo(
-            finalOutputPath,
-            { selectedEffect: resolvedSelectedFilter, settings: resolvedEffectSettings },
-            seconds,
-          );
-          if (filteredPath !== finalOutputPath) {
-            generatedTempFiles.push(finalOutputPath);
-            finalOutputPath = filteredPath;
-          }
+      // Apply selected filter as an additional pass so filter + effect can both appear in exports.
+      if (resolvedSelectedFilter !== "none" && resolvedSelectedFilter !== effects.selectedEffect) {
+        console.log("🎨 [API-MEDIA] Applying dedicated filter pass", {
+          selectedFilter: resolvedSelectedFilter,
+          baseEffect: effects.selectedEffect || "none",
+        });
+        const filteredPath = await applyEffectsToVideo(
+          finalOutputPath,
+          { selectedEffect: resolvedSelectedFilter, settings: resolvedEffectSettings },
+          seconds,
+        );
+        if (filteredPath !== finalOutputPath) {
+          generatedTempFiles.push(finalOutputPath);
+          finalOutputPath = filteredPath;
         }
-      } else {
-        console.log("🎛️ [API-MEDIA] Skipping global export post-processing effect and filter in Quick Edit mode");
       }
 
       const textOverlayPath = await applyTextOverlayToVideo(finalOutputPath, resolvedTextOverlay);
@@ -4139,6 +4113,62 @@ app.post(
           }
         } catch (audioErr) {
           console.warn("⚠️ [API-MEDIA] Editor audio merge failed, continuing without:", audioErr?.message || audioErr);
+        }
+      }
+
+      // STEP 4.7: Burn captions into final video if present in editorSelections
+      const resolvedCaptions = resolvedEditorSelections?.captions || parsedEditorSelections?.captions;
+      if (Array.isArray(resolvedCaptions) && resolvedCaptions.length > 0) {
+        try {
+          console.log(`🎬 [API-MEDIA] Burning ${resolvedCaptions.length} captions into final video...`);
+          const srtPath = makeTempFilePath("captions.srt");
+          await fs.promises.writeFile(srtPath, buildSrt(resolvedCaptions), "utf8");
+
+          const subtitleSource = normalizeSubtitlePath(srtPath);
+          const captionedOutputPath = makeTempFilePath("burned-captions.mp4");
+
+          const style = resolvedEditorSelections?.captionStyle || {};
+          const fontName = style.fontFamily || "Arial";
+          const fontSize = Math.round((style.fontSize || 32) * 0.75); // Scale appropriately
+          const primaryColor = convertHexToAssColor(style.color || "#FFFFFF");
+          const backColor = style.bgEnabled ? "&H80000000&" : "&H00000000&"; // 50% opacity black or fully transparent
+          const borderStyle = style.bgEnabled ? 3 : 1;
+          const bold = style.bold ? -1 : 0;
+          const italic = style.italic ? -1 : 0;
+          const outline = style.outline ? 2 : 0;
+          const shadow = style.bgEnabled ? 0 : 1;
+          const alignment = style.alignment === "left" ? 1 : style.alignment === "right" ? 3 : 2;
+
+          const forceStyle = [
+            `FontName=${fontName}`,
+            `FontSize=${fontSize}`,
+            `PrimaryColour=${primaryColor}`,
+            `BackColour=${backColor}`,
+            `BorderStyle=${borderStyle}`,
+            `Bold=${bold}`,
+            `Italic=${italic}`,
+            `Outline=${outline}`,
+            `Shadow=${shadow}`,
+            `Alignment=${alignment}`,
+          ].join(",");
+
+          await new Promise((resolve, reject) => {
+            ffmpeg(finalOutputPath)
+              .videoFilters([`subtitles=${subtitleSource}:force_style='${forceStyle}'`])
+              .outputOptions(["-c:v libx264", "-crf 23", "-preset veryfast"])
+              .outputOptions(["-c:a copy"])
+              .output(captionedOutputPath)
+              .on("end", resolve)
+              .on("error", reject)
+              .run();
+          });
+
+          generatedTempFiles.push(finalOutputPath);
+          generatedTempFiles.push(srtPath);
+          finalOutputPath = captionedOutputPath;
+          console.log("✅ [API-MEDIA] Captions burned successfully");
+        } catch (captionErr) {
+          console.warn("⚠️ [API-MEDIA] Caption burn failed, continuing without:", captionErr?.message || captionErr);
         }
       }
 
