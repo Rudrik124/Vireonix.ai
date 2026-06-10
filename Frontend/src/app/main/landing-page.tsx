@@ -4,7 +4,7 @@ import { ConfigProvider, theme, Button, Modal, Row, Col, Card, Switch, Typograph
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircleOutlined, GithubOutlined, TwitterOutlined, RocketOutlined, SearchOutlined, CloudUploadOutlined, CloudDownloadOutlined, ThunderboltOutlined, PictureOutlined, CodeOutlined, PlayCircleOutlined, ScissorOutlined, MessageOutlined, AudioOutlined, BgColorsOutlined, MobileOutlined, SoundOutlined, BulbOutlined, FieldTimeOutlined, SafetyCertificateOutlined, CloudServerOutlined, VideoCameraOutlined, CopyOutlined, FileImageOutlined, EditOutlined, CloseOutlined, SlidersOutlined, DiscordOutlined, ArrowRightOutlined } from '@ant-design/icons';
 import { LoginModal } from '../components/login-modal';
-import { Sparkles, Play, Video, Image as ImageIcon, Wand2, Music, CheckCircle2, Menu, Loader2, Star, Zap, Clapperboard, Globe, ShieldCheck, User, ChevronRight, ChevronDown, LogOut } from 'lucide-react';
+import { Sparkles, Play, Video, Image as ImageIcon, Wand2, Music, CheckCircle2, Menu, Loader2, Star, Zap, Clapperboard, Globe, ShieldCheck, User, ChevronRight, ChevronDown, LogOut, Wallet } from 'lucide-react';
 import { useAuth } from '../context/auth-context';
 
 const { Title, Text } = Typography;
@@ -258,6 +258,9 @@ export function LandingPage() {
 
             {/* Actions */}
             <div className="hidden md:flex items-center gap-4 text-white">
+              <button onClick={() => navigate("/wallet")} className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-sm font-bold transition-all text-fuchsia-400 hover:text-fuchsia-300">
+                <Wallet className="w-4 h-4" /> Wallet
+              </button>
               {isLoggedIn ? (
                 <div className="relative">
                   <button onClick={() => setIsUserMenuOpen(!isUserMenuOpen)} className="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-1.5 rounded-full text-sm font-bold transition-colors">

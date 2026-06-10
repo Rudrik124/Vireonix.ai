@@ -19,7 +19,8 @@ import {
 	User,
 	ChevronDown,
 	Image as ImageIcon,
-	Menu
+	Menu,
+	Wallet
 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Textarea } from "../components/ui/textarea";
@@ -60,6 +61,9 @@ export function HomePage() {
 		if (loginFlag && isLoggedIn) {
 			setShowLoginSuccess(true);
 			localStorage.removeItem("justLoggedIn");
+			setTimeout(() => {
+				setShowLoginSuccess(false);
+			}, 2000);
 		}
 	}, [isLoggedIn]);
 
@@ -227,7 +231,10 @@ export function HomePage() {
 							</button>
 							<div className="hidden md:flex items-center gap-6">
 								{isLoggedIn ? (
-									<div className="relative">
+									<div className="flex items-center gap-4 relative">
+										<button onClick={() => navigate("/wallet")} className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-sm font-bold transition-all text-fuchsia-400 hover:text-fuchsia-300">
+											<Wallet className="w-4 h-4" /> Wallet
+										</button>
 										<motion.button
 											whileHover={{ scale: 1.05 }}
 											whileTap={{ scale: 0.95 }}

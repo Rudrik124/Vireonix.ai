@@ -1,5 +1,5 @@
 import { Link } from "react-router";
-import { CreditCard, History, ImagePlus, Settings, Sparkles, Wand2 } from "lucide-react";
+import { CreditCard, History, ImagePlus, Settings, Sparkles, Wand2, Wallet } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "../../../app/context/auth-context";
 import { fetchCreditOverview } from "../../../services/usage.service";
@@ -45,6 +45,15 @@ export function UserDashboardPage() {
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,#12314f_0%,#08111e_45%,#050914_100%)] text-white">
+      <header className="mx-auto max-w-7xl px-6 pt-8 flex justify-between items-center">
+        <div className="text-xl font-black tracking-tight">VEYTRIX.AI</div>
+        <Link 
+          to="/wallet" 
+          className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm font-bold text-cyan-400 hover:bg-white/10 hover:text-cyan-300 transition-all"
+        >
+          <Wallet className="w-4 h-4" /> Wallet
+        </Link>
+      </header>
       <div className="mx-auto max-w-7xl px-6 py-12">
         <div className="grid gap-6 lg:grid-cols-[1.5fr,1fr]">
           <section className="rounded-[2rem] border border-cyan-500/20 bg-white/5 p-8 backdrop-blur-2xl">

@@ -20,7 +20,8 @@ import {
   PlayCircle,
   Activity,
   Check,
-  Video
+  Video,
+  Wallet
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "../components/ui/button";
@@ -76,6 +77,9 @@ export function VideoTypePage() {
     if (loginFlag && isLoggedIn) {
       setShowLoginSuccess(true);
       localStorage.removeItem("justLoggedIn");
+      setTimeout(() => {
+        setShowLoginSuccess(false);
+      }, 2000);
     }
   }, [isLoggedIn]);
 
@@ -223,14 +227,22 @@ export function VideoTypePage() {
           
           <div className="hidden md:flex items-center gap-3">
             {isLoggedIn ? (
-              <div className="relative">
-                <button
-                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  className="flex items-center gap-2 bg-white/5 hover:bg-white/10 px-4 py-2 rounded-full border border-white/10 transition-all text-sm font-bold text-white group"
+              <div className="flex items-center gap-3 relative">
+                <button 
+                  onClick={() => navigate("/wallet")} 
+                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition-all text-sm font-bold text-fuchsia-400 hover:text-fuchsia-300"
                 >
-                  <User className="w-4 h-4 text-purple-400" />
-                  {userName}
+                  <Wallet className="w-4 h-4" /> Wallet
                 </button>
+                <div className="relative">
+                  <button
+                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                    className="flex items-center gap-2 bg-white/5 hover:bg-white/10 px-4 py-2 rounded-full border border-white/10 transition-all text-sm font-bold text-white group"
+                  >
+                    <User className="w-4 h-4 text-purple-400" />
+                    {userName}
+                  </button>
+                </div>
               </div>
             ) : (
               <>

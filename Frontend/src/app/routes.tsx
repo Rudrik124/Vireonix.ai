@@ -22,10 +22,7 @@ import { TesterTestEnvironmentPage } from "../portals/tester/pages/tester-test-e
 import { TesterBugReportsPage } from "../portals/tester/pages/tester-bug-reports-page";
 import { TesterTestCasesPage } from "../portals/tester/pages/tester-test-cases-page";
 import { TesterCreditsPage } from "../portals/tester/pages/tester-credits-page";
-import { TesterVideoGeneratorPage } from "../portals/tester/pages/tester-video-generator-page";
-import { TesterDocumentationPage } from "../portals/tester/pages/tester-documentation-page";
 import { TesterProfilePage } from "../portals/tester/pages/tester-profile-page";
-import { TesterNotificationsPage } from "../portals/tester/pages/tester-notifications-page";
 import { TesterAnalyticsPage } from "../portals/tester/pages/tester-analytics-page";
 import { TesterFeedbackPage } from "../portals/tester/pages/tester-feedback-page";
 // User Portal
@@ -162,6 +159,13 @@ const legacyUserRoutes = [
     async lazy() {
       const { TimelineEditorPage } = await import("./pages/timeline-editor/timeline-editor-page");
       return { Component: TimelineEditorPage };
+    }
+  },
+  {
+    path: "/wallet",
+    async lazy() {
+      const { WalletPage } = await import("./main/wallet-page");
+      return { Component: WalletPage };
     }
   },
   {
@@ -419,22 +423,7 @@ export const router = createBrowserRouter([
       </PortalGate>
     ),
   },
-  {
-    path: "/tester/video-generator",
-    element: (
-      <PortalGate portal="tester" allowedRoles={["super_admin", "admin", "developer", "tester"]}>
-        <TesterVideoGeneratorPage />
-      </PortalGate>
-    ),
-  },
-  {
-    path: "/tester/documentation",
-    element: (
-      <PortalGate portal="tester" allowedRoles={["super_admin", "admin", "developer", "tester"]}>
-        <TesterDocumentationPage />
-      </PortalGate>
-    ),
-  },
+
   {
     path: "/tester/profile",
     element: (
@@ -443,14 +432,7 @@ export const router = createBrowserRouter([
       </PortalGate>
     ),
   },
-  {
-    path: "/tester/notifications",
-    element: (
-      <PortalGate portal="tester" allowedRoles={["super_admin", "admin", "developer", "tester"]}>
-        <TesterNotificationsPage />
-      </PortalGate>
-    ),
-  },
+
   {
     path: "/tester/analytics",
     element: (
