@@ -28,6 +28,11 @@ export function TesterDashboardPage() {
   const { profile, isLoading, logout } = useAuth();
   const navigate = useNavigate();
 
+  // Scroll to top on mount
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   // Mouse Parallax
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);

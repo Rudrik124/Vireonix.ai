@@ -55,6 +55,11 @@ function AnimatedNumber({ value }: { value: number }) {
 export function TesterFeedbackPage() {
   const { profile, isLoading } = useAuth();
   const navigate = useNavigate();
+
+  // Scroll to top on mount
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
   const [showForm, setShowForm] = useState(false);
   const [filterCategory, setFilterCategory] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");

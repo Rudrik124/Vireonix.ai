@@ -56,6 +56,11 @@ function AnimatedNumber({ value, prefix = "", suffix = "", decimals = 0 }: { val
 
 export function DeveloperAnalyticsPage() {
   const navigate = useNavigate();
+
+  // Scroll to top on mount
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
   const [timeRange, setTimeRange] = useState<"7d" | "30d" | "90d">("7d");
   const { analytics, isLoading } = useAnalyticsData(timeRange);
 

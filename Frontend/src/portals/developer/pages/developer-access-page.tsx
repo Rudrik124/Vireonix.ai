@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { supabase, isSupabaseConfigured } from "../../../lib/supabase";
 import { fetchAppProfile } from "../../../services/auth-profile";
@@ -22,6 +22,11 @@ const withTimeout = async <T,>(promise: Promise<T>, ms: number, message: string)
 
 export function DeveloperAccessPage() {
   const navigate = useNavigate();
+
+  // Scroll to top on mount
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
   const location = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

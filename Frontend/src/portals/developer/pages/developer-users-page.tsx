@@ -74,6 +74,11 @@ function AnimatedNumber({ value, prefix = "" }: { value: number; prefix?: string
 
 export function DeveloperUsersPage() {
   const navigate = useNavigate();
+
+  // Scroll to top on mount
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);

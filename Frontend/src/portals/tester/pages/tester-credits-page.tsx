@@ -59,6 +59,11 @@ function AnimatedNumber({ value }: { value: number }) {
 export function TesterCreditsPage() {
   const { profile, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
+
+  // Scroll to top on mount
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
   const [timeRange, setTimeRange] = useState<"week" | "month" | "all">("month");
   const [creditData, setCreditData] = useState<CreditData>({
     currentBalance: 0,

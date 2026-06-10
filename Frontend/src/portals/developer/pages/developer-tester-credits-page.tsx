@@ -72,6 +72,11 @@ function AnimatedNumber({ value, prefix = "", suffix = "" }: { value: number; pr
 
 export function DeveloperTesterCreditsPage() {
   const navigate = useNavigate();
+
+  // Scroll to top on mount
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
   const [testers, setTesters] = useState<Tester[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedTester, setSelectedTester] = useState<Tester | null>(null);

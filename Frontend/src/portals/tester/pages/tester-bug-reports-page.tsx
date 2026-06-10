@@ -56,6 +56,11 @@ function AnimatedNumber({ value }: { value: number }) {
 export function TesterBugReportsPage() {
   const { profile, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
+
+  // Scroll to top on mount
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
   const [bugReports, setBugReports] = useState<BugReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);

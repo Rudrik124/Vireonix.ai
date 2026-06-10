@@ -47,6 +47,11 @@ function AnimatedNumber({ value, prefix = "", suffix = "", decimals = 0 }: { val
 
 export function DeveloperTestingLabPage() {
   const navigate = useNavigate();
+
+  // Scroll to top on mount
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
   const [testType, setTestType] = useState<"prompt" | "api" | "upload">("prompt");
   const [prompt, setPrompt] = useState("");
   const [result, setResult] = useState<any>(null);

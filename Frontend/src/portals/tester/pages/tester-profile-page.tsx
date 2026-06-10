@@ -1,6 +1,6 @@
 import { useAuth } from "../../../app/context/auth-context";
 import { useNavigate } from "react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { User, Clock, Shield, LogOut, Activity, Zap } from "lucide-react";
 import { buildApiUrl } from "../../../lib/api";
 
@@ -14,6 +14,11 @@ interface ActivityLog {
 export function TesterProfilePage() {
   const { profile, isLoading, logout, session } = useAuth();
   const navigate = useNavigate();
+
+  // Scroll to top on mount
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
   const [editMode, setEditMode] = useState(false);
   const [timezone, setTimezone] = useState(profile?.timezone || "UTC");
   const [contactEmail, setContactEmail] = useState(profile?.email || "");

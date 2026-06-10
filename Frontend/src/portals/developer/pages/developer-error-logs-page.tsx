@@ -88,6 +88,11 @@ function AnimatedNumber({ value, prefix = "", suffix = "" }: { value: number; pr
 
 export function DeveloperErrorLogsPage() {
   const navigate = useNavigate();
+
+  // Scroll to top on mount
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
   const { profile } = useAuth();
   const [activeTab, setActiveTab] = useState<'errors' | 'bugs'>('errors');
   const [selectedError, setSelectedError] = useState<ErrorLog | null>(null);

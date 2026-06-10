@@ -24,6 +24,11 @@ export function TesterTestEnvironmentPage() {
   const { profile, isLoading } = useAuth();
   const navigate = useNavigate();
 
+  // Scroll to top on mount
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   // Mouse Parallax for Ambient Lighting
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);

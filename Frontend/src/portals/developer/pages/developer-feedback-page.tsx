@@ -43,6 +43,11 @@ function AnimatedNumber({ value, prefix = "", suffix = "", decimals = 0 }: { val
 
 export function DeveloperFeedbackPage() {
   const navigate = useNavigate();
+
+  // Scroll to top on mount
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
   const [filterStatus, setFilterStatus] = useState<"all" | "open" | "progress" | "resolved">("all");
   const [selectedFeedback, setSelectedFeedback] = useState<any>(null);
   const { feedback: feedbackList, isLoading } = useFeedbackData(50);

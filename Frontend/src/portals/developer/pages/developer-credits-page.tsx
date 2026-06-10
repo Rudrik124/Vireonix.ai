@@ -87,6 +87,11 @@ function CircularProgress({ percentage, label, color, icon: Icon }: { percentage
 
 export function DeveloperCreditsPage() {
   const navigate = useNavigate();
+
+  // Scroll to top on mount
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
   const [activeTab, setActiveTab] = useState<"overview" | "transactions" | "add">("overview");
   const [email, setEmail] = useState("");
   const [amount, setAmount] = useState("");

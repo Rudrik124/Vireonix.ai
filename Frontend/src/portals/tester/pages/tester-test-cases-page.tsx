@@ -60,6 +60,11 @@ function AnimatedNumber({ value, isPercent = false }: { value: number, isPercent
 export function TesterTestCasesPage() {
   const { profile, isLoading } = useAuth();
   const navigate = useNavigate();
+
+  // Scroll to top on mount
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [filterFeature, setFilterFeature] = useState<string>("all");
 

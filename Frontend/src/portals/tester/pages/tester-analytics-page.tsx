@@ -83,6 +83,11 @@ function AnimatedNumber({ value, decimals = 0, suffix = "" }: { value: number, d
 export function TesterAnalyticsPage() {
   const { profile, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
+
+  // Scroll to top on mount
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
   const [dateRange, setDateRange] = useState<"7d" | "30d" | "all">("30d");
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData>({
     bugsFound: 0,
