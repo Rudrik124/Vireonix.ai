@@ -34,7 +34,7 @@ export function DeveloperDashboardPage() {
     { label: "Credits", path: "/developer/credits", icon: Zap },
     { label: "Tester Credits", path: "/developer/tester-credits", icon: Wallet },
     { label: "AI Testing Lab", path: "/developer/testing-lab", icon: FlaskConical },
-    { label: "Error Logs", path: "/developer/error-logs", icon: AlertCircle },
+    { label: "Issues & Reports", path: "/developer/error-logs", icon: AlertCircle },
     { label: "Analytics", path: "/developer/analytics", icon: BarChart3 },
     { label: "Feedback", path: "/developer/feedback", icon: MessageSquare },
     { label: "Settings", path: "/developer/settings", icon: Settings },

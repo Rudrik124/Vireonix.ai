@@ -1,7 +1,8 @@
 import { useAuth } from "../../../app/context/auth-context";
 import { useNavigate } from "react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AlertCircle, Plus, Filter, ChevronDown } from "lucide-react";
+import { supabase } from "../../../lib/supabase";
 
 interface BugReport {
   id: string;
@@ -13,18 +14,21 @@ interface BugReport {
   os: string;
   browser: string;
   device: string;
-  attachments: number;
-  createdAt: string;
-  updatedAt: string;
+  attachment_count: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export function TesterBugReportsPage() {
-  const { profile, isLoading } = useAuth();
+  const { profile, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const [bugReports, setBugReports] = useState<BugReport[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [filter, setFilter] = useState<"all" | "open" | "in-review" | "fixed">("all");
+  const [filter, setFilter] = useState<"all" | "open" | "in-review" | "fixed" | "verified">("all");
   const [severityFilter, setSeverityFilter] = useState<"all" | "critical" | "high" | "medium" | "low">("all");
-  
+  const [submitting, setSubmitting] = useState(false);
+
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -36,81 +40,79 @@ export function TesterBugReportsPage() {
     attachments: [] as File[],
   });
 
-  const [bugReports, setBugReports] = useState<BugReport[]>([
-    {
-      id: "BUG-001",
-      title: "Video generation timeout on large prompts",
-      description: "When generating videos with very long prompts (>500 chars), the API times out after 30 seconds",
-      severity: "high",
-      component: "video-generator",
-      status: "in-review",
-      os: "windows",
-      browser: "chrome",
-      device: "desktop",
-      attachments: 2,
-      createdAt: "2026-05-28",
-      updatedAt: "2026-05-28",
-    },
-  ]);
+  useEffect(() => {
+    if (!authLoading) {
+      if (!profile) {
+        navigate("/");
+        return;
+      }
+      fetchBugReports();
+    }
+  }, [authLoading, profile, navigate]);
 
-  if (isLoading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
-  }
+  const fetchBugReports = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("bug_reports")
+        .select("*")
+        .order("created_at", { ascending: false });
 
-  if (!profile) {
-    navigate("/");
-    return null;
-  }
+      if (error) {
+        console.error("Error fetching bug reports:", error);
+        return;
+      }
 
-  const severityColors = {
-    critical: "bg-red-100 text-red-800 border-red-300",
-    high: "bg-orange-100 text-orange-800 border-orange-300",
-    medium: "bg-yellow-100 text-yellow-800 border-yellow-300",
-    low: "bg-green-100 text-green-800 border-green-300",
+      setBugReports(data || []);
+    } catch (error) {
+      console.error("Error:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const statusColors = {
-    open: "bg-blue-100 text-blue-800",
-    "in-review": "bg-purple-100 text-purple-800",
-    fixed: "bg-green-100 text-green-800",
-    verified: "bg-emerald-100 text-emerald-800",
-  };
-
-  const filteredBugs = bugReports.filter((bug) => {
-    const statusMatch = filter === "all" || bug.status === filter;
-    const severityMatch = severityFilter === "all" || bug.severity === severityFilter;
-    return statusMatch && severityMatch;
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newBug: BugReport = {
-      id: `BUG-${String(bugReports.length + 1).padStart(3, "0")}`,
-      title: formData.title,
-      description: formData.description,
-      severity: formData.severity,
-      component: formData.component,
-      status: "open",
-      os: formData.os,
-      browser: formData.browser,
-      device: formData.device,
-      attachments: formData.attachments.length,
-      createdAt: new Date().toISOString().split("T")[0],
-      updatedAt: new Date().toISOString().split("T")[0],
-    };
-    setBugReports([newBug, ...bugReports]);
-    setFormData({
-      title: "",
-      description: "",
-      severity: "medium",
-      component: "video-generator",
-      os: "windows",
-      browser: "chrome",
-      device: "desktop",
-      attachments: [],
-    });
-    setShowForm(false);
-  };
+    setSubmitting(true);
+
+    try {
+      const { error } = await supabase.from("bug_reports").insert({
+        title: formData.title,
+        description: formData.description,
+        severity: formData.severity,
+        component: formData.component,
+        status: "open",
+        os: formData.os,
+        browser: formData.browser,
+        device: formData.device,
+        attachment_count: formData.attachments.length,
+        submitted_by: profile?.id,
+      });
+
+      if (error) {
+        console.error("Error submitting bug report:", error);
+        return;
+      }
+
+      // Reset form and refresh
+      setFormData({
+        title: "",
+        description: "",
+        severity: "medium",
+        component: "video-generator",
+        os: "windows",
+        browser: "chrome",
+        device: "desktop",
+        attachments: [],
+      });
+      setShowForm(false);
+      await fetchBugReports();
+    } catch (error) {
+      console.error("Error:", error);
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 to-purple-800">
@@ -314,8 +316,8 @@ export function TesterBugReportsPage() {
                 </div>
 
                 <div className="mt-3 flex justify-between items-center text-xs text-purple-300">
-                  <span>Attachments: {bug.attachments}</span>
-                  <span>Updated: {bug.updatedAt}</span>
+                  <span>Attachments: {bug.attachment_count}</span>
+                  <span>Updated: {new Date(bug.updated_at).toLocaleDateString()}</span>
                 </div>
               </div>
             ))
@@ -343,10 +345,8 @@ export function TesterBugReportsPage() {
             </p>
           </div>
           <div className="bg-blue-600 p-4 rounded-lg">
-            <p className="text-blue-200 text-sm">Verified Fixed</p>
-            <p className="text-white text-2xl font-bold">
-              {bugReports.filter((b) => b.status === "verified").length}
-            </p>
+            <p className="text-blue-200 text-sm">Total Reported</p>
+            <p className="text-white text-2xl font-bold">{bugReports.length}</p>
           </div>
         </div>
       </div>
