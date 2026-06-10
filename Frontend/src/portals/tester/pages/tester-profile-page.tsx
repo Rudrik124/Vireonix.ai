@@ -2,6 +2,7 @@ import { useAuth } from "../../../app/context/auth-context";
 import { useNavigate } from "react-router";
 import { useState } from "react";
 import { User, Clock, Shield, LogOut, Activity, Zap } from "lucide-react";
+import { buildApiUrl } from "../../../lib/api";
 
 interface ActivityLog {
   id: string;
@@ -11,7 +12,7 @@ interface ActivityLog {
 }
 
 export function TesterProfilePage() {
-  const { profile, isLoading, logout } = useAuth();
+  const { profile, isLoading, logout, session } = useAuth();
   const navigate = useNavigate();
   const [editMode, setEditMode] = useState(false);
   const [timezone, setTimezone] = useState(profile?.timezone || "UTC");
@@ -81,7 +82,7 @@ export function TesterProfilePage() {
     setTogglingTestingMode(true);
     try {
       // Get the access token from the session
-      const token = session?.session?.access_token;
+      const token = session?.access_token;
       if (!token) {
         console.error("No access token available");
         setTogglingTestingMode(false);

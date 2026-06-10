@@ -1,6 +1,6 @@
 // Video creation from images with motion effects
 
-import { createCanvas } from "canvas";
+import { createCanvas, Image } from "canvas";
 import ffmpeg from "fluent-ffmpeg";
 import fs from "fs";
 import path from "path";
@@ -42,7 +42,6 @@ async function downloadImage(imageUrl, tempDir) {
  * @returns {Promise<Image>} - Canvas image object
  */
 async function loadCanvasImage(imagePath) {
-  const Image = require("canvas").Image;
   const img = new Image();
 
   return new Promise((resolve, reject) => {

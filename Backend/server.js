@@ -386,6 +386,11 @@ const processVideoRange = (input, output, start = 0, duration = null) => {
     }
 
     command
+      .outputOptions([
+        "-c:v libx264",
+        "-preset ultrafast",
+        "-crf 22"
+      ])
       .output(output)
       .on("end", () => {
         console.log(`✅ [FFMPEG] Video range processed successfully`);
@@ -555,6 +560,8 @@ const createVideoFromImage = (imagePath, outputPath, duration = 10, frame = "16:
       .setDuration(duration)
       .outputOptions([
         "-c:v libx264",
+        "-preset ultrafast",
+        "-crf 22",
         `-t ${duration}`,
         "-pix_fmt yuv420p",
       ]);
@@ -1582,24 +1589,37 @@ const applyEffectsToVideo = async (inputPath, effects, durationSeconds = 10) => 
   }
 
   if (selectedEffect === "motion-blur") {
-    videoFilters.push("tmix=frames=3:weights='1 1 1',eq=brightness=0.05");
+    const frames = Math.max(0, Math.min(25, Number(settings.motionBlurAmount) ?? 8));
+    if (frames > 1) {
+      videoFilters.push(`tmix=frames=${frames}`);
+    }
   }
 
   if (selectedEffect === "flash-effect") {
-    videoFilters.push("eq=brightness=0.15:contrast=1.15");
+    const intensity = Math.max(0.01, Math.min(2.0, Number(settings.flashIntensity) ?? 0.75));
+    const br = (0.20 * intensity).toFixed(3);
+    const co = (1 + 0.20 * intensity).toFixed(3);
+    videoFilters.push(`eq=brightness=${br}:contrast=${co}`);
   }
 
   if (selectedEffect === "rgb-split") {
-    videoFilters.push("chromashift=cbh=4:cbv=0:crh=-4:crv=0,eq=contrast=1.2:saturation=1.3");
+    const amount = Math.max(0, Math.min(50, Number(settings.rgbSplitAmount) ?? 12));
+    const cbh = Math.round(amount / 3);
+    const crh = Math.round(-amount / 3);
+    videoFilters.push(`chromashift=cbh=${cbh}:cbv=0:crh=${crh}:crv=0,eq=contrast=1.2:saturation=1.3`);
   }
 
   if (selectedEffect === "smooth-zoom") {
     const dur = Number(durationSeconds) || 10;
-    videoFilters.push(`zoompan=z='1+0.12*sin(PI*time/${dur})':x='iw/2-(iw/zoom)/2':y='ih/2-(ih/zoom)/2':d=1:s=${metadata.width}x${metadata.height}:fps=${metadata.fps}`);
+    const amount = Math.max(0.01, Math.min(2.0, Number(settings.smoothZoomAmount) ?? 0.35));
+    const zoomScale = (0.12 * (amount / 0.35)).toFixed(4);
+    videoFilters.push(`zoompan=z='1+${zoomScale}*sin(PI*on/(${metadata.fps}*${dur}))':x='iw/2-(iw/zoom)/2':y='ih/2-(ih/zoom)/2':d=1:s=${metadata.width}x${metadata.height}:fps=${metadata.fps}`);
   }
 
   if (selectedEffect === "film-grain") {
-    videoFilters.push("noise=alls=12:allf=t+u,eq=contrast=1.05:saturation=1.1");
+    const opacity = Math.max(0.01, Math.min(1.0, Number(settings.filmGrainOpacity) ?? 0.4));
+    const noiseLevel = Math.round(8 + opacity * 20);
+    videoFilters.push(`noise=alls=${noiseLevel}:allf=t+u,eq=contrast=1.05:saturation=1.1`);
   }
 
   if (selectedEffect === "animated-captions") {
@@ -1648,6 +1668,61 @@ const applyEffectsToVideo = async (inputPath, effects, durationSeconds = 10) => 
     videoFilters.push("eq=contrast=1.55:brightness=0.08:saturation=1.45,unsharp=5:5:1.2:5:5:0.0");
   }
 
+  // ─── NEW EFFECTS (Film Grain / Vignette / Soft Glow / RGB Split / Motion Trails / Strobe / Old TV / Scanlines / Zoom Punch) ───
+
+  if (selectedEffect === "vignette") {
+    const strength = Math.max(0.1, Math.min(1.0, Number(settings.vignetteStrength) ?? 0.5));
+    // angle controls the vignette spread: smaller = stronger vignette. Range: ~0.1 (strong) to 1.2 (light)
+    const angle = (1.2 - strength).toFixed(3);
+    videoFilters.push(`vignette=angle=${angle}:mode=forward`);
+  }
+
+  if (selectedEffect === "motion-trails") {
+    const frames = Math.max(2, Math.min(15, Number(settings.motionTrailsFrames) ?? 6));
+    const decay = Math.max(0.05, Math.min(0.95, Number(settings.motionTrailsDecay) ?? 0.5));
+    // tmix blends multiple frames together, creating a ghosting/trail effect
+    videoFilters.push(`tmix=frames=${frames}:weights='${Array.from({length: frames}, (_, i) => (Math.pow(decay, frames - 1 - i)).toFixed(3)).join(' ')}'`);
+  }
+
+  if (selectedEffect === "strobe") {
+    const rate = Math.max(1, Math.min(30, Number(settings.strobeRate) ?? 8));
+    const fps = metadata.fps || 30;
+    const skipFrames = Math.max(2, Math.round(fps / rate));
+    // tblend difference creates stroboscopic effect by blending frames with offset weights
+    // Use equal weights for a frozen-frame look
+    const weights = Array.from({length: skipFrames}, (_, i) => i === 0 ? '1' : '0').join(' ');
+    videoFilters.push(`tmix=frames=${skipFrames}:weights='${weights}'`);
+  }
+
+  if (selectedEffect === "old-tv") {
+    // Old TV: scanlines + noise + color shift + vignette
+    videoFilters.push("noise=alls=14:allf=t+u");
+    videoFilters.push("eq=contrast=1.12:saturation=0.85:brightness=0.02");
+    videoFilters.push("chromashift=cbh=3:cbv=2:crh=-3:crv=-2");
+    videoFilters.push("vignette=angle=0.6:mode=forward");
+    videoFilters.push("hue=h=4");
+  }
+
+  if (selectedEffect === "scanlines") {
+    const opacity = Math.max(0.02, Math.min(0.6, Number(settings.scanlinesOpacity) ?? 0.25));
+    const spacing = Math.max(2, Math.min(8, Math.round(Number(settings.scanlinesSpacing ?? 4))));
+
+    // geq creates repeating scanlines by darkening every Nth row
+    const alpha = (1 - opacity).toFixed(3);
+    videoFilters.push(`geq=r='r(X,Y)*if(mod(Y\,${spacing}),1,${alpha})':g='g(X,Y)*if(mod(Y\,${spacing}),1,${alpha})':b='b(X,Y)*if(mod(Y\,${spacing}),1,${alpha})'`);
+    videoFilters.push("eq=contrast=1.08:brightness=0.02");
+  }
+
+  if (selectedEffect === "zoom-punch") {
+    const strength = Math.max(0.02, Math.min(0.35, Number(settings.zoomPunchStrength) ?? 0.12));
+    const fps = metadata.fps || 30;
+    const w = metadata.width || 1280;
+    const h = metadata.height || 720;
+    // Rhythmic zoom using zoompan — pulses at ~0.5Hz (one pulse per 2 seconds)
+    const zoomExpr = `1+${strength.toFixed(3)}*abs(sin(2*3.14159*on/(${fps}*2)))`;
+    videoFilters.push(`zoompan=z='${zoomExpr}':x='iw/2-(iw/zoom)/2':y='ih/2-(ih/zoom)/2':d=1:s=${w}x${h}:fps=${fps}`);
+  }
+
   if (!videoFilters.length && !audioFilter) {
     console.log("ℹ️ [API-MEDIA] Effect skipped - no filters produced", {
       selectedEffect,
@@ -1667,7 +1742,7 @@ const applyEffectsToVideo = async (inputPath, effects, durationSeconds = 10) => 
   await new Promise((resolve, reject) => {
     let command = ffmpeg().input(inputPath);
 
-    const outputOptions = ["-c:v libx264", "-pix_fmt yuv420p", "-movflags +faststart"];
+    const outputOptions = ["-c:v libx264", "-preset ultrafast", "-crf 22", "-pix_fmt yuv420p", "-movflags +faststart"];
     if (hasAudio) {
       outputOptions.push("-c:a aac");
     } else {
@@ -1863,7 +1938,7 @@ const mergeSegmentsWithTransitions = async (segmentPaths, transitions, outputPat
     console.log("📝 [API-MEDIA] Single segment - direct encoding");
     return new Promise((resolve, reject) => {
       ffmpeg(segmentPaths[0])
-        .outputOptions(["-c:v libx264", "-pix_fmt yuv420p", "-preset medium", "-crf 23", "-c:a aac", "-movflags +faststart"])
+        .outputOptions(["-c:v libx264", "-pix_fmt yuv420p", "-preset fast", "-crf 23", "-c:a aac", "-movflags +faststart"])
         .output(outputPath)
         .on("end", () => {
           console.log("✅ [API-MEDIA] Single segment encoded");
@@ -1950,7 +2025,7 @@ const mergeSegmentsWithTransitions = async (segmentPaths, transitions, outputPat
           "-map", "[a]",
           "-c:v", "libx264",
           "-pix_fmt", "yuv420p",
-          "-preset", "medium",
+          "-preset", "fast",
           "-crf", "23",
           "-c:a", "aac",
           "-movflags", "+faststart",
@@ -2050,7 +2125,7 @@ const mergeSegmentsWithTransitions = async (segmentPaths, transitions, outputPat
         "-map", currentALabel,
         "-c:v", "libx264",
         "-pix_fmt", "yuv420p",
-        "-preset", "medium",
+        "-preset", "fast",
         "-crf", "23",
         "-c:a", "aac",
         "-movflags", "+faststart",
@@ -3148,19 +3223,57 @@ app.post("/generate", async (req, res) => {
 
     // 🔥 STEP 2: UPLOAD TO SUPABASE STORAGE
     let storage = null;
+    let localPath = null;
+    let effectedPath = null;
 
     try {
       console.log("📤 [API] Uploading to storage...");
-      const uploadResult = await uploadVideoUrlToSupabase(
-        videoUrl,
-        fileName,
-        SUPABASE_BUCKETS.AI_GENERATED,
-      );
-      videoUrl = uploadResult.publicUrl;
-      storage = uploadResult.storagePath;
+      
+      if (effects?.selectedEffect && effects.selectedEffect !== "none") {
+        try {
+          console.log("📥 [API] Downloading generated video to apply effect:", effects.selectedEffect);
+          localPath = await downloadRemoteFile(videoUrl, "downloaded-ai-video.mp4");
+          
+          console.log("🎛️ [API] Applying effect to video...");
+          effectedPath = await applyEffectsToVideo(localPath, effects, seconds);
+          
+          const uploadResult = await uploadToSupabase(
+            effectedPath,
+            fileName,
+            SUPABASE_BUCKETS.AI_GENERATED
+          );
+          videoUrl = uploadResult.publicUrl;
+          storage = uploadResult.storagePath;
+        } catch (effectErr) {
+          console.warn("⚠️ [API] Failed to apply effect, falling back to original URL upload:", effectErr?.message || effectErr);
+          const uploadResult = await uploadVideoUrlToSupabase(
+            videoUrl,
+            fileName,
+            SUPABASE_BUCKETS.AI_GENERATED,
+          );
+          videoUrl = uploadResult.publicUrl;
+          storage = uploadResult.storagePath;
+        } finally {
+          // Clean up local temp files if they exist
+          if (localPath && fs.existsSync(localPath)) {
+            try { fs.unlinkSync(localPath); } catch (e) {}
+          }
+          if (effectedPath && effectedPath !== localPath && fs.existsSync(effectedPath)) {
+            try { fs.unlinkSync(effectedPath); } catch (e) {}
+          }
+        }
+      } else {
+        const uploadResult = await uploadVideoUrlToSupabase(
+          videoUrl,
+          fileName,
+          SUPABASE_BUCKETS.AI_GENERATED,
+        );
+        videoUrl = uploadResult.publicUrl;
+        storage = uploadResult.storagePath;
+      }
       console.log("✅ [API] Storage upload complete");
     } catch (storageError) {
-      console.warn("⚠️ [API] Storage upload failed, using direct URL");
+      console.warn("⚠️ [API] Storage upload failed, using direct URL:", storageError?.message || storageError);
     }
 
     // 🔥 STEP 3: RETURN RESPONSE
@@ -3594,8 +3707,13 @@ app.post(
           }
 
           let finalSegmentPath = segmentPath;
-          const clipEffect = mediaMeta?.effect || "none";
-          const clipEffectSettings = mediaMeta?.effectSettings || {};
+          const clipEffect = mediaMeta?.effect && mediaMeta.effect !== "none"
+            ? mediaMeta.effect
+            : (effects?.selectedEffect || "none");
+          const clipEffectSettings = mediaMeta?.effectSettings && Object.keys(mediaMeta.effectSettings).length > 0
+            ? mediaMeta.effectSettings
+            : (effects?.settings || {});
+
           if (clipEffect && clipEffect !== "none") {
             let clipDuration = trimDuration || Number(mediaMeta?.duration);
             if (!Number.isFinite(clipDuration) || clipDuration <= 0) {
@@ -3613,6 +3731,30 @@ app.post(
             if (effectedSegmentPath !== segmentPath) {
               generatedTempFiles.push(effectedSegmentPath);
               finalSegmentPath = effectedSegmentPath;
+            }
+          }
+
+          const clipFilter = mediaMeta?.filter && mediaMeta.filter !== "none"
+            ? mediaMeta.filter
+            : (resolvedSelectedFilter || "none");
+
+          if (clipFilter && clipFilter !== "none") {
+            let clipDuration = trimDuration || Number(mediaMeta?.duration);
+            if (!Number.isFinite(clipDuration) || clipDuration <= 0) {
+              clipDuration = media.mimetype?.startsWith("image/") ? 3 : await getVideoDuration(finalSegmentPath);
+            }
+            console.log(`🎬 [API-MEDIA] Applying per-clip filter to segment ${i}:`, {
+              filter: clipFilter,
+              duration: clipDuration,
+            });
+            const filteredSegmentPath = await applyEffectsToVideo(
+              finalSegmentPath,
+              { selectedEffect: clipFilter, settings: clipEffectSettings },
+              clipDuration
+            );
+            if (filteredSegmentPath !== finalSegmentPath) {
+              generatedTempFiles.push(filteredSegmentPath);
+              finalSegmentPath = filteredSegmentPath;
             }
           }
 
@@ -3690,8 +3832,13 @@ app.post(
           seconds = await getVideoDuration(baseOutputPath);
 
           const primaryMediaMeta = resolvedEditorSelections?.media?.items?.[0] || {};
-          const primaryClipEffect = primaryMediaMeta?.effect || "none";
-          const primaryClipEffectSettings = primaryMediaMeta?.effectSettings || {};
+          const primaryClipEffect = primaryMediaMeta?.effect && primaryMediaMeta.effect !== "none"
+            ? primaryMediaMeta.effect
+            : (effects?.selectedEffect || "none");
+          const primaryClipEffectSettings = primaryMediaMeta?.effectSettings && Object.keys(primaryMediaMeta.effectSettings).length > 0
+            ? primaryMediaMeta.effectSettings
+            : (effects?.settings || {});
+
           if (primaryClipEffect && primaryClipEffect !== "none") {
             console.log(`🎬 [API-MEDIA] Applying single video clip effect:`, {
               effect: primaryClipEffect,
@@ -3707,6 +3854,26 @@ app.post(
               baseOutputPath = effectedPath;
             }
           }
+
+          const primaryClipFilter = primaryMediaMeta?.filter && primaryMediaMeta.filter !== "none"
+            ? primaryMediaMeta.filter
+            : (resolvedSelectedFilter || "none");
+
+          if (primaryClipFilter && primaryClipFilter !== "none") {
+            console.log(`🎬 [API-MEDIA] Applying single video clip filter:`, {
+              filter: primaryClipFilter,
+              duration: seconds,
+            });
+            const filteredPath = await applyEffectsToVideo(
+              baseOutputPath,
+              { selectedEffect: primaryClipFilter, settings: primaryClipEffectSettings },
+              seconds
+            );
+            if (filteredPath !== baseOutputPath) {
+              generatedTempFiles.push(filteredPath);
+              baseOutputPath = filteredPath;
+            }
+          }
         } else {
           await processVideoRange(videoFile.path, baseOutputPath, primaryTrimStart, seconds);
         }
@@ -3716,8 +3883,13 @@ app.post(
 
         if (isQuickEditMode) {
           const primaryMediaMeta = resolvedEditorSelections?.media?.items?.[0] || {};
-          const primaryClipEffect = primaryMediaMeta?.effect || "none";
-          const primaryClipEffectSettings = primaryMediaMeta?.effectSettings || {};
+          const primaryClipEffect = primaryMediaMeta?.effect && primaryMediaMeta.effect !== "none"
+            ? primaryMediaMeta.effect
+            : (effects?.selectedEffect || "none");
+          const primaryClipEffectSettings = primaryMediaMeta?.effectSettings && Object.keys(primaryMediaMeta.effectSettings).length > 0
+            ? primaryMediaMeta.effectSettings
+            : (effects?.settings || {});
+
           if (primaryClipEffect && primaryClipEffect !== "none") {
             console.log(`🎬 [API-MEDIA] Applying single image clip effect:`, {
               effect: primaryClipEffect,
@@ -3731,6 +3903,26 @@ app.post(
             if (effectedPath !== baseOutputPath) {
               generatedTempFiles.push(effectedPath);
               baseOutputPath = effectedPath;
+            }
+          }
+
+          const primaryClipFilter = primaryMediaMeta?.filter && primaryMediaMeta.filter !== "none"
+            ? primaryMediaMeta.filter
+            : (resolvedSelectedFilter || "none");
+
+          if (primaryClipFilter && primaryClipFilter !== "none") {
+            console.log(`🎬 [API-MEDIA] Applying single image clip filter:`, {
+              filter: primaryClipFilter,
+              duration: seconds,
+            });
+            const filteredPath = await applyEffectsToVideo(
+              baseOutputPath,
+              { selectedEffect: primaryClipFilter, settings: primaryClipEffectSettings },
+              seconds
+            );
+            if (filteredPath !== baseOutputPath) {
+              generatedTempFiles.push(filteredPath);
+              baseOutputPath = filteredPath;
             }
           }
         }
@@ -3763,7 +3955,6 @@ app.post(
           await mergeSegmentsWithTransitions(segmentPaths, transitionsByIndex, baseOutputPath);
         } else if (segmentPaths.length === 1) {
           // Copy single segment to output path
-          const fs = require('fs');
           await new Promise((resolve, reject) => {
             fs.copyFile(segmentPaths[0], baseOutputPath, (err) => {
               if (err) reject(err);
@@ -3773,6 +3964,8 @@ app.post(
         }
         console.log("✅ [API-MEDIA] Slideshow video created with transitions");
       }
+
+      finalOutputPath = baseOutputPath;
 
       // STEP 2: If this is an images-only request, try full AI video generation with Veo.
       // We ignore the ffmpeg output and instead generate a new AI video from the images + prompt.
@@ -3817,6 +4010,35 @@ app.post(
             }
           } catch (frameErr) {
             console.warn("⚠️ [API-MEDIA] Frame adjustment failed, returning original Veo output:", frameErr?.message || frameErr);
+          }
+
+          // STEP 2.5: Apply deterministic post-processing effects and filters to Veo output
+          if (effects?.selectedEffect && effects.selectedEffect !== "none") {
+            console.log("🎛️ [API-MEDIA] Applying post-processing to Veo output", {
+              effect: effects.selectedEffect || "none",
+              filter: resolvedSelectedFilter,
+            });
+            const effectedPath = await applyEffectsToVideo(veoOutputPath, effects, seconds);
+            if (effectedPath !== veoOutputPath) {
+              generatedTempFiles.push(veoOutputPath);
+              veoOutputPath = effectedPath;
+            }
+          }
+
+          if (resolvedSelectedFilter !== "none" && resolvedSelectedFilter !== effects?.selectedEffect) {
+            console.log("🎨 [API-MEDIA] Applying dedicated filter pass to Veo output", {
+              selectedFilter: resolvedSelectedFilter,
+              baseEffect: effects?.selectedEffect || "none",
+            });
+            const filteredPath = await applyEffectsToVideo(
+              veoOutputPath,
+              { selectedEffect: resolvedSelectedFilter, settings: resolvedEffectSettings },
+              seconds,
+            );
+            if (filteredPath !== veoOutputPath) {
+              generatedTempFiles.push(veoOutputPath);
+              veoOutputPath = filteredPath;
+            }
           }
 
           // Upload the final Veo-based video into the IMAGE_TO_VIDEO bucket.

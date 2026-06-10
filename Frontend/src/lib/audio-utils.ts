@@ -50,7 +50,6 @@ export async function prepareAudioForExport(
   return { musicData: formData, config };
 }
 
-import { buildApiUrl } from './api';
 
 /**
  * Merge video with audio during export

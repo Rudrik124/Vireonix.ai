@@ -40,6 +40,26 @@ export function TesterBugReportsPage() {
     attachments: [] as File[],
   });
 
+  const severityColors = {
+    critical: "bg-red-500/10 text-red-400 border-red-500/20",
+    high: "bg-orange-500/10 text-orange-400 border-orange-500/20",
+    medium: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
+    low: "bg-green-500/10 text-green-400 border-green-500/20",
+  };
+
+  const statusColors = {
+    open: "bg-red-500/20 text-red-300",
+    "in-review": "bg-yellow-500/20 text-yellow-300",
+    fixed: "bg-green-500/20 text-green-300",
+    verified: "bg-blue-500/20 text-blue-300",
+  };
+
+  const filteredBugs = bugReports.filter((bug) => {
+    const statusMatch = filter === "all" || bug.status === filter;
+    const severityMatch = severityFilter === "all" || bug.severity === severityFilter;
+    return statusMatch && severityMatch;
+  });
+
   useEffect(() => {
     if (!authLoading) {
       if (!profile) {

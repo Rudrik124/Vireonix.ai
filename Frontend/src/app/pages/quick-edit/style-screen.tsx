@@ -991,6 +991,21 @@ const ToolInspector = memo(({
   setSmoothZoomAmount,
   filmGrainOpacity,
   setFilmGrainOpacity,
+  // New effect props
+  vignetteStrength,
+  setVignetteStrength,
+  motionTrailsFrames,
+  setMotionTrailsFrames,
+  motionTrailsDecay,
+  setMotionTrailsDecay,
+  strobeRate,
+  setStrobeRate,
+  scanlinesOpacity,
+  setScanlinesOpacity,
+  scanlinesSpacing,
+  setScanlinesSpacing,
+  zoomPunchStrength,
+  setZoomPunchStrength,
   overlayTextStylePreset,
   setOverlayTextStylePreset,
   getOverlayTextEffectForPreset,
@@ -1140,10 +1155,17 @@ const ToolInspector = memo(({
               { id: 'motion-blur', label: 'Motion Blur' },
               { id: 'shake', label: 'Shake' },
               { id: 'flash-effect', label: 'Flash Transition' },
-              { id: 'rgb-split', label: 'RGB Split / Glitch' },
+              { id: 'rgb-split', label: 'RGB Split (Chromatic Aberration)' },
+              { id: 'film-grain', label: 'Film Grain' },
+              { id: 'vignette', label: 'Vignette' },
+              { id: 'soft-glow', label: 'Soft Glow' },
+              { id: 'motion-trails', label: 'Motion Trails' },
+              { id: 'strobe', label: 'Strobe Effect' },
+              { id: 'old-tv', label: 'Old TV' },
+              { id: 'scanlines', label: 'Scanlines' },
+              { id: 'zoom-punch', label: 'Zoom Punch' },
               { id: 'slow-motion', label: 'Slow Motion' },
               { id: 'smooth-zoom', label: 'Smooth Zoom' },
-              { id: 'film-grain', label: 'Film Grain' },
               { id: 'animated-captions', label: 'Animated Captions' },
               { id: 'glitch', label: 'Glitch' },
               { id: 'text-animation', label: 'Text Animation' },
@@ -1402,6 +1424,130 @@ const ToolInspector = memo(({
                 }}
                 placeholder="Type caption"
                 className="w-full px-2.5 py-1.5 rounded bg-black/30 border border-white/10 text-white text-xs focus:outline-none"
+              />
+            </div>
+          )}
+
+          {selectedEffect === 'vignette' && (
+            <div className="mt-2 p-2.5 rounded-lg bg-white/5 border border-white/10 space-y-1.5">
+              <div className="flex items-center justify-between text-[8px] font-bold uppercase tracking-widest text-slate-300">
+                <span>Vignette Strength</span>
+                <span>{(vignetteStrength * 100).toFixed(0)}%</span>
+              </div>
+              <input
+                type="range"
+                min={0.1}
+                max={1.0}
+                step={0.05}
+                value={vignetteStrength}
+                onChange={(e) => setVignetteStrength(Number(e.target.value))}
+                className="w-full accent-purple-400"
+              />
+            </div>
+          )}
+
+          {selectedEffect === 'motion-trails' && (
+            <div className="mt-2 p-2.5 rounded-lg bg-white/5 border border-white/10 space-y-2.5">
+              <div>
+                <div className="flex items-center justify-between text-[8px] font-bold uppercase tracking-widest text-slate-300 mb-0.5">
+                  <span>Trail Frames</span>
+                  <span>{motionTrailsFrames}</span>
+                </div>
+                <input
+                  type="range"
+                  min={2}
+                  max={15}
+                  step={1}
+                  value={motionTrailsFrames}
+                  onChange={(e) => setMotionTrailsFrames(Number(e.target.value))}
+                  className="w-full accent-purple-400"
+                />
+              </div>
+              <div>
+                <div className="flex items-center justify-between text-[8px] font-bold uppercase tracking-widest text-slate-300 mb-0.5">
+                  <span>Trail Decay</span>
+                  <span>{(motionTrailsDecay * 100).toFixed(0)}%</span>
+                </div>
+                <input
+                  type="range"
+                  min={0.1}
+                  max={0.9}
+                  step={0.05}
+                  value={motionTrailsDecay}
+                  onChange={(e) => setMotionTrailsDecay(Number(e.target.value))}
+                  className="w-full accent-purple-400"
+                />
+              </div>
+            </div>
+          )}
+
+          {selectedEffect === 'strobe' && (
+            <div className="mt-2 p-2.5 rounded-lg bg-white/5 border border-white/10 space-y-1.5">
+              <div className="flex items-center justify-between text-[8px] font-bold uppercase tracking-widest text-slate-300">
+                <span>Strobe Rate (fps)</span>
+                <span>{strobeRate}</span>
+              </div>
+              <input
+                type="range"
+                min={2}
+                max={24}
+                step={1}
+                value={strobeRate}
+                onChange={(e) => setStrobeRate(Number(e.target.value))}
+                className="w-full accent-purple-400"
+              />
+            </div>
+          )}
+
+          {selectedEffect === 'scanlines' && (
+            <div className="mt-2 p-2.5 rounded-lg bg-white/5 border border-white/10 space-y-2.5">
+              <div>
+                <div className="flex items-center justify-between text-[8px] font-bold uppercase tracking-widest text-slate-300 mb-0.5">
+                  <span>Scanline Opacity</span>
+                  <span>{(scanlinesOpacity * 100).toFixed(0)}%</span>
+                </div>
+                <input
+                  type="range"
+                  min={0.05}
+                  max={0.6}
+                  step={0.05}
+                  value={scanlinesOpacity}
+                  onChange={(e) => setScanlinesOpacity(Number(e.target.value))}
+                  className="w-full accent-purple-400"
+                />
+              </div>
+              <div>
+                <div className="flex items-center justify-between text-[8px] font-bold uppercase tracking-widest text-slate-300 mb-0.5">
+                  <span>Line Spacing (px)</span>
+                  <span>{scanlinesSpacing}px</span>
+                </div>
+                <input
+                  type="range"
+                  min={2}
+                  max={8}
+                  step={1}
+                  value={scanlinesSpacing}
+                  onChange={(e) => setScanlinesSpacing(Number(e.target.value))}
+                  className="w-full accent-purple-400"
+                />
+              </div>
+            </div>
+          )}
+
+          {selectedEffect === 'zoom-punch' && (
+            <div className="mt-2 p-2.5 rounded-lg bg-white/5 border border-white/10 space-y-1.5">
+              <div className="flex items-center justify-between text-[8px] font-bold uppercase tracking-widest text-slate-300">
+                <span>Punch Strength</span>
+                <span>{(zoomPunchStrength * 100).toFixed(0)}%</span>
+              </div>
+              <input
+                type="range"
+                min={0.02}
+                max={0.4}
+                step={0.02}
+                value={zoomPunchStrength}
+                onChange={(e) => setZoomPunchStrength(Number(e.target.value))}
+                className="w-full accent-purple-400"
               />
             </div>
           )}
@@ -2500,7 +2646,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
   const [transitionProgress, setTransitionProgress] = useState(0);
   const [selectedFilter, setSelectedFilter] = useState<FilterType>('none');
   const [blurAmount, setBlurAmount] = useState(10);
-  const [selectedEffect, setSelectedEffect] = useState<'none' | 'fade-in' | 'blur' | 'zoom' | 'color-correction' | 'vintage' | 'black-white' | 'cinematic' | 'warm' | 'cool' | 'sepia' | 'hdr' | 'vivid' | 'soft-glow' | 'retro-film' | 'green-screen' | 'slow-motion' | 'glitch' | 'slide-left' | 'slide-right' | 'text-animation' | 'motion-tracking' | 'velocity' | 'motion-blur' | 'shake' | 'flash-effect' | 'rgb-split' | 'smooth-zoom' | 'film-grain' | 'animated-captions'>('none');
+  const [selectedEffect, setSelectedEffect] = useState<'none' | 'fade-in' | 'blur' | 'zoom' | 'color-correction' | 'vintage' | 'black-white' | 'cinematic' | 'warm' | 'cool' | 'sepia' | 'hdr' | 'vivid' | 'soft-glow' | 'retro-film' | 'green-screen' | 'slow-motion' | 'glitch' | 'slide-left' | 'slide-right' | 'text-animation' | 'motion-tracking' | 'velocity' | 'motion-blur' | 'shake' | 'flash-effect' | 'rgb-split' | 'smooth-zoom' | 'film-grain' | 'animated-captions' | 'vignette' | 'motion-trails' | 'strobe' | 'old-tv' | 'scanlines' | 'zoom-punch'>('none');
   const [previewOpacity, setPreviewOpacity] = useState(1);
   const [previewZoom, setPreviewZoom] = useState(1);
   const [brightness, setBrightness] = useState(1);
@@ -2516,6 +2662,14 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
   const [smoothZoomAmount, setSmoothZoomAmount] = useState(0.35);
   const [filmGrainOpacity, setFilmGrainOpacity] = useState(0.4);
   const [animatedText, setAnimatedText] = useState('');
+  // New effect state variables
+  const [vignetteStrength, setVignetteStrength] = useState(0.5);
+  const [motionTrailsFrames, setMotionTrailsFrames] = useState(6);
+  const [motionTrailsDecay, setMotionTrailsDecay] = useState(0.5);
+  const [strobeRate, setStrobeRate] = useState(8);
+  const [scanlinesOpacity, setScanlinesOpacity] = useState(0.25);
+  const [scanlinesSpacing, setScanlinesSpacing] = useState(4);
+  const [zoomPunchStrength, setZoomPunchStrength] = useState(0.12);
 
   // --- Caption state ---
   const [captions, setCaptions] = useState<Array<{ id: string; text: string; startTime: number; endTime: number }>>([]);
@@ -2906,9 +3060,26 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
     setSaturation(settings.saturation ?? 1);
     setSlowMotionSpeed(settings.slowMotionSpeed ?? 0.25);
     setGlitchIntensity(settings.glitchIntensity ?? 1);
+    // Existing effect params
+    setVelocitySpeed(settings.velocitySpeed ?? 1.5);
+    setMotionBlurAmount(settings.motionBlurAmount ?? 3);
+    setShakeStrength(settings.shakeStrength ?? 1.5);
+    setFlashIntensity(settings.flashIntensity ?? 0.75);
+    setRgbSplitAmount(settings.rgbSplitAmount ?? 12);
+    setSmoothZoomAmount(settings.smoothZoomAmount ?? 0.35);
+    setFilmGrainOpacity(settings.filmGrainOpacity ?? 0.4);
+    // New effect params
+    setVignetteStrength(settings.vignetteStrength ?? 0.5);
+    setMotionTrailsFrames(settings.motionTrailsFrames ?? 6);
+    setMotionTrailsDecay(settings.motionTrailsDecay ?? 0.5);
+    setStrobeRate(settings.strobeRate ?? 8);
+    setScanlinesOpacity(settings.scanlinesOpacity ?? 0.25);
+    setScanlinesSpacing(settings.scanlinesSpacing ?? 4);
+    setZoomPunchStrength(settings.zoomPunchStrength ?? 0.12);
 
     lastLoadedIdRef.current = activePreviewId;
   }, [activePreviewId]);
+
 
   // Sync state changes to clipSettings per clip
   useEffect(() => {
@@ -2940,7 +3111,21 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
         current.contrast === contrast &&
         current.saturation === saturation &&
         current.slowMotionSpeed === slowMotionSpeed &&
-        current.glitchIntensity === glitchIntensity
+        current.glitchIntensity === glitchIntensity &&
+        current.velocitySpeed === velocitySpeed &&
+        current.motionBlurAmount === motionBlurAmount &&
+        current.shakeStrength === shakeStrength &&
+        current.flashIntensity === flashIntensity &&
+        current.rgbSplitAmount === rgbSplitAmount &&
+        current.smoothZoomAmount === smoothZoomAmount &&
+        current.filmGrainOpacity === filmGrainOpacity &&
+        current.vignetteStrength === vignetteStrength &&
+        current.motionTrailsFrames === motionTrailsFrames &&
+        current.motionTrailsDecay === motionTrailsDecay &&
+        current.strobeRate === strobeRate &&
+        current.scanlinesOpacity === scanlinesOpacity &&
+        current.scanlinesSpacing === scanlinesSpacing &&
+        current.zoomPunchStrength === zoomPunchStrength
       ) {
         return prev;
       }
@@ -2971,7 +3156,21 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
           contrast,
           saturation,
           slowMotionSpeed,
-          glitchIntensity
+          glitchIntensity,
+          velocitySpeed,
+          motionBlurAmount,
+          shakeStrength,
+          flashIntensity,
+          rgbSplitAmount,
+          smoothZoomAmount,
+          filmGrainOpacity,
+          vignetteStrength,
+          motionTrailsFrames,
+          motionTrailsDecay,
+          strobeRate,
+          scanlinesOpacity,
+          scanlinesSpacing,
+          zoomPunchStrength,
         }
       };
     });
@@ -3000,8 +3199,23 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
     contrast,
     saturation,
     slowMotionSpeed,
-    glitchIntensity
+    glitchIntensity,
+    velocitySpeed,
+    motionBlurAmount,
+    shakeStrength,
+    flashIntensity,
+    rgbSplitAmount,
+    smoothZoomAmount,
+    filmGrainOpacity,
+    vignetteStrength,
+    motionTrailsFrames,
+    motionTrailsDecay,
+    strobeRate,
+    scanlinesOpacity,
+    scanlinesSpacing,
+    zoomPunchStrength,
   ]);
+
 
   const triggerClipTransition = useCallback((nextId: string) => {
     if (!activePreviewId || activePreviewId === nextId) {
@@ -4021,7 +4235,22 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
       saturation,
       slowMotionSpeed,
       glitchIntensity,
+      velocitySpeed,
+      motionBlurAmount,
+      shakeStrength,
+      flashIntensity,
+      rgbSplitAmount,
+      smoothZoomAmount,
+      filmGrainOpacity,
       animatedText: overlayText.trim().length > 0 ? overlayText : animatedText,
+      // New effects
+      vignetteStrength,
+      motionTrailsFrames,
+      motionTrailsDecay,
+      strobeRate,
+      scanlinesOpacity,
+      scanlinesSpacing,
+      zoomPunchStrength,
     };
 
     const mediaForProcessing = mediaItems
@@ -4034,6 +4263,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
           type: item.type,
           duration: item.duration,
           effect: settings.selectedEffect || 'none',
+          filter: settings.selectedFilter || 'none',
           effectSettings: {
             blurAmount: settings.blurAmount ?? 10,
             brightness: settings.brightness ?? 1,
@@ -4041,6 +4271,20 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
             saturation: settings.saturation ?? 1,
             slowMotionSpeed: settings.slowMotionSpeed ?? 0.25,
             glitchIntensity: settings.glitchIntensity ?? 1,
+            velocitySpeed: settings.velocitySpeed ?? 1.5,
+            motionBlurAmount: settings.motionBlurAmount ?? 3,
+            shakeStrength: settings.shakeStrength ?? 1.5,
+            flashIntensity: settings.flashIntensity ?? 0.75,
+            rgbSplitAmount: settings.rgbSplitAmount ?? 12,
+            smoothZoomAmount: settings.smoothZoomAmount ?? 0.35,
+            filmGrainOpacity: settings.filmGrainOpacity ?? 0.4,
+            vignetteStrength: settings.vignetteStrength ?? 0.5,
+            motionTrailsFrames: settings.motionTrailsFrames ?? 6,
+            motionTrailsDecay: settings.motionTrailsDecay ?? 0.5,
+            strobeRate: settings.strobeRate ?? 8,
+            scanlinesOpacity: settings.scanlinesOpacity ?? 0.25,
+            scanlinesSpacing: settings.scanlinesSpacing ?? 4,
+            zoomPunchStrength: settings.zoomPunchStrength ?? 0.12,
           },
         };
       });
@@ -4157,6 +4401,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
           type: item.type,
           duration: item.duration,
           effect: item.effect,
+          filter: item.filter,
           effectSettings: item.effectSettings,
         })),
         count: mediaForProcessing.length,
@@ -4405,6 +4650,13 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                         rgbSplitAmount={rgbSplitAmount} setRgbSplitAmount={setRgbSplitAmount}
                         smoothZoomAmount={smoothZoomAmount} setSmoothZoomAmount={setSmoothZoomAmount}
                         filmGrainOpacity={filmGrainOpacity} setFilmGrainOpacity={setFilmGrainOpacity}
+                        vignetteStrength={vignetteStrength} setVignetteStrength={setVignetteStrength}
+                        motionTrailsFrames={motionTrailsFrames} setMotionTrailsFrames={setMotionTrailsFrames}
+                        motionTrailsDecay={motionTrailsDecay} setMotionTrailsDecay={setMotionTrailsDecay}
+                        strobeRate={strobeRate} setStrobeRate={setStrobeRate}
+                        scanlinesOpacity={scanlinesOpacity} setScanlinesOpacity={setScanlinesOpacity}
+                        scanlinesSpacing={scanlinesSpacing} setScanlinesSpacing={setScanlinesSpacing}
+                        zoomPunchStrength={zoomPunchStrength} setZoomPunchStrength={setZoomPunchStrength}
                         overlayTextStylePreset={overlayTextStylePreset} setOverlayTextStylePreset={setOverlayTextStylePreset}
                         getOverlayTextEffectForPreset={getOverlayTextEffectForPreset}
                         activeTool={activeTool}
@@ -4487,6 +4739,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                         isAutoCapturing={isAutoCapturing}
                         autoCaptionStatus={autoCaptionStatus}
                       />
+
                     </div>
                   </div>
                 ) : (
