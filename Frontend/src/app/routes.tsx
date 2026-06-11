@@ -9,6 +9,7 @@ import { DeveloperErrorLogsPage } from "../portals/developer/pages/developer-err
 import { DeveloperAnalyticsPage } from "../portals/developer/pages/developer-analytics-page";
 import { DeveloperFeedbackPage } from "../portals/developer/pages/developer-feedback-page";
 import { DeveloperReportPage } from "../portals/developer/pages/developer-report-page";
+import { DeveloperRevenueProfit } from "../portals/developer/pages/developer-revenue-profit-page";
 import { DeveloperSettingsPage } from "../portals/developer/pages/developer-settings-page";
 import { DeveloperCostsPage } from "../portals/developer/pages/developer-costs-page";
 import { DeveloperLogsPage } from "../portals/developer/pages/developer-logs-page";
@@ -266,6 +267,14 @@ export const router = createBrowserRouter([
     element: (
       <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
         <DeveloperCostsPage />
+      </PortalGate>
+    ),
+  },
+  {
+    path: "/developer/revenue-profit",
+    element: (
+      <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+        <DeveloperRevenueProfit />
       </PortalGate>
     ),
   },

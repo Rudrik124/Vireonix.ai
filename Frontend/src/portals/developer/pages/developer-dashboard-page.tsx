@@ -34,7 +34,8 @@ import {
   Plus,
   Mail,
   Wrench,
-  Check
+  Check,
+  DollarSign
 } from "lucide-react";
 import { useAuth } from "../../../app/context/auth-context";
 import { useDashboardStats } from "../../../hooks/useDashboardData";
@@ -202,6 +203,7 @@ export function DeveloperDashboardPage() {
     { label: "Users", path: "/developer/users", icon: Users, desc: "Manage all platform users", count: stats?.totalUsers || 0 },
     { label: "Credits", path: "/developer/credits", icon: Zap, desc: "Credit allocations & usage", count: stats?.creditsConsumed || 0 },
     { label: "Cost Tracking", path: "/developer/costs", icon: Server, desc: "Expenses, monthly and yearly spend", count: "New" },
+    { label: "Revenue & Profit", path: "/developer/revenue-profit", icon: DollarSign, desc: "Monthly and yearly revenue analytics", count: "New" },
     { label: "Tester Credits", path: "/developer/tester-credits", icon: Wallet, desc: "Manage tester allowances", count: "Beta" },
     // AI Testing Lab removed per request
     { label: "Analytics", path: "/developer/analytics", icon: BarChart3, desc: "Platform metrics & charts", count: "Active" },
