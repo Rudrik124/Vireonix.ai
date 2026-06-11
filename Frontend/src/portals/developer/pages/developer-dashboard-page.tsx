@@ -151,6 +151,7 @@ export function DeveloperDashboardPage() {
     { label: "Tester Credits", path: "/developer/tester-credits", icon: Wallet, desc: "Manage tester allowances", count: "Beta" },
     { label: "AI Testing Lab", path: "/developer/testing-lab", icon: FlaskConical, desc: "Test prompts & models", count: "Live" },
     { label: "Analytics", path: "/developer/analytics", icon: BarChart3, desc: "Platform metrics & charts", count: "Active" },
+    { label: "Reports", path: "/developer/reports", icon: AlertCircle, desc: "View testing bug report board", count: "Live" },
     { label: "Error Logs", path: "/developer/error-logs", icon: Terminal, desc: "System traces & issues", count: "0 Critical" },
     { label: "Feedback", path: "/developer/feedback", icon: MessageSquare, desc: "User feedback & requests", count: "12 New" },
     { label: "Settings", path: "/developer/settings", icon: Settings, desc: "Global configuration", count: "Secure" },

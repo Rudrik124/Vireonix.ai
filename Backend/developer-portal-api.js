@@ -19,6 +19,21 @@ const getSupabaseClient = () => {
   return supabase;
 };
 
+const isMissingTableError = (error) => {
+  if (!error) {
+    return false;
+  }
+
+  const message = String(error.message || "").toLowerCase();
+  return (
+    error.code === "PGRST205" ||
+    error.code === "PGRST116" ||
+    message.includes("could not find the table") ||
+    message.includes("does not exist") ||
+    message.includes("schema cache")
+  );
+};
+
 const TESTER_PERMISSIONS = [
   "tester.portal.access",
   "user.portal.access",
@@ -1448,6 +1463,252 @@ router.post("/api/tester/toggle-testing-mode", async (req, res) => {
     });
   } catch (error) {
     console.error("Toggle testing mode error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get("/api/developer/tester/bug-reports", verifyTesterOrDeveloperAccess, async (req, res) => {
+  try {
+    const { data, error } = await getSupabaseClient()
+      .from("bug_reports")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Failed to fetch tester bug reports:", error);
+      if (isMissingTableError(error)) {
+        return res.status(500).json({
+          error:
+            "Bug reports table not found. Apply supabase/sql/2026-06-10_bug_reports_table.sql to configure the schema.",
+        });
+      }
+      return res.status(500).json({ error: error.message });
+    }
+
+    res.json(data || []);
+  } catch (error) {
+    console.error("Bug reports fetch error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get("/api/developer/reports", verifyTesterOrDeveloperAccess, async (req, res) => {
+  try {
+    const { data, error } = await getSupabaseClient()
+      .from("bug_reports")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Failed to fetch developer reports:", error);
+      if (isMissingTableError(error)) {
+        return res.status(500).json({
+          error:
+            "Bug reports table not found. Apply supabase/sql/2026-06-10_bug_reports_table.sql to configure the schema.",
+        });
+      }
+      return res.status(500).json({ error: error.message });
+    }
+
+    res.json(data || []);
+  } catch (error) {
+    console.error("Developer report fetch error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.patch("/api/developer/reports/:reportId", verifyDeveloperAccess, async (req, res) => {
+  try {
+    const { reportId } = req.params;
+    const { status, comment } = req.body;
+
+    if (!reportId) {
+      return res.status(400).json({ error: "Report ID is required" });
+    }
+
+    const allowedStatuses = ["fixed", "in-review", "open", "verified"];
+    const normalizedStatus = typeof status === "string" ? status : null;
+
+    if (!normalizedStatus || !allowedStatuses.includes(normalizedStatus)) {
+      return res.status(400).json({ error: "Invalid status provided" });
+    }
+
+    const updateFields = {
+      status: normalizedStatus,
+      notes: typeof comment === "string" ? comment.trim() || null : null,
+      reviewed_by: req.profile?.id || null,
+      reviewed_at: new Date().toISOString(),
+      resolved_at: normalizedStatus === "fixed" ? new Date().toISOString() : null,
+    };
+
+    // If a developer performed the update, map their profile to one of the
+    // fixed developer labels so the tester portal's "Developer Updates"
+    // grouping shows the update under the developer who marked it done.
+    const DEVELOPER_LABELS = ["RUDRIK", "MOHAN", "MANJITH", "HARSHITHA", "UDAY", "SASWATEE"];
+    try {
+      const profileName = String(req.profile?.full_name || req.profile?.email || "").toLowerCase();
+      const userEmail = String(req.user?.email || "").toLowerCase();
+      const matched = DEVELOPER_LABELS.find((lbl) => profileName.includes(lbl.toLowerCase()) || userEmail.includes(lbl.toLowerCase()));
+      if (matched) {
+        updateFields.assigned_developer = matched;
+      }
+    } catch (e) {
+      // Non-fatal — if mapping fails, leave assigned_developer unchanged.
+      console.warn("Developer label mapping failed:", e);
+    }
+
+    const { error } = await getSupabaseClient()
+      .from("bug_reports")
+      .update(updateFields)
+      .eq("id", reportId);
+
+    if (error) {
+      console.error("Failed to update developer report:", error);
+      if (isMissingTableError(error)) {
+        return res.status(500).json({
+          error:
+            "Bug reports table not found. Apply supabase/sql/2026-06-10_bug_reports_table.sql to configure the schema.",
+        });
+      }
+      return res.status(500).json({ error: error.message });
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Developer report update error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post("/api/developer/tester/bug-reports", verifyTesterOrDeveloperAccess, async (req, res) => {
+  try {
+    const {
+      assignedDeveloper,
+      description,
+      screenshotUrl,
+      testerName,
+      submittedBy,
+    } = req.body;
+
+    if (!assignedDeveloper || !description || !testerName || !submittedBy) {
+      return res.status(400).json({ error: "Missing required bug report fields" });
+    }
+
+    const title = description.trim().slice(0, 120) || "New Tester Bug Report";
+    const attachmentUrls = screenshotUrl ? [screenshotUrl] : [];
+
+    const { error } = await getSupabaseClient().from("bug_reports").insert({
+      title,
+      description,
+      severity: "medium",
+      component: "tester-reports",
+      status: "open",
+      os: "unknown",
+      browser: "unknown",
+      device: "desktop",
+      attachment_count: attachmentUrls.length,
+      attachment_urls: attachmentUrls,
+      tester_name: testerName,
+      assigned_developer: assignedDeveloper,
+      submitted_by: submittedBy,
+    });
+
+    if (error) {
+      console.error("Failed to submit tester bug report:", error);
+      if (isMissingTableError(error)) {
+        return res.status(500).json({
+          error:
+            "Bug reports table not found. Apply supabase/sql/2026-06-10_bug_reports_table.sql to configure the schema.",
+        });
+      }
+      return res.status(500).json({ error: error.message });
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Tester bug report submission error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Tester actions on developer updates: close or escalate as a new bug report
+router.post("/api/tester/updates/:reportId/action", verifyTesterOrDeveloperAccess, async (req, res) => {
+  try {
+    const { reportId } = req.params;
+    const { action } = req.body;
+
+    if (!reportId || !action) {
+      return res.status(400).json({ error: "Missing reportId or action" });
+    }
+
+    // Load the original report
+    const { data: original, error: fetchError } = await getSupabaseClient()
+      .from("bug_reports")
+      .select("*")
+      .eq("id", reportId)
+      .maybeSingle();
+
+    if (fetchError) {
+      console.error("Failed to fetch original report:", fetchError);
+      if (isMissingTableError(fetchError)) {
+        return res.status(500).json({ error: "Bug reports table not found" });
+      }
+      return res.status(500).json({ error: fetchError.message });
+    }
+
+    if (!original) {
+      return res.status(404).json({ error: "Original report not found" });
+    }
+
+    const testerId = req.profile?.id || null;
+
+    if (action === "closed") {
+      const { error: updateError } = await getSupabaseClient()
+        .from("bug_reports")
+        .update({ status: "fixed", reviewed_by: testerId, reviewed_at: new Date().toISOString(), resolved_at: new Date().toISOString() })
+        .eq("id", reportId);
+
+      if (updateError) {
+        console.error("Failed to mark report closed:", updateError);
+        return res.status(500).json({ error: updateError.message });
+      }
+
+      return res.json({ success: true });
+    }
+
+    if (action === "bug_report") {
+      // Create a follow-up bug report assigned to the same developer
+      const newTitle = `Follow-up: ${original.title || 'Developer update'}`;
+      const newDescription = original.notes || original.description || "Follow-up reported by tester";
+
+      const insertObj = {
+        title: newTitle,
+        description: newDescription,
+        severity: original.severity || "medium",
+        component: original.component || "tester-feedback",
+        status: "open",
+        os: original.os || "unknown",
+        browser: original.browser || "unknown",
+        device: original.device || "unknown",
+        attachment_count: 0,
+        attachment_urls: [],
+        tester_name: req.profile?.full_name || req.profile?.email || "Tester",
+        assigned_developer: original.assigned_developer || "RUDRIK",
+        submitted_by: testerId,
+      };
+
+      const { error: insertError } = await getSupabaseClient().from("bug_reports").insert(insertObj);
+      if (insertError) {
+        console.error("Failed to insert follow-up report:", insertError);
+        return res.status(500).json({ error: insertError.message });
+      }
+
+      return res.json({ success: true });
+    }
+
+    return res.status(400).json({ error: "Unknown action" });
+  } catch (error) {
+    console.error("Tester update action error:", error);
     res.status(500).json({ error: error.message });
   }
 });

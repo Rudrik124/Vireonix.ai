@@ -62,6 +62,8 @@ interface BugReport {
   attachment_count: number;
   notes?: string;
   submitted_by?: string;
+  tester_name?: string;
+  assigned_developer?: string;
   reviewed_by?: string;
   reviewed_at?: string;
   created_at: string;
@@ -137,15 +139,21 @@ export function DeveloperErrorLogsPage() {
     if (activeTab === 'bugs') {
       fetchBugReports();
     }
-  }, [activeTab]);
+  }, [activeTab, profile]);
 
   const fetchBugReports = async () => {
     try {
       setLoadingBugs(true);
-      const { data, error } = await supabase
+      let query = supabase
         .from("bug_reports")
         .select("*")
         .order("created_at", { ascending: false });
+
+      if (profile?.role === "developer" && profile.name) {
+        query = query.eq("assigned_developer", profile.name.toUpperCase());
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error("Error fetching bug reports:", error);

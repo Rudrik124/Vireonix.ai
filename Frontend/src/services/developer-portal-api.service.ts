@@ -195,6 +195,77 @@ export async function fetchTesterCreditHistory(testerId: string) {
   return callDeveloperAPI(`/testers/${testerId}/credits/history`);
 }
 
+export async function fetchTesterBugReports() {
+  return callDeveloperAPI('/tester/bug-reports');
+}
+
+export async function submitTesterBugReport(report: {
+  assignedDeveloper: string;
+  description: string;
+  screenshotUrl?: string | null;
+  testerName: string;
+  submittedBy: string;
+}) {
+  return callDeveloperAPI('/tester/bug-reports', {
+    method: 'POST',
+    body: JSON.stringify(report),
+  });
+}
+
+export async function fetchDeveloperReports() {
+  return callDeveloperAPI('/reports');
+}
+
+export async function updateDeveloperReport(reportId: string, payload: { status: string; comment?: string | null }) {
+  return callDeveloperAPI(`/reports/${reportId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+}
+
+// Call tester-specific endpoints (same auth handling as developer API)
+async function callTesterAPI(endpoint: string, options?: RequestInit) {
+  let token: string | null = null;
+
+  try {
+    if (typeof window !== 'undefined') {
+      if (typeof supabase !== 'undefined' && supabase) {
+        const { data } = await supabase.auth.getSession();
+        token = data?.session?.access_token ?? null;
+      }
+
+      if (!token) {
+        token = readStoredAccessToken();
+      }
+    }
+  } catch (e) {
+    console.warn('Unable to read auth token from storage/supabase', e);
+  }
+
+  const response = await fetch(buildApiUrl(`/api${endpoint}`), {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...options?.headers,
+    },
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'API Error' }));
+    throw new Error(error.error || `API Error: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+export async function submitTesterUpdateAction(reportId: string, action: 'closed' | 'bug_report') {
+  return callTesterAPI(`/tester/updates/${reportId}/action`, {
+    method: 'POST',
+    body: JSON.stringify({ action }),
+  });
+}
+
 export async function fetchDeveloperTesterAssignments() {
   return callDeveloperAPI('/developer/tester-assignments');
 }

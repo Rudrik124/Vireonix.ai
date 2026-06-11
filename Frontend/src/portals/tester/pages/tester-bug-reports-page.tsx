@@ -1,6 +1,6 @@
 import { useAuth } from "../../../app/context/auth-context";
 import { useNavigate } from "react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { motion, useMotionValue, useSpring, useTransform, animate } from "framer-motion";
 import { 
   AlertCircle, 
@@ -19,6 +19,9 @@ import {
   AlertTriangle
 } from "lucide-react";
 import { supabase } from "../../../lib/supabase";
+import { fetchTesterBugReports, submitTesterBugReport, submitTesterUpdateAction } from "../../../services/developer-portal-api.service";
+import { SuccessToast } from "../../../app/components/success-toast";
+import { useRealtime } from "../../../hooks/useRealtime";
 
 interface BugReport {
   id: string;
@@ -31,6 +34,10 @@ interface BugReport {
   browser: string;
   device: string;
   attachment_count: number;
+  attachment_urls?: string[];
+  tester_name?: string;
+  assigned_developer?: string;
+  notes?: string;
   created_at: string;
   updated_at: string;
 }
@@ -61,23 +68,29 @@ export function TesterBugReportsPage() {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
+  const DEVELOPER_NAMES = useMemo(
+    () => ["RUDRIK", "MOHAN", "MANJITH", "HARSHITHA", "UDAY", "SASWATEE"] as const,
+    []
+  );
+
+  type DeveloperName = (typeof DEVELOPER_NAMES)[number];
+
+  const [activeTab, setActiveTab] = useState<'report' | 'updates'>('report');
   const [bugReports, setBugReports] = useState<BugReport[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
   const [filter, setFilter] = useState<"all" | "open" | "in-review" | "fixed" | "verified">("all");
   const [severityFilter, setSeverityFilter] = useState<"all" | "critical" | "high" | "medium" | "low">("all");
   const [submitting, setSubmitting] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [screenshot, setScreenshot] = useState<File | null>(null);
+  const [bugReportsSchemaMissing, setBugReportsSchemaMissing] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const [formData, setFormData] = useState({
-    title: "",
+    assignedDeveloper: "RUDRIK" as DeveloperName,
     description: "",
-    severity: "medium" as const,
-    component: "video-generator",
-    os: "windows",
-    browser: "chrome",
-    device: "desktop",
-    attachments: [] as File[],
   });
+  const [expandedDevelopers, setExpandedDevelopers] = useState<Record<string, boolean>>({});
 
   // Mouse Parallax for Ambient Lighting
   const mouseX = useMotionValue(0);
@@ -118,6 +131,20 @@ export function TesterBugReportsPage() {
     return statusMatch && severityMatch;
   });
 
+  const developerUpdates = DEVELOPER_NAMES.map((developer) => ({
+    name: developer,
+    items: bugReports
+      .filter((bug) => {
+        // Only show updates that belong to this developer, have notes, and are not completed
+        const isAssigned = bug.assigned_developer === developer;
+        const hasNotes = !!bug.notes && bug.notes.trim().length > 0;
+        const isCompleted = (bug.status || "").toLowerCase();
+        const completedStatuses = ["fixed", "verified"];
+        return isAssigned && hasNotes && !completedStatuses.includes(isCompleted);
+      })
+      .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()),
+  }));
+
   useEffect(() => {
     if (!authLoading) {
       if (!profile) {
@@ -128,24 +155,109 @@ export function TesterBugReportsPage() {
     }
   }, [authLoading, profile, navigate]);
 
+  useRealtime(
+    bugReportsSchemaMissing
+      ? []
+      : [
+          {
+            table: "bug_reports",
+            event: "*",
+            callback: () => {
+              fetchBugReports();
+            },
+          },
+        ]
+  );
+
   const fetchBugReports = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("bug_reports")
-        .select("*")
-        .order("created_at", { ascending: false });
+      setBugReportsSchemaMissing(false);
+      const response = await fetchTesterBugReports();
 
-      if (error) {
-        console.error("Error fetching bug reports:", error);
+      setBugReports(response || []);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (
+        message.includes("Could not find the table 'public.bug_reports'") ||
+        message.includes("Bug reports table not found") ||
+        message.includes("schema cache")
+      ) {
+        setBugReportsSchemaMissing(true);
+        setBugReports([]);
         return;
       }
-
-      setBugReports(data || []);
-    } catch (error) {
       console.error("Error:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const toggleDeveloperExpanded = (name: string) => {
+    setExpandedDevelopers((prev) => ({ ...prev, [name]: !prev[name] }));
+  };
+
+  const handleTesterClose = async (reportId: string) => {
+    try {
+      await submitTesterUpdateAction(reportId, 'closed');
+      // After closing, show the tester Reports tab and switch to Completed
+      setActiveTab('report');
+      // ensure Completed view is selected in the open reports filter
+      setOpenFilter('completed');
+      await fetchBugReports();
+      // scroll to the closed summary card so the user sees the closed section
+      setTimeout(() => {
+        const el = document.getElementById('closed-card');
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 120);
+      setShowSuccess(true);
+    } catch (err) {
+      console.error('Failed to close update', err);
+    }
+  };
+
+  const handleTesterBugReport = async (bug: BugReport) => {
+    // Instead of automatically creating a follow-up, navigate tester to the
+    // REPORT tab and prefill the form so they can review and submit.
+    try {
+      setFormData({
+        assignedDeveloper: (bug.assigned_developer as DeveloperName) || "RUDRIK",
+        description: `Follow-up for: ${bug.title}\n\n${bug.notes || ''}`,
+      });
+      setActiveTab('report');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (err) {
+      console.error('Failed to prepare follow-up report', err);
+    }
+  };
+
+  const uploadScreenshot = async (file: File) => {
+    if (!supabase) return null;
+    const sanitizedFileName = `bug-reports/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
+    try {
+      const { error: uploadError } = await supabase.storage.from("bug-report-screenshots").upload(sanitizedFileName, file, {
+        cacheControl: "3600",
+        upsert: false,
+      });
+
+      if (uploadError) {
+        console.warn("Screenshot upload failed:", uploadError);
+        return null;
+      }
+
+      const { data: publicUrlData, error: urlError } = await supabase.storage
+        .from("bug-report-screenshots")
+        .getPublicUrl(sanitizedFileName);
+
+      if (urlError) {
+        console.warn("Unable to get screenshot public URL:", urlError);
+        return null;
+      }
+
+      return publicUrlData.publicUrl;
+    } catch (uploadError) {
+      console.warn("Screenshot upload error:", uploadError);
+      return null;
     }
   };
 
@@ -154,42 +266,43 @@ export function TesterBugReportsPage() {
     setSubmitting(true);
 
     try {
-      const { error } = await supabase.from("bug_reports").insert({
-        title: formData.title,
-        description: formData.description,
-        severity: formData.severity,
-        component: formData.component,
-        status: "open",
-        os: formData.os,
-        browser: formData.browser,
-        device: formData.device,
-        attachment_count: formData.attachments.length,
-        submitted_by: profile?.id,
-      });
+      setUploading(Boolean(screenshot));
 
-      if (error) {
-        console.error("Error submitting bug report:", error);
-        return;
-      }
+      const screenshotUrl = screenshot ? await uploadScreenshot(screenshot) : null;
+      const title = formData.description.trim().slice(0, 120) || "New Tester Bug Report";
+
+      await submitTesterBugReport({
+        assignedDeveloper: formData.assignedDeveloper,
+        description: formData.description,
+        screenshotUrl,
+        testerName: profile?.fullName || profile?.name || profile?.email || "Tester",
+        submittedBy: profile?.id || "",
+      });
 
       setFormData({
-        title: "",
+        assignedDeveloper: "RUDRIK",
         description: "",
-        severity: "medium",
-        component: "video-generator",
-        os: "windows",
-        browser: "chrome",
-        device: "desktop",
-        attachments: [],
       });
-      setShowForm(false);
+      setScreenshot(null);
       await fetchBugReports();
+      setShowSuccess(true);
+      setActiveTab('report');
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (
+        message.includes("Could not find the table 'public.bug_reports'") ||
+        message.includes("Bug reports table not found") ||
+        message.includes("schema cache")
+      ) {
+        setBugReportsSchemaMissing(true);
+        return;
+      }
       console.error("Error:", error);
     } finally {
       setSubmitting(false);
+      setUploading(false);
     }
-  }
+  };
 
   const listVariants = {
     hidden: { opacity: 0 },
@@ -206,6 +319,9 @@ export function TesterBugReportsPage() {
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-[#050816] font-sans selection:bg-cyan-500/30 selection:text-white text-slate-200 pb-16">
+      {showSuccess && (
+        <SuccessToast message="Bug report submitted" onDismiss={() => setShowSuccess(false)} />
+      )}
       
       {/* Background Layers */}
       <div className="fixed inset-0 z-0 pointer-events-none">
@@ -284,7 +400,7 @@ export function TesterBugReportsPage() {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => setShowForm(!showForm)}
+            onClick={() => setActiveTab('report')}
             className="flex items-center gap-2 bg-gradient-to-r from-[#8B5CF6] to-[#3B82F6] hover:opacity-90 text-white font-bold py-2.5 px-6 rounded-full shadow-[0_0_20px_rgba(139,92,246,0.3)] group-hover:shadow-[0_0_30px_rgba(59,130,246,0.5)] transition-all relative overflow-hidden group"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
@@ -323,6 +439,23 @@ export function TesterBugReportsPage() {
           </div>
         </motion.div>
 
+        {/* Tabs */}
+        <div className="mb-8 flex flex-wrap gap-3 items-center justify-center">
+          {[
+            { key: 'report', label: 'REPORT TO DEVELOPER' },
+            { key: 'updates', label: 'DEVELOPER UPDATES' },
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setActiveTab(tab.key as 'report' | 'updates')}
+              className={`px-5 py-3 rounded-full font-bold text-sm transition-all ${activeTab === tab.key ? 'bg-cyan-500 text-white shadow-[0_0_20px_rgba(6,182,212,0.25)]' : 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10'}`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
         {/* Bug Status Banner */}
         <div className="w-full flex items-center justify-center mb-12">
           <motion.div 
@@ -340,6 +473,13 @@ export function TesterBugReportsPage() {
             <span className="hidden sm:inline opacity-50">━━━━━━━━━━━━</span>
           </motion.div>
         </div>
+
+        {bugReportsSchemaMissing && (
+          <div className="mb-8 rounded-3xl border border-rose-500/25 bg-rose-500/10 p-6 text-sm text-rose-100 shadow-[0_0_30px_rgba(244,63,94,0.12)]">
+            <p className="font-semibold text-white mb-2">Bug report storage is not configured yet.</p>
+            <p>If you are deploying this app, apply the database migration file <code className="bg-slate-900 px-1.5 py-0.5 rounded text-xs text-slate-100">supabase/sql/2026-06-10_bug_reports_table.sql</code> to create the <code className="bg-slate-900 px-1.5 py-0.5 rounded text-xs text-slate-100">bug_reports</code> table.</p>
+          </div>
+        )}
 
         {/* Premium Analytics Cards */}
         <motion.div 
@@ -359,16 +499,16 @@ export function TesterBugReportsPage() {
               </p>
             </div>
           </div>
-          {/* High */}
-          <div className="group relative p-[1px] rounded-[24px] overflow-hidden bg-white/5 transition-all duration-300 z-10 hover:-translate-y-2 hover:scale-[1.02]">
-            <div className="absolute inset-0 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 opacity-20 group-hover:opacity-100 transition-opacity duration-500 animate-[spin_4s_linear_infinite]" style={{ padding: '1px' }} />
-            <div className="relative h-full bg-[rgba(18,22,40,0.65)] backdrop-blur-[24px] rounded-[23px] p-6 border border-white/[0.08] group-hover:border-transparent transition-colors shadow-[0_0_40px_rgba(249,115,22,0.1)] group-hover:shadow-[0_0_40px_rgba(249,115,22,0.3)] flex flex-col">
+          {/* Closed */}
+          <div id="closed-card" className="group relative p-[1px] rounded-[24px] overflow-hidden bg-white/5 transition-all duration-300 z-10 hover:-translate-y-2 hover:scale-[1.02]">
+            <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 opacity-20 group-hover:opacity-100 transition-opacity duration-500 animate-[spin_4s_linear_infinite]" style={{ padding: '1px' }} />
+            <div className="relative h-full bg-[rgba(18,22,40,0.65)] backdrop-blur-[24px] rounded-[23px] p-6 border border-white/[0.08] group-hover:border-transparent transition-colors shadow-[0_0_40px_rgba(16,185,129,0.1)] group-hover:shadow-[0_0_40px_rgba(16,185,129,0.3)] flex flex-col">
               <div className="flex justify-between items-start mb-4">
-                <p className="text-slate-400 text-sm font-bold uppercase tracking-widest">High</p>
-                <AlertCircle className="w-6 h-6 text-orange-400 group-hover:rotate-12 transition-transform" />
+                <p className="text-slate-400 text-sm font-bold uppercase tracking-widest">Closed</p>
+                <AlertCircle className="w-6 h-6 text-emerald-400 group-hover:rotate-12 transition-transform" />
               </div>
-              <p className="text-white text-5xl font-black drop-shadow-[0_0_20px_rgba(249,115,22,0.5)]">
-                <AnimatedNumber value={bugReports.filter((b) => b.severity === "high").length} />
+              <p className="text-white text-5xl font-black drop-shadow-[0_0_20px_rgba(16,185,129,0.5)]">
+                <AnimatedNumber value={bugReports.filter((b) => b.status === 'fixed' || b.status === 'verified').length} />
               </p>
             </div>
           </div>
@@ -400,117 +540,49 @@ export function TesterBugReportsPage() {
           </div>
         </motion.div>
 
-        {/* Submit Form Modal */}
-        {showForm && (
+        {activeTab === 'report' && (
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-12 relative rounded-[24px] p-[1px] overflow-hidden z-20">
             <div className="absolute inset-0 bg-gradient-to-r from-purple-500/50 via-blue-500/50 to-cyan-500/50 opacity-30" />
             <div className="relative bg-[rgba(18,22,40,0.8)] backdrop-blur-[30px] rounded-[23px] p-8 border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)]">
-              <h2 className="text-2xl font-black text-white mb-6 flex items-center gap-3"><AlertCircle className="w-6 h-6 text-cyan-400" /> Submit Bug Report</h2>
+              <h2 className="text-2xl font-black text-white mb-6 flex items-center gap-3"><AlertCircle className="w-6 h-6 text-cyan-400" /> Report Bug</h2>
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Bug Title</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Video generator crashes on Safari"
-                      value={formData.title}
-                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl text-white bg-white/5 border border-white/10 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 transition-all outline-none placeholder-white/30"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Severity</label>
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Assign to developer</label>
                     <div className="relative">
                       <select
-                        value={formData.severity}
-                        onChange={(e) => setFormData({ ...formData, severity: e.target.value as any })}
+                        value={formData.assignedDeveloper}
+                        onChange={(e) => setFormData({ ...formData, assignedDeveloper: e.target.value as DeveloperName })}
                         className="w-full px-4 py-3 rounded-xl text-white bg-white/5 border border-white/10 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 transition-all outline-none appearance-none"
                       >
-                        <option value="low" className="bg-[#0B1020]">Low Severity</option>
-                        <option value="medium" className="bg-[#0B1020]">Medium Severity</option>
-                        <option value="high" className="bg-[#0B1020]">High Severity</option>
-                        <option value="critical" className="bg-[#0B1020]">Critical Severity</option>
+                        {DEVELOPER_NAMES.map((developer) => (
+                          <option key={developer} value={developer} className="bg-[#0B1020]">{developer}</option>
+                        ))}
                       </select>
                       <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50 pointer-events-none" />
                     </div>
                   </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Screenshot (optional)</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => setScreenshot(e.target.files?.[0] ?? null)}
+                      className="w-full text-sm text-white bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none"
+                    />
+                    {screenshot && <p className="mt-2 text-xs text-slate-400">Selected: {screenshot.name}</p>}
+                  </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Detailed Description</label>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Bug Description</label>
                   <textarea
                     placeholder="Describe the bug in detail..."
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl text-white bg-white/5 border border-white/10 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 transition-all outline-none placeholder-white/30 h-32 resize-none"
+                    className="w-full px-4 py-3 rounded-xl text-white bg-white/5 border border-white/10 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 transition-all outline-none placeholder-white/30 h-36 resize-none"
                     required
                   />
-                </div>
-
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Component</label>
-                    <div className="relative">
-                      <select
-                        value={formData.component}
-                        onChange={(e) => setFormData({ ...formData, component: e.target.value })}
-                        className="w-full px-4 py-2.5 rounded-lg text-white bg-white/5 border border-white/10 text-sm appearance-none outline-none focus:border-purple-500/50"
-                      >
-                        <option value="video-generator" className="bg-[#0B1020]">Video Generator</option>
-                        <option value="auth" className="bg-[#0B1020]">Authentication</option>
-                        <option value="billing" className="bg-[#0B1020]">Billing</option>
-                        <option value="ui" className="bg-[#0B1020]">UI</option>
-                      </select>
-                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-white/50 pointer-events-none" />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">OS</label>
-                    <div className="relative">
-                      <select
-                        value={formData.os}
-                        onChange={(e) => setFormData({ ...formData, os: e.target.value })}
-                        className="w-full px-4 py-2.5 rounded-lg text-white bg-white/5 border border-white/10 text-sm appearance-none outline-none focus:border-purple-500/50"
-                      >
-                        <option value="windows" className="bg-[#0B1020]">Windows</option>
-                        <option value="macos" className="bg-[#0B1020]">macOS</option>
-                        <option value="linux" className="bg-[#0B1020]">Linux</option>
-                      </select>
-                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-white/50 pointer-events-none" />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Browser</label>
-                    <div className="relative">
-                      <select
-                        value={formData.browser}
-                        onChange={(e) => setFormData({ ...formData, browser: e.target.value })}
-                        className="w-full px-4 py-2.5 rounded-lg text-white bg-white/5 border border-white/10 text-sm appearance-none outline-none focus:border-purple-500/50"
-                      >
-                        <option value="chrome" className="bg-[#0B1020]">Chrome</option>
-                        <option value="firefox" className="bg-[#0B1020]">Firefox</option>
-                        <option value="safari" className="bg-[#0B1020]">Safari</option>
-                        <option value="edge" className="bg-[#0B1020]">Edge</option>
-                      </select>
-                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-white/50 pointer-events-none" />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Device</label>
-                    <div className="relative">
-                      <select
-                        value={formData.device}
-                        onChange={(e) => setFormData({ ...formData, device: e.target.value })}
-                        className="w-full px-4 py-2.5 rounded-lg text-white bg-white/5 border border-white/10 text-sm appearance-none outline-none focus:border-purple-500/50"
-                      >
-                        <option value="desktop" className="bg-[#0B1020]">Desktop</option>
-                        <option value="tablet" className="bg-[#0B1020]">Tablet</option>
-                        <option value="mobile" className="bg-[#0B1020]">Mobile</option>
-                      </select>
-                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-white/50 pointer-events-none" />
-                    </div>
-                  </div>
                 </div>
 
                 <div className="flex gap-4 pt-4">
@@ -518,19 +590,22 @@ export function TesterBugReportsPage() {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     type="submit"
-                    disabled={submitting}
+                    disabled={submitting || uploading}
                     className="flex-1 bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-white font-bold px-6 py-3 rounded-xl shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all flex justify-center items-center gap-2"
                   >
-                    {submitting ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : "Submit Report"}
+                    {(submitting || uploading) ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : "Submit Report"}
                   </motion.button>
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     type="button"
-                    onClick={() => setShowForm(false)}
+                    onClick={() => {
+                      setFormData({ assignedDeveloper: "RUDRIK", description: "" });
+                      setScreenshot(null);
+                    }}
                     className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold px-6 py-3 rounded-xl transition-all"
                   >
-                    Cancel
+                    Reset
                   </motion.button>
                 </div>
               </form>
@@ -538,7 +613,7 @@ export function TesterBugReportsPage() {
           </motion.div>
         )}
 
-        {/* Filters Panel */}
+        {activeTab === 'report' && (<>
         <div className="mb-8 flex flex-wrap gap-4 items-center bg-[rgba(18,22,40,0.65)] backdrop-blur-[24px] p-4 rounded-[20px] border border-white/10 shadow-[0_0_30px_rgba(139,92,246,0.1)] glow-button">
           <div className="flex items-center gap-2 px-2">
             <Filter className="w-5 h-5 text-cyan-400" />
@@ -645,6 +720,72 @@ export function TesterBugReportsPage() {
             </motion.div>
           )}
         </div>
+        </>)}
+
+        {activeTab === 'updates' && (
+          <div className="space-y-4">
+            {developerUpdates.map((developer) => {
+              const expanded = !!expandedDevelopers[developer.name];
+              return (
+                <div key={developer.name} className="bg-[rgba(18,22,40,0.85)] border border-white/10 rounded-[24px] p-5 shadow-[0_0_30px_rgba(0,0,0,0.3)]">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-[0.35em] text-slate-500">{developer.name}</p>
+                      <h3 className="mt-1 text-lg font-black text-white">Developer Updates</h3>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="text-sm text-slate-400">{developer.items.length} update{developer.items.length !== 1 ? 's' : ''}</div>
+                      <button
+                        onClick={() => toggleDeveloperExpanded(developer.name)}
+                        className="px-3 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-sm font-bold text-slate-200"
+                      >
+                        {expanded ? 'Collapse' : 'Expand'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {!expanded && (
+                    <div className="text-sm text-slate-400">{developer.items.length === 0 ? 'No updates from this developer yet.' : `${developer.items[0].notes?.slice(0, 120)}${developer.items[0].notes && developer.items[0].notes.length > 120 ? '…' : ''}`}</div>
+                  )}
+
+                  {expanded && (
+                    <div className="space-y-3">
+                      {developer.items.length === 0 ? (
+                        <p className="text-sm text-slate-400">No updates from this developer yet.</p>
+                      ) : (
+                        developer.items.map((bug) => (
+                          <div key={bug.id} className="rounded-3xl border border-white/10 bg-white/5 p-4 text-sm text-slate-200">
+                            <p className="text-white font-semibold mb-3 leading-relaxed">{bug.notes}</p>
+                            <p className="text-[10px] uppercase tracking-[0.35em] text-slate-500 mb-1">Related Bug</p>
+                            <p className="text-sm font-medium text-slate-100 mb-3">{bug.title}</p>
+                            <div className="flex items-center gap-3 mb-3">
+                              <button
+                                onClick={() => handleTesterClose(bug.id)}
+                                className="px-3 py-2 bg-emerald-600/80 hover:bg-emerald-500 rounded-lg text-xs font-bold text-white"
+                              >
+                                CLOSED
+                              </button>
+                              <button
+                                onClick={() => handleTesterBugReport(bug)}
+                                className="px-3 py-2 bg-rose-600/80 hover:bg-rose-500 rounded-lg text-xs font-bold text-white"
+                              >
+                                BUG REPORT
+                              </button>
+                            </div>
+                            <div className="grid gap-2 text-[11px] text-slate-400">
+                              <span>Status: <span className="text-white">{bug.status === 'in-review' ? 'In Review' : bug.status}</span></span>
+                              <span>{new Date(bug.updated_at).toLocaleString()}</span>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         {/* Minimal Footer */}
         <footer className="mt-16 text-center pb-8">

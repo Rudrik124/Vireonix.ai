@@ -5,6 +5,8 @@ create type public.bug_status as enum ('open', 'in-review', 'fixed', 'verified')
 create table if not exists public.bug_reports (
   id uuid primary key default gen_random_uuid(),
   submitted_by uuid not null references public.app_profiles (id) on delete set null,
+  tester_name text not null,
+  assigned_developer text not null default 'RUDRIK' check (assigned_developer in ('RUDRIK', 'MOHAN', 'MANJITH', 'HARSHITHA', 'UDAY', 'SASWATEE')),
   title text not null,
   description text not null,
   severity public.bug_severity not null default 'medium',
