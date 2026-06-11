@@ -121,6 +121,50 @@ export async function fetchCreditsStats() {
   return callDeveloperAPI('/credits/stats');
 }
 
+export async function fetchCreditsSummary() {
+  return callDeveloperAPI('/credits/summary');
+}
+
+export async function fetchCostExpenses() {
+  return callDeveloperAPI('/costs');
+}
+
+export async function createCostExpense(expense: { amount: number; category: string; month: number; year: number; notes?: string }) {
+  return callDeveloperAPI('/costs', {
+    method: 'POST',
+    body: JSON.stringify(expense),
+  });
+}
+
+export async function updateCostExpense(expenseId: string, expense: { amount?: number; category?: string; month?: number; year?: number; notes?: string }) {
+  return callDeveloperAPI(`/costs/${expenseId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(expense),
+  });
+}
+
+export async function deleteCostExpense(expenseId: string) {
+  return callDeveloperAPI(`/costs/${expenseId}`, {
+    method: 'DELETE',
+  });
+}
+
+export async function fetchRevenueProfit() {
+  return callDeveloperAPI('/revenue-profit');
+}
+
+export async function fetchMonthlySnapshots(year?: number) {
+  const params = year ? `?year=${year}` : '';
+  return callDeveloperAPI(`/snapshots${params}`);
+}
+
+export async function storeMonthlySnapshot(data: { totalRevenue: number; totalExpenses: number; activeUsers?: number }) {
+  return callDeveloperAPI('/snapshots/store', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
 export async function fetchCreditTransactions(page = 1, limit = 50) {
   return callDeveloperAPI(`/credits/transactions?page=${page}&limit=${limit}`);
 }

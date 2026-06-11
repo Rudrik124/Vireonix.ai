@@ -5,12 +5,12 @@ import { DeveloperDashboardPage } from "../portals/developer/pages/developer-das
 import { DeveloperUsersPage } from "../portals/developer/pages/developer-users-page";
 import { DeveloperCreditsPage } from "../portals/developer/pages/developer-credits-page";
 import { DeveloperTesterCreditsPage } from "../portals/developer/pages/developer-tester-credits-page";
-import { DeveloperTestingLabPage } from "../portals/developer/pages/developer-testing-lab-page";
 import { DeveloperErrorLogsPage } from "../portals/developer/pages/developer-error-logs-page";
 import { DeveloperAnalyticsPage } from "../portals/developer/pages/developer-analytics-page";
 import { DeveloperFeedbackPage } from "../portals/developer/pages/developer-feedback-page";
 import { DeveloperReportPage } from "../portals/developer/pages/developer-report-page";
 import { DeveloperSettingsPage } from "../portals/developer/pages/developer-settings-page";
+import { DeveloperCostsPage } from "../portals/developer/pages/developer-costs-page";
 import { DeveloperLogsPage } from "../portals/developer/pages/developer-logs-page";
 import { DeveloperOperationsPage } from "../portals/developer/pages/developer-operations-page";
 import { DeveloperWorkflowLabPage } from "../portals/developer/pages/developer-workflow-lab-page";
@@ -262,6 +262,14 @@ export const router = createBrowserRouter([
     ),
   },
   {
+    path: "/developer/costs",
+    element: (
+      <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+        <DeveloperCostsPage />
+      </PortalGate>
+    ),
+  },
+  {
     path: "/developer/tester-credits",
     element: (
       <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
@@ -269,14 +277,7 @@ export const router = createBrowserRouter([
       </PortalGate>
     ),
   },
-  {
-    path: "/developer/testing-lab",
-    element: (
-      <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
-        <DeveloperTestingLabPage />
-      </PortalGate>
-    ),
-  },
+  // Developer testing lab removed
   {
     path: "/developer/error-logs",
     element: (

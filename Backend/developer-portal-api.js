@@ -335,12 +335,50 @@ router.get("/api/developer/dashboard/stats", verifyDeveloperAccess, async (req, 
 
     const aiRequests = (aiRequestsData || []).length;
 
+      // Plan-type counts (FREE / PRO / PRO_MAX)
+      let freeUsers = 0;
+      let proUsers = 0;
+      let proMaxUsers = 0;
+      let planSchemaMissing = false;
+
+      try {
+        const { data: plans, error: plansError } = await getSupabaseClient()
+          .from('app_profiles')
+          .select('id, plan_type');
+
+        if (plansError) {
+          const msg = String(plansError.message || '').toLowerCase();
+          if (plansError.code === '42703' || msg.includes('column') || msg.includes('does not exist')) {
+            planSchemaMissing = true;
+          } else {
+            console.warn('Failed to fetch plan_type from app_profiles:', plansError.message);
+          }
+        } else {
+          (plans || []).forEach((p) => {
+            const pt = (p.plan_type || 'FREE').toString().toUpperCase();
+            if (pt === 'PRO') proUsers++;
+            else if (pt === 'PRO_MAX' || pt === 'PROMAX') proMaxUsers++;
+            else freeUsers++;
+          });
+        }
+      } catch (err) {
+        console.warn('Error while computing plan counts:', err?.message || err);
+        planSchemaMissing = true;
+      }
+
+    const planSchemaSql = "ALTER TABLE app_profiles ADD COLUMN plan_type TEXT DEFAULT 'FREE';";
+
     res.json({
       totalUsers: totalUsers || 0,
       activeUsers: activeUsers || 0,
       newUsers: newUsers || 0,
       creditsConsumed: creditsConsumed || 0,
       aiRequests: aiRequests || 0,
+        freeUsers,
+        proUsers,
+        proMaxUsers,
+        planSchemaMissing,
+        planSchemaSql: planSchemaMissing ? planSchemaSql : null,
       revenue: (creditsConsumed || 0) * 0.001, // Example: $0.001 per credit
     });
   } catch (error) {
@@ -691,6 +729,504 @@ router.get("/api/developer/credits/stats", verifyDeveloperAccess, async (req, re
   } catch (error) {
     console.error("Credits stats error:", error);
     res.status(500).json({ error: "Failed to fetch credits stats" });
+  }
+});
+
+/**
+ * GET /api/developer/credits/summary
+ * Returns detailed credits analytics: total distributed, daily, monthly, used, left, saved
+ */
+router.get("/api/developer/credits/summary", verifyDeveloperAccess, async (req, res) => {
+  try {
+    // Aggregate from usage_logs
+    let totalDistributed = 0;
+    let totalUsed = 0;
+    let creditsLeft = 0;
+    let overallUnused = 0;
+    let savedCredits = 0;
+    let daily = [];
+    let monthly = [];
+    let lifetime = {};
+    let schemaMissing = false;
+
+    try {
+      const { data: logs, error: logsError } = await getSupabaseClient()
+        .from('usage_logs')
+        .select('credits_requested, credits_charged, created_at')
+        .order('created_at', { ascending: true });
+
+      if (logsError) {
+        const msg = String(logsError.message || '').toLowerCase();
+        if (logsError.code === '42P01' || msg.includes('does not exist') || msg.includes('could not find the table')) {
+          schemaMissing = true;
+        } else {
+          console.warn('Failed to query usage_logs:', logsError.message);
+        }
+      } else {
+        // totals
+        totalDistributed = (logs || []).reduce((s, r) => s + (Number(r.credits_requested) || 0), 0);
+        totalUsed = (logs || []).reduce((s, r) => s + (Number(r.credits_charged) || 0), 0);
+
+        // daily for last 30 days
+        const byDay = {};
+        const byMonth = {};
+        (logs || []).forEach((r) => {
+          const d = new Date(r.created_at || Date.now());
+          const day = d.toISOString().slice(0, 10);
+          const month = d.toISOString().slice(0, 7);
+          const given = Number(r.credits_requested) || 0;
+          const used = Number(r.credits_charged) || 0;
+          byDay[day] = (byDay[day] || 0) + given;
+          byMonth[month] = (byMonth[month] || 0) + given;
+        });
+
+        daily = Object.keys(byDay).sort().map((k) => ({ date: k, credits: byDay[k] }));
+        monthly = Object.keys(byMonth).sort().map((k) => ({ month: k, credits: byMonth[k] }));
+        lifetime = { totalDistributed, totalUsed };
+      }
+    } catch (err) {
+      console.warn('Error aggregating usage_logs:', err?.message || err);
+      schemaMissing = true;
+    }
+
+    try {
+      const { data: wallets, error: walletsError } = await getSupabaseClient()
+        .from('credit_wallets')
+        .select('balance');
+
+      if (walletsError) {
+        const msg = String(walletsError.message || '').toLowerCase();
+        if (walletsError.code === '42P01' || msg.includes('does not exist') || msg.includes('could not find the table')) {
+          schemaMissing = true;
+        } else {
+          console.warn('Failed to query credit_wallets:', walletsError.message);
+        }
+      } else {
+        creditsLeft = (wallets || []).reduce((s, w) => s + (Number(w.balance) || 0), 0);
+      }
+    } catch (err) {
+      console.warn('Error querying credit_wallets:', err?.message || err);
+      schemaMissing = true;
+    }
+
+    overallUnused = Math.max(0, totalDistributed - totalUsed);
+    savedCredits = creditsLeft;
+
+    const createUsageLogsSql = `CREATE TABLE IF NOT EXISTS usage_logs (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid, credits_requested numeric, credits_charged numeric, feature_key text, wallet_type text, created_at timestamptz DEFAULT now());`;
+    const createWalletsSql = `CREATE TABLE IF NOT EXISTS credit_wallets (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid, wallet_type text, balance numeric DEFAULT 0, updated_at timestamptz DEFAULT now());`;
+
+    res.json({
+      totalDistributed,
+      daily,
+      monthly,
+      lifetime,
+      totalUsed,
+      creditsLeft,
+      overallUnused,
+      savedCredits,
+      schemaMissing,
+      createUsageLogsSql: schemaMissing ? createUsageLogsSql : null,
+      createWalletsSql: schemaMissing ? createWalletsSql : null,
+    });
+  } catch (error) {
+    console.error('Credits summary error:', error);
+    res.status(500).json({ error: 'Failed to fetch credits summary' });
+  }
+});
+
+/**
+ * GET /api/developer/costs
+ * Returns expenses and cost summaries
+ */
+router.get("/api/developer/costs", verifyDeveloperAccess, async (req, res) => {
+  try {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+    let schemaMissing = false;
+    let expenses = [];
+    const createExpensesTableSql = `CREATE TABLE IF NOT EXISTS expenses (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), amount numeric NOT NULL, category text NOT NULL, month int NOT NULL, year int NOT NULL, notes text, created_at timestamptz NOT NULL DEFAULT now());`;
+
+    try {
+      const { data, error } = await getSupabaseClient()
+        .from("expenses")
+        .select("id, amount, category, month, year, notes, created_at")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        const msg = String(error.message || "").toLowerCase();
+        if (error.code === "42P01" || msg.includes("does not exist") || msg.includes("could not find the table")) {
+          schemaMissing = true;
+        } else {
+          throw error;
+        }
+      } else {
+        expenses = data || [];
+      }
+    } catch (err) {
+      console.warn("Failed to read expenses:", err?.message || err);
+      schemaMissing = true;
+    }
+
+    const totals = {
+      total: 0,
+      currentMonth: 0,
+      currentYear: 0,
+      previousMonths: [],
+      previousYears: [],
+    };
+
+    if (!schemaMissing) {
+      totals.total = expenses.reduce((sum, row) => sum + Number(row.amount || 0), 0);
+      totals.currentMonth = expenses
+        .filter((row) => row.month === currentMonth && row.year === currentYear)
+        .reduce((sum, row) => sum + Number(row.amount || 0), 0);
+      totals.currentYear = expenses
+        .filter((row) => row.year === currentYear)
+        .reduce((sum, row) => sum + Number(row.amount || 0), 0);
+
+      const byMonth = new Map();
+      expenses.forEach((row) => {
+        const key = `${row.year}-${String(row.month).padStart(2, "0")}`;
+        byMonth.set(key, (byMonth.get(key) || 0) + Number(row.amount || 0));
+      });
+
+      totals.previousMonths = Array.from(byMonth.entries())
+        .sort(([a], [b]) => b.localeCompare(a))
+        .filter(([key]) => key !== `${currentYear}-${String(currentMonth).padStart(2, "0")}`)
+        .slice(0, 6)
+        .map(([key, amount]) => {
+          const [year, month] = key.split("-");
+          return { label: `${month}/${year}`, amount };
+        });
+
+      const byYear = new Map();
+      expenses.forEach((row) => {
+        byYear.set(row.year, (byYear.get(row.year) || 0) + Number(row.amount || 0));
+      });
+
+      totals.previousYears = Array.from(byYear.entries())
+        .sort(([a], [b]) => Number(b) - Number(a))
+        .filter(([year]) => Number(year) !== currentYear)
+        .slice(0, 5)
+        .map(([year, amount]) => ({ label: String(year), amount }));
+    }
+
+    res.json({
+      schemaMissing,
+      createExpensesTableSql: schemaMissing ? createExpensesTableSql : null,
+      expenses,
+      totals,
+      currentMonth: { month: currentMonth, year: currentYear },
+    });
+  } catch (error) {
+    console.error("Cost fetch error:", error);
+    res.status(500).json({ error: "Failed to fetch cost data" });
+  }
+});
+
+router.post("/api/developer/costs", verifyDeveloperAccess, async (req, res) => {
+  try {
+    const { amount, category, month, year, notes } = req.body;
+    if (!amount || !category || !month || !year) {
+      return res.status(400).json({ error: "Missing required expense fields" });
+    }
+
+    const payload = {
+      amount: Number(amount),
+      category: String(category).toUpperCase(),
+      month: Number(month),
+      year: Number(year),
+      notes: String(notes || ""),
+    };
+
+    const { data, error } = await getSupabaseClient()
+      .from("expenses")
+      .insert(payload)
+      .select("*");
+
+    if (error) {
+      const msg = String(error.message || "").toLowerCase();
+      if (error.code === "42P01" || msg.includes("does not exist") || msg.includes("could not find the table")) {
+        return res.status(500).json({ error: "Expenses table missing", schemaMissing: true, createExpensesTableSql });
+      }
+      throw error;
+    }
+
+    res.json({ expense: data?.[0] || null });
+  } catch (error) {
+    console.error("Create expense error:", error);
+    res.status(500).json({ error: "Failed to create expense" });
+  }
+});
+
+router.patch("/api/developer/costs/:expenseId", verifyDeveloperAccess, async (req, res) => {
+  try {
+    const { expenseId } = req.params;
+    const { amount, category, month, year, notes } = req.body;
+    const updates = {
+      ...(amount !== undefined ? { amount: Number(amount) } : {}),
+      ...(category !== undefined ? { category: String(category).toUpperCase() } : {}),
+      ...(month !== undefined ? { month: Number(month) } : {}),
+      ...(year !== undefined ? { year: Number(year) } : {}),
+      ...(notes !== undefined ? { notes: String(notes) } : {}),
+    };
+
+    const { data, error } = await getSupabaseClient()
+      .from("expenses")
+      .update(updates)
+      .eq("id", expenseId)
+      .select("*");
+
+    if (error) {
+      const msg = String(error.message || "").toLowerCase();
+      if (error.code === "42P01" || msg.includes("does not exist") || msg.includes("could not find the table")) {
+        return res.status(500).json({ error: "Expenses table missing" });
+      }
+      throw error;
+    }
+
+    res.json({ expense: data?.[0] || null });
+  } catch (error) {
+    console.error("Update expense error:", error);
+    res.status(500).json({ error: "Failed to update expense" });
+  }
+});
+
+router.delete("/api/developer/costs/:expenseId", verifyDeveloperAccess, async (req, res) => {
+  try {
+    const { expenseId } = req.params;
+    const { error } = await getSupabaseClient()
+      .from("expenses")
+      .delete()
+      .eq("id", expenseId);
+
+    if (error) {
+      const msg = String(error.message || "").toLowerCase();
+      if (error.code === "42P01" || msg.includes("does not exist") || msg.includes("could not find the table")) {
+        return res.status(500).json({ error: "Expenses table missing" });
+      }
+      throw error;
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Delete expense error:", error);
+    res.status(500).json({ error: "Failed to delete expense" });
+  }
+});
+
+/**
+ * GET /api/developer/revenue-profit
+ * Returns revenue, profit, and breakdown data
+ */
+router.get("/api/developer/revenue-profit", verifyDeveloperAccess, async (req, res) => {
+  try {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+
+    let revenueData = {
+      currentMonth: { revenue: 0, expenses: 0, profit: 0 },
+      currentYear: { revenue: 0, expenses: 0, profit: 0 },
+      all: { revenue: 0, expenses: 0, profit: 0 },
+      breakdown: { revenue: {}, expenses: {} },
+    };
+
+    // Fetch payments
+    const { data: payments, error: paymentsError } = await getSupabaseClient()
+      .from("payments")
+      .select("amount, payment_date, status")
+      .eq("status", "completed");
+
+    // Fetch expenses
+    const { data: expenses, error: expensesError } = await getSupabaseClient()
+      .from("expenses")
+      .select("amount, category, month, year");
+
+    // Calculate revenue by month/year
+    const revenueByMonth = new Map();
+    const revenueByYear = new Map();
+    let totalRevenue = 0;
+
+    (payments || []).forEach((payment) => {
+      const date = new Date(payment.payment_date);
+      const month = date.getMonth() + 1;
+      const year = date.getFullYear();
+      const amount = Number(payment.amount || 0);
+
+      totalRevenue += amount;
+
+      const monthKey = `${year}-${String(month).padStart(2, "0")}`;
+      revenueByMonth.set(monthKey, (revenueByMonth.get(monthKey) || 0) + amount);
+      revenueByYear.set(year, (revenueByYear.get(year) || 0) + amount);
+
+      if (month === currentMonth && year === currentYear) {
+        revenueData.currentMonth.revenue += amount;
+      }
+      if (year === currentYear) {
+        revenueData.currentYear.revenue += amount;
+      }
+    });
+
+    // Calculate expenses by month/year
+    const expensesByMonth = new Map();
+    const expensesByYear = new Map();
+    const expensesByCategory = {};
+    let totalExpenses = 0;
+
+    (expenses || []).forEach((expense) => {
+      const amount = Number(expense.amount || 0);
+      const category = String(expense.category || "OTHER");
+      totalExpenses += amount;
+
+      expensesByCategory[category] = (expensesByCategory[category] || 0) + amount;
+
+      const monthKey = `${expense.year}-${String(expense.month).padStart(2, "0")}`;
+      expensesByMonth.set(monthKey, (expensesByMonth.get(monthKey) || 0) + amount);
+      expensesByYear.set(expense.year, (expensesByYear.get(expense.year) || 0) + amount);
+
+      if (expense.month === currentMonth && expense.year === currentYear) {
+        revenueData.currentMonth.expenses += amount;
+      }
+      if (expense.year === currentYear) {
+        revenueData.currentYear.expenses += amount;
+      }
+    });
+
+    // Calculate profit
+    revenueData.currentMonth.profit = revenueData.currentMonth.revenue - revenueData.currentMonth.expenses;
+    revenueData.currentYear.profit = revenueData.currentYear.revenue - revenueData.currentYear.expenses;
+    revenueData.all.revenue = totalRevenue;
+    revenueData.all.expenses = totalExpenses;
+    revenueData.all.profit = totalRevenue - totalExpenses;
+
+    // Build historical data
+    const historicalData = [];
+    const allMonthKeys = new Set([...revenueByMonth.keys(), ...expensesByMonth.keys()]);
+    Array.from(allMonthKeys)
+      .sort()
+      .reverse()
+      .slice(0, 12)
+      .forEach((key) => {
+        const rev = revenueByMonth.get(key) || 0;
+        const exp = expensesByMonth.get(key) || 0;
+        historicalData.push({
+          label: key,
+          revenue: rev,
+          expenses: exp,
+          profit: rev - exp,
+        });
+      });
+
+    // Build yearly data
+    const yearlyData = [];
+    Array.from(revenueByYear.keys())
+      .sort((a, b) => Number(b) - Number(a))
+      .forEach((year) => {
+        const rev = revenueByYear.get(year) || 0;
+        const exp = expensesByYear.get(year) || 0;
+        yearlyData.push({
+          label: String(year),
+          revenue: rev,
+          expenses: exp,
+          profit: rev - exp,
+        });
+      });
+
+    revenueData.breakdown.revenue = {
+      total: totalRevenue,
+      byMonth: Object.fromEntries(
+        Array.from(revenueByMonth.entries()).sort(([a], [b]) => b.localeCompare(a)).slice(0, 6)
+      ),
+    };
+
+    revenueData.breakdown.expenses = {
+      total: totalExpenses,
+      byCategory: expensesByCategory,
+      byMonth: Object.fromEntries(
+        Array.from(expensesByMonth.entries()).sort(([a], [b]) => b.localeCompare(a)).slice(0, 6)
+      ),
+    };
+
+    res.json({
+      success: true,
+      data: revenueData,
+      historical: historicalData,
+      yearly: yearlyData,
+      currentPeriod: { month: currentMonth, year: currentYear },
+    });
+  } catch (error) {
+    console.error("Revenue/profit fetch error:", error);
+    res.status(500).json({ error: "Failed to fetch revenue and profit data" });
+  }
+});
+
+/**
+ * GET /api/developer/snapshots
+ * Returns historical monthly snapshots
+ */
+router.get("/api/developer/snapshots", verifyDeveloperAccess, async (req, res) => {
+  try {
+    const { year } = req.query;
+    let query = getSupabaseClient().from("monthly_snapshots").select("*").order("year", { ascending: false }).order("month", { ascending: false });
+
+    if (year) {
+      query = query.eq("year", parseInt(year));
+    }
+
+    const { data, error } = await query.limit(24);
+
+    if (error) throw error;
+
+    res.json({
+      snapshots: data || [],
+      total: data?.length || 0,
+    });
+  } catch (error) {
+    console.error("Snapshots fetch error:", error);
+    res.status(500).json({ error: "Failed to fetch snapshots" });
+  }
+});
+
+/**
+ * POST /api/developer/snapshots/store
+ * Store current month's revenue/profit snapshot
+ */
+router.post("/api/developer/snapshots/store", verifyDeveloperAccess, async (req, res) => {
+  try {
+    const now = new Date();
+    const month = now.getMonth() + 1;
+    const year = now.getFullYear();
+    const { totalRevenue, totalExpenses, activeUsers } = req.body;
+
+    const netProfit = (totalRevenue || 0) - (totalExpenses || 0);
+
+    const { data, error } = await getSupabaseClient()
+      .from("monthly_snapshots")
+      .upsert(
+        {
+          month,
+          year,
+          total_revenue: Number(totalRevenue || 0),
+          total_expenses: Number(totalExpenses || 0),
+          net_profit: netProfit,
+          active_users: Number(activeUsers || 0),
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "month,year" }
+      )
+      .select();
+
+    if (error) throw error;
+
+    res.json({
+      success: true,
+      snapshot: data?.[0] || null,
+    });
+  } catch (error) {
+    console.error("Snapshot store error:", error);
+    res.status(500).json({ error: "Failed to store snapshot" });
   }
 });
 

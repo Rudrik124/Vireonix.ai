@@ -92,6 +92,59 @@ const notifications = [
   { id: 5, text: "New developer login", type: "user", time: "1d ago" },
 ];
 
+function CreditsAnalytics() {
+  const [isVisible, setIsVisible] = useState(false);
+
+  const cards = [
+    { label: 'Total Distributed', value: 0 },
+    { label: 'Daily Distributed', value: 0 },
+    { label: 'Credits Used', value: 0 },
+    { label: 'Credits Left', value: 0 },
+    { label: 'Overall Unused', value: 0 },
+    { label: 'Saved Credits', value: 0 },
+  ];
+
+  return (
+    <div className="rounded-3xl border border-white/10 bg-slate-900/40 backdrop-blur-md p-6 relative overflow-hidden group">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-lg font-bold text-white">Credits Analytics</h2>
+          <p className="text-sm text-slate-400">Click the button to reveal the analytics panel.</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setIsVisible((prev) => !prev)}
+          className="rounded-full bg-indigo-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-400"
+        >
+          {isVisible ? 'Hide Analytics' : 'Show Analytics'}
+        </button>
+      </div>
+
+      <AnimatePresence>
+        {isVisible && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.25 }}
+            className="overflow-hidden"
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+              {cards.map((c) => (
+                <div key={c.label} className="p-4 rounded-xl border border-white/5 bg-slate-900/30">
+                  <p className="text-sm text-slate-400">{c.label}</p>
+                  <p className="text-2xl font-bold text-white">{c.value}</p>
+                </div>
+              ))}
+            </div>
+            <div className="text-sm text-slate-500">Analytics values are currently mocked as zero until the credit system is implemented.</div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 export function DeveloperDashboardPage() {
   const { profile, logout } = useAuth();
   const navigate = useNavigate();
@@ -148,8 +201,9 @@ export function DeveloperDashboardPage() {
   const menuItems = [
     { label: "Users", path: "/developer/users", icon: Users, desc: "Manage all platform users", count: stats?.totalUsers || 0 },
     { label: "Credits", path: "/developer/credits", icon: Zap, desc: "Credit allocations & usage", count: stats?.creditsConsumed || 0 },
+    { label: "Cost Tracking", path: "/developer/costs", icon: Server, desc: "Expenses, monthly and yearly spend", count: "New" },
     { label: "Tester Credits", path: "/developer/tester-credits", icon: Wallet, desc: "Manage tester allowances", count: "Beta" },
-    { label: "AI Testing Lab", path: "/developer/testing-lab", icon: FlaskConical, desc: "Test prompts & models", count: "Live" },
+    // AI Testing Lab removed per request
     { label: "Analytics", path: "/developer/analytics", icon: BarChart3, desc: "Platform metrics & charts", count: "Active" },
     { label: "Reports", path: "/developer/reports", icon: AlertCircle, desc: "View testing bug report board", count: "Live" },
     { label: "Error Logs", path: "/developer/error-logs", icon: Terminal, desc: "System traces & issues", count: "0 Critical" },
@@ -325,6 +379,53 @@ export function DeveloperDashboardPage() {
             </div>
           </motion.div>
 
+          {/* User Plan Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            {isLoading ? (
+              [...Array(4)].map((_, i) => (
+                <div key={i} className="h-24 rounded-2xl border border-white/5 bg-slate-900/30 p-4 animate-pulse" />
+              ))
+            ) : (
+              [
+                { label: 'Free Users', value: stats.freeUsers ?? 0, icon: Users },
+                { label: 'Pro Users', value: stats.proUsers ?? 0, icon: Users },
+                { label: 'Pro Max Users', value: stats.proMaxUsers ?? 0, icon: Users },
+                { label: 'Total Users', value: stats.totalUsers ?? 0, icon: Users },
+              ].map((c) => (
+                <div key={c.label} className="relative rounded-2xl border border-white/10 bg-slate-900/40 p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-lg bg-slate-800/80 flex items-center justify-center">
+                        <c.icon className="h-5 w-5 text-indigo-400" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-slate-400">{c.label}</p>
+                        <p className="text-2xl font-bold text-white">{c.value}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+          {stats?.planSchemaMissing && (
+            <div className="rounded-xl border border-amber-400/20 bg-amber-500/10 p-4 mb-6 text-amber-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-semibold">Plan schema missing</p>
+                  <p className="text-sm text-amber-200">The `plan_type` column is not present in `app_profiles`. Run the provided SQL to add it.</p>
+                </div>
+                <button
+                  onClick={() => navigator.clipboard?.writeText(stats.planSchemaSql || '')}
+                  className="px-3 py-1 rounded-md bg-amber-600/30 text-amber-100 text-sm"
+                >
+                  Copy SQL
+                </button>
+              </div>
+              <pre className="mt-3 text-xs text-amber-100 bg-amber-900/10 rounded-md p-3 overflow-auto">{stats.planSchemaSql}</pre>
+            </div>
+          )}
+
           {error && (
             <div className="flex items-center justify-between gap-4 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-red-200">
               <div className="flex items-center gap-3">
@@ -424,24 +525,9 @@ export function DeveloperDashboardPage() {
               transition={{ delay: 0.5 }}
               className="flex flex-col gap-6"
             >
-              {/* Credits Usage */}
-              <div className="rounded-3xl border border-white/10 bg-slate-900/40 backdrop-blur-md p-6 relative overflow-hidden group">
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-pink-500/5 opacity-50 group-hover:opacity-100 transition-opacity" />
-                <h2 className="text-lg font-bold text-white mb-6 relative z-10">Credits Usage</h2>
-                <div className="flex items-center justify-center relative z-10">
-                  <div className="relative flex items-center justify-center w-40 h-40">
-                    <svg className="w-full h-full transform -rotate-90">
-                      <circle cx="80" cy="80" r="70" stroke="currentColor" strokeWidth="12" fill="transparent" className="text-slate-800" />
-                      <circle cx="80" cy="80" r="70" stroke="currentColor" strokeWidth="12" fill="transparent" strokeDasharray="440" strokeDashoffset="66" strokeLinecap="round" className="text-indigo-500 transition-all duration-1000 ease-out drop-shadow-[0_0_10px_rgba(99,102,241,0.5)]" />
-                    </svg>
-                    <div className="absolute flex flex-col items-center justify-center">
-                      <span className="text-3xl font-bold text-white">85%</span>
-                      <span className="text-xs text-slate-400">Used</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
+              {/* Credits Analytics Module */}
++              <CreditsAnalytics />
++
               {/* Health Panel */}
               <div className="flex-1 rounded-3xl border border-white/10 bg-slate-900/40 backdrop-blur-md p-6">
                 <h2 className="text-lg font-bold text-white mb-6">System Health</h2>
