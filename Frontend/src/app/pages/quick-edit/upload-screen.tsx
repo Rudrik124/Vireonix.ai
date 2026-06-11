@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { ArrowLeft, User, Upload, Music, Shield, FileVideo, Check, X, Zap, Cloud, Sparkles, Layers, Lock, Play, History, Loader, ArrowRight } from 'lucide-react';
-import { useNavigate } from "react-router";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "../../context/auth-context";
 import { HistoryDialog, HistoryItem } from "../../components/history-dialog";

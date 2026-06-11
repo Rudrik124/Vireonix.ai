@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
-import { useNavigate, useLocation } from "react-router";
-import { useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { buildApiUrl } from "../../../lib/api";
 import { 
   ArrowLeft, 
   Download, 
@@ -42,9 +43,35 @@ export function QuickEditResultScreen() {
     return null;
   }
 
+  const [downloadStatus, setDownloadStatus] = useState<string | null>(null);
+
   const handleDownload = async () => {
     if (!videoUrl) return;
 
+    setDownloadStatus("Saving locally to D:\\drive…");
+    try {
+      // 1. Try to download to local D:/drive folder via backend
+      const localResponse = await fetch(buildApiUrl("/api/download-to-local"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ videoUrl }),
+      });
+
+      const localData = await localResponse.json();
+      if (localResponse.ok && localData.success) {
+        setDownloadStatus(`✅ Video saved successfully to D:\\drive!`);
+      } else {
+        console.warn("Local copy to D:/drive failed:", localData.error);
+        setDownloadStatus(`⚠️ Local save failed: ${localData.error || 'Check server logs'}`);
+      }
+    } catch (e: any) {
+      console.warn("Local copy to D:/drive failed:", e.message);
+      setDownloadStatus("⚠️ Local save failed. Triggering browser download…");
+    }
+
+    // 2. Trigger standard browser download
     try {
       const response = await fetch(videoUrl);
       if (!response.ok) {
@@ -60,8 +87,7 @@ export function QuickEditResultScreen() {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      console.error("Download failed", error);
-      // Fallback: open the media URL directly so the browser can handle save/play.
+      console.error("Browser download failed", error);
       window.open(videoUrl, "_blank", "noopener,noreferrer");
     }
   };
@@ -191,7 +217,7 @@ export function QuickEditResultScreen() {
                  <div className="h-20 bg-[#1a1b2e]/60 backdrop-blur-xl border-t border-white/10 px-8 flex items-center justify-between">
                     <div className="flex flex-col">
                        <span className="text-xs font-bold text-white">quick_edit_export.mp4</span>
-                       <span className="text-[10px] font-bold text-slate-500 uppercase">Generating ID: {Math.random().toString(36).substr(2, 9)}</span>
+                       <span className="text-[10px] font-bold text-slate-500 uppercase">{downloadStatus || `Generating ID: ${Math.random().toString(36).substr(2, 9)}`}</span>
                     </div>
                     <motion.button 
                       whileHover={{ scale: 1.02, boxShadow: '0 0 30px rgba(168, 85, 247,0.3)' }}

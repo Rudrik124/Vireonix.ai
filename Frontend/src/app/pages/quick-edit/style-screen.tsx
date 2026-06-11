@@ -67,6 +67,7 @@ import { useNavigate, useLocation } from "react-router";
 import { Button } from "../../components/ui/button";
 import { Switch } from "../../components/ui/switch";
 import { Textarea } from "../../components/ui/textarea";
+import { buildApiUrl } from "../../../lib/api";
 
 import { HistoryDialog, type HistoryItem, saveToHistory } from "../../components/history-dialog";
 import { PremiumModal } from "../../components/premium-modal";
@@ -2039,7 +2040,7 @@ const ToolInspector = memo(({
                 </button>
               </div>
 
-              {/* Auto-caption via Web Speech API + captureStream */}
+              {/* Auto-caption via Gemini */}
               {autoCaptionStatus ? (
                 <div className="px-2 py-1.5 rounded-lg bg-black/30 border border-white/10 text-[8px] font-bold text-slate-300 text-center leading-relaxed">
                   {autoCaptionStatus}
@@ -2057,12 +2058,12 @@ const ToolInspector = memo(({
                 {isAutoCapturing ? (
                   <>
                     <span className="inline-block w-2 h-2 rounded-full bg-red-400 animate-ping mr-1" />
-                    Capturing Audio…
+                    Transcribing…
                   </>
                 ) : (
                   <>
                     <Sparkles className="w-3 h-3" />
-                    Auto-Caption from Audio
+                    Auto-Caption (Gemini)
                   </>
                 )}
               </button>
@@ -2714,136 +2715,59 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const previewFrameRef = useRef<HTMLDivElement>(null);
 
-  // --- Auto-caption handler (Web Speech API + video captureStream trick) ---
-  const handleAutoCaption = useCallback(() => {
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR) {
-      setAutoCaptionStatus('❌ Speech recognition not supported. Please use Chrome or Edge.');
-      return;
-    }
-    if (!videoRef.current) {
-      setAutoCaptionStatus('❌ No video loaded. Add a video clip first.');
+  // --- Auto-caption handler (Gemini via backend) ---
+  const handleAutoCaption = useCallback(async () => {
+    // Find the active video clip or the first video clip
+    const activeClip = mediaItems.find(item => item.id === activePreviewId && item.type === 'video')
+      || mediaItems.find(item => item.type === 'video');
+
+    if (!activeClip || !activeClip.file) {
+      setAutoCaptionStatus('❌ No video clip loaded to transcribe. Add a video clip first.');
       return;
     }
 
     setIsAutoCapturing(true);
-    setAutoCaptionStatus('🎤 Initializing…');
-
-    const video = videoRef.current;
-    
-    // Ensure video is loaded before capturing
-    if (!video.src) {
-      setAutoCaptionStatus('❌ Video source not ready. Please wait for video to load.');
-      setIsAutoCapturing(false);
-      return;
-    }
-
-    // Grab the video element’s live audio stream
-    const capturedStream: MediaStream | null =
-      (video as any).captureStream?.() ||
-      (video as any).mozCaptureStream?.() ||
-      null;
-    const audioTracks = capturedStream ? capturedStream.getAudioTracks() : [];
-    const audioStream = audioTracks.length > 0 ? new MediaStream(audioTracks) : null;
-
-    // Temporarily override getUserMedia so SpeechRecognition uses video audio
-    const recognition = new SR();
-    const origGUM = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
-    let gumRestored = false;
-    
-    if (audioStream) {
-      navigator.mediaDevices.getUserMedia = async (constraints: any) => {
-        if (constraints?.audio) return audioStream;
-        return origGUM(constraints);
-      };
-      
-      // Restore after giving recognition time to grab the stream
-      const restoreTimeout = setTimeout(() => {
-        if (!gumRestored) {
-          gumRestored = true;
-          navigator.mediaDevices.getUserMedia = origGUM;
-        }
-      }, 2500);
-    } else {
-      setAutoCaptionStatus('❌ Could not setup audio stream for recognition.');
-      setIsAutoCapturing(false);
-      return;
-    }
-
-    recognition.onstart = () => {
-      setAutoCaptionStatus(
-        audioStream
-          ? '🎤 Capturing video audio… (play is running)'
-          : '🎤 Listening via microphone…'
-      );
-    };
-
-    recognition.onresult = (event: any) => {
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        if (event.results[i].isFinal) {
-          const text = (event.results[i][0].transcript || '').trim();
-          if (text) {
-            const endTime = videoRef.current ? videoRef.current.currentTime : 0;
-            const wordCount = text.split(/\s+/).length;
-            const startTime = Math.max(0, endTime - wordCount * 0.45);
-            setCaptions(prev => [
-              ...prev,
-              { id: Math.random().toString(36).substr(2, 9), text, startTime, endTime },
-            ]);
-            setAutoCaptionStatus(`✅ "${text.length > 32 ? text.slice(0, 32) + '…' : text}"`);
-          }
-        }
-      }
-    };
-
-    recognition.onerror = (event: any) => {
-      if (event.error === 'no-speech') return; // ignore silence
-      console.error('Speech Recognition error:', event.error);
-      setAutoCaptionStatus(`❌ Error: ${event.error || 'Unknown error'}`);
-      cleanup();
-    };
-
-    recognition.onend = () => {
-      // Chrome stops recognition after ~60s — restart if video is still playing
-      if (videoRef.current && !videoRef.current.paused && !videoRef.current.ended) {
-        try { recognition.start(); } catch {}
-      } else {
-        cleanup();
-      }
-    };
-
-    const cleanup = () => {
-      navigator.mediaDevices.getUserMedia = origGUM;
-      setIsAutoCapturing(false);
-      if (videoRef.current) videoRef.current.pause();
-      setIsPlaying(false);
-      setAutoCaptionStatus(prev =>
-        prev.startsWith('❌') ? prev : '✅ Captions generated successfully!'
-      );
-      stopAutoCaptionRef.current = null;
-    };
-
-    stopAutoCaptionRef.current = () => { recognition.stop(); cleanup(); };
-
-    const onEnded = () => {
-      recognition.stop();
-      cleanup();
-      video.removeEventListener('ended', onEnded);
-    };
-    video.addEventListener('ended', onEnded);
-
-    // Seek to start and play the video
-    video.currentTime = 0;
-    setIsPlaying(true);
-    video.play().catch(() => {});
+    setAutoCaptionStatus('🎙️ Sending video to Gemini for transcription…');
 
     try {
-      recognition.start();
-    } catch (err: any) {
-      setAutoCaptionStatus(`❌ Could not start: ${err.message}`);
-      cleanup();
+      const formData = new FormData();
+      formData.append('file', activeClip.file);
+
+      const response = await fetch(buildApiUrl('/api/transcribe'), {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Failed to transcribe audio.');
+      }
+
+      const geminiSegments = data.segments || [];
+      if (geminiSegments.length === 0) {
+        setAutoCaptionStatus('⚠️ Transcription completed, but no speech was detected.');
+        setIsAutoCapturing(false);
+        return;
+      }
+
+      // Convert Gemini segments into the required captions format
+      const newCaptions = geminiSegments.map((seg: any) => ({
+        id: Math.random().toString(36).substr(2, 9),
+        text: (seg.text || '').trim(),
+        startTime: seg.start,
+        endTime: seg.end,
+      }));
+
+      // Set the captions state
+      setCaptions(newCaptions);
+      setAutoCaptionStatus('✅ Captions generated successfully using Gemini!');
+    } catch (error: any) {
+      console.error('Gemini transcription failed:', error);
+      setAutoCaptionStatus(`❌ Transcription failed: ${error.message || 'Unknown error'}`);
+    } finally {
+      setIsAutoCapturing(false);
     }
-  }, [setCaptions, setIsPlaying, setIsAutoCapturing, setAutoCaptionStatus]);
+  }, [mediaItems, activePreviewId, setCaptions, setIsAutoCapturing, setAutoCaptionStatus]);
 
   const greenScreenCanvasRef = useRef<HTMLCanvasElement>(null);
   const greenScreenAnimationRef = useRef<number | null>(null);

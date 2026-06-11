@@ -3733,8 +3733,55 @@ app.post(
             }
           }
 
-          segmentPaths.push(finalSegmentPath);
-          generatedTempFiles.push(segmentPath);
+            // Apply per-clip editor adjustments (trim, speed, rotate, volume, zoom, crop, keyframe)
+            const perClipSelections = { ...resolvedEditorSelections };
+            // Override with per-clip properties from mediaMeta if provided
+            if (mediaMeta?.speed !== undefined) {
+              perClipSelections.speed = { value: mediaMeta.speed, enabled: Math.abs(mediaMeta.speed - 1) > 0.001 };
+            }
+            if (mediaMeta?.rotate !== undefined) {
+              perClipSelections.rotate = { degrees: mediaMeta.rotate, enabled: mediaMeta.rotate % 360 !== 0 };
+            }
+            if (mediaMeta?.volume !== undefined) {
+              perClipSelections.volume = { level: mediaMeta.volume, muted: false, enabled: Math.abs(mediaMeta.volume - 1) > 0.001 };
+            }
+            if (mediaMeta?.zoom !== undefined) {
+              perClipSelections.zoom = { amount: mediaMeta.zoom, enabled: Math.abs(mediaMeta.zoom - 1) > 0.001 };
+            }
+            if (mediaMeta?.crop) {
+              perClipSelections.crop = {
+                enabled: true,
+                widthPct: mediaMeta.crop.widthPct,
+                heightPct: mediaMeta.crop.heightPct,
+                centerX: mediaMeta.crop.centerX,
+                centerY: mediaMeta.crop.centerY,
+              };
+            }
+            if (mediaMeta?.keyframe) {
+              perClipSelections.keyframe = {
+                enabled: true,
+                mode: mediaMeta.keyframe.mode,
+                amount: mediaMeta.keyframe.amount,
+                points: mediaMeta.keyframe.points,
+              };
+            }
+            // Apply editor adjustments
+            const adjustedPath = await applyEditorAdjustments(finalSegmentPath, perClipSelections);
+            if (adjustedPath !== finalSegmentPath) {
+              generatedTempFiles.push(adjustedPath);
+              finalSegmentPath = adjustedPath;
+            }
+
+            // Apply text overlay if present (per-clip or global)
+            const textOverlay = mediaMeta?.textOverlay?.enabled ? mediaMeta.textOverlay : resolvedTextOverlay;
+            const overlayPath = await applyTextOverlayToVideo(finalSegmentPath, textOverlay);
+            if (overlayPath !== finalSegmentPath) {
+              generatedTempFiles.push(overlayPath);
+              finalSegmentPath = overlayPath;
+            }
+
+            segmentPaths.push(finalSegmentPath);
+
         }
 
         // Log segment paths for merge verification
@@ -4726,6 +4773,239 @@ app.post("/api/burn-captions", upload.none(), async (req, res) => {
     res.status(500).json({
       success: false,
       error: toErrorMessage(error, "Burning captions failed"),
+    });
+  }
+});
+
+// ✅ TRANSCRIPTION ENDPOINT (Gemini 2.5 Flash with Mock Fallback)
+app.post("/api/transcribe", upload.single("file"), async (req, res) => {
+  let audioPath = null;
+  let geminiUploadedFileUri = null;
+  try {
+    const videoFile = req.file;
+    if (!videoFile) {
+      return res.status(400).json({ success: false, error: "No video file provided" });
+    }
+
+    console.log(`🎙️ [Transcribe] Received video file:`, {
+      originalName: videoFile.originalname,
+      size: videoFile.size,
+    });
+
+    audioPath = makeTempFilePath("transcribe-audio.mp3");
+
+    // Extract audio using ffmpeg
+    console.log(`🎙️ [Transcribe] Extracting audio from video...`);
+    await new Promise((resolve, reject) => {
+      ffmpeg(videoFile.path)
+        .outputOptions([
+          "-vn",
+          "-acodec libmp3lame",
+          "-ar 16000",
+          "-ac 1",
+          "-ab 64k"
+        ])
+        .output(audioPath)
+        .on("end", resolve)
+        .on("error", reject)
+        .run();
+    });
+
+    console.log(`🎙️ [Transcribe] Audio extracted. Size: ${fs.statSync(audioPath).size} bytes`);
+
+    let segments = null;
+    let transcriptionText = "";
+    let transcriptionLanguage = "en";
+
+    const geminiApiKey = readEnv("GEMINI_API_KEY");
+    if (!geminiApiKey) {
+      console.warn("⚠️ [Transcribe] No Gemini API key configured. Generating dummy transcription segments for testing.");
+      
+      let duration = 15;
+      try {
+        const metadata = await new Promise((resolve, reject) => {
+          ffmpeg.ffprobe(audioPath, (err, meta) => {
+            if (err) reject(err);
+            else resolve(meta);
+          });
+        });
+        duration = Number(metadata.format.duration) || 15;
+      } catch (e) {
+        console.warn("⚠️ Could not probe audio duration, defaulting to 15s:", e.message);
+      }
+
+      segments = [];
+      const segmentDuration = 4.0;
+      const dummyTexts = [
+        "Welcome to Vireonix.ai!",
+        "This is a preview of the auto-captioning feature.",
+        "To use real transcription, please configure your Gemini API key.",
+        "Add GEMINI_API_KEY to your .env file.",
+        "Happy editing with our video creation tool!"
+      ];
+
+      let currentTime = 0;
+      let index = 0;
+      while (currentTime < duration) {
+        const end = Math.min(duration, currentTime + segmentDuration);
+        if (end - currentTime > 1.0) {
+          segments.push({
+            start: currentTime + 0.5,
+            end: end - 0.5,
+            text: dummyTexts[index % dummyTexts.length]
+          });
+        }
+        currentTime += segmentDuration;
+        index++;
+      }
+
+      if (segments.length === 0) {
+        segments.push({
+          start: 0.5,
+          end: Math.max(1.5, duration - 0.5),
+          text: "No speech detected or audio is too short."
+        });
+      }
+      
+      transcriptionText = segments.map(s => s.text).join(" ");
+    } else {
+      console.log(`🎙️ [Transcribe] Attempting Gemini 2.5 Flash transcription...`);
+      console.log(`🎙️ [Transcribe] Uploading audio to Gemini Files API...`);
+      const uploadedFile = await uploadMediaToGeminiFile(audioPath, "audio.mp3", "audio/mp3");
+      geminiUploadedFileUri = uploadedFile.uri;
+
+      const promptText = `
+        Transcribe the uploaded audio file. Return a JSON object with a list of segments representing the transcribed speech.
+        Each segment MUST have the following fields:
+        - "start": start time in seconds (number, e.g. 0.0)
+        - "end": end time in seconds (number, e.g. 3.5)
+        - "text": the transcription text for this segment (string)
+        
+        Ensure that the segments are chronologically ordered, cover the entire audio length, and represent individual spoken phrases.
+        Do not add any markdown formatting, only output raw JSON matching this structure:
+        {
+          "text": "full transcription text...",
+          "segments": [
+            { "start": 0.0, "end": 2.5, "text": "Hello world" }
+          ]
+        }
+      `;
+
+      const geminiModelId = readEnv("GEMINI_MODEL_ID") || "gemini-2.5-flash";
+      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModelId}:generateContent?key=${geminiApiKey}`;
+
+      const geminiResponse = await fetch(geminiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                { fileData: { mimeType: "audio/mp3", fileUri: uploadedFile.uri } },
+                { text: promptText },
+              ],
+            },
+          ],
+          generationConfig: { responseMimeType: "application/json" },
+        }),
+      });
+
+      const geminiText = await geminiResponse.text();
+      if (!geminiResponse.ok) {
+        throw new Error(`Gemini API error: ${geminiText || geminiResponse.statusText}`);
+      }
+
+      const geminiJson = JSON.parse(geminiText);
+      const contentText = geminiJson.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      
+      const parsedResult = JSON.parse(contentText);
+      segments = (parsedResult.segments || []).map((seg) => ({
+        start: Number(seg.start) || 0,
+        end: Number(seg.end) || 0,
+        text: String(seg.text || "").trim(),
+      }));
+      transcriptionText = parsedResult.text || "";
+      console.log(`✅ [Transcribe] Gemini transcription successful. Transcribed ${segments.length} segments.`);
+    }
+
+    res.json({
+      success: true,
+      text: transcriptionText,
+      language: transcriptionLanguage,
+      segments: segments,
+    });
+  } catch (error) {
+    console.error("❌ [Transcribe] Transcription failed:", error);
+    res.status(500).json({
+      success: false,
+      error: toErrorMessage(error, "Transcription failed"),
+    });
+  } finally {
+    // Clean up temporary files
+    if (req.file && req.file.path) {
+      fs.unlink(req.file.path, () => {});
+    }
+    if (audioPath) {
+      fs.unlink(audioPath, () => {});
+    }
+    // Delete temporary file from Gemini storage
+    if (geminiUploadedFileUri) {
+      const geminiApiKey = readEnv("GEMINI_API_KEY");
+      if (geminiApiKey) {
+        fetch(`https://generativelanguage.googleapis.com/v1beta/${encodeURIComponent(geminiUploadedFileUri)}?key=${geminiApiKey}`, {
+          method: "DELETE",
+        }).catch((e) => console.warn("⚠️ Failed to delete Gemini temp file:", e.message));
+      }
+    }
+  }
+});
+
+// ✅ DOWNLOAD TO LOCAL DRIVE ENDPOINT (saves Supabase export directly to D:/drive)
+app.post("/api/download-to-local", async (req, res) => {
+  try {
+    const { videoUrl } = req.body;
+    if (!videoUrl) {
+      return res.status(400).json({ success: false, error: "Missing videoUrl" });
+    }
+
+    const drivePath = "D:\\drive";
+    fs.mkdirSync(drivePath, { recursive: true });
+
+    let fileName = `quick_ai_edit_${Date.now()}.mp4`;
+    try {
+      const parsedUrl = new URL(videoUrl);
+      const pathname = parsedUrl.pathname;
+      const lastPart = pathname.substring(pathname.lastIndexOf('/') + 1);
+      if (lastPart && lastPart.endsWith('.mp4')) {
+        fileName = lastPart;
+      }
+    } catch (e) {
+      console.warn("Could not parse filename from URL, using default:", e.message);
+    }
+
+    const destPath = path.join(drivePath, fileName);
+    console.log(`💾 [DOWNLOAD] Downloading video to local drive: ${destPath}`);
+
+    if (videoUrl.startsWith("http://") || videoUrl.startsWith("https://")) {
+      const response = await fetch(videoUrl);
+      if (!response.ok) {
+        throw new Error(`Unable to fetch video: ${response.status} ${response.statusText}`);
+      }
+      const arrayBuffer = await response.arrayBuffer();
+      const fileBuffer = Buffer.from(arrayBuffer);
+      fs.writeFileSync(destPath, fileBuffer);
+    } else {
+      // Local path fallback
+      fs.copyFileSync(videoUrl, destPath);
+    }
+
+    console.log(`✅ [DOWNLOAD] Saved successfully to: ${destPath}`);
+    res.json({ success: true, filePath: destPath });
+  } catch (error) {
+    console.error("❌ [DOWNLOAD] Local download failed:", error);
+    res.status(500).json({
+      success: false,
+      error: toErrorMessage(error, "Failed to download/save video locally"),
     });
   }
 });
