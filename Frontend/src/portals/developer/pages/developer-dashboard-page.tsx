@@ -191,6 +191,14 @@ export function DeveloperDashboardPage() {
 
   const handleNavigate = (path: string) => {
     sessionStorage.setItem("devDashboardScrollPos", window.scrollY.toString());
+    // Prevent navigation outside the developer portal from this page.
+    if (!path.startsWith("/developer")) {
+      // Keep user on the developer dashboard if an external path is requested
+      console.warn("Blocked navigation outside developer portal:", path);
+      navigate("/developer/dashboard");
+      return;
+    }
+
     navigate(path);
   };
 
@@ -261,7 +269,7 @@ export function DeveloperDashboardPage() {
 
             <div className="flex items-center gap-4">
               <button 
-                onClick={() => navigate("/wallet")}
+                onClick={() => handleNavigate("/developer/dashboard")}
                 className="relative p-2 text-fuchsia-400 hover:text-fuchsia-300 transition-colors rounded-full hover:bg-fuchsia-500/10 flex items-center gap-2"
                 title="Wallet"
               >

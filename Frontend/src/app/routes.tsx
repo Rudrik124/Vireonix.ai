@@ -7,7 +7,7 @@ import { DeveloperUsersPage } from "../portals/developer/pages/developer-users-p
 import { DeveloperCreditsPage } from "../portals/developer/pages/developer-credits-page";
 import { DeveloperTesterCreditsPage } from "../portals/developer/pages/developer-tester-credits-page";
 import { DeveloperErrorLogsPage } from "../portals/developer/pages/developer-error-logs-page";
-import { DeveloperAnalyticsPage } from "../portals/developer/pages/developer-analytics-page";
+import DeveloperAnalyticsPage from "../portals/developer/pages/developer-analytics-page";
 import LoginActivityPage from "./developer/login-activity-page";
 import { DeveloperFeedbackPage } from "../portals/developer/pages/developer-feedback-page";
 import { DeveloperReportPage } from "../portals/developer/pages/developer-report-page";
