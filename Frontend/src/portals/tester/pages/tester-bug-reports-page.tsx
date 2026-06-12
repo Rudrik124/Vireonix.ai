@@ -203,7 +203,7 @@ export function TesterBugReportsPage() {
       // After closing, show the tester Reports tab and switch to Completed
       setActiveTab('report');
       // ensure Completed view is selected in the open reports filter
-      setOpenFilter('completed');
+      setFilter('fixed');
       await fetchBugReports();
       // scroll to the closed summary card so the user sees the closed section
       setTimeout(() => {
@@ -730,8 +730,8 @@ export function TesterBugReportsPage() {
                 <div key={developer.name} className="bg-[rgba(18,22,40,0.85)] border border-white/10 rounded-[24px] p-5 shadow-[0_0_30px_rgba(0,0,0,0.3)]">
                   <div className="flex items-center justify-between mb-4">
                     <div>
-                      <p className="text-xs font-bold uppercase tracking-[0.35em] text-slate-500">{developer.name}</p>
-                      <h3 className="mt-1 text-lg font-black text-white">Developer Updates</h3>
+                      <h3 className="text-lg font-black uppercase tracking-[0.35em] text-white">{developer.name}</h3>
+                      <p className="mt-1 text-xs font-bold text-slate-500">Developer Updates</p>
                     </div>
                     <div className="flex items-center gap-3">
                       <div className="text-sm text-slate-400">{developer.items.length} update{developer.items.length !== 1 ? 's' : ''}</div>

@@ -885,7 +885,7 @@ export function LandingPage() {
                   <ThunderboltOutlined className="text-fuchsia-500" /> VEYTRIX.AI
                 </div>
                 <p className="opacity-70 text-sm leading-relaxed">
-                  Create cinematic AI videos faster than ever.
+                  The all-in-one AI platform for video generation, image animation, reference editing, and manual video enhancement.
                 </p>
                 <div className="mt-auto pt-4 opacity-50 text-xs">
                   <p>© 2024 VEYTRIX. All rights reserved.</p>
@@ -956,6 +956,10 @@ export function LandingPage() {
               <a href="#" className="hover:text-fuchsia-500 transition-colors">Terms of Service</a>
               <span className="hidden sm:inline">•</span>
               <a href="#" className="hover:text-fuchsia-500 transition-colors">Refund Policy</a>
+              <span className="hidden sm:inline">•</span>
+              <a href="#" className="hover:text-fuchsia-500 transition-colors">Acceptable Use Policy</a>
+              <span className="hidden sm:inline">•</span>
+              <a href="#" className="hover:text-fuchsia-500 transition-colors">Contact Us</a>
             </div>
           </div>
         </footer>
