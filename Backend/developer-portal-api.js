@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import express from "express";
+import { logSecurityEvent, securityEventTemplates, extractRequestMetadata } from "./security-events-logger.js";
 
 const router = express.Router();
 
@@ -634,9 +635,38 @@ router.post("/api/developer/users/:userId/credits/add", verifyDeveloperAccess, a
       metadata: { reason, admin_id: req.user.id },
     });
 
+    // Log security event for admin action
+    await logSecurityEvent({
+      userId: req.user.id,
+      category: 'ADMIN',
+      action: 'ROLE_CHANGE',
+      severity: 'INFO',
+      eventMessage: `Admin added ${amount} credits to user (Reason: ${reason || 'No reason provided'})`,
+      eventSource: 'developer-portal-api.js',
+      actorRole: req.profile.role,
+      affectedUserId: userId,
+      metadata: { amount, reason, newBalance },
+      ...extractRequestMetadata(req),
+    });
+
     res.json({ success: true, newBalance });
   } catch (error) {
     console.error("Add credits error:", error);
+    
+    // Log security event for failed admin action
+    await logSecurityEvent({
+      userId: req.user.id,
+      category: 'API',
+      action: 'SERVER_ERROR',
+      severity: 'WARNING',
+      eventMessage: `Failed to add credits: ${error.message}`,
+      eventSource: 'developer-portal-api.js',
+      actorRole: req.profile.role,
+      affectedUserId: req.params.userId,
+      metadata: { error: error.message },
+      ...extractRequestMetadata(req),
+    });
+
     res.status(500).json({ error: "Failed to add credits" });
   }
 });
@@ -648,6 +678,7 @@ router.post("/api/developer/users/:userId/credits/add", verifyDeveloperAccess, a
 router.post("/api/developer/users/:userId/suspend", verifyDeveloperAccess, async (req, res) => {
   try {
     const { userId } = req.params;
+    const { reason } = req.body;
 
     const { error } = await getSupabaseClient()
       .from("app_profiles")
@@ -656,9 +687,38 @@ router.post("/api/developer/users/:userId/suspend", verifyDeveloperAccess, async
 
     if (error) throw error;
 
+    // Log security event for user ban
+    await logSecurityEvent({
+      userId: req.user.id,
+      category: 'ADMIN',
+      action: 'USER_BAN',
+      severity: 'WARNING',
+      eventMessage: `User suspended by admin (Reason: ${reason || 'No reason provided'})`,
+      eventSource: 'developer-portal-api.js',
+      actorRole: req.profile.role,
+      affectedUserId: userId,
+      metadata: { reason, action: 'suspend' },
+      ...extractRequestMetadata(req),
+    });
+
     res.json({ success: true, message: "User suspended" });
   } catch (error) {
     console.error("Suspend user error:", error);
+
+    // Log security event for failed admin action
+    await logSecurityEvent({
+      userId: req.user.id,
+      category: 'API',
+      action: 'SERVER_ERROR',
+      severity: 'WARNING',
+      eventMessage: `Failed to suspend user: ${error.message}`,
+      eventSource: 'developer-portal-api.js',
+      actorRole: req.profile.role,
+      affectedUserId: req.params.userId,
+      metadata: { error: error.message },
+      ...extractRequestMetadata(req),
+    });
+
     res.status(500).json({ error: "Failed to suspend user" });
   }
 });
@@ -674,9 +734,38 @@ router.post("/api/developer/users/:userId/reactivate", verifyDeveloperAccess, as
 
     if (error) throw error;
 
+    // Log security event for role/status change
+    await logSecurityEvent({
+      userId: req.user.id,
+      category: 'ADMIN',
+      action: 'ROLE_CHANGE',
+      severity: 'INFO',
+      eventMessage: 'User reactivated by admin',
+      eventSource: 'developer-portal-api.js',
+      actorRole: req.profile.role,
+      affectedUserId: userId,
+      metadata: { action: 'reactivate', oldStatus: 'suspended', newStatus: 'active' },
+      ...extractRequestMetadata(req),
+    });
+
     res.json({ success: true, message: "User reactivated" });
   } catch (error) {
     console.error("Reactivate user error:", error);
+
+    // Log security event for failed admin action
+    await logSecurityEvent({
+      userId: req.user.id,
+      category: 'API',
+      action: 'SERVER_ERROR',
+      severity: 'WARNING',
+      eventMessage: `Failed to reactivate user: ${error.message}`,
+      eventSource: 'developer-portal-api.js',
+      actorRole: req.profile.role,
+      affectedUserId: req.params.userId,
+      metadata: { error: error.message },
+      ...extractRequestMetadata(req),
+    });
+
     res.status(500).json({ error: "Failed to reactivate user" });
   }
 });
