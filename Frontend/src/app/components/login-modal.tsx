@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router";
 import { supabase, isSupabaseConfigured } from "../../lib/supabase";
 import { fetchAppProfile } from "../../services/auth-profile";
+import { recordLoginActivity } from "../../lib/auth-login-activity";
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -206,6 +207,7 @@ export function LoginModal({ isOpen, onClose, customMessage, customTitle }: Logi
             localStorage.removeItem("authRedirectUrl");
           } else if (data.session) {
             const profile = await fetchAppProfile(data.session);
+            await recordLoginActivity(data.session, profile);
             
             if (profile.role === "admin" || profile.role === "super_admin") {
               nextRoute = "/admin/dashboard";

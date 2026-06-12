@@ -732,6 +732,313 @@ router.get("/api/developer/credits/stats", verifyDeveloperAccess, async (req, re
   }
 });
 
+    // ============ LOGIN ACTIVITY ============
+
+    /**
+     * POST /api/developer/login-activity/record
+     * Records a login or logout event. Any authenticated user can record their own activity.
+     * Expects { user_id, user_name, user_role, session_id, event: 'login'|'logout', device_name, browser, operating_system, ip_address }
+     */
+    router.post(
+      "/api/developer/login-activity/record",
+      async (req, res) => {
+        try {
+          const token = getBearerToken(req);
+          if (!token) {
+            return res.status(401).json({ error: "Unauthorized" });
+          }
+
+          const { data: { user }, error: userError } = await getSupabaseClient().auth.getUser(token);
+          if (userError || !user) {
+            return res.status(401).json({ error: "Unauthorized" });
+          }
+
+          const payload = req.body || {};
+          const event = payload.event || "login";
+          const sessionId = payload.session_id || payload.sessionId || payload.session || null;
+
+          if (!payload.user_id) return res.status(400).json({ error: "Missing user_id" });
+
+          if (event === "login") {
+            // If IP isn't provided, attempt to extract from request headers
+            const ip = payload.ip_address || req.headers["x-forwarded-for"] || req.ip || req.socket?.remoteAddress || null;
+            const activityRow = {
+              user_id: payload.user_id,
+              user_name: payload.user_name || user?.user_metadata?.full_name || user?.email,
+              user_email: payload.user_email || user?.email || null,
+              user_role: payload.user_role || "user",
+              session_id: sessionId,
+              login_time: new Date().toISOString(),
+              device_name: payload.device_name,
+              browser: payload.browser,
+              operating_system: payload.operating_system,
+              ip_address: ip,
+              status: "active",
+              metadata: payload.metadata || {},
+            };
+
+            let insertResult = await getSupabaseClient().from("login_activity").insert(activityRow);
+            if (insertResult.error) {
+              const message = String(insertResult.error.message || "").toLowerCase();
+              const isMissingColumnError = insertResult.error.code === "42703" || message.includes("column") && message.includes("not found");
+
+              if (isMissingColumnError) {
+                const { error: retryError } = await getSupabaseClient().from("login_activity").insert({
+                  ...activityRow,
+                  user_email: undefined,
+                });
+                if (retryError) throw retryError;
+              } else {
+                throw insertResult.error;
+              }
+            }
+
+            return res.json({ success: true });
+          }
+
+          if (event === "logout") {
+            // find active session by session_id or user_id
+            const match = sessionId ? { session_id: sessionId } : { user_id: payload.user_id, status: "active" };
+            const logoutTime = new Date().toISOString();
+
+            const { data: activeSessions, error: findErr } = await getSupabaseClient()
+              .from("login_activity")
+              .select("id, login_time")
+              .match(match);
+
+            if (findErr) throw findErr;
+
+            const updates = (activeSessions || []).map((s) => ({
+              id: s.id,
+              logout_time: logoutTime,
+              session_duration: Math.max(0, Math.floor((new Date(logoutTime) - new Date(s.login_time)) / 1000)),
+              status: "logged_out",
+              updated_at: new Date().toISOString(),
+            }));
+
+            for (const u of updates) {
+              const { error: updErr } = await getSupabaseClient().from("login_activity").update(u).eq("id", u.id);
+              if (updErr) console.warn("Failed to update logout for session", u.id, updErr.message);
+            }
+
+            return res.json({ success: true, updated: updates.length });
+          }
+
+          return res.status(400).json({ error: "Unknown event type" });
+        } catch (error) {
+          console.error("Record login activity error:", error);
+          res.status(500).json({ error: "Failed to record login activity" });
+        }
+      }
+    );
+
+    /**
+     * GET /api/developer/login-activity/active
+     * Returns active sessions. Query params: page, limit
+     */
+    router.get("/api/developer/login-activity/active", verifyDeveloperAccess, async (req, res) => {
+      try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 50;
+        const offset = (page - 1) * limit;
+
+        const { data, error } = await getSupabaseClient()
+          .from("login_activity")
+          .select("*")
+          .eq("status", "active")
+          .order("login_time", { ascending: false })
+          .range(offset, offset + limit - 1);
+
+        if (error) throw error;
+
+        // compute current duration
+        const now = Date.now();
+        const sessions = (data || []).map((s) => ({
+          ...s,
+          current_duration: Math.floor((now - new Date(s.login_time)) / 1000),
+        }));
+
+        res.json({ sessions, page, limit, total: (sessions || []).length });
+      } catch (error) {
+        console.error("Active sessions error:", error);
+        res.status(500).json({ error: "Failed to fetch active sessions" });
+      }
+    });
+
+    /**
+     * GET /api/developer/login-activity/history
+     * Returns login history. Query: user_id, search (name/role/device), from, to, page, limit
+     */
+    router.get("/api/developer/login-activity/history", verifyDeveloperAccess, async (req, res) => {
+      try {
+        const { user_id, search } = req.query;
+        const from = req.query.from ? new Date(req.query.from).toISOString() : null;
+        const to = req.query.to ? new Date(req.query.to).toISOString() : null;
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 50;
+        const offset = (page - 1) * limit;
+
+        let query = getSupabaseClient().from("login_activity").select("*").order("login_time", { ascending: false });
+
+        if (user_id) query = query.eq("user_id", user_id);
+        if (from) query = query.gte("login_time", from);
+        if (to) query = query.lte("login_time", to);
+        if (search) {
+          const s = String(search).toLowerCase();
+          query = query.or(
+            `user_name.ilike.%${s}%,device_name.ilike.%${s}%,browser.ilike.%${s}%,operating_system.ilike.%${s}%`
+          );
+        }
+
+        const { data, error } = await query.range(offset, offset + limit - 1);
+        if (error) throw error;
+
+        res.json({ history: data || [], page, limit });
+      } catch (error) {
+        console.error("Login history error:", error);
+        res.status(500).json({ error: "Failed to fetch login history" });
+      }
+    });
+
+    /**
+     * POST /api/developer/login-activity/logout-device
+     * Body: { session_id }
+     */
+    router.post("/api/developer/login-activity/logout-device", verifyDeveloperAccess, async (req, res) => {
+      try {
+        const { session_id } = req.body || {};
+        if (!session_id) return res.status(400).json({ error: "Missing session_id" });
+
+        const { data, error } = await getSupabaseClient()
+          .from("login_activity")
+          .select("id, login_time")
+          .eq("session_id", session_id)
+          .maybeSingle();
+
+        if (error) throw error;
+        if (!data) return res.status(404).json({ error: "Session not found" });
+
+        const logoutTime = new Date().toISOString();
+        const { error: upd } = await getSupabaseClient()
+          .from("login_activity")
+          .update({ logout_time: logoutTime, session_duration: Math.floor((new Date(logoutTime) - new Date(data.login_time)) / 1000), status: "logged_out", updated_at: new Date().toISOString() })
+          .eq("id", data.id);
+
+        if (upd) throw upd;
+
+        res.json({ success: true });
+      } catch (error) {
+        console.error("Logout device error:", error);
+        res.status(500).json({ error: "Failed to logout device" });
+      }
+    });
+
+    /**
+     * POST /api/developer/login-activity/logout-all
+     * Body: { user_id }
+     */
+    router.post("/api/developer/login-activity/logout-all", verifyDeveloperAccess, async (req, res) => {
+      try {
+        const { user_id } = req.body || {};
+        if (!user_id) return res.status(400).json({ error: "Missing user_id" });
+
+        const { data: sessions, error: fetchErr } = await getSupabaseClient()
+          .from("login_activity")
+          .select("id, login_time")
+          .eq("user_id", user_id)
+          .eq("status", "active");
+
+        if (fetchErr) throw fetchErr;
+
+        const logoutTime = new Date().toISOString();
+
+        for (const s of sessions || []) {
+          const duration = Math.max(0, Math.floor((new Date(logoutTime) - new Date(s.login_time)) / 1000));
+          const { error: upd } = await getSupabaseClient()
+            .from("login_activity")
+            .update({ logout_time: logoutTime, session_duration: duration, status: "logged_out", updated_at: new Date().toISOString() })
+            .eq("id", s.id);
+          if (upd) console.warn("Failed to update session during logout-all", s.id, upd.message);
+        }
+
+        res.json({ success: true, updated: (sessions || []).length });
+      } catch (error) {
+        console.error("Logout all devices error:", error);
+        res.status(500).json({ error: "Failed to logout all devices" });
+      }
+    });
+
+    /**
+     * POST /api/developer/login-activity/force-logout
+     * Admin only. Body: { user_id }
+     */
+    router.post("/api/developer/login-activity/force-logout", verifyDeveloperAccess, async (req, res) => {
+      try {
+        if (!["admin", "super_admin"].includes(req.profile?.role)) return res.status(403).json({ error: "Admin only" });
+        const { user_id } = req.body || {};
+        if (!user_id) return res.status(400).json({ error: "Missing user_id" });
+
+        const { data: sessions, error: fetchErr } = await getSupabaseClient()
+          .from("login_activity")
+          .select("id, login_time")
+          .eq("user_id", user_id)
+          .eq("status", "active");
+
+        if (fetchErr) throw fetchErr;
+
+        const logoutTime = new Date().toISOString();
+
+        for (const s of sessions || []) {
+          const duration = Math.max(0, Math.floor((new Date(logoutTime) - new Date(s.login_time)) / 1000));
+          const { error: upd } = await getSupabaseClient()
+            .from("login_activity")
+            .update({ logout_time: logoutTime, session_duration: duration, status: "logged_out", updated_at: new Date().toISOString() })
+            .eq("id", s.id);
+          if (upd) console.warn("Failed to update session during force-logout", s.id, upd.message);
+        }
+
+        res.json({ success: true, updated: (sessions || []).length });
+      } catch (error) {
+        console.error("Force logout error:", error);
+        res.status(500).json({ error: "Failed to force logout user" });
+      }
+    });
+
+    /**
+     * GET /api/developer/login-activity/analytics
+     * Returns totals: totalLoginsToday, activeUsers, mostActiveUser, mostUsedDevice
+     */
+    router.get("/api/developer/login-activity/analytics", verifyDeveloperAccess, async (req, res) => {
+      try {
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+
+        const { data: todayLogins } = await getSupabaseClient()
+          .from("login_activity")
+          .select("id, user_id, device_name")
+          .gte("login_time", startOfDay.toISOString());
+
+        const totalLoginsToday = (todayLogins || []).length;
+        const activeSessionsRes = await getSupabaseClient().from("login_activity").select("user_id").eq("status", "active");
+        const activeUsers = new Set((activeSessionsRes.data || []).map((s) => s.user_id)).size;
+
+        // most active user: count logins per user
+        const counts = {};
+        (todayLogins || []).forEach((r) => { counts[r.user_id] = (counts[r.user_id] || 0) + 1; });
+        const mostActiveUser = Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0] || null;
+
+        // most used device
+        const deviceCounts = {};
+        (todayLogins || []).forEach((r) => { if (r.device_name) deviceCounts[r.device_name] = (deviceCounts[r.device_name] || 0) + 1; });
+        const mostUsedDevice = Object.keys(deviceCounts).sort((a, b) => deviceCounts[b] - deviceCounts[a])[0] || null;
+
+        res.json({ totalLoginsToday, activeUsers, mostActiveUser, mostUsedDevice });
+      } catch (error) {
+        console.error("Login analytics error:", error);
+        res.status(500).json({ error: "Failed to fetch analytics" });
+      }
+    });
+
 /**
  * GET /api/developer/credits/summary
  * Returns detailed credits analytics: total distributed, daily, monthly, used, left, saved
@@ -1778,6 +2085,12 @@ router.get("/api/developer/error-logs", verifyDeveloperAccess, async (req, res) 
 
 // ============ SETTINGS ============
 
+let profitDistributionSettings = {
+  reservePercentage: 20,
+  growthPercentage: 30,
+  workerPercentage: 50,
+};
+
 /**
  * GET /api/developer/settings
  * Returns developer settings
@@ -1818,6 +2131,402 @@ router.post("/api/developer/settings", verifyDeveloperAccess, async (req, res) =
     res.status(500).json({ error: "Failed to update settings" });
   }
 });
+
+/**
+ * GET /api/developer/profit-distribution/settings
+ * Returns profit distribution percentages
+ */
+router.get("/api/developer/profit-distribution/settings", verifyDeveloperAccess, async (req, res) => {
+  try {
+    res.json({ success: true, settings: profitDistributionSettings });
+  } catch (error) {
+    console.error("Profit distribution settings error:", error);
+    res.status(500).json({ error: "Failed to fetch profit distribution settings" });
+  }
+});
+
+/**
+ * PATCH /api/developer/profit-distribution/settings
+ * Updates profit distribution percentages
+ */
+router.patch("/api/developer/profit-distribution/settings", verifyDeveloperAccess, async (req, res) => {
+  try {
+    const { reservePercentage, growthPercentage, workerPercentage } = req.body;
+
+    const reserve = Number(reservePercentage ?? profitDistributionSettings.reservePercentage);
+    const growth = Number(growthPercentage ?? profitDistributionSettings.growthPercentage);
+    const worker = Number(workerPercentage ?? profitDistributionSettings.workerPercentage);
+    const total = reserve + growth + worker;
+
+    if (reserve < 0 || growth < 0 || worker < 0) {
+      return res.status(400).json({ error: "Percentages must be non-negative" });
+    }
+
+    if (total !== 100) {
+      return res.status(400).json({ error: "Percentages must total 100" });
+    }
+
+    profitDistributionSettings = {
+      reservePercentage: reserve,
+      growthPercentage: growth,
+      workerPercentage: worker,
+    };
+
+    res.json({ success: true, settings: profitDistributionSettings });
+  } catch (error) {
+    console.error("Profit distribution settings update error:", error);
+    res.status(500).json({ error: "Failed to update profit distribution settings" });
+  }
+});
+
+const formatMoney = (value) => Number(Number(value).toFixed(2));
+
+const buildDistributionRow = (label, revenue, expenses, profit, settings) => {
+  const reservedAmount = formatMoney((profit * settings.reservePercentage) / 100);
+  const growthAmount = formatMoney((profit * settings.growthPercentage) / 100);
+  const workerAmount = formatMoney((profit * settings.workerPercentage) / 100);
+  const remainder = formatMoney(profit - reservedAmount - growthAmount - workerAmount);
+
+  return {
+    label,
+    revenue: formatMoney(revenue),
+    expenses: formatMoney(expenses),
+    profit: formatMoney(profit),
+    reservedAmount,
+    growthAmount,
+    workerAmount,
+    remainder,
+  };
+};
+
+/**
+ * GET /api/developer/profit-distribution
+ * Returns profit distribution summary and breakdowns
+ */
+router.get("/api/developer/profit-distribution", verifyDeveloperAccess, async (req, res) => {
+  try {
+    const selectedMonth = req.query.month ? Number(req.query.month) : null;
+    const selectedYear = req.query.year ? Number(req.query.year) : null;
+    const now = new Date();
+    const currentMonth = now.getMonth() + 1;
+    const currentYear = now.getFullYear();
+
+    const { data: payments } = await getSupabaseClient()
+      .from("payments")
+      .select("amount, payment_date, status")
+      .eq("status", "completed");
+
+    const { data: expenses } = await getSupabaseClient()
+      .from("expenses")
+      .select("amount, month, year");
+
+    const revenueByMonth = new Map();
+    const revenueByYear = new Map();
+    const expensesByMonth = new Map();
+    const expensesByYear = new Map();
+
+    (payments || []).forEach((payment) => {
+      const date = new Date(payment.payment_date);
+      const month = date.getMonth() + 1;
+      const year = date.getFullYear();
+      const amount = Number(payment.amount || 0);
+
+      const monthKey = `${year}-${String(month).padStart(2, "0")}`;
+      revenueByMonth.set(monthKey, (revenueByMonth.get(monthKey) || 0) + amount);
+      revenueByYear.set(year, (revenueByYear.get(year) || 0) + amount);
+    });
+
+    (expenses || []).forEach((expense) => {
+      const amount = Number(expense.amount || 0);
+      const monthKey = `${expense.year}-${String(expense.month).padStart(2, "0")}`;
+      expensesByMonth.set(monthKey, (expensesByMonth.get(monthKey) || 0) + amount);
+      expensesByYear.set(expense.year, (expensesByYear.get(expense.year) || 0) + amount);
+    });
+
+    const allMonthKeys = Array.from(new Set([...revenueByMonth.keys(), ...expensesByMonth.keys()]));
+    const monthly = allMonthKeys
+      .sort()
+      .map((monthKey) => {
+        const revenue = revenueByMonth.get(monthKey) || 0;
+        const expense = expensesByMonth.get(monthKey) || 0;
+        const profit = revenue - expense;
+        return buildDistributionRow(monthKey, revenue, expense, profit, profitDistributionSettings);
+      });
+
+    const allYears = Array.from(new Set([...revenueByYear.keys(), ...expensesByYear.keys()]));
+    const yearly = allYears
+      .sort((a, b) => Number(a) - Number(b))
+      .map((year) => {
+        const revenue = revenueByYear.get(year) || 0;
+        const expense = expensesByYear.get(year) || 0;
+        const profit = revenue - expense;
+        return buildDistributionRow(String(year), revenue, expense, profit, profitDistributionSettings);
+      });
+
+    const summaryMonth = selectedMonth || currentMonth;
+    const summaryYear = selectedYear || currentYear;
+    const summaryMonthKey = `${summaryYear}-${String(summaryMonth).padStart(2, "0")}`;
+    const summaryRevenue = revenueByMonth.get(summaryMonthKey) || 0;
+    const summaryExpense = expensesByMonth.get(summaryMonthKey) || 0;
+    const summaryProfit = summaryRevenue - summaryExpense;
+    const summary = buildDistributionRow("Current Period", summaryRevenue, summaryExpense, summaryProfit, profitDistributionSettings);
+
+    res.json({
+      success: true,
+      settings: profitDistributionSettings,
+      summary,
+      monthly,
+      yearly,
+      currentPeriod: { month: currentMonth, year: currentYear },
+    });
+  } catch (error) {
+    console.error("Profit distribution fetch error:", error);
+    res.status(500).json({ error: "Failed to fetch profit distribution" });
+  }
+});
+
+// ============ GROWTH ANALYTICS ============
+
+/**
+ * Helper function to calculate growth percentage
+ */
+const calculateGrowth = (current, previous) => {
+  if (previous === 0) return current > 0 ? 100 : 0;
+  return Math.round(((current - previous) / previous) * 100 * 100) / 100;
+};
+
+/**
+ * GET /api/developer/analytics/monthly-revenue-growth
+ * Returns monthly revenue with growth percentages
+ */
+router.get("/api/developer/analytics/monthly-revenue-growth", verifyDeveloperAccess, async (req, res) => {
+  try {
+    const { data: payments } = await getSupabaseClient()
+      .from("payments")
+      .select("amount, payment_date")
+      .eq("status", "completed")
+      .order("payment_date", { ascending: true });
+
+    const byMonth = new Map();
+    (payments || []).forEach((p) => {
+      const date = new Date(p.payment_date);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+      byMonth.set(monthKey, (byMonth.get(monthKey) || 0) + Number(p.amount || 0));
+    });
+
+    const data = Array.from(byMonth.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([month, revenue], idx, arr) => {
+        const previous = idx > 0 ? arr[idx - 1][1] : revenue;
+        return { month, revenue, growth: idx > 0 ? calculateGrowth(revenue, previous) : 0 };
+      });
+
+    res.json({ data, total: data.length });
+  } catch (error) {
+    console.error("Monthly revenue growth error:", error);
+    res.status(500).json({ error: "Failed to fetch monthly revenue growth" });
+  }
+});
+
+/**
+ * GET /api/developer/analytics/yearly-revenue-growth
+ * Returns yearly revenue with growth percentages
+ */
+router.get("/api/developer/analytics/yearly-revenue-growth", verifyDeveloperAccess, async (req, res) => {
+  try {
+    const { data: payments } = await getSupabaseClient()
+      .from("payments")
+      .select("amount, payment_date")
+      .eq("status", "completed")
+      .order("payment_date", { ascending: true });
+
+    const byYear = new Map();
+    (payments || []).forEach((p) => {
+      const year = new Date(p.payment_date).getFullYear();
+      byYear.set(year, (byYear.get(year) || 0) + Number(p.amount || 0));
+    });
+
+    const data = Array.from(byYear.entries())
+      .sort(([a], [b]) => a - b)
+      .map(([year, revenue], idx, arr) => {
+        const previous = idx > 0 ? arr[idx - 1][1] : revenue;
+        return { year: String(year), revenue, growth: idx > 0 ? calculateGrowth(revenue, previous) : 0 };
+      });
+
+    res.json({ data, total: data.length });
+  } catch (error) {
+    console.error("Yearly revenue growth error:", error);
+    res.status(500).json({ error: "Failed to fetch yearly revenue growth" });
+  }
+});
+
+/**
+ * GET /api/developer/analytics/monthly-profit-growth
+ * Returns monthly profit with growth percentages
+ */
+router.get("/api/developer/analytics/monthly-profit-growth", verifyDeveloperAccess, async (req, res) => {
+  try {
+    const { data: payments } = await getSupabaseClient()
+      .from("payments")
+      .select("amount, payment_date")
+      .eq("status", "completed");
+
+    const { data: expenses } = await getSupabaseClient()
+      .from("expenses")
+      .select("amount, month, year");
+
+    const revenueByMonth = new Map();
+    (payments || []).forEach((p) => {
+      const date = new Date(p.payment_date);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+      revenueByMonth.set(monthKey, (revenueByMonth.get(monthKey) || 0) + Number(p.amount || 0));
+    });
+
+    const expensesByMonth = new Map();
+    (expenses || []).forEach((e) => {
+      const monthKey = `${e.year}-${String(e.month).padStart(2, "0")}`;
+      expensesByMonth.set(monthKey, (expensesByMonth.get(monthKey) || 0) + Number(e.amount || 0));
+    });
+
+    const allMonths = new Set([...revenueByMonth.keys(), ...expensesByMonth.keys()]);
+    const data = Array.from(allMonths)
+      .sort()
+      .map((month) => {
+        const revenue = revenueByMonth.get(month) || 0;
+        const expense = expensesByMonth.get(month) || 0;
+        return { month, profit: revenue - expense };
+      })
+      .map((item, idx, arr) => {
+        const previous = idx > 0 ? arr[idx - 1].profit : item.profit;
+        return { ...item, growth: idx > 0 ? calculateGrowth(item.profit, previous) : 0 };
+      });
+
+    res.json({ data, total: data.length });
+  } catch (error) {
+    console.error("Monthly profit growth error:", error);
+    res.status(500).json({ error: "Failed to fetch monthly profit growth" });
+  }
+});
+
+/**
+ * GET /api/developer/analytics/yearly-profit-growth
+ * Returns yearly profit with growth percentages
+ */
+router.get("/api/developer/analytics/yearly-profit-growth", verifyDeveloperAccess, async (req, res) => {
+  try {
+    const { data: payments } = await getSupabaseClient()
+      .from("payments")
+      .select("amount, payment_date")
+      .eq("status", "completed");
+
+    const { data: expenses } = await getSupabaseClient()
+      .from("expenses")
+      .select("amount, month, year");
+
+    const revenueByYear = new Map();
+    (payments || []).forEach((p) => {
+      const year = new Date(p.payment_date).getFullYear();
+      revenueByYear.set(year, (revenueByYear.get(year) || 0) + Number(p.amount || 0));
+    });
+
+    const expensesByYear = new Map();
+    (expenses || []).forEach((e) => {
+      expensesByYear.set(e.year, (expensesByYear.get(e.year) || 0) + Number(e.amount || 0));
+    });
+
+    const allYears = new Set([...revenueByYear.keys(), ...expensesByYear.keys()]);
+    const data = Array.from(allYears)
+      .sort()
+      .map((year) => {
+        const revenue = revenueByYear.get(year) || 0;
+        const expense = expensesByYear.get(year) || 0;
+        return { year: String(year), profit: revenue - expense };
+      })
+      .map((item, idx, arr) => {
+        const previous = idx > 0 ? arr[idx - 1].profit : item.profit;
+        return { ...item, growth: idx > 0 ? calculateGrowth(item.profit, previous) : 0 };
+      });
+
+    res.json({ data, total: data.length });
+  } catch (error) {
+    console.error("Yearly profit growth error:", error);
+    res.status(500).json({ error: "Failed to fetch yearly profit growth" });
+  }
+});
+
+/**
+ * GET /api/developer/analytics/monthly-users
+ * Returns monthly user growth
+ */
+router.get("/api/developer/analytics/monthly-users", verifyDeveloperAccess, async (req, res) => {
+  try {
+    const { data: profiles } = await getSupabaseClient()
+      .from("app_profiles")
+      .select("created_at")
+      .order("created_at", { ascending: true });
+
+    const byMonth = new Map();
+    let cumulativeCount = 0;
+    (profiles || []).forEach((p) => {
+      const date = new Date(p.created_at);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+      byMonth.set(monthKey, (byMonth.get(monthKey) || 0) + 1);
+    });
+
+    const data = Array.from(byMonth.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([month, count]) => {
+        cumulativeCount += count;
+        return { month, newUsers: count, totalUsers: cumulativeCount };
+      })
+      .map((item, idx, arr) => {
+        const previous = idx > 0 ? arr[idx - 1].totalUsers : item.totalUsers;
+        return { ...item, growth: idx > 0 ? calculateGrowth(item.totalUsers, previous) : 0 };
+      });
+
+    res.json({ data, total: data.length });
+  } catch (error) {
+    console.error("Monthly users error:", error);
+    res.status(500).json({ error: "Failed to fetch monthly user growth" });
+  }
+});
+
+/**
+ * GET /api/developer/analytics/yearly-users
+ * Returns yearly user growth
+ */
+router.get("/api/developer/analytics/yearly-users", verifyDeveloperAccess, async (req, res) => {
+  try {
+    const { data: profiles } = await getSupabaseClient()
+      .from("app_profiles")
+      .select("created_at")
+      .order("created_at", { ascending: true });
+
+    const byYear = new Map();
+    let cumulativeCount = 0;
+    (profiles || []).forEach((p) => {
+      const year = new Date(p.created_at).getFullYear();
+      byYear.set(year, (byYear.get(year) || 0) + 1);
+    });
+
+    const data = Array.from(byYear.entries())
+      .sort(([a], [b]) => a - b)
+      .map(([year, count]) => {
+        cumulativeCount += count;
+        return { year: String(year), newUsers: count, totalUsers: cumulativeCount };
+      })
+      .map((item, idx, arr) => {
+        const previous = idx > 0 ? arr[idx - 1].totalUsers : item.totalUsers;
+        return { ...item, growth: idx > 0 ? calculateGrowth(item.totalUsers, previous) : 0 };
+      });
+
+    res.json({ data, total: data.length });
+  } catch (error) {
+    console.error("Yearly users error:", error);
+    res.status(500).json({ error: "Failed to fetch yearly user growth" });
+  }
+});
+
 
 // ============ DEBUG ============
 

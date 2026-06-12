@@ -1,4 +1,5 @@
 import { createBrowserRouter, Navigate, useRouteError } from "react-router";
+import React from "react";
 import { PortalGate } from "../shared/routing/route-guards";
 // Developer Portal
 import { DeveloperDashboardPage } from "../portals/developer/pages/developer-dashboard-page";
@@ -7,9 +8,11 @@ import { DeveloperCreditsPage } from "../portals/developer/pages/developer-credi
 import { DeveloperTesterCreditsPage } from "../portals/developer/pages/developer-tester-credits-page";
 import { DeveloperErrorLogsPage } from "../portals/developer/pages/developer-error-logs-page";
 import { DeveloperAnalyticsPage } from "../portals/developer/pages/developer-analytics-page";
+import LoginActivityPage from "./developer/login-activity-page";
 import { DeveloperFeedbackPage } from "../portals/developer/pages/developer-feedback-page";
 import { DeveloperReportPage } from "../portals/developer/pages/developer-report-page";
 import { DeveloperRevenueProfit } from "../portals/developer/pages/developer-revenue-profit-page";
+import { DeveloperProfitDistribution } from "../portals/developer/pages/developer-profit-distribution-page";
 import { DeveloperSettingsPage } from "../portals/developer/pages/developer-settings-page";
 import { DeveloperCostsPage } from "../portals/developer/pages/developer-costs-page";
 import { DeveloperLogsPage } from "../portals/developer/pages/developer-logs-page";
@@ -219,6 +222,13 @@ export const router = createBrowserRouter([
       return { Component: AuthCallbackPage };
     }
   },
+  {
+    path: "/developer/auth",
+    async lazy() {
+      const { DeveloperAccessPage } = await import("../portals/developer/pages/developer-access-page");
+      return { Component: DeveloperAccessPage };
+    }
+  },
   // User Portal Routes
   {
     path: "/user/dashboard",
@@ -275,6 +285,14 @@ export const router = createBrowserRouter([
     element: (
       <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
         <DeveloperRevenueProfit />
+      </PortalGate>
+    ),
+  },
+  {
+    path: "/developer/profit-distribution",
+    element: (
+      <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+        <DeveloperProfitDistribution />
       </PortalGate>
     ),
   },
@@ -348,6 +366,24 @@ export const router = createBrowserRouter([
     element: (
       <PortalGate portal="developer" allowedRoles={["super_admin", "admin"]}>
         <DeveloperOperationsPage />
+      </PortalGate>
+    ),
+  },
+  {
+    path: "/developer/login-activity",
+    element: (
+      <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+        <React.Suspense fallback={<div>Loading...</div>}>
+          <LoginActivityPage />
+        </React.Suspense>
+      </PortalGate>
+    ),
+  },
+  {
+    path: "/developer/analytics",
+    element: (
+      <PortalGate portal="developer" allowedRoles={["super_admin", "admin"]}>
+        <DeveloperAnalyticsPage />
       </PortalGate>
     ),
   },

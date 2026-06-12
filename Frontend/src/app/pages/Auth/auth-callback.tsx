@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router";
 import { supabase, isSupabaseConfigured } from "../../../lib/supabase";
 import { fetchAppProfile } from "../../../services/auth-profile";
+import { detectDeviceInfo, recordLoginActivity } from "../../../lib/auth-login-activity";
 
 export function AuthCallbackPage() {
   const navigate = useNavigate();
@@ -15,17 +16,21 @@ export function AuthCallbackPage() {
           return;
         }
 
-        const { data, error } = await supabase.auth.getSession();
+        let sessionResult = await supabase.auth.getSessionFromUrl();
+        if (!sessionResult.data?.session) {
+          sessionResult = await supabase.auth.getSession();
+        }
 
-        if (error || !data?.session) {
-          console.error("Auth error:", error);
+        if (sessionResult.error || !sessionResult.data?.session) {
+          console.error("Auth error:", sessionResult.error);
           navigate("/");
           return;
         }
 
-        const profile = await fetchAppProfile(data.session);
+        const profile = await fetchAppProfile(sessionResult.data.session);
+        await recordLoginActivity(sessionResult.data.session, profile);
         const portalIntent = localStorage.getItem("portalIntent");
-        const userEmail = data.session.user.email?.toLowerCase();
+        const userEmail = sessionResult.data.session.user.email?.toLowerCase();
 
         // Absolute priority: Check for specific exact emails
         if (userEmail === "admin@veytrix.ai") {

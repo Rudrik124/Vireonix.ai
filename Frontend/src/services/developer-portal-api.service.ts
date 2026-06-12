@@ -153,6 +153,25 @@ export async function fetchRevenueProfit() {
   return callDeveloperAPI('/revenue-profit');
 }
 
+export async function fetchProfitDistributionSettings() {
+  return callDeveloperAPI('/profit-distribution/settings');
+}
+
+export async function updateProfitDistributionSettings(settings: { reservePercentage: number; growthPercentage: number; workerPercentage: number }) {
+  return callDeveloperAPI('/profit-distribution/settings', {
+    method: 'PATCH',
+    body: JSON.stringify(settings),
+  });
+}
+
+export async function fetchProfitDistribution(month?: number, year?: number) {
+  const params = new URLSearchParams();
+  if (month) params.append('month', String(month));
+  if (year) params.append('year', String(year));
+  const query = params.toString() ? `?${params.toString()}` : '';
+  return callDeveloperAPI(`/profit-distribution${query}`);
+}
+
 export async function fetchMonthlySnapshots(year?: number) {
   const params = year ? `?year=${year}` : '';
   return callDeveloperAPI(`/snapshots${params}`);
