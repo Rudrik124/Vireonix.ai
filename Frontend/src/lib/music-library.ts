@@ -1,3 +1,5 @@
+import { buildApiUrl } from "./api";
+
 // Sample music library with Instagram-style tracks
 export interface MusicTrack {
   id: string;
@@ -139,4 +141,23 @@ export const getGenres = (): string[] => {
 
 export const getMoods = (): string[] => {
   return Array.from(new Set(MUSIC_LIBRARY.map((track) => track.mood)));
+};
+
+// Fetch music dynamically (supports Feed.fm proxy with local mock fallback)
+export const fetchMusicLibrary = async (query = ""): Promise<MusicTrack[]> => {
+  try {
+    const url = new URL(buildApiUrl("/api/music/tracks"));
+    if (query) {
+      url.searchParams.set("q", query);
+    }
+    const res = await fetch(url.toString());
+    if (!res.ok) {
+      throw new Error(`HTTP error ${res.status}`);
+    }
+    const data = await res.json();
+    return data.tracks || [];
+  } catch (error) {
+    console.warn("⚠️ [music-library] Failed to fetch live music, falling back to mock catalog:", error.message || error);
+    return query ? searchMusicLibrary(query) : MUSIC_LIBRARY;
+  }
 };

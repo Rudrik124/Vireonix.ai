@@ -100,7 +100,7 @@ async function extractAudioFromVideoFile(videoFile: File): Promise<File> {
     const timeout = setTimeout(() => {
       reject(new Error("Unable to load video file for audio extraction (timeout)."));
     }, 15000);
-    
+
     video.onloadedmetadata = () => {
       clearTimeout(timeout);
       resolve();
@@ -133,7 +133,7 @@ async function extractAudioFromVideoFile(videoFile: File): Promise<File> {
     "audio/mp4",
     "audio/mpeg"
   ];
-  
+
   for (const type of possibleMimeTypes) {
     if (typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(type)) {
       mimeType = type;
@@ -160,7 +160,7 @@ async function extractAudioFromVideoFile(videoFile: File): Promise<File> {
     const recordingTimeout = setTimeout(() => {
       reject(new Error("Audio extraction took too long and was cancelled."));
     }, 300000); // 5 minute timeout
-    
+
     recorder.onstop = () => {
       clearTimeout(recordingTimeout);
       resolve(new Blob(chunks, { type: mimeType }));
@@ -173,7 +173,7 @@ async function extractAudioFromVideoFile(videoFile: File): Promise<File> {
 
   recorder.start();
   try {
-    await video.play().catch(() => {});
+    await video.play().catch(() => { });
     const duration = Number.isFinite(video.duration) && video.duration > 0 ? video.duration : 0;
     if (duration > 0) {
       await new Promise<void>((resolve) => {
@@ -200,7 +200,7 @@ async function extractAudioFromVideoFile(videoFile: File): Promise<File> {
   if (audioBlob.size === 0) {
     throw new Error("Failed to extract audio - the resulting audio file is empty. Please try with a different video.");
   }
-  
+
   const outputName = `${videoFile.name.replace(/\.[^/.]+$/, "")}.webm`;
   return new File([audioBlob], outputName, { type: audioBlob.type || "audio/webm" });
 }
@@ -296,11 +296,18 @@ const QUICK_TOOLS = [
 const CANVAS_PREVIEW_EFFECTS = [
   'green-screen',
   'glitch',
-  'text-animation',
   'motion-tracking',
+  'old-tv',
+  'soft-glow',
+  'retro-film',
+  'shake',
+  'rgb-split',
+  'film-grain',
 ];
 
-const CANVAS_PREVIEW_FILTERS: string[] = [];
+const CANVAS_PREVIEW_FILTERS = [
+  'vintage',
+];
 
 const TimelineHub = memo(({
   mediaItems,
@@ -451,7 +458,7 @@ const TimelineHub = memo(({
     const scrollOffset = timelineScrollRef.current?.scrollLeft || 0;
     const globalSeekTime = (clickX + scrollOffset) / pixelsPerSecond;
     const clampedSeekTime = Math.max(0, Math.min(totalDuration, globalSeekTime));
-    
+
     handleTimelineClick(clampedSeekTime);
   };
 
@@ -466,40 +473,37 @@ const TimelineHub = memo(({
         </div>
         <div className="flex items-center gap-2">
           <span className="px-1.5 py-0.5 rounded bg-purple-500/10 border border-purple-500/20 text-purple-400 text-[8px] uppercase tracking-wider font-black">Edit Mode</span>
-          
+
           <div className="w-[1px] h-3 bg-white/10" />
 
           {/* Timeline height adjust controls */}
           <div className="flex items-center gap-1 bg-black/40 p-0.5 rounded-lg border border-white/5">
             <button
               onClick={() => setTimelineSize('minimized')}
-              className={`p-1 rounded text-[8px] font-black uppercase tracking-wider flex items-center justify-center transition-all ${
-                timelineSize === 'minimized'
+              className={`p-1 rounded text-[8px] font-black uppercase tracking-wider flex items-center justify-center transition-all ${timelineSize === 'minimized'
                   ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
                   : 'text-slate-500 hover:text-slate-300 hover:bg-white/5 border border-transparent'
-              }`}
+                }`}
               title="Minimize Timeline"
             >
               <Minimize2 className="w-2.5 h-2.5" />
             </button>
             <button
               onClick={() => setTimelineSize('normal')}
-              className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider flex items-center justify-center transition-all ${
-                timelineSize === 'normal'
+              className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider flex items-center justify-center transition-all ${timelineSize === 'normal'
                   ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
                   : 'text-slate-500 hover:text-slate-300 hover:bg-white/5 border border-transparent'
-              }`}
+                }`}
               title="Normal Timeline"
             >
               Normal
             </button>
             <button
               onClick={() => setTimelineSize('maximized')}
-              className={`p-1 rounded text-[8px] font-black uppercase tracking-wider flex items-center justify-center transition-all ${
-                timelineSize === 'maximized'
+              className={`p-1 rounded text-[8px] font-black uppercase tracking-wider flex items-center justify-center transition-all ${timelineSize === 'maximized'
                   ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
                   : 'text-slate-500 hover:text-slate-300 hover:bg-white/5 border border-transparent'
-              }`}
+                }`}
               title="Maximize Timeline"
             >
               <Maximize2 className="w-2.5 h-2.5" />
@@ -535,14 +539,14 @@ const TimelineHub = memo(({
 
         {/* Tracks Area (Right Pane of Timeline) - Horizontally Scrollable! */}
         <div ref={timelineScrollRef} className="flex-1 flex flex-col relative overflow-x-auto overflow-y-hidden custom-scrollbar bg-black/10 select-none">
-          <div 
-            style={{ width: `${Math.max(400, totalDuration * pixelsPerSecond + 100)}px`, minWidth: '100%' }} 
+          <div
+            style={{ width: `${Math.max(400, totalDuration * pixelsPerSecond + 100)}px`, minWidth: '100%' }}
             className="flex-1 flex flex-col relative h-full"
           >
-            
+
             {/* Time Ruler */}
-            <div 
-              className="h-6 border-b border-white/5 bg-black/30 relative flex items-end px-1 select-none cursor-pointer" 
+            <div
+              className="h-6 border-b border-white/5 bg-black/30 relative flex items-end px-1 select-none cursor-pointer"
               onClick={localHandleTimelineClick}
             >
               <div className="absolute inset-0 pointer-events-none flex justify-between px-2 text-[8px] text-slate-600 font-mono py-0.5">
@@ -557,7 +561,7 @@ const TimelineHub = memo(({
             </div>
 
             <div className="flex-1 flex flex-col relative space-y-2" onClick={localHandleTimelineClick}>
-              
+
               {/* Playhead (Red line) */}
               <motion.div
                 initial={false}
@@ -569,7 +573,7 @@ const TimelineHub = memo(({
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-red-500 border border-red-400 rotate-45 transform origin-top -translate-y-1.5 shadow" />
                 <div className="absolute inset-y-0 left-[-1px] right-[-1px] bg-red-500/20 blur-[1px]" />
               </motion.div>
-              <div 
+              <div
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={async (e) => {
                   e.preventDefault();
@@ -593,7 +597,7 @@ const TimelineHub = memo(({
                     const fromIndexStr = e.dataTransfer.getData('dragIndex');
                     if (clipId && !fromIndexStr) {
                       const item = mediaItems.find((m: any) => m.id === clipId);
-                    if (item) {
+                      if (item) {
                         selectPreviewWithTransition(item.id);
                       }
                     }
@@ -649,11 +653,10 @@ const TimelineHub = memo(({
                           backgroundSize: 'cover',
                           backgroundPosition: 'center',
                         }}
-                        className={`group h-full relative overflow-hidden rounded-xl border flex items-center px-2 cursor-pointer ${
-                          isDragging && dragRef.current?.itemId === item.id ? '' : 'transition-all duration-300 ease-out'
-                        } ${isActive
-                          ? 'bg-purple-500/20 border-purple-400 shadow-[inset_0_0_10px_rgba(168, 85, 247,0.2)] text-white'
-                          : 'bg-cyan-950/20 border-white/5 hover:border-white/20 text-slate-400'
+                        className={`group h-full relative overflow-hidden rounded-xl border flex items-center px-2 cursor-pointer ${isDragging && dragRef.current?.itemId === item.id ? '' : 'transition-all duration-300 ease-out'
+                          } ${isActive
+                            ? 'bg-purple-500/20 border-purple-400 shadow-[inset_0_0_10px_rgba(168, 85, 247,0.2)] text-white'
+                            : 'bg-cyan-950/20 border-white/5 hover:border-white/20 text-slate-400'
                           }`}
                       >
                         {item.type === 'video' && item.preview && (
@@ -719,7 +722,7 @@ const TimelineHub = memo(({
                             >
                               <div className="w-[1px] h-3 bg-black/60 rounded" />
                             </div>
-                            
+
                             {/* Right Handle (Trim End) */}
                             <div
                               draggable={false}
@@ -761,7 +764,7 @@ const TimelineHub = memo(({
                                 {track.name}
                               </span>
                             </div>
-                            
+
                             {/* Waveform graphic */}
                             <div className="flex items-center gap-[1px] h-3 mr-2">
                               {[4, 8, 12, 6, 10, 4, 8, 12, 6, 2, 8, 4].map((h, index) => (
@@ -776,7 +779,7 @@ const TimelineHub = memo(({
                         );
                       })}
                       {laneAudios.length === 0 && (
-                        <div 
+                        <div
                           onClick={(e) => {
                             e.stopPropagation();
                             setSelectedAudioLane(idx);
@@ -820,11 +823,10 @@ const TimelineHub = memo(({
                           setCurrentCaption(caption);
                         }}
                         style={{ width: `${captionWidth}px`, left: `${captionLeft}px` }}
-                        className={`absolute h-full top-0 rounded-md border flex items-center px-2 cursor-pointer transition-all ${
-                          isCaptionActive
+                        className={`absolute h-full top-0 rounded-md border flex items-center px-2 cursor-pointer transition-all ${isCaptionActive
                             ? 'bg-fuchsia-500/30 border-fuchsia-400 shadow-[inset_0_0_10px_rgba(20,184,166,0.2)] text-white'
                             : 'bg-teal-950/20 border-fuchsia-500/30 hover:border-fuchsia-400 text-slate-300'
-                        }`}
+                          }`}
                         title={`${caption.text} (${captionDuration.toFixed(1)}s)`}
                       >
                         <MessageSquare className="w-3 h-3 mr-1 flex-shrink-0 text-fuchsia-400/70" />
@@ -881,8 +883,8 @@ const TimelineHub = memo(({
               <FileAudio className="w-4 h-4 text-purple-400" />
               <span className="text-[7.5px] font-black uppercase tracking-wider text-slate-300">Upload</span>
             </button>
-            <button 
-              onClick={() => setShowAudioChoice(false)} 
+            <button
+              onClick={() => setShowAudioChoice(false)}
               className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-slate-950 border border-white/10 flex items-center justify-center text-slate-500 hover:text-white transition-colors cursor-pointer"
             >
               <X className="w-3 h-3" />
@@ -947,7 +949,7 @@ const QuickToolsGrid = memo(({ QUICK_TOOLS, activeTool, setActiveTool, copyActiv
               return;
             }
             setActiveTool(tool.id);
-            
+
             // Auto expand the corresponding Inspector accordion group
             if (['effects', 'transitions', 'filters'].includes(tool.id)) {
               setExpandedSections((prev: any) => ({ ...prev, fx: true }));
@@ -963,11 +965,10 @@ const QuickToolsGrid = memo(({ QUICK_TOOLS, activeTool, setActiveTool, copyActiv
               setExpandedSections((prev: any) => ({ ...prev, text: true }));
             }
           }}
-          className={`flex flex-col items-center justify-center gap-1.5 p-2.5 rounded-xl border transition-all active:scale-[0.98] group ${
-            isSelected 
-              ? 'bg-purple-500/20 border-purple-400 shadow-[0_0_10px_rgba(168, 85, 247,0.2)]' 
+          className={`flex flex-col items-center justify-center gap-1.5 p-2.5 rounded-xl border transition-all active:scale-[0.98] group ${isSelected
+              ? 'bg-purple-500/20 border-purple-400 shadow-[0_0_10px_rgba(168, 85, 247,0.2)]'
               : 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/15'
-          }`}
+            }`}
         >
           <tool.icon className={`w-4 h-4 ${tool.color} group-hover:scale-105 transition-transform`} />
           <span className="text-[8px] font-bold text-slate-300 uppercase tracking-wider text-center line-clamp-1">{tool.label}</span>
@@ -1147,9 +1148,7 @@ const ToolInspector = memo(({
               { id: 'old-tv', label: 'Old TV' },
               { id: 'slow-motion', label: 'Slow Motion' },
               { id: 'smooth-zoom', label: 'Smooth Zoom' },
-              { id: 'animated-captions', label: 'Animated Captions' },
               { id: 'glitch', label: 'Glitch' },
-              { id: 'text-animation', label: 'Text Animation' },
               { id: 'motion-tracking', label: 'Motion Tracking' },
             ].map((eff) => (
               <button
@@ -1394,36 +1393,7 @@ const ToolInspector = memo(({
             </div>
           )}
 
-          {selectedEffect === 'animated-captions' && (
-            <div className="mt-2 p-2.5 rounded-lg bg-white/5 border border-white/10 space-y-1.5">
-              <label className="text-[8px] font-bold uppercase tracking-widest text-slate-300">Animated Caption</label>
-              <input
-                value={animatedText}
-                onChange={(e) => {
-                  setAnimatedText(e.target.value);
-                  setOverlayText(e.target.value);
-                }}
-                placeholder="Type caption"
-                className="w-full px-2.5 py-1.5 rounded bg-black/30 border border-white/10 text-white text-xs focus:outline-none"
-              />
-            </div>
-          )}
-
-
-          {selectedEffect === 'text-animation' && (
-            <div className="mt-2 p-2.5 rounded-lg bg-white/5 border border-white/10 space-y-1.5">
-              <label className="text-[8px] font-bold uppercase tracking-widest text-slate-300">Overlay Text</label>
-              <input
-                value={animatedText}
-                onChange={(e) => {
-                  setAnimatedText(e.target.value);
-                  setOverlayText(e.target.value);
-                }}
-                placeholder="Enter text"
-                className="w-full px-2.5 py-1.5 rounded bg-black/30 border border-white/10 text-white text-xs focus:outline-none"
-              />
-            </div>
-          )}
+          {/* Settings inputs for text effects removed */}
         </div>
       );
     case 'transitions':
@@ -1958,14 +1928,13 @@ const ToolInspector = memo(({
                   <div className="py-3 text-center text-[8px] font-bold uppercase tracking-widest text-slate-600">No captions yet</div>
                 ) : (
                   captions.map((cap: any) => (
-                    <div 
-                      key={cap.id} 
+                    <div
+                      key={cap.id}
                       onClick={() => setCurrentCaption(cap)}
-                      className={`flex items-start gap-1.5 px-2 py-1.5 rounded-lg border cursor-pointer transition-all group ${
-                        currentCaption?.id === cap.id
+                      className={`flex items-start gap-1.5 px-2 py-1.5 rounded-lg border cursor-pointer transition-all group ${currentCaption?.id === cap.id
                           ? 'bg-fuchsia-500/20 border-fuchsia-400 shadow-[inset_0_0_8px_rgba(20,184,166,0.1)]'
                           : 'bg-white/5 border-white/5 hover:border-white/10'
-                      }`}
+                        }`}
                     >
                       <div className="flex-1 min-w-0">
                         <div className="text-[9px] font-bold text-slate-200 truncate">{cap.text}</div>
@@ -2049,11 +2018,10 @@ const ToolInspector = memo(({
               <button
                 onClick={handleAutoCaption}
                 disabled={isAutoCapturing}
-                className={`w-full py-2 rounded-lg text-[8px] font-black uppercase flex items-center justify-center gap-1.5 transition-all ${
-                  isAutoCapturing
+                className={`w-full py-2 rounded-lg text-[8px] font-black uppercase flex items-center justify-center gap-1.5 transition-all ${isAutoCapturing
                     ? 'bg-red-500/20 border border-red-500/40 text-red-300 animate-pulse cursor-not-allowed'
                     : 'bg-fuchsia-500/15 border border-fuchsia-500/30 text-fuchsia-300 hover:bg-fuchsia-500/25'
-                }`}
+                  }`}
               >
                 {isAutoCapturing ? (
                   <>
@@ -2111,11 +2079,10 @@ const ToolInspector = memo(({
                         setCaptionStylePreset(null);
                         setCaptionStyle((prev: any) => ({ ...prev, fontId: font.id }));
                       }}
-                      className={`px-2 py-1 rounded text-left text-[7px] font-bold uppercase border transition-colors ${
-                        captionStyle.fontId === font.id
+                      className={`px-2 py-1 rounded text-left text-[7px] font-bold uppercase border transition-colors ${captionStyle.fontId === font.id
                           ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
                           : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10'
-                      }`}
+                        }`}
                       style={{ fontFamily: font.family }}
                     >
                       {font.label.split(' ')[0]}
@@ -2154,11 +2121,10 @@ const ToolInspector = memo(({
                   <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400">Background Box</label>
                   <button
                     onClick={() => setCaptionStyle((prev: any) => ({ ...prev, bgEnabled: !prev.bgEnabled }))}
-                    className={`px-2 py-0.5 rounded text-[7px] font-black uppercase border transition-all ${
-                      captionStyle.bgEnabled
+                    className={`px-2 py-0.5 rounded text-[7px] font-black uppercase border transition-all ${captionStyle.bgEnabled
                         ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
                         : 'bg-white/5 text-slate-500 border-white/10'
-                    }`}
+                      }`}
                   >
                     {captionStyle.bgEnabled ? 'ON' : 'OFF'}
                   </button>
@@ -2179,25 +2145,22 @@ const ToolInspector = memo(({
                 <div className="flex gap-1">
                   <button
                     onClick={() => setCaptionStyle((prev: any) => ({ ...prev, bold: !prev.bold }))}
-                    className={`flex-1 py-1.5 rounded border text-[8px] transition-all flex items-center justify-center ${
-                      captionStyle.bold ? 'bg-purple-500/20 text-purple-300 border-purple-500/30' : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10'
-                    }`}
+                    className={`flex-1 py-1.5 rounded border text-[8px] transition-all flex items-center justify-center ${captionStyle.bold ? 'bg-purple-500/20 text-purple-300 border-purple-500/30' : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10'
+                      }`}
                   >
                     <Bold className="w-3 h-3" />
                   </button>
                   <button
                     onClick={() => setCaptionStyle((prev: any) => ({ ...prev, italic: !prev.italic }))}
-                    className={`flex-1 py-1.5 rounded border text-[8px] transition-all flex items-center justify-center ${
-                      captionStyle.italic ? 'bg-purple-500/20 text-purple-300 border-purple-500/30' : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10'
-                    }`}
+                    className={`flex-1 py-1.5 rounded border text-[8px] transition-all flex items-center justify-center ${captionStyle.italic ? 'bg-purple-500/20 text-purple-300 border-purple-500/30' : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10'
+                      }`}
                   >
                     <Italic className="w-3 h-3" />
                   </button>
                   <button
                     onClick={() => setCaptionStyle((prev: any) => ({ ...prev, outline: !prev.outline }))}
-                    className={`flex-1 py-1.5 rounded border text-[8px] font-black uppercase transition-all ${
-                      captionStyle.outline ? 'bg-purple-500/20 text-purple-300 border-purple-500/30' : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10'
-                    }`}
+                    className={`flex-1 py-1.5 rounded border text-[8px] font-black uppercase transition-all ${captionStyle.outline ? 'bg-purple-500/20 text-purple-300 border-purple-500/30' : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10'
+                      }`}
                     title="Text Outline"
                   >
                     T
@@ -2215,11 +2178,10 @@ const ToolInspector = memo(({
                       <button
                         key={align}
                         onClick={() => setCaptionStyle((prev: any) => ({ ...prev, alignment: align }))}
-                        className={`flex-1 py-1.5 rounded border transition-all flex items-center justify-center ${
-                          captionStyle.alignment === align
+                        className={`flex-1 py-1.5 rounded border transition-all flex items-center justify-center ${captionStyle.alignment === align
                             ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
                             : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10'
-                        }`}
+                          }`}
                       >
                         <AlignIcon className="w-3 h-3" />
                       </button>
@@ -2257,11 +2219,10 @@ const ToolInspector = memo(({
               {/* Place on preview */}
               <button
                 onClick={() => setIsCaptionPlacementMode(!isCaptionPlacementMode)}
-                className={`w-full py-1.5 rounded text-[8px] font-black uppercase border transition-colors ${
-                  isCaptionPlacementMode
+                className={`w-full py-1.5 rounded text-[8px] font-black uppercase border transition-colors ${isCaptionPlacementMode
                     ? 'bg-purple-500 text-[#0B1020] border-purple-400'
                     : 'bg-white/5 text-slate-300 border-white/10 hover:bg-white/15'
-                }`}
+                  }`}
               >
                 {isCaptionPlacementMode ? 'Click Preview to Place' : 'Place on Preview'}
               </button>
@@ -2275,21 +2236,21 @@ const ToolInspector = memo(({
 });
 
 export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
-    type FilterType =
-      | 'none'
-      | 'cinematic'
-      | 'moody'
-      | 'warm-tone'
-      | 'cool-tone'
-      | 'vintage'
-      | 'black-white'
-      | 'teal-orange'
-      | 'dreamy-glow'
-      | 'film-look'
-      | 'vhs'
-      | 'soft-skin'
-      | 'neon-glow'
-      | 'hdr-pop';
+  type FilterType =
+    | 'none'
+    | 'cinematic'
+    | 'moody'
+    | 'warm-tone'
+    | 'cool-tone'
+    | 'vintage'
+    | 'black-white'
+    | 'teal-orange'
+    | 'dreamy-glow'
+    | 'film-look'
+    | 'vhs'
+    | 'soft-skin'
+    | 'neon-glow'
+    | 'hdr-pop';
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -2504,7 +2465,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
   const [transitionProgress, setTransitionProgress] = useState(0);
   const [selectedFilter, setSelectedFilter] = useState<FilterType>('none');
   const [blurAmount, setBlurAmount] = useState(10);
-  const [selectedEffect, setSelectedEffect] = useState<'none' | 'fade-in' | 'blur' | 'zoom' | 'color-correction' | 'vintage' | 'black-white' | 'cinematic' | 'warm' | 'cool' | 'sepia' | 'hdr' | 'vivid' | 'soft-glow' | 'retro-film' | 'green-screen' | 'slow-motion' | 'glitch' | 'slide-left' | 'slide-right' | 'text-animation' | 'motion-tracking' | 'velocity' | 'motion-blur' | 'shake' | 'flash-effect' | 'rgb-split' | 'smooth-zoom' | 'film-grain' | 'animated-captions' | 'old-tv'>('none');
+  const [selectedEffect, setSelectedEffect] = useState<'none' | 'fade-in' | 'blur' | 'zoom' | 'color-correction' | 'vintage' | 'black-white' | 'cinematic' | 'warm' | 'cool' | 'sepia' | 'hdr' | 'vivid' | 'soft-glow' | 'retro-film' | 'green-screen' | 'slow-motion' | 'glitch' | 'slide-left' | 'slide-right' | 'motion-tracking' | 'velocity' | 'motion-blur' | 'shake' | 'flash-effect' | 'rgb-split' | 'smooth-zoom' | 'film-grain' | 'old-tv'>('none');
   const [previewOpacity, setPreviewOpacity] = useState(1);
   const [previewZoom, setPreviewZoom] = useState(1);
   const [brightness, setBrightness] = useState(1);
@@ -2804,29 +2765,29 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
   useEffect(() => {
     if (!activePreviewId) return;
     const settings = clipSettings[activePreviewId] || {};
-    
+
     setSelectedEffect(settings.selectedEffect || 'none');
     setSelectedFilter(settings.selectedFilter || 'none');
     setSpeedValue(settings.speedValue ?? 1);
     setRotationDegrees(settings.rotationDegrees ?? 0);
     setVolumeLevel(settings.volumeLevel ?? 1);
     setZoomToolAmount(settings.zoomToolAmount ?? 1);
-    
+
     setCropCenterX(settings.cropCenterX ?? 50);
     setCropCenterY(settings.cropCenterY ?? 50);
     setCropWidthPct(settings.cropWidthPct ?? 100);
     setCropHeightPct(settings.cropHeightPct ?? 100);
-    
+
     setKeyframeMode(settings.keyframeMode || 'none');
     setKeyframeAmount(settings.keyframeAmount ?? 1.25);
-    
+
     setOverlayText(settings.overlayText || '');
     setOverlayFontId(settings.overlayFontId || 'serif');
     setOverlayFontSize(settings.overlayFontSize ?? 48);
     setOverlayColor(settings.overlayColor || '#FFFFFF');
     setOverlayPosX(settings.overlayPosX ?? 50);
     setOverlayPosY(settings.overlayPosY ?? 50);
-    
+
     setBlurAmount(settings.blurAmount ?? 10);
     setBrightness(settings.brightness ?? 1);
     setContrast(settings.contrast ?? 1);
@@ -2890,7 +2851,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
       ) {
         return prev;
       }
-      
+
       return {
         ...prev,
         [activePreviewId]: {
@@ -3025,9 +2986,9 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
   const togglePlay = () => {
     console.log("📹 [PLAYBACK] togglePlay called, current isPlaying:", isPlaying);
     const activeItem = mediaItems.find(i => i.id === activePreviewId);
-    
+
     console.log("📹 [PLAYBACK] Active item:", { id: activeItem?.id, type: activeItem?.type, hasVideoRef: !!videoRef.current });
-    
+
     // If there are no media items, don't try to play
     if (!activeItem || mediaItems.length === 0) {
       console.log("📹 [PLAYBACK] No active item or media items");
@@ -3060,7 +3021,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
     if (videoRef.current && mediaItems.length > 0) {
       const activeIndex = mediaItems.findIndex(i => i.id === activePreviewId);
       if (activeIndex < 0) return; // Safety check
-      
+
       const activeItem = activeIndex >= 0 ? mediaItems[activeIndex] : null;
       const timeBefore = mediaItems
         .slice(0, activeIndex)
@@ -3182,13 +3143,13 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
   // Handle play/pause state
   useEffect(() => {
     const activeItem = mediaItems.find(i => i.id === activePreviewId);
-    console.log("📹 [PLAYBACK] useEffect triggered:", { 
-      isPlaying, 
+    console.log("📹 [PLAYBACK] useEffect triggered:", {
+      isPlaying,
       activeId: activePreviewId,
       activeItemType: activeItem?.type,
-      hasVideoRef: !!videoRef.current 
+      hasVideoRef: !!videoRef.current
     });
-    
+
     if (!videoRef.current || !activeItem || activeItem.type !== 'video') {
       console.log("📹 [PLAYBACK] useEffect skipped - video ref or active item missing", {
         videoRef: !!videoRef.current,
@@ -3200,7 +3161,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
 
     const video = videoRef.current;
     console.log("📹 [PLAYBACK] useEffect updating play state:", { isPlaying, videoElementExists: !!video });
-    
+
     if (isPlaying) {
       const playPromise = video.play();
       if (playPromise !== undefined) {
@@ -3237,7 +3198,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
 
   useEffect(() => {
     const isMutedDeck = isMuted;
-    
+
     // Set video element volume/mute
     if (videoRef.current) {
       const videoShouldMute = isMutedDeck || (selectedMusic ? selectedMusic.muteOriginal : false);
@@ -3266,7 +3227,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
       if (activeItem?.type === 'video') {
         videoRef.current.currentTime = 0;
       }
-      
+
       if (isPlaying) {
         videoRef.current.play().catch(() => {
           // If autoplay with audio is blocked, force muted playback for reliable preview.
@@ -3325,8 +3286,8 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
     const activeCanvasMode = CANVAS_PREVIEW_EFFECTS.includes(selectedEffect)
       ? selectedEffect
       : CANVAS_PREVIEW_FILTERS.includes(selectedFilter)
-      ? selectedFilter
-      : null;
+        ? selectedFilter
+        : null;
 
     if (!activeCanvasMode) {
       if (greenScreenAnimationRef.current !== null) {
@@ -3351,7 +3312,17 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
           canvas.height = video.videoHeight;
         }
 
+        ctx.save();
+        if (activeCanvasMode === 'shake') {
+          const strength = typeof shakeStrength !== 'undefined' ? shakeStrength : 1.5;
+          const t = performance.now() / 1000;
+          const x = Math.sin(t * 22) * strength * 4.5;
+          const y = Math.cos(t * 17) * strength * 3.5;
+          ctx.translate(x, y);
+        }
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        ctx.restore();
+
         if (activeCanvasMode === 'green-screen') {
           const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
           const data = imageData.data;
@@ -3401,11 +3372,11 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
 
         if (activeCanvasMode === 'soft-glow') {
           ctx.save();
-          ctx.globalAlpha = 0.3;
-          ctx.filter = 'blur(2px) brightness(1.1)';
-          ctx.drawImage(canvas, 0, 0, canvas.width, canvas.height);
+          ctx.globalAlpha = 0.45;
+          ctx.filter = 'blur(6px) brightness(1.2)';
+          ctx.globalCompositeOperation = 'screen';
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
           ctx.restore();
-          ctx.filter = 'none';
         }
 
         if (activeCanvasMode === 'retro-film') {
@@ -3437,23 +3408,116 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
           ctx.restore();
         }
 
+        if (activeCanvasMode === 'old-tv') {
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const data = imageData.data;
+          const w = canvas.width;
+          const h = canvas.height;
+
+          // Faster chromatic aberration, noise, color grade, and scanlines in one pass
+          const tempBuffer = new Uint8ClampedArray(data);
+
+          for (let y = 0; y < h; y++) {
+            const isScanline = (y % 4 === 0 || y % 4 === 1);
+            const scanlineFactor = isScanline ? 0.82 : 1.0;
+
+            for (let x = 0; x < w; x++) {
+              const destIdx = (y * w + x) * 4;
+
+              // Chromatic aberration (chromashift: cbh=3, cbv=2, crh=-3, crv=-2)
+              const rx = Math.max(0, Math.min(w - 1, x - 3));
+              const ry = Math.max(0, Math.min(h - 1, y - 2));
+              const rIdx = (ry * w + rx) * 4;
+
+              const bx = Math.max(0, Math.min(w - 1, x + 3));
+              const by = Math.max(0, Math.min(h - 1, y + 2));
+              const bIdx = (by * w + bx) * 4;
+
+              let r = tempBuffer[rIdx];
+              let g = tempBuffer[destIdx + 1];
+              let b = tempBuffer[bIdx + 2];
+
+              // Contrast (1.12), brightness (+5), and saturation (0.85) adjustments
+              r = (r - 128) * 1.12 + 128 + 5;
+              g = (g - 128) * 1.12 + 128 + 5;
+              b = (b - 128) * 1.12 + 128 + 5;
+
+              const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+              r = gray + (r - gray) * 0.85;
+              g = gray + (g - gray) * 0.85;
+              b = gray + (b - gray) * 0.85;
+
+              // Warm hue/tint shift
+              r = r * 1.02;
+              g = g * 1.01;
+              b = b * 0.96;
+
+              // Per-frame noise
+              const grain = (Math.random() - 0.5) * 26;
+              r += grain;
+              g += grain;
+              b += grain;
+
+              // Scanline factor
+              r *= scanlineFactor;
+              g *= scanlineFactor;
+              b *= scanlineFactor;
+
+              // Vignette (angle=0.6)
+              const dx = (x - w / 2) / (w / 2);
+              const dy = (y - h / 2) / (h / 2);
+              const distSq = dx * dx + dy * dy;
+              const vignette = Math.max(0.4, 1.0 - distSq * 0.45);
+
+              data[destIdx] = Math.max(0, Math.min(255, r * vignette));
+              data[destIdx + 1] = Math.max(0, Math.min(255, g * vignette));
+              data[destIdx + 2] = Math.max(0, Math.min(255, b * vignette));
+            }
+          }
+          ctx.putImageData(imageData, 0, 0);
+        }
+
         // Transition previews are handled by per-clip transition overlay,
         // not by global effect canvas rendering.
 
-        if (activeCanvasMode === 'text-animation' && overlayText.trim().length > 0) {
-          const textProgress = (video.currentTime * 2) % 2;
-          const scale = 1 + Math.sin(textProgress * Math.PI) * 0.3;
-          ctx.save();
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-          ctx.font = 'bold 64px Arial';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.shadowColor = 'rgba(0,0,0,0.8)';
-          ctx.shadowBlur = 20;
-          ctx.translate(canvas.width / 2, canvas.height / 2);
-          ctx.scale(scale, scale);
-          ctx.fillText(overlayText, 0, 0);
-          ctx.restore();
+        if (activeCanvasMode === 'rgb-split') {
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const data = imageData.data;
+          const w = canvas.width;
+          const h = canvas.height;
+          const amount = Math.max(1, rgbSplitAmount || 12);
+          const shift = Math.round(amount * 0.5);
+
+          const tempBuffer = new Uint8ClampedArray(data);
+
+          for (let y = 0; y < h; y++) {
+            for (let x = 0; x < w; x++) {
+              const destIdx = (y * w + x) * 4;
+
+              // Shift red channel to the left, blue channel to the right
+              const rx = Math.max(0, Math.min(w - 1, x - shift));
+              const bx = Math.max(0, Math.min(w - 1, x + shift));
+
+              data[destIdx] = tempBuffer[(y * w + rx) * 4];       // Red
+              data[destIdx + 2] = tempBuffer[(y * w + bx) * 4 + 2]; // Blue
+            }
+          }
+          ctx.putImageData(imageData, 0, 0);
+        }
+
+        if (activeCanvasMode === 'film-grain') {
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const data = imageData.data;
+          const opacity = typeof filmGrainOpacity !== 'undefined' ? filmGrainOpacity : 0.4;
+          const grainRange = opacity * 40;
+
+          for (let i = 0; i < data.length; i += 4) {
+            const grain = (Math.random() - 0.5) * grainRange;
+            data[i] = Math.max(0, Math.min(255, data[i] + grain));
+            data[i + 1] = Math.max(0, Math.min(255, data[i + 1] + grain));
+            data[i + 2] = Math.max(0, Math.min(255, data[i + 2] + grain));
+          }
+          ctx.putImageData(imageData, 0, 0);
         }
 
         if (activeCanvasMode === 'motion-tracking') {
@@ -3492,7 +3556,17 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
         greenScreenAnimationRef.current = null;
       }
     };
-  }, [selectedEffect, selectedFilter, isPlaying, activePreviewId, glitchIntensity, overlayText]);
+  }, [
+    selectedEffect,
+    selectedFilter,
+    isPlaying,
+    activePreviewId,
+    glitchIntensity,
+    overlayText,
+    shakeStrength,
+    rgbSplitAmount,
+    filmGrainOpacity,
+  ]);
 
   // Keep timeline thumbnail videos in sync with the main preview transport state.
   useEffect(() => {
@@ -3526,7 +3600,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
         setActivePreviewId(transitionOverlay.toId);
         setTransitionOverlay(null);
         setTransitionProgress(0);
-        
+
         // Ensure playback continues on the next clip
         if (isPlaying) {
           setTimeout(() => {
@@ -3651,7 +3725,6 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
     if (selectedEffect === 'smooth-zoom') return 'contrast(1.1)';
     if (selectedEffect === 'velocity') return 'saturate(1.1)';
     if (selectedEffect === 'glitch') return 'contrast(1.1) saturate(1.25)';
-    if (selectedEffect === 'animated-captions') return 'contrast(1.05)';
     return 'none';
   };
 
@@ -3838,7 +3911,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
     setMediaItems((prev) => {
       const updated = [...prev];
       let fromIdx = -1;
-      
+
       if (typeof fromIndexOrId === 'number') {
         fromIdx = fromIndexOrId;
       } else {
@@ -3849,7 +3922,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
 
       const [removed] = updated.splice(fromIdx, 1);
       updated.splice(toIndex, 0, removed);
-      
+
       saveToUndo(updated);
       return updated;
     });
@@ -3859,13 +3932,13 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
     setMediaItems((prev) => {
       const updated = prev.filter((item) => item.id !== clipId);
       saveToUndo(updated);
-      
+
       // If the deleted clip was active, select a new active clip
       if (activePreviewId === clipId) {
         const newActiveId = updated.length > 0 ? updated[0].id : null;
         setActivePreviewId(newActiveId);
       }
-      
+
       return updated;
     });
   }, [activePreviewId, saveToUndo]);
@@ -3924,19 +3997,19 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
         return;
       }
 
-      console.log("📝 [TRANSITIONS] Applying transition to clip", { 
-        clipId: activePreviewId, 
+      console.log("📝 [TRANSITIONS] Applying transition to clip", {
+        clipId: activePreviewId,
         transition,
-        allClipTransitions: clipTransitions 
+        allClipTransitions: clipTransitions
       });
-      
+
       // Save transition to state - this is what gets sent to the backend
       setClipTransitions((prev) => {
         const updated = { ...prev, [activePreviewId]: transition };
-        console.log("✅ [TRANSITIONS] Transition saved to state", { 
+        console.log("✅ [TRANSITIONS] Transition saved to state", {
           clipId: activePreviewId,
           transition,
-          updated 
+          updated
         });
         return updated;
       });
@@ -3945,14 +4018,14 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
       if (currentIndex !== -1 && currentIndex < mediaItems.length - 1) {
         // Only show preview if there's a next clip
         const nextId = mediaItems[currentIndex + 1].id;
-        
+
         console.log("📺 [TRANSITIONS] Playing preview animation", {
           from: activePreviewId,
           to: nextId,
           type: transition,
           message: "Preview shows what transition will look like in final video"
         });
-        
+
         setTransitionOverlay({
           fromId: activePreviewId,
           toId: nextId,
@@ -4017,6 +4090,18 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
             rgbSplitAmount: settings.rgbSplitAmount ?? 12,
             smoothZoomAmount: settings.smoothZoomAmount ?? 0.35,
             filmGrainOpacity: settings.filmGrainOpacity ?? 0.4,
+          },
+          textOverlay: {
+            enabled: (settings.overlayText || '').trim().length > 0,
+            text: settings.overlayText || '',
+            fontId: settings.overlayFontId || 'serif',
+            fontFamily: textFontOptions.find((f) => f.id === settings.overlayFontId)?.family || textFontOptions[0].family,
+            fontSize: settings.overlayFontSize ?? 48,
+            color: settings.overlayColor || '#FFFFFF',
+            position: {
+              x: settings.overlayPosX ?? 50,
+              y: settings.overlayPosY ?? 50,
+            },
           },
         };
       });
@@ -4121,9 +4206,9 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
           keyframeMode === 'none'
             ? []
             : [
-                { time: 0, value: keyframeMode === 'zoom-out' ? keyframeAmount : 1 },
-                { time: 1, value: keyframeMode === 'zoom-in' ? keyframeAmount : 1 },
-              ],
+              { time: 0, value: keyframeMode === 'zoom-out' ? keyframeAmount : 1 },
+              { time: 1, value: keyframeMode === 'zoom-in' ? keyframeAmount : 1 },
+            ],
       },
       aiOptions,
       prompt,
@@ -4135,6 +4220,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
           effect: item.effect,
           filter: item.filter,
           effectSettings: item.effectSettings,
+          textOverlay: item.textOverlay,
         })),
         count: mediaForProcessing.length,
       },
@@ -4308,7 +4394,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
-          
+
           <div className="flex items-center gap-4">
             <button className="flex flex-col items-center gap-1 text-slate-400 hover:text-white transition-colors group">
               <ImageIcon className="w-4 h-4 group-hover:scale-110 transition-transform" />
@@ -4368,13 +4454,13 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
 
       {/* Main Multi-Pane Studio Area */}
       <main className="flex-1 flex flex-col overflow-hidden relative z-10">
-        
+
         {/* Top Part of Workspace: Three Column Layout */}
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden border-b border-white/10">
-          
+
           {/* Left Column: Swapped Layout (Toolbox on Left, Categories/Media on Right) */}
           <aside className="w-[380px] flex-none flex bg-[#0B1020]/40 backdrop-blur-md overflow-hidden relative border-r border-white/10">
-            
+
             {/* Toolbox Column (Left) */}
             <div className="flex-1 flex flex-col bg-[#0b0d26] border-r border-white/10 relative">
               <div className="flex items-center justify-between p-3 border-b border-white/10">
@@ -4539,8 +4625,8 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                   onClick={() => setIsCategoriesOpen(!isCategoriesOpen)}
                   className="p-1 rounded hover:bg-white/10 text-slate-400 hover:text-white transition-all w-full flex justify-center"
                 >
-                  <svg 
-                    className={`w-4 h-4 transition-transform ${isCategoriesOpen ? 'rotate-180' : ''}`} 
+                  <svg
+                    className={`w-4 h-4 transition-transform ${isCategoriesOpen ? 'rotate-180' : ''}`}
                     fill="none" viewBox="0 0 24 24" stroke="currentColor"
                   >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
@@ -4586,9 +4672,9 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
               <motion.div
                 ref={previewFrameRef}
                 layout
-                style={{ 
-                  aspectRatio: getRatioValue(), 
-                  width: getRatioValue() > 1 ? '100%' : 'auto', 
+                style={{
+                  aspectRatio: getRatioValue(),
+                  width: getRatioValue() > 1 ? '100%' : 'auto',
                   height: getRatioValue() > 1 ? 'auto' : '100%',
                   maxWidth: '100%',
                   maxHeight: '90%'
@@ -4660,7 +4746,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                                 }
                               }
                             }}
-                            onCanPlay={(e) => { 
+                            onCanPlay={(e) => {
                               const videoElement = e.currentTarget;
                               console.log("📹 [PLAYBACK] onCanPlay fired, isPlaying:", isPlaying, "videoElement:", !!videoElement);
                               if (isPlaying && videoElement) {
@@ -4689,7 +4775,16 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                             playsInline
                           />
                           {(CANVAS_PREVIEW_EFFECTS.includes(selectedEffect) || CANVAS_PREVIEW_FILTERS.includes(selectedFilter)) && (
-                            <canvas ref={greenScreenCanvasRef} className="w-full h-full object-contain" />
+                            <canvas
+                              ref={greenScreenCanvasRef}
+                              className="w-full h-full object-contain"
+                              style={{
+                                filter: getCombinedPreviewFilterCss(),
+                                transform: getPreviewTransform(),
+                                clipPath: getPreviewClipPath(),
+                                transformOrigin: 'center center',
+                              }}
+                            />
                           )}
                         </>
                       ) : (
@@ -4738,21 +4833,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                           }}
                         />
                       )}
-                      {selectedEffect === 'animated-captions' && animatedText.trim() !== '' && (
-                        <div
-                          className="absolute left-1/2 bottom-10 -translate-x-1/2 px-4 py-2 rounded-2xl text-center text-white pointer-events-none"
-                          style={{
-                            ...getOverlayTextStylePresetCss(overlayTextStylePreset),
-                            background: getOverlayTextStylePresetCss(overlayTextStylePreset).background || 'rgba(15,23,42,0.7)',
-                            border: getOverlayTextStylePresetCss(overlayTextStylePreset).border || '1px solid rgba(255,255,255,0.08)',
-                            boxShadow: getOverlayTextStylePresetCss(overlayTextStylePreset).boxShadow || '0 16px 40px rgba(0,0,0,0.24)',
-                            transform: `translateX(-50%) translateY(${Math.sin((progress / 100) * Math.PI * 2) * 6}px)`,
-                            opacity: 0.95,
-                          }}
-                        >
-                          {animatedText}
-                        </div>
-                      )}
+                      {/* Animated captions preview removed */}
                     </motion.div>
                   ) : (
                     <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-center p-6">
@@ -4805,7 +4886,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                   </div>
                 )}
 
-                {selectedEffect !== 'text-animation' && overlayText.trim().length > 0 && (
+                {overlayText.trim().length > 0 && (
                   <div
                     className="absolute z-40 pointer-events-none select-none text-center"
                     style={{
@@ -4829,21 +4910,21 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                     style={
                       readLineDirection === 'horizontal'
                         ? {
-                            top: `${readLinePosition}%`,
-                            left: 0,
-                            right: 0,
-                            height: '2px',
-                            background: 'linear-gradient(90deg, transparent 0%, rgba(168, 85, 247,0.9) 20%, rgba(168, 85, 247,1) 50%, rgba(168, 85, 247,0.9) 80%, transparent 100%)',
-                            boxShadow: '0 0 8px rgba(168, 85, 247,0.7), 0 0 24px rgba(168, 85, 247,0.25)',
-                          }
+                          top: `${readLinePosition}%`,
+                          left: 0,
+                          right: 0,
+                          height: '2px',
+                          background: 'linear-gradient(90deg, transparent 0%, rgba(168, 85, 247,0.9) 20%, rgba(168, 85, 247,1) 50%, rgba(168, 85, 247,0.9) 80%, transparent 100%)',
+                          boxShadow: '0 0 8px rgba(168, 85, 247,0.7), 0 0 24px rgba(168, 85, 247,0.25)',
+                        }
                         : {
-                            left: `${readLinePosition}%`,
-                            top: 0,
-                            bottom: 0,
-                            width: '2px',
-                            background: 'linear-gradient(180deg, transparent 0%, rgba(168, 85, 247,0.9) 20%, rgba(168, 85, 247,1) 50%, rgba(168, 85, 247,0.9) 80%, transparent 100%)',
-                            boxShadow: '0 0 8px rgba(168, 85, 247,0.7), 0 0 24px rgba(168, 85, 247,0.25)',
-                          }
+                          left: `${readLinePosition}%`,
+                          top: 0,
+                          bottom: 0,
+                          width: '2px',
+                          background: 'linear-gradient(180deg, transparent 0%, rgba(168, 85, 247,0.9) 20%, rgba(168, 85, 247,1) 50%, rgba(168, 85, 247,0.9) 80%, transparent 100%)',
+                          boxShadow: '0 0 8px rgba(168, 85, 247,0.7), 0 0 24px rgba(168, 85, 247,0.25)',
+                        }
                     }
                   />
                 )}
@@ -4952,9 +5033,8 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                 <button
                   onClick={() => setShowReadLine(v => !v)}
                   title={showReadLine ? 'Hide Read Line' : 'Show Read Line'}
-                  className={`p-1 rounded transition-all ${
-                    showReadLine ? 'text-purple-400 bg-purple-500/15' : 'text-slate-500 hover:text-white'
-                  }`}
+                  className={`p-1 rounded transition-all ${showReadLine ? 'text-purple-400 bg-purple-500/15' : 'text-slate-500 hover:text-white'
+                    }`}
                 >
                   <ScanLine className="w-4 h-4" />
                 </button>
@@ -4999,7 +5079,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
             <div className="p-4 border-b border-white/5 bg-black/20">
               <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">Media Pool</span>
             </div>
-            
+
             <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
               <div className="flex flex-col gap-3">
                 {mediaItems.map((item, i) => (
@@ -5010,11 +5090,10 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                     onDragStart={(e: any) => {
                       e.dataTransfer.setData('clipId', item.id);
                     }}
-                    className={`group relative aspect-video rounded-xl border-2 transition-all cursor-pointer overflow-hidden bg-slate-900 ${
-                      activePreviewId === item.id
+                    className={`group relative aspect-video rounded-xl border-2 transition-all cursor-pointer overflow-hidden bg-slate-900 ${activePreviewId === item.id
                         ? 'border-purple-500 shadow-[0_0_15px_rgba(168, 85, 247,0.3)]'
                         : 'border-white/10 hover:border-white/30'
-                    }`}
+                      }`}
                   >
                     {item.type === 'video' ? (
                       <video
@@ -5041,7 +5120,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                     </div>
                   </div>
                 ))}
-                
+
                 <button
                   onClick={() => mediaInputRef.current?.click()}
                   className="w-full aspect-video rounded-xl border-2 border-dashed border-white/10 bg-white/5 hover:border-white/30 hover:bg-white/10 transition-all text-slate-400 hover:text-white flex flex-col items-center justify-center gap-2"
@@ -5065,10 +5144,9 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
         </div>
 
         {/* Bottom Panel: Multitrack Timeline lanes and Audio Mixer */}
-        <div className={`${
-          timelineSize === 'minimized' ? 'h-[120px]' : 
-          timelineSize === 'maximized' ? 'h-[460px]' : 'h-[280px]'
-        } flex-none border-t border-white/10 bg-black/25 backdrop-blur-3xl flex p-4 gap-4 overflow-hidden select-none transition-all duration-300`}>
+        <div className={`${timelineSize === 'minimized' ? 'h-[120px]' :
+            timelineSize === 'maximized' ? 'h-[460px]' : 'h-[280px]'
+          } flex-none border-t border-white/10 bg-black/25 backdrop-blur-3xl flex p-4 gap-4 overflow-hidden select-none transition-all duration-300`}>
           {/* Timeline hub container */}
           <div className="flex-1 overflow-hidden h-full">
             <TimelineHub
@@ -5115,7 +5193,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
       {/* Global Actions Footer Bar */}
       <footer className="h-16 flex-none border-t border-white/10 bg-[#070814]/80 flex items-center justify-between px-6 z-20 select-none">
         <div className="flex items-center gap-3">
-          <button 
+          <button
             onClick={() => setIsMusicPickerOpen(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-300 hover:bg-purple-500/20 transition-all font-bold text-[9px] uppercase tracking-wider"
             title="Add background music"

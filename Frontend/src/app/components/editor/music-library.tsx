@@ -1,19 +1,13 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Card } from "../ui/card";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { ScrollArea } from "../ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
-import { Music, Play, Pause, Search, Flame, Grid2X2, List } from "lucide-react";
+import { Music, Play, Pause, Search, Flame, Grid2X2, List, Loader2 } from "lucide-react";
 import {
-  MUSIC_LIBRARY,
-  searchMusicLibrary,
-  getTrendingMusic,
-  getMusicByGenre,
-  getMusicByMood,
-  getGenres,
-  getMoods,
+  fetchMusicLibrary,
   MusicTrack,
 } from "../../../lib/music-library";
 import { useMusicContext, SelectedMusic } from "../../context/music-context";
@@ -32,23 +26,50 @@ export const MusicLibrary: React.FC<MusicLibraryProps> = ({ videoDuration, onSel
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const previewAudioRef = React.useRef<HTMLAudioElement>(null);
 
-  const genres = useMemo(() => getGenres(), []);
-  const moods = useMemo(() => getMoods(), []);
+  const [tracks, setTracks] = useState<MusicTrack[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Load live tracks from Feed.fm proxy (with fallback)
+  useEffect(() => {
+    let active = true;
+    setIsLoading(true);
+    fetchMusicLibrary(searchQuery).then((loadedTracks) => {
+      if (active) {
+        setTracks(loadedTracks);
+        setIsLoading(false);
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, [searchQuery]);
+
+  const genres = useMemo(() => {
+    return Array.from(new Set(tracks.map((t) => t.genre))).filter(Boolean);
+  }, [tracks]);
+
+  const moods = useMemo(() => {
+    return Array.from(new Set(tracks.map((t) => t.mood))).filter(Boolean);
+  }, [tracks]);
 
   // Filter logic
   const filteredTracks = useMemo(() => {
-    let tracks = searchQuery ? searchMusicLibrary(searchQuery) : MUSIC_LIBRARY;
+    let list = [...tracks];
 
     if (selectedGenre) {
-      tracks = tracks.filter((t) => t.genre === selectedGenre);
+      list = list.filter((t) => t.genre === selectedGenre);
     }
 
     if (selectedMood) {
-      tracks = tracks.filter((t) => t.mood === selectedMood);
+      list = list.filter((t) => t.mood === selectedMood);
     }
 
-    return tracks;
-  }, [searchQuery, selectedGenre, selectedMood]);
+    return list;
+  }, [tracks, selectedGenre, selectedMood]);
+
+  const trendingTracks = useMemo(() => {
+    return tracks.filter((t) => t.trending);
+  }, [tracks]);
 
   const handleSelectTrack = (track: MusicTrack) => {
     const selectedMusic: SelectedMusic = {
@@ -300,7 +321,12 @@ export const MusicLibrary: React.FC<MusicLibraryProps> = ({ videoDuration, onSel
         <TabsContent value="all" className="space-y-3">
           <ScrollArea className="h-[400px] w-full">
             <div className={viewMode === "grid" ? "grid grid-cols-2 gap-2 pr-4" : "space-y-2 pr-4"}>
-              {filteredTracks.length > 0 ? (
+              {isLoading ? (
+                <div className="col-span-full py-12 flex flex-col items-center justify-center text-white/50 gap-2">
+                  <Loader2 className="w-6 h-6 animate-spin text-purple-400" />
+                  <span className="text-xs uppercase tracking-wider font-bold">Syncing tracks...</span>
+                </div>
+              ) : filteredTracks.length > 0 ? (
                 filteredTracks.map((track) =>
                   viewMode === "grid" ? (
                     <TrackCard key={track.id} track={track} />
@@ -320,8 +346,13 @@ export const MusicLibrary: React.FC<MusicLibraryProps> = ({ videoDuration, onSel
         <TabsContent value="trending" className="space-y-3">
           <ScrollArea className="h-[400px] w-full">
             <div className={viewMode === "grid" ? "grid grid-cols-2 gap-2 pr-4" : "space-y-2 pr-4"}>
-              {getTrendingMusic().length > 0 ? (
-                getTrendingMusic().map((track) =>
+              {isLoading ? (
+                <div className="col-span-full py-12 flex flex-col items-center justify-center text-white/50 gap-2">
+                  <Loader2 className="w-6 h-6 animate-spin text-purple-400" />
+                  <span className="text-xs uppercase tracking-wider font-bold">Syncing tracks...</span>
+                </div>
+              ) : trendingTracks.length > 0 ? (
+                trendingTracks.map((track) =>
                   viewMode === "grid" ? (
                     <TrackCard key={track.id} track={track} />
                   ) : (

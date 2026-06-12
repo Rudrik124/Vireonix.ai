@@ -74,7 +74,11 @@ app.use(cors());
 app.use(express.json());
 
 // ✅ SET FFMPEG
-ffmpeg.setFfmpegPath(ffmpegPath);
+if (ffmpegPath && fs.existsSync(ffmpegPath)) {
+  ffmpeg.setFfmpegPath(ffmpegPath);
+} else {
+  console.log("⚠️ Static ffmpeg binary not found at " + ffmpegPath + ". Falling back to system global ffmpeg.");
+}
 
 // ✅ FILE UPLOAD (uses OS temp directory – no local uploads/ folder)
 const upload = multer({ dest: os.tmpdir() });
@@ -117,11 +121,29 @@ const buildSrt = (captions) => {
 };
 
 const normalizeSubtitlePath = (filePath) => {
-  let normalized = filePath.replace(/\\/g, "/");
-  if (/^[a-zA-Z]:/.test(normalized)) {
-    normalized = normalized.charAt(0) + "\\:" + normalized.substring(2);
+  const relPath = path.relative(process.cwd(), filePath);
+  let normalized = relPath.replace(/\\/g, "/");
+  
+  if (path.isAbsolute(normalized)) {
+    if (/^[a-zA-Z]:/.test(normalized)) {
+      normalized = normalized.charAt(0) + "\\:" + normalized.substring(2);
+    }
+    normalized = normalized.replace(/'/g, "\\'");
+    return `'${normalized}'`;
   }
+  
+  if (normalized.includes(" ") || normalized.includes("'")) {
+    normalized = normalized.replace(/:/g, "\\:");
+    normalized = normalized.replace(/'/g, "\\'");
+    return `'${normalized}'`;
+  }
+  
   return normalized;
+};
+
+const makeLocalAssPath = () => {
+  const unique = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  return path.join(process.cwd(), `temp-captions-${unique}.ass`);
 };
 
 const convertHexToAssColor = (hex) => {
@@ -131,9 +153,74 @@ const convertHexToAssColor = (hex) => {
     const rr = clean.substring(0, 2);
     const gg = clean.substring(2, 4);
     const bb = clean.substring(4, 6);
-    return `&H${bb}${gg}${rr}&`;
+    return `&H00${bb}${gg}${rr}&`;
   }
   return "&HFFFFFF&";
+};
+
+const convertHexToAssColorWithAlpha = (hex, alphaHex = "00") => {
+  if (!hex || !hex.startsWith("#")) return `&H${alphaHex}FFFFFF&`;
+  const clean = hex.replace("#", "");
+  if (clean.length === 6) {
+    const rr = clean.substring(0, 2);
+    const gg = clean.substring(2, 4);
+    const bb = clean.substring(4, 6);
+    return `&H${alphaHex}${bb}${gg}${rr}&`;
+  }
+  return `&H${alphaHex}FFFFFF&`;
+};
+
+const buildAss = (captions, style = {}) => {
+  const fontName = style.fontFamily || "Arial";
+  const fontSize = style.fontSize || 26;
+  const primaryColor = convertHexToAssColor(style.color || "#FFFFFF");
+  const backColor = style.bgEnabled 
+    ? convertHexToAssColorWithAlpha(style.bgColorHex || "#000000", "33") 
+    : "&HFF000000&";
+  const borderStyle = style.bgEnabled ? 3 : 1;
+  const bold = style.bold ? -1 : 0;
+  const italic = style.italic ? -1 : 0;
+  const outline = style.outline ? 2 : 0;
+  const shadow = style.bgEnabled ? 0 : 1;
+  const alignment = style.alignment === "left" ? 4 : style.alignment === "right" ? 6 : 5;
+  
+  const playResX = 1280;
+  const playResY = 720;
+  
+  const posX = style.posX != null ? Number(style.posX) : 50;
+  const posY = style.posY != null ? Number(style.posY) : 80;
+  const x = Math.round((posX / 100) * playResX);
+  const y = Math.round((posY / 100) * playResY);
+
+  const header = `[Script Info]
+ScriptType: v4.00+
+PlayResX: ${playResX}
+PlayResY: ${playResY}
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Default,${fontName},${fontSize},${primaryColor},&H00FFFF00&,&H00000000&,${backColor},${bold},${italic},0,0,100,100,0,0,${borderStyle},${outline},${shadow},${alignment},10,10,10,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text`;
+
+  const dialogues = captions.map((caption) => {
+    const formatTime = (timeSecs) => {
+      const hrs = Math.floor(timeSecs / 3600);
+      const mins = Math.floor((timeSecs % 3600) / 60);
+      const secs = Math.floor(timeSecs % 60);
+      const centisecs = Math.floor((timeSecs % 1) * 100);
+      return `${hrs}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}.${centisecs.toString().padStart(2, "0")}`;
+    };
+
+    const start = formatTime(caption.startTime);
+    const end = formatTime(caption.endTime);
+    const text = caption.text.replace(/\r?\n/g, "\\N");
+
+    return `Dialogue: 0,${start},${end},Default,,0,0,0,,{\\pos(${x},${y})}${text}`;
+  });
+
+  return [header, ...dialogues].join("\n");
 };
 
 // ✅ INIT SUPABASE (env-only, no hardcoded secrets)
@@ -1583,11 +1670,6 @@ const applyEffectsToVideo = async (inputPath, effects, durationSeconds = 10) => 
     videoFilters.push("lutrgb=g='val*0.15'");
   }
 
-  if (selectedEffect === "text-animation") {
-    const text = escapeDrawtext(settings.animatedText || "YOUR TEXT HERE");
-    videoFilters.push(`drawtext=text='${text}':x=(w-text_w)/2:y=(h-text_h)/2:fontsize=64:fontcolor=white:shadowcolor=black@0.8:shadowx=2:shadowy=2:alpha='0.7+0.3*sin(2*PI*t)'`);
-  }
-
   if (selectedEffect === "motion-tracking") {
     // Approximate motion highlight effect with frame-difference style rendering.
     videoFilters.push("tblend=all_mode=difference,eq=contrast=2.0:brightness=0.05:saturation=0");
@@ -1607,21 +1689,26 @@ const applyEffectsToVideo = async (inputPath, effects, durationSeconds = 10) => 
   }
 
   if (selectedEffect === "motion-blur") {
-    const frames = Math.max(0, Math.min(25, Number(settings.motionBlurAmount) ?? 8));
+    const frames = Math.max(0, Math.min(25, Number(settings.motionBlurAmount) || 8));
     if (frames > 1) {
+      // Force constant frame rate first so tmix doesn't corrupt PTS / playback speed on VFR videos
+      const fps = metadata.fps || 30;
+      videoFilters.push(`fps=${fps}`);
       videoFilters.push(`tmix=frames=${frames}`);
+      // Add a slight spatial blur to enhance the motion blur look and guarantee visible blur
+      videoFilters.push("gblur=sigma=1.0");
     }
   }
 
   if (selectedEffect === "flash-effect") {
-    const intensity = Math.max(0.01, Math.min(2.0, Number(settings.flashIntensity) ?? 0.75));
+    const intensity = Math.max(0.01, Math.min(2.0, Number(settings.flashIntensity) || 0.75));
     const br = (0.20 * intensity).toFixed(3);
     const co = (1 + 0.20 * intensity).toFixed(3);
     videoFilters.push(`eq=brightness=${br}:contrast=${co}`);
   }
 
   if (selectedEffect === "rgb-split") {
-    const amount = Math.max(0, Math.min(50, Number(settings.rgbSplitAmount) ?? 12));
+    const amount = Math.max(0, Math.min(50, Number(settings.rgbSplitAmount) || 12));
     const cbh = Math.round(amount / 3);
     const crh = Math.round(-amount / 3);
     videoFilters.push(`chromashift=cbh=${cbh}:cbv=0:crh=${crh}:crv=0,eq=contrast=1.2:saturation=1.3`);
@@ -1629,20 +1716,15 @@ const applyEffectsToVideo = async (inputPath, effects, durationSeconds = 10) => 
 
   if (selectedEffect === "smooth-zoom") {
     const dur = Number(durationSeconds) || 10;
-    const amount = Math.max(0.01, Math.min(2.0, Number(settings.smoothZoomAmount) ?? 0.35));
+    const amount = Math.max(0.01, Math.min(2.0, Number(settings.smoothZoomAmount) || 0.35));
     const zoomScale = (0.12 * (amount / 0.35)).toFixed(4);
     videoFilters.push(`zoompan=z='1+${zoomScale}*sin(PI*on/(${metadata.fps}*${dur}))':x='iw/2-(iw/zoom)/2':y='ih/2-(ih/zoom)/2':d=1:s=${metadata.width}x${metadata.height}:fps=${metadata.fps}`);
   }
 
   if (selectedEffect === "film-grain") {
-    const opacity = Math.max(0.01, Math.min(1.0, Number(settings.filmGrainOpacity) ?? 0.4));
+    const opacity = Math.max(0.01, Math.min(1.0, Number(settings.filmGrainOpacity) || 0.4));
     const noiseLevel = Math.round(8 + opacity * 20);
     videoFilters.push(`noise=alls=${noiseLevel}:allf=t+u,eq=contrast=1.05:saturation=1.1`);
-  }
-
-  if (selectedEffect === "animated-captions") {
-    // No-op or return inputPath, as captions are processed separately.
-    console.log("ℹ️ [API-MEDIA] animated-captions placeholder no-op");
   }
 
   // --- NEW FILTERS ---
@@ -1693,6 +1775,7 @@ const applyEffectsToVideo = async (inputPath, effects, durationSeconds = 10) => 
     videoFilters.push("chromashift=cbh=3:cbv=2:crh=-3:crv=-2");
     videoFilters.push("vignette=angle=0.6:mode=forward");
     videoFilters.push("hue=h=4");
+    videoFilters.push("drawgrid=width=iw:height=4:thickness=1:color=black@0.15");
   }
 
   if (!videoFilters.length && !audioFilter) {
@@ -1819,7 +1902,6 @@ const inferEffectFromPrompt = (promptText = "") => {
   if (p.includes("slow")) return "slow-motion";
   if (p.includes("glitch")) return "glitch";
   if (p.includes("transition")) return "transition";
-  if (p.includes("text")) return "text-animation";
   if (p.includes("motion tracking")) return "motion-tracking";
   return "none";
 };
@@ -3773,7 +3855,7 @@ app.post(
             }
 
             // Apply text overlay if present (per-clip or global)
-            const textOverlay = mediaMeta?.textOverlay?.enabled ? mediaMeta.textOverlay : resolvedTextOverlay;
+            const textOverlay = mediaMeta?.textOverlay?.enabled ? mediaMeta.textOverlay : null;
             const overlayPath = await applyTextOverlayToVideo(finalSegmentPath, textOverlay);
             if (overlayPath !== finalSegmentPath) {
               generatedTempFiles.push(overlayPath);
@@ -4143,7 +4225,9 @@ app.post(
         }
       }
 
-      const textOverlayPath = await applyTextOverlayToVideo(finalOutputPath, resolvedTextOverlay);
+      const textOverlayPath = (isQuickEditMode && mediaFiles.length > 1)
+        ? finalOutputPath
+        : await applyTextOverlayToVideo(finalOutputPath, resolvedTextOverlay);
       if (textOverlayPath !== finalOutputPath) {
         generatedTempFiles.push(finalOutputPath);
         finalOutputPath = textOverlayPath;
@@ -4168,40 +4252,16 @@ app.post(
       if (Array.isArray(resolvedCaptions) && resolvedCaptions.length > 0) {
         try {
           console.log(`🎬 [API-MEDIA] Burning ${resolvedCaptions.length} captions into final video...`);
-          const srtPath = makeTempFilePath("captions.srt");
-          await fs.promises.writeFile(srtPath, buildSrt(resolvedCaptions), "utf8");
-
-          const subtitleSource = normalizeSubtitlePath(srtPath);
-          const captionedOutputPath = makeTempFilePath("burned-captions.mp4");
-
+          const assPath = makeLocalAssPath();
           const style = resolvedEditorSelections?.captionStyle || {};
-          const fontName = style.fontFamily || "Arial";
-          const fontSize = Math.round((style.fontSize || 32) * 0.75); // Scale appropriately
-          const primaryColor = convertHexToAssColor(style.color || "#FFFFFF");
-          const backColor = style.bgEnabled ? "&H80000000&" : "&H00000000&"; // 50% opacity black or fully transparent
-          const borderStyle = style.bgEnabled ? 3 : 1;
-          const bold = style.bold ? -1 : 0;
-          const italic = style.italic ? -1 : 0;
-          const outline = style.outline ? 2 : 0;
-          const shadow = style.bgEnabled ? 0 : 1;
-          const alignment = style.alignment === "left" ? 1 : style.alignment === "right" ? 3 : 2;
+          await fs.promises.writeFile(assPath, buildAss(resolvedCaptions, style), "utf8");
 
-          const forceStyle = [
-            `FontName=${fontName}`,
-            `FontSize=${fontSize}`,
-            `PrimaryColour=${primaryColor}`,
-            `BackColour=${backColor}`,
-            `BorderStyle=${borderStyle}`,
-            `Bold=${bold}`,
-            `Italic=${italic}`,
-            `Outline=${outline}`,
-            `Shadow=${shadow}`,
-            `Alignment=${alignment}`,
-          ].join(",");
+          const subtitleSource = normalizeSubtitlePath(assPath);
+          const captionedOutputPath = makeTempFilePath("burned-captions.mp4");
 
           await new Promise((resolve, reject) => {
             ffmpeg(finalOutputPath)
-              .videoFilters([`subtitles=${subtitleSource}:force_style='${forceStyle}'`])
+              .videoFilters([`subtitles=${subtitleSource}`])
               .outputOptions(["-c:v libx264", "-crf 23", "-preset veryfast"])
               .outputOptions(["-c:a copy"])
               .output(captionedOutputPath)
@@ -4211,7 +4271,7 @@ app.post(
           });
 
           generatedTempFiles.push(finalOutputPath);
-          generatedTempFiles.push(srtPath);
+          generatedTempFiles.push(assPath);
           finalOutputPath = captionedOutputPath;
           console.log("✅ [API-MEDIA] Captions burned successfully");
         } catch (captionErr) {
@@ -4741,16 +4801,26 @@ app.post("/api/burn-captions", upload.none(), async (req, res) => {
       });
     }
 
-    const srtPath = makeTempFilePath("captions.srt");
-    await fs.promises.writeFile(srtPath, buildSrt(parsedCaptions), "utf8");
+    const assPath = makeLocalAssPath();
+    const style = req.body.captionStyle ? (typeof req.body.captionStyle === "string" ? JSON.parse(req.body.captionStyle) : req.body.captionStyle) : {
+      fontFamily: "Arial",
+      fontSize: 26,
+      color: "#FFFFFF",
+      bgEnabled: true,
+      bgColorHex: "#000000",
+      bold: false,
+      outline: true,
+      posX: 50,
+      posY: 80
+    };
+    await fs.promises.writeFile(assPath, buildAss(parsedCaptions, style), "utf8");
 
     const outputPath = makeTempFilePath("burned-captions.mp4");
-    const subtitleSource = normalizeSubtitlePath(srtPath);
-    const subtitleOptions = `subtitles=${subtitleSource}:force_style='FontName=Arial,FontSize=26,PrimaryColour=&HFFFFFF&,BackColour=&H00000080&,OutlineColour=&H00000000&,BorderStyle=3,Outline=2,Shadow=1'`;
+    const subtitleSource = normalizeSubtitlePath(assPath);
 
     await new Promise((resolve, reject) => {
       ffmpeg(videoPath)
-        .videoFilters([`subtitles=${subtitleSource}:force_style='FontName=Arial,FontSize=26,PrimaryColour=&HFFFFFF&,BackColour=&H00000080&,OutlineColour=&H00000000&,BorderStyle=3,Outline=2,Shadow=1'`])
+        .videoFilters([`subtitles=${subtitleSource}`])
         .outputOptions(["-c:v libx264", "-crf 23", "-preset veryfast"])
         .outputOptions(["-c:a copy"])
         .output(outputPath)
@@ -4765,7 +4835,7 @@ app.post("/api/burn-captions", upload.none(), async (req, res) => {
     const fileStream = fs.createReadStream(outputPath);
     fileStream.on("end", () => {
       fs.unlink(outputPath, () => {});
-      fs.unlink(srtPath, () => {});
+      fs.unlink(assPath, () => {});
     });
     fileStream.pipe(res);
   } catch (error) {
@@ -4813,9 +4883,10 @@ app.post("/api/transcribe", upload.single("file"), async (req, res) => {
 
     console.log(`🎙️ [Transcribe] Audio extracted. Size: ${fs.statSync(audioPath).size} bytes`);
 
+    const targetLanguage = req.body.language || "en";
     let segments = null;
     let transcriptionText = "";
-    let transcriptionLanguage = "en";
+    let transcriptionLanguage = targetLanguage;
 
     const geminiApiKey = readEnv("GEMINI_API_KEY");
     if (!geminiApiKey) {
@@ -4869,54 +4940,85 @@ app.post("/api/transcribe", upload.single("file"), async (req, res) => {
       
       transcriptionText = segments.map(s => s.text).join(" ");
     } else {
-      console.log(`🎙️ [Transcribe] Attempting Gemini 2.5 Flash transcription...`);
+      console.log(`🎙️ [Transcribe] Attempting Gemini 2.5 Flash transcription for language: ${targetLanguage}...`);
       console.log(`🎙️ [Transcribe] Uploading audio to Gemini Files API...`);
       const uploadedFile = await uploadMediaToGeminiFile(audioPath, "audio.mp3", "audio/mp3");
       geminiUploadedFileUri = uploadedFile.uri;
 
       const promptText = `
-        Transcribe the uploaded audio file. Return a JSON object with a list of segments representing the transcribed speech.
+        Transcribe the uploaded audio file. If the target language is different from the audio's spoken language, translate the spoken speech to the target language: "${targetLanguage}".
+        Return a JSON object with a list of segments representing the transcribed/translated speech.
         Each segment MUST have the following fields:
         - "start": start time in seconds (number, e.g. 0.0)
         - "end": end time in seconds (number, e.g. 3.5)
-        - "text": the transcription text for this segment (string)
+        - "text": the transcription/translation text for this segment in "${targetLanguage}" (string)
         
         Ensure that the segments are chronologically ordered, cover the entire audio length, and represent individual spoken phrases.
         Do not add any markdown formatting, only output raw JSON matching this structure:
         {
           "text": "full transcription text...",
+          "language": "${targetLanguage}",
           "segments": [
-            { "start": 0.0, "end": 2.5, "text": "Hello world" }
+            { "start": 0.0, "end": 2.5, "text": "transcribed text" }
           ]
         }
       `;
 
-      const geminiModelId = readEnv("GEMINI_MODEL_ID") || "gemini-2.5-flash";
-      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModelId}:generateContent?key=${geminiApiKey}`;
+      const modelList = [
+        readEnv("GEMINI_MODEL_ID") || "gemini-2.5-flash",
+        "gemini-2.0-flash",
+        "gemini-1.5-flash",
+        "gemini-2.0-flash-lite",
+        "gemini-1.5-pro"
+      ].filter((value, index, self) => self.indexOf(value) === index);
 
-      const geminiResponse = await fetch(geminiUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                { fileData: { mimeType: "audio/mp3", fileUri: uploadedFile.uri } },
-                { text: promptText },
+      let lastError = null;
+      let contentText = "";
+
+      for (const modelId of modelList) {
+        console.log(`🎙️ [Transcribe] Requesting Gemini transcription using model: ${modelId}`);
+        try {
+          const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${geminiApiKey}`;
+
+          const geminiResponse = await fetch(geminiUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [
+                {
+                  parts: [
+                    { fileData: { mimeType: "audio/mp3", fileUri: uploadedFile.uri } },
+                    { text: promptText },
+                  ],
+                },
               ],
-            },
-          ],
-          generationConfig: { responseMimeType: "application/json" },
-        }),
-      });
+              generationConfig: { responseMimeType: "application/json" },
+            }),
+          });
 
-      const geminiText = await geminiResponse.text();
-      if (!geminiResponse.ok) {
-        throw new Error(`Gemini API error: ${geminiText || geminiResponse.statusText}`);
+          const geminiText = await geminiResponse.text();
+          if (!geminiResponse.ok) {
+            throw new Error(`Gemini API error for model ${modelId}: ${geminiText || geminiResponse.statusText}`);
+          }
+
+          const geminiJson = JSON.parse(geminiText);
+          contentText = geminiJson.candidates?.[0]?.content?.parts?.[0]?.text || "";
+          if (contentText) {
+            console.log(`🎙️ [Transcribe] Successfully transcribed using model: ${modelId}`);
+            lastError = null;
+            break;
+          } else {
+            throw new Error(`Empty content returned from model ${modelId}`);
+          }
+        } catch (err) {
+          console.warn(`⚠️ [Transcribe] Model ${modelId} failed:`, err.message);
+          lastError = err;
+        }
       }
 
-      const geminiJson = JSON.parse(geminiText);
-      const contentText = geminiJson.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      if (lastError) {
+        throw lastError;
+      }
       
       const parsedResult = JSON.parse(contentText);
       segments = (parsedResult.segments || []).map((seg) => ({
@@ -4925,7 +5027,8 @@ app.post("/api/transcribe", upload.single("file"), async (req, res) => {
         text: String(seg.text || "").trim(),
       }));
       transcriptionText = parsedResult.text || "";
-      console.log(`✅ [Transcribe] Gemini transcription successful. Transcribed ${segments.length} segments.`);
+      transcriptionLanguage = parsedResult.language || targetLanguage;
+      console.log(`✅ [Transcribe] Gemini transcription successful in language: ${transcriptionLanguage}. Transcribed ${segments.length} segments.`);
     }
 
     res.json({
@@ -5006,6 +5109,159 @@ app.post("/api/download-to-local", async (req, res) => {
     res.status(500).json({
       success: false,
       error: toErrorMessage(error, "Failed to download/save video locally"),
+    });
+  }
+});
+
+const MOCK_MUSIC_LIBRARY = [
+  {
+    id: "trending-1",
+    name: "Midnight Vibes",
+    artist: "Neon Lights",
+    duration: 30,
+    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+    genre: "Electronic",
+    mood: "Chill",
+    bpm: 120,
+    trending: true,
+  },
+  {
+    id: "trending-2",
+    name: "Summer Dreams",
+    artist: "Wave Riders",
+    duration: 45,
+    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
+    genre: "Pop",
+    mood: "Happy",
+    bpm: 128,
+    trending: true,
+  },
+  {
+    id: "trending-3",
+    name: "Urban Beats",
+    artist: "City Sounds",
+    duration: 60,
+    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
+    genre: "Hip-Hop",
+    mood: "Energetic",
+    bpm: 95,
+    trending: true,
+  },
+  {
+    id: "lofi-1",
+    name: "Lofi Study",
+    artist: "Chill Beats",
+    duration: 180,
+    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
+    genre: "Lo-Fi",
+    mood: "Relaxed",
+    bpm: 85,
+  },
+  {
+    id: "lofi-2",
+    name: "Rainy Day",
+    artist: "Beat Maker",
+    duration: 120,
+    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3",
+    genre: "Lo-Fi",
+    mood: "Melancholic",
+    bpm: 80,
+  },
+  {
+    id: "upbeat-1",
+    name: "Festival Energy",
+    artist: "DJ Sonic",
+    duration: 90,
+    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3",
+    genre: "Dance",
+    mood: "Energetic",
+    bpm: 130,
+  },
+  {
+    id: "indie-1",
+    name: "Summer Indie",
+    artist: "Indie Vibes",
+    duration: 180,
+    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3",
+    genre: "Indie",
+    mood: "Uplifting",
+    bpm: 100,
+  },
+  {
+    id: "cinematic-1",
+    name: "Epic Moments",
+    artist: "Orchestral Dreams",
+    duration: 120,
+    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3",
+    genre: "Cinematic",
+    mood: "Dramatic",
+    bpm: 90,
+  },
+  {
+    id: "acoustic-1",
+    name: "Acoustic Sunset",
+    artist: "String Theory",
+    duration: 150,
+    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3",
+    genre: "Acoustic",
+    mood: "Calm",
+    bpm: 75,
+  },
+];
+
+// ✅ FEED.FM MUSIC CLIPS PROXY ENDPOINT
+app.get("/api/music/tracks", async (req, res) => {
+  try {
+    const token = readEnv("FEED_FM_CLIENT_TOKEN");
+    const query = req.query.q || "";
+
+    if (!token || token.trim() === "" || token.includes("your-feed-fm-token")) {
+      return res.json({ success: true, source: "mock", tracks: MOCK_MUSIC_LIBRARY });
+    }
+
+    console.log(`🎵 [Feed.fm] Fetching tracks from Feed Clips API... query="${query}"`);
+    const feedFmUrl = new URL("https://api.clips.feed.fm/v1/tracks");
+    if (query) {
+      feedFmUrl.searchParams.set("search", query);
+    }
+    feedFmUrl.searchParams.set("limit", "20");
+
+    const response = await fetch(feedFmUrl.toString(), {
+      headers: {
+        "Authorization": `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Feed.fm API error: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    
+    const mappedTracks = (data.tracks || []).map((track) => ({
+      id: String(track.id),
+      name: String(track.title || track.name || "Untitled"),
+      artist: String(track.artist || "Unknown Artist"),
+      duration: Number(track.duration || 60),
+      url: String(track.audio_url || track.url || ""),
+      genre: String(track.genre || "Pop"),
+      mood: String(track.mood || "Happy"),
+      bpm: Number(track.bpm) || undefined,
+      cover: String(track.cover_image_url || track.cover || ""),
+      trending: Boolean(track.trending || false),
+    }));
+
+    res.json({
+      success: true,
+      source: "feed.fm",
+      tracks: mappedTracks,
+    });
+  } catch (error) {
+    console.warn("⚠️ [Feed.fm] Proxy failed, using local mock library:", error.message || error);
+    res.json({
+      success: true,
+      source: "mock-fallback",
+      tracks: MOCK_MUSIC_LIBRARY,
     });
   }
 });
