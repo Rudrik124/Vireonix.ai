@@ -121,24 +121,13 @@ const buildSrt = (captions) => {
 };
 
 const normalizeSubtitlePath = (filePath) => {
-  const relPath = path.relative(process.cwd(), filePath);
-  let normalized = relPath.replace(/\\/g, "/");
-  
-  if (path.isAbsolute(normalized)) {
-    if (/^[a-zA-Z]:/.test(normalized)) {
-      normalized = normalized.charAt(0) + "\\:" + normalized.substring(2);
-    }
-    normalized = normalized.replace(/'/g, "\\'");
-    return `'${normalized}'`;
+  const absolutePath = path.resolve(filePath).replace(/\\/g, "/");
+  let normalized = absolutePath;
+  if (/^[a-zA-Z]:/.test(normalized)) {
+    normalized = normalized.charAt(0) + "\\:" + normalized.substring(2);
   }
-  
-  if (normalized.includes(" ") || normalized.includes("'")) {
-    normalized = normalized.replace(/:/g, "\\:");
-    normalized = normalized.replace(/'/g, "\\'");
-    return `'${normalized}'`;
-  }
-  
-  return normalized;
+  normalized = normalized.replace(/'/g, "\\'");
+  return `'${normalized}'`;
 };
 
 const makeLocalAssPath = () => {
@@ -147,46 +136,73 @@ const makeLocalAssPath = () => {
 };
 
 const convertHexToAssColor = (hex) => {
-  if (!hex || !hex.startsWith("#")) return "&HFFFFFF&";
-  const clean = hex.replace("#", "");
+  if (!hex) return "&HFFFFFF";
+  let clean = String(hex).trim().replace("#", "");
+  if (clean.length === 3) {
+    clean = clean[0] + clean[0] + clean[1] + clean[1] + clean[2] + clean[2];
+  }
   if (clean.length === 6) {
     const rr = clean.substring(0, 2);
     const gg = clean.substring(2, 4);
     const bb = clean.substring(4, 6);
-    return `&H00${bb}${gg}${rr}&`;
+    return `&H00${bb}${gg}${rr}`;
   }
-  return "&HFFFFFF&";
+  return "&HFFFFFF";
 };
 
 const convertHexToAssColorWithAlpha = (hex, alphaHex = "00") => {
-  if (!hex || !hex.startsWith("#")) return `&H${alphaHex}FFFFFF&`;
-  const clean = hex.replace("#", "");
+  if (!hex) return `&H${alphaHex}FFFFFF`;
+  let clean = String(hex).trim().replace("#", "");
+  if (clean.length === 3) {
+    clean = clean[0] + clean[0] + clean[1] + clean[1] + clean[2] + clean[2];
+  }
   if (clean.length === 6) {
     const rr = clean.substring(0, 2);
     const gg = clean.substring(2, 4);
     const bb = clean.substring(4, 6);
-    return `&H${alphaHex}${bb}${gg}${rr}&`;
+    return `&H${alphaHex}${bb}${gg}${rr}`;
   }
-  return `&H${alphaHex}FFFFFF&`;
+  return `&H${alphaHex}FFFFFF`;
 };
 
-const buildAss = (captions, style = {}) => {
-  const fontName = style.fontFamily || "Arial";
+// Returns { width, height } of the video at videoPath using ffprobe.
+// Falls back to { width: 1280, height: 720 } on any error.
+const getVideoDimensions = (videoPath) =>
+  new Promise((resolve) => {
+    ffmpeg.ffprobe(videoPath, (err, metadata) => {
+      if (err || !metadata) {
+        console.warn("⚠️ [ASS] Could not probe video dimensions, using 1280x720 fallback:", err?.message);
+        return resolve({ width: 1280, height: 720 });
+      }
+      const vStream = (metadata.streams || []).find((s) => s.codec_type === "video");
+      if (!vStream || !vStream.width || !vStream.height) {
+        return resolve({ width: 1280, height: 720 });
+      }
+      resolve({ width: vStream.width, height: vStream.height });
+    });
+  });
+
+const buildAss = (captions, style = {}, videoWidth = 1280, videoHeight = 720) => {
+  const fontName = String(style.fontFamily || "Arial").split(",")[0].trim().replace(/['"]/g, "");
   const fontSize = style.fontSize || 26;
   const primaryColor = convertHexToAssColor(style.color || "#FFFFFF");
+  // Use fully-opaque background when bgEnabled — alpha 00 = fully opaque in ASS/libass
+  // When bgEnabled is false, use &H40000000 (semi-transparent black) so text shadow is visible
   const backColor = style.bgEnabled 
-    ? convertHexToAssColorWithAlpha(style.bgColorHex || "#000000", "33") 
-    : "&HFF000000&";
+    ? convertHexToAssColorWithAlpha(style.bgColorHex || "#000000", "00") 
+    : "&H40000000";
   const borderStyle = style.bgEnabled ? 3 : 1;
   const bold = style.bold ? -1 : 0;
   const italic = style.italic ? -1 : 0;
-  const outline = style.outline ? 2 : 0;
+  const outline = style.outline ? 2 : (style.bgEnabled ? 2 : 0);
   const shadow = style.bgEnabled ? 0 : 1;
   const alignment = style.alignment === "left" ? 4 : style.alignment === "right" ? 6 : 5;
-  
-  const playResX = 1280;
-  const playResY = 720;
-  
+
+  // Use virtual canvas size of 360 height, scaling width based on video aspect ratio.
+  // This automatically scales font sizes, borders, shadows, and coordinates perfectly to the final video size.
+  const playResY = 360;
+  const playResX = Math.round(360 * (videoWidth / videoHeight));
+
   const posX = style.posX != null ? Number(style.posX) : 50;
   const posY = style.posY != null ? Number(style.posY) : 80;
   const x = Math.round((posX / 100) * playResX);
@@ -199,7 +215,7 @@ PlayResY: ${playResY}
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,${fontName},${fontSize},${primaryColor},&H00FFFF00&,&H00000000&,${backColor},${bold},${italic},0,0,100,100,0,0,${borderStyle},${outline},${shadow},${alignment},10,10,10,1
+Style: CaptionStyle,${fontName},${fontSize},${primaryColor},&H00FFFF00,&H00000000,${backColor},${bold},${italic},0,0,100,100,0,0,${borderStyle},${outline},${shadow},${alignment},10,10,10,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text`;
@@ -217,11 +233,202 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text`
     const end = formatTime(caption.endTime);
     const text = caption.text.replace(/\r?\n/g, "\\N");
 
-    return `Dialogue: 0,${start},${end},Default,,0,0,0,,{\\pos(${x},${y})}${text}`;
+    return `Dialogue: 0,${start},${end},CaptionStyle,,0,0,0,,{\\pos(${x},${y})}${text}`;
   });
 
   return [header, ...dialogues].join("\n");
 };
+
+const performAutoTranscription = async (videoPath, targetLanguage = "en") => {
+  let audioPath = null;
+  let geminiUploadedFileUri = null;
+  const geminiApiKey = readEnv("GEMINI_API_KEY");
+  try {
+    audioPath = makeTempFilePath("transcribe-audio.mp3");
+
+    // Extract audio using ffmpeg
+    console.log(`🎙️ [Auto-Transcribe] Extracting audio from video: ${videoPath}`);
+    await new Promise((resolve, reject) => {
+      ffmpeg(videoPath)
+        .outputOptions([
+          "-vn",
+          "-acodec libmp3lame",
+          "-ar 16000",
+          "-ac 1",
+          "-ab 64k"
+        ])
+        .output(audioPath)
+        .on("end", resolve)
+        .on("error", reject)
+        .run();
+    });
+
+    console.log(`🎙️ [Auto-Transcribe] Audio extracted. Size: ${fs.statSync(audioPath).size} bytes`);
+
+    let segments = null;
+    if (!geminiApiKey) {
+      console.warn("⚠️ [Auto-Transcribe] No Gemini API key configured. Generating dummy transcription segments.");
+      
+      let duration = 15;
+      try {
+        const metadata = await new Promise((resolve, reject) => {
+          ffmpeg.ffprobe(audioPath, (err, meta) => {
+            if (err) reject(err);
+            else resolve(meta);
+          });
+        });
+        duration = Number(metadata.format.duration) || 15;
+      } catch (e) {
+        console.warn("⚠️ Could not probe audio duration, defaulting to 15s:", e.message);
+      }
+
+      segments = [];
+      const segmentDuration = 4.0;
+      const dummyTexts = [
+        "Welcome to Vireonix.ai!",
+        "This is a preview of the auto-captioning feature.",
+        "To use real transcription, please configure your Gemini API key.",
+        "Add GEMINI_API_KEY to your .env file.",
+        "Happy editing with our video creation tool!"
+      ];
+
+      let currentTime = 0;
+      let index = 0;
+      while (currentTime < duration) {
+        const end = Math.min(duration, currentTime + segmentDuration);
+        if (end - currentTime > 1.0) {
+          segments.push({
+            start: currentTime + 0.5,
+            end: end - 0.5,
+            text: dummyTexts[index % dummyTexts.length]
+          });
+        }
+        currentTime += segmentDuration;
+        index++;
+      }
+
+      if (segments.length === 0) {
+        segments.push({
+          start: 0.5,
+          end: Math.max(1.5, duration - 0.5),
+          text: "No speech detected or audio is too short."
+        });
+      }
+    } else {
+      console.log(`🎙️ [Auto-Transcribe] Attempting Gemini transcription...`);
+      const uploadedFile = await uploadMediaToGeminiFile(audioPath, "audio.mp3", "audio/mp3");
+      geminiUploadedFileUri = uploadedFile.uri;
+
+      const promptText = `
+        Transcribe the uploaded audio file. If the target language is different from the audio's spoken language, translate the spoken speech to the target language: "${targetLanguage}".
+        Return a JSON object with a list of segments representing the transcribed/translated speech.
+        Each segment MUST have the following fields:
+        - "start": start time in seconds (number, e.g. 0.0)
+        - "end": end time in seconds (number, e.g. 3.5)
+        - "text": the transcription/translation text for this segment in "${targetLanguage}" (string)
+        
+        Ensure that the segments are chronologically ordered, cover the entire audio length, and represent individual spoken phrases.
+        Do not add any markdown formatting, only output raw JSON matching this structure:
+        {
+          "text": "full transcription text...",
+          "language": "${targetLanguage}",
+          "segments": [
+            { "start": 0.0, "end": 2.5, "text": "transcribed text" }
+          ]
+        }
+      `;
+
+      const modelList = [
+        readEnv("GEMINI_MODEL_ID") || "gemini-2.5-flash",
+        "gemini-2.0-flash",
+        "gemini-1.5-flash",
+        "gemini-2.0-flash-lite",
+        "gemini-1.5-pro"
+      ].filter((value, index, self) => self.indexOf(value) === index);
+
+      let lastError = null;
+      let contentText = "";
+
+      for (const modelId of modelList) {
+        console.log(`🎙️ [Auto-Transcribe] Requesting Gemini transcription using model: ${modelId}`);
+        try {
+          const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${geminiApiKey}`;
+
+          const geminiResponse = await fetch(geminiUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [
+                {
+                  parts: [
+                    { fileData: { mimeType: "audio/mp3", fileUri: uploadedFile.uri } },
+                    { text: promptText },
+                  ],
+                },
+              ],
+              generationConfig: { responseMimeType: "application/json" },
+            }),
+          });
+
+          const geminiText = await geminiResponse.text();
+          if (!geminiResponse.ok) {
+            throw new Error(`Gemini API returned status ${geminiResponse.status}: ${geminiText}`);
+          }
+
+          const parsed = JSON.parse(geminiText);
+          const candidateText = parsed?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (candidateText) {
+            contentText = candidateText;
+            console.log(`🎙️ [Auto-Transcribe] Successfully transcribed using model: ${modelId}`);
+            break;
+          }
+        } catch (err) {
+          console.warn(`⚠️ [Auto-Transcribe] Model ${modelId} failed:`, err.message);
+          lastError = err;
+        }
+      }
+
+      if (!contentText) {
+        throw lastError || new Error("All Gemini transcription attempts failed");
+      }
+
+      // Parse JSON from text
+      const cleanJsonText = contentText.replace(/```json\s?/g, "").replace(/```\s?/g, "").trim();
+      const parsedOutput = JSON.parse(cleanJsonText);
+      segments = parsedOutput.segments || [];
+    }
+
+    // Convert segments to format compatible with buildAss (startTime, endTime, text)
+    const formattedSegments = segments.map((s, idx) => ({
+      id: String(idx + 1),
+      startTime: Number(s.start),
+      endTime: Number(s.end),
+      text: String(s.text)
+    }));
+
+    return formattedSegments;
+
+  } catch (error) {
+    console.error("❌ [Auto-Transcribe] Failed to perform auto-transcription:", error);
+    return [];
+  } finally {
+    // Cleanup temporary files
+    if (audioPath && fs.existsSync(audioPath)) {
+      fs.unlink(audioPath, () => {});
+    }
+    if (geminiUploadedFileUri && geminiApiKey) {
+      // Best-effort delete from Gemini
+      try {
+        const fileId = geminiUploadedFileUri.split("/").pop();
+        const deleteUrl = `https://generativelanguage.googleapis.com/v1beta/files/${fileId}?key=${geminiApiKey}`;
+        await fetch(deleteUrl, { method: "DELETE" });
+      } catch (delErr) {
+        console.warn("⚠️ [Auto-Transcribe] Failed to delete Gemini file:", delErr.message);
+      }
+    }
+  }
+};
+
 
 // ✅ INIT SUPABASE (env-only, no hardcoded secrets)
 const supabaseUrl = readEnv("SUPABASE_URL");
@@ -1581,7 +1788,7 @@ const applyEffectsToVideo = async (inputPath, effects, durationSeconds = 10) => 
   }
 
   if (selectedEffect === "blur") {
-    const blur = Math.max(0, Math.min(30, Number(settings.blurAmount) || 10));
+    const blur = Math.max(0, Math.min(30, Number(settings.blurAmount ?? 10)));
     videoFilters.push(`boxblur=${blur}:1`);
   }
 
@@ -1648,15 +1855,14 @@ const applyEffectsToVideo = async (inputPath, effects, durationSeconds = 10) => 
   }
 
   if (selectedEffect === "slow-motion") {
-    const speed = Math.max(0.1, Math.min(1, Number(settings.slowMotionSpeed) || 0.25));
+    const speed = Math.max(0.1, Math.min(1, Number(settings.slowMotionSpeed ?? 0.25)));
     const stretch = 1 / speed;
     videoFilters.push(`setpts=${stretch.toFixed(3)}*PTS`);
-    // Keep as video-speed effect for robustness even when input has no audio stream.
-    audioFilter = "";
+    audioFilter = buildAtempoChain(speed);
   }
 
   if (selectedEffect === "glitch") {
-    const intensity = Math.max(0, Math.min(3, Number(settings.glitchIntensity) || 1));
+    const intensity = Math.max(0, Math.min(3, Number(settings.glitchIntensity ?? 1)));
     const noiseLevel = Math.round(10 + intensity * 20);
     videoFilters.push(`noise=alls=${noiseLevel}:allf=t+u`);
   }
@@ -1677,52 +1883,46 @@ const applyEffectsToVideo = async (inputPath, effects, durationSeconds = 10) => 
 
   // --- NEW EFFECTS ---
   if (selectedEffect === "shake") {
-    const strength = Math.max(0, Math.min(10, Number(settings.shakeStrength) || 1.5));
+    const strength = Math.max(0, Math.min(10, Number(settings.shakeStrength ?? 1.5)));
     videoFilters.push(`crop=iw-20:ih-20:10+${strength}*1.5*sin(2*PI*t*8):10+${strength}*1.5*cos(2*PI*t*6.5)`);
   }
 
   if (selectedEffect === "velocity") {
-    const speed = Math.max(0.1, Math.min(5, Number(settings.velocitySpeed) || 1.5));
+    const speed = Math.max(0.1, Math.min(5, Number(settings.velocitySpeed ?? 1.5)));
     const stretch = 1 / speed;
     videoFilters.push(`setpts=${stretch.toFixed(3)}*PTS`);
-    audioFilter = "";
+    audioFilter = buildAtempoChain(speed);
   }
 
   if (selectedEffect === "motion-blur") {
-    const frames = Math.max(0, Math.min(25, Number(settings.motionBlurAmount) || 8));
-    if (frames > 1) {
-      // Force constant frame rate first so tmix doesn't corrupt PTS / playback speed on VFR videos
-      const fps = metadata.fps || 30;
-      videoFilters.push(`fps=${fps}`);
-      videoFilters.push(`tmix=frames=${frames}`);
-      // Add a slight spatial blur to enhance the motion blur look and guarantee visible blur
-      videoFilters.push("gblur=sigma=1.0");
-    }
+    // Use Gaussian spatial blur — reliable, visible in output, no temporal artifacts
+    const blurAmount = Math.max(1, Math.min(30, Number(settings.motionBlurAmount ?? 10)));
+    videoFilters.push(`gblur=sigma=${blurAmount}`);
   }
 
   if (selectedEffect === "flash-effect") {
-    const intensity = Math.max(0.01, Math.min(2.0, Number(settings.flashIntensity) || 0.75));
+    const intensity = Math.max(0.01, Math.min(2.0, Number(settings.flashIntensity ?? 0.75)));
     const br = (0.20 * intensity).toFixed(3);
     const co = (1 + 0.20 * intensity).toFixed(3);
     videoFilters.push(`eq=brightness=${br}:contrast=${co}`);
   }
 
   if (selectedEffect === "rgb-split") {
-    const amount = Math.max(0, Math.min(50, Number(settings.rgbSplitAmount) || 12));
+    const amount = Math.max(0, Math.min(50, Number(settings.rgbSplitAmount ?? 12)));
     const cbh = Math.round(amount / 3);
     const crh = Math.round(-amount / 3);
     videoFilters.push(`chromashift=cbh=${cbh}:cbv=0:crh=${crh}:crv=0,eq=contrast=1.2:saturation=1.3`);
   }
 
   if (selectedEffect === "smooth-zoom") {
-    const dur = Number(durationSeconds) || 10;
-    const amount = Math.max(0.01, Math.min(2.0, Number(settings.smoothZoomAmount) || 0.35));
+    const dur = Number(durationSeconds ?? 10) || 10;
+    const amount = Math.max(0.01, Math.min(2.0, Number(settings.smoothZoomAmount ?? 0.35)));
     const zoomScale = (0.12 * (amount / 0.35)).toFixed(4);
     videoFilters.push(`zoompan=z='1+${zoomScale}*sin(PI*on/(${metadata.fps}*${dur}))':x='iw/2-(iw/zoom)/2':y='ih/2-(ih/zoom)/2':d=1:s=${metadata.width}x${metadata.height}:fps=${metadata.fps}`);
   }
 
   if (selectedEffect === "film-grain") {
-    const opacity = Math.max(0.01, Math.min(1.0, Number(settings.filmGrainOpacity) || 0.4));
+    const opacity = Math.max(0.01, Math.min(1.0, Number(settings.filmGrainOpacity ?? 0.4)));
     const noiseLevel = Math.round(8 + opacity * 20);
     videoFilters.push(`noise=alls=${noiseLevel}:allf=t+u,eq=contrast=1.05:saturation=1.1`);
   }
@@ -1830,72 +2030,241 @@ const applyEffectsToVideo = async (inputPath, effects, durationSeconds = 10) => 
   return outputPath;
 };
 
-const applyTextOverlayToVideo = async (inputPath, textOverlay) => {
-  const enabled = Boolean(textOverlay?.enabled);
-  const text = String(textOverlay?.text || "").trim();
+const resolveTextOverlayPreset = (textOverlay) => {
+  if (!textOverlay) return null;
+  
+  const preset = textOverlay.stylePreset || "none";
+  
+  // Default values
+  let fontFamily = textOverlay.fontFamily || "Arial";
+  let fontSize = Number(textOverlay.fontSize) || 48;
+  let color = textOverlay.color || "#ffffff";
+  let bgEnabled = Boolean(textOverlay.bgEnabled);
+  let bgColorHex = textOverlay.bgColorHex || "#000000";
+  let bold = -1; // default to bold for most presets (-1 is true in ASS spec)
+  let italic = 0;
+  let textTransform = "none";
+  let alphaHex = "00"; // default to fully opaque if bgEnabled is custom
 
-  if (!inputPath || !enabled || !text) {
+  switch (preset) {
+    case 'cinematic-title':
+      fontFamily = "Georgia, Times New Roman, serif";
+      fontSize = Math.max(fontSize, 60);
+      color = "#F8F3E8";
+      bgEnabled = true;
+      bgColorHex = "#000000";
+      alphaHex = "D9"; // 0.15 opacity in CSS = 0.85 transparency = D9
+      textTransform = "uppercase";
+      break;
+    case 'animated-captions':
+      fontSize = Math.max(fontSize, 42);
+      bgEnabled = true;
+      bgColorHex = "#0f172a";
+      alphaHex = "4C"; // 0.7 opacity in CSS = 0.3 transparency = 4C
+      break;
+    case 'kinetic-typography':
+      fontSize = Math.max(fontSize, 54);
+      bgEnabled = true;
+      bgColorHex = "#ffffff";
+      alphaHex = "F5"; // 0.04 opacity in CSS = 0.96 transparency = F5
+      textTransform = "uppercase";
+      break;
+    case 'neon-glow-text':
+      color = "#7CFC00";
+      break;
+    case 'glitch-text':
+      color = "#FFFFFF";
+      bgEnabled = true;
+      bgColorHex = "#000000";
+      alphaHex = "CC"; // 0.2 opacity in CSS = 0.8 transparency = CC
+      break;
+    case 'typewriter-text':
+      fontFamily = "Courier New, monospace";
+      color = "#E2E8F0";
+      bgEnabled = true;
+      bgColorHex = "#030712";
+      alphaHex = "26"; // 0.85 opacity in CSS = 0.15 transparency = 26
+      break;
+    case 'bold-hype-text':
+      color = "#FFD166";
+      bgEnabled = true;
+      bgColorHex = "#14141e";
+      alphaHex = "73"; // 0.55 opacity = 0.45 transparency = 73
+      textTransform = "uppercase";
+      break;
+    case 'lyrics-text':
+      fontSize = Math.max(fontSize, 36);
+      color = "#F8FAFC";
+      italic = -1; // -1 is true in ASS spec
+      break;
+    case 'minimal-clean-text':
+      color = "#FFFFFF";
+      bgEnabled = true;
+      bgColorHex = "#ffffff";
+      alphaHex = "EB"; // 0.08 opacity = 0.92 transparency = EB
+      break;
+    case '3d-text':
+      color = "#F8FAFC";
+      break;
+    case 'subtitle-style-text':
+      fontSize = Math.max(fontSize * 0.75, 24);
+      color = "#FFFFFF";
+      bgEnabled = true;
+      bgColorHex = "#000000";
+      alphaHex = "38"; // 0.78 opacity = 0.22 transparency = 38
+      break;
+    case 'motion-tracking-text':
+      color = "#FFFFFF";
+      bgEnabled = true;
+      bgColorHex = "#000000";
+      alphaHex = "C2"; // 0.24 opacity = 0.76 transparency = C2
+      break;
+  }
+
+  // If bgEnabled is true but not a preset, set default alpha to 4C (0.7 opacity)
+  if (preset === "none" && bgEnabled) {
+    alphaHex = "4C";
+  }
+
+  fontFamily = String(fontFamily).split(",")[0].trim().replace(/['"]/g, "");
+
+  return {
+    enabled: Boolean(textOverlay.enabled),
+    text: textTransform === "uppercase" ? String(textOverlay.text || "").toUpperCase() : String(textOverlay.text || ""),
+    fontFamily,
+    fontSize,
+    color,
+    bgEnabled,
+    bgColorHex,
+    alphaHex,
+    bold,
+    italic,
+    preset,
+    position: textOverlay.position || { x: 50, y: 50 }
+  };
+};
+
+const applyTextOverlayToVideo = async (inputPath, textOverlay) => {
+  const resolved = resolveTextOverlayPreset(textOverlay);
+
+  if (!inputPath || !resolved || !resolved.enabled || !resolved.text.trim()) {
     return inputPath;
   }
 
-  const size = Math.max(16, Math.min(180, Number(textOverlay?.fontSize) || 48));
-  const xPercent = Math.max(0, Math.min(100, Number(textOverlay?.position?.x) || 50));
-  const yPercent = Math.max(0, Math.min(100, Number(textOverlay?.position?.y) || 50));
-  const color = /^#[0-9a-fA-F]{6,8}$/.test(String(textOverlay?.color || ""))
-    ? String(textOverlay.color)
-    : "#ffffff";
-  const escapedText = escapeDrawtext(text);
-  const outputPath = makeTempFilePath("text-overlay.mp4");
-  const xExpr = `(w-text_w)*${(xPercent / 100).toFixed(4)}`;
-  const yExpr = `(h-text_h)*${(yPercent / 100).toFixed(4)}`;
-  const firstFont = String(textOverlay?.fontFamily || "Arial").split(",")[0].trim().replace(/['"]/g, "");
-  const drawTextFilter = [
-    `drawtext=text='${escapedText}'`,
-    `fontsize=${size}`,
-    `font='${firstFont}'`,
-    `fontcolor=${color}`,
-    `x=${xExpr}`,
-    `y=${yExpr}`,
-    "shadowcolor=black@0.7",
-    "shadowx=2",
-    "shadowy=2",
-  ].join(":");
+  try {
+    const { width: vWidth, height: vHeight } = await getVideoDimensions(inputPath);
+    const duration = await getVideoDuration(inputPath);
+    const primaryColor = convertHexToAssColor(resolved.color || "#FFFFFF");
+    const backColor = resolved.bgEnabled
+      ? convertHexToAssColorWithAlpha(resolved.bgColorHex, resolved.alphaHex)
+      : "&H40000000";
 
-  await new Promise((resolve, reject) => {
-    ffmpeg()
-      .input(inputPath)
-      .videoFilters([drawTextFilter])
-      .outputOptions(["-c:v libx264", "-pix_fmt yuv420p", "-c:a copy", "-movflags +faststart"])
-      .output(outputPath)
-      .on("end", () => {
-        console.log("✅ [API-MEDIA] Text overlay rendering complete");
-        resolve();
-      })
-      .on("error", (err) => {
-        console.error("❌ [API-MEDIA] Text overlay rendering failed:", err);
-        reject(err);
-      })
-      .run();
-  });
+    let borderStyle = resolved.bgEnabled ? 3 : 1;
+    let outline = resolved.bgEnabled ? 2 : 1;
+    let shadow = resolved.bgEnabled ? 0 : 1;
+    let outlineColor = "&H00000000";
 
-  return outputPath;
+    if (resolved.preset === "neon-glow-text") {
+      borderStyle = 1;
+      outline = 3;
+      shadow = 0;
+      outlineColor = "&H4000FC7C"; // semi-transparent neon green glow outline
+    } else if (resolved.preset === "glitch-text") {
+      borderStyle = 1;
+      outline = 1;
+      shadow = 2;
+      outlineColor = "&H00FFDC00"; // Cyan outline
+    }
+
+    const fontName = resolved.fontFamily;
+    
+    // Use virtual canvas size of 360 height, scaling width based on video aspect ratio.
+    // This automatically scales font sizes, borders, shadows, and coordinates perfectly to the final video size.
+    const playResY = 360;
+    const playResX = Math.round(360 * (vWidth / vHeight));
+
+    const x = Math.round((resolved.position.x / 100) * playResX);
+    const y = Math.round((resolved.position.y / 100) * playResY);
+
+    const header = `[Script Info]
+ScriptType: v4.00+
+PlayResX: ${playResX}
+PlayResY: ${playResY}
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: TextStyle,${fontName},${resolved.fontSize},${primaryColor},&H00FFFF00,${outlineColor},${backColor},${resolved.bold},${resolved.italic},0,0,100,100,0,0,${borderStyle},${outline},${shadow},5,10,10,10,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text`;
+
+    const formatTime = (timeSecs) => {
+      const hrs = Math.floor(timeSecs / 3600);
+      const mins = Math.floor((timeSecs % 3600) / 60);
+      const secs = Math.floor(timeSecs % 60);
+      const centisecs = Math.floor((timeSecs % 1) * 100);
+      return `${hrs}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}.${centisecs.toString().padStart(2, "0")}`;
+    };
+
+    const start = "0:00:00.00";
+    const end = formatTime(duration);
+    
+    // Escape braces so libass doesn't parse them as format tags, and convert newlines to ASS format
+    const escapedText = resolved.text.replace(/\r?\n/g, "\\N").replace(/{/g, "[").replace(/}/g, "]");
+
+    const dialogue = `Dialogue: 0,${start},${end},TextStyle,,0,0,0,,{\\pos(${x},${y})}${escapedText}`;
+    const assContent = [header, dialogue].join("\n");
+
+    const assPath = makeLocalAssPath();
+    await fs.promises.writeFile(assPath, assContent, "utf8");
+
+    const subtitleSource = normalizeSubtitlePath(assPath);
+    const outputPath = makeTempFilePath("text-overlay-libass.mp4");
+
+    await new Promise((resolve, reject) => {
+      ffmpeg(inputPath)
+        .videoFilters([`subtitles=${subtitleSource}`])
+        .outputOptions(["-c:v libx264", "-pix_fmt yuv420p", "-c:a copy", "-movflags +faststart"])
+        .output(outputPath)
+        .on("end", resolve)
+        .on("error", reject)
+        .run();
+    });
+
+    fs.unlink(assPath, () => {});
+
+    console.log("✅ [API-MEDIA-TEXT] Subtitle-based Text overlay rendering complete");
+    return outputPath;
+  } catch (error) {
+    console.error("❌ [API-MEDIA-TEXT] Text overlay rendering failed, falling back to original:", error);
+    return inputPath;
+  }
 };
 
 const inferEffectFromPrompt = (promptText = "") => {
   const p = String(promptText || "").toLowerCase();
   if (!p) return "none";
   if (p.includes("fade")) return "fade-in";
+  if (p.includes("motion blur") || p.includes("motion-blur") || p.includes("blur motion")) return "motion-blur";
   if (p.includes("blur")) return "blur";
+  if (p.includes("smooth zoom") || p.includes("smooth-zoom")) return "smooth-zoom";
   if (p.includes("zoom")) return "zoom";
   if (p.includes("black and white") || p.includes("black-white") || p.includes("bw") || p.includes("grayscale")) return "black-white";
-  if (p.includes("cinematic") || p.includes("movie look") || p.includes("teal orange")) return "cinematic";
+  if (p.includes("teal orange") || p.includes("teal-orange")) return "teal-orange";
+  if (p.includes("cinematic") || p.includes("movie look")) return "cinematic";
+  if (p.includes("warm tone") || p.includes("warm-tone")) return "warm-tone";
   if (p.includes("warm")) return "warm";
+  if (p.includes("cool tone") || p.includes("cool-tone")) return "cool-tone";
   if (p.includes("cool")) return "cool";
   if (p.includes("sepia")) return "sepia";
+  if (p.includes("hdr pop") || p.includes("hdr-pop")) return "hdr-pop";
   if (p.includes("hdr") || p.includes("high detail") || p.includes("high dynamic")) return "hdr";
   if (p.includes("vivid") || p.includes("super saturated")) return "vivid";
+  if (p.includes("dreamy glow") || p.includes("dreamy-glow")) return "dreamy-glow";
   if (p.includes("soft glow") || p.includes("bloom")) return "soft-glow";
-  if (p.includes("retro film") || p.includes("vhs") || p.includes("scanline")) return "retro-film";
+  if (p.includes("film look") || p.includes("film-look")) return "film-look";
+  if (p.includes("retro film") || p.includes("scanline")) return "retro-film";
+  if (p.includes("vhs")) return "vhs";
   if (p.includes("color") || p.includes("saturation") || p.includes("contrast") || p.includes("brightness")) return "color-correction";
   if (p.includes("vintage") || p.includes("old film")) return "vintage";
   if (p.includes("green screen") || p.includes("chroma")) return "green-screen";
@@ -1903,6 +2272,15 @@ const inferEffectFromPrompt = (promptText = "") => {
   if (p.includes("glitch")) return "glitch";
   if (p.includes("transition")) return "transition";
   if (p.includes("motion tracking")) return "motion-tracking";
+  if (p.includes("shake")) return "shake";
+  if (p.includes("velocity")) return "velocity";
+  if (p.includes("flash")) return "flash-effect";
+  if (p.includes("rgb split") || p.includes("rgb-split") || p.includes("chromatic")) return "rgb-split";
+  if (p.includes("film grain") || p.includes("film-grain") || p.includes("grain")) return "film-grain";
+  if (p.includes("moody")) return "moody";
+  if (p.includes("soft skin") || p.includes("soft-skin")) return "soft-skin";
+  if (p.includes("neon glow") || p.includes("neon-glow")) return "neon-glow";
+  if (p.includes("old tv") || p.includes("old-tv")) return "old-tv";
   return "none";
 };
 
@@ -3089,6 +3467,42 @@ const buildEffectPromptSnippet = (effects) => {
       return `Overlay animated center text: \"${String(settings.animatedText || "YOUR TEXT HERE").slice(0, 120)}\".`;
     case "motion-tracking":
       return "Add motion-tracking style highlights that follow movement regions.";
+    case "shake":
+      return `Apply a camera shake effect with strength ${Number(settings.shakeStrength ?? 1.5)}.`;
+    case "velocity":
+      return `Apply a velocity speed ramp effect with speed ${Number(settings.velocitySpeed ?? 1.5)}x.`;
+    case "motion-blur":
+      return `Apply a motion blur effect with ${Number(settings.motionBlurAmount ?? 8)} frames buffer.`;
+    case "flash-effect":
+      return `Apply a bright flash transition effect with intensity ${Number(settings.flashIntensity ?? 0.75)}.`;
+    case "rgb-split":
+      return `Apply an RGB split chromatic aberration effect with split amount ${Number(settings.rgbSplitAmount ?? 12)}.`;
+    case "smooth-zoom":
+      return `Apply a smooth continuous zoom-in or zoompan effect with scale ${Number(settings.smoothZoomAmount ?? 0.35)}.`;
+    case "film-grain":
+      return `Apply a textured analog film grain overlay with grain opacity ${Number(settings.filmGrainOpacity ?? 0.4)}.`;
+    case "moody":
+      return "Apply a moody high-contrast dark color grade with muted highlights.";
+    case "warm-tone":
+      return "Apply a warm tone color balance with boosted reds/yellows.";
+    case "cool-tone":
+      return "Apply a cool tone color balance with boosted blues.";
+    case "teal-orange":
+      return "Apply a cinematic teal and orange color grade with high color separation.";
+    case "dreamy-glow":
+      return "Apply a dreamy soft glow bloom overlay for a magical atmosphere.";
+    case "film-look":
+      return "Apply an analog film look with vintage color curves.";
+    case "vhs":
+      return "Apply a retro VHS tape overlay effect with analog glitching and noise.";
+    case "soft-skin":
+      return "Apply a soft skin softening aesthetic and gentle face lighting filter.";
+    case "neon-glow":
+      return "Apply a neon glow effect with vibrant fluorescent colors.";
+    case "hdr-pop":
+      return "Apply an HDR pop effect boosting saturation and detail.";
+    case "old-tv":
+      return "Apply an old TV cathode-ray tube simulation with heavy scanlines and noise.";
     default:
       return "";
   }
@@ -3727,6 +4141,13 @@ app.post(
       let finalOutputPath = baseOutputPath;
       const generatedTempFiles = [];
 
+      let activeClipGlobalStart = 0;
+      let activeClipTrimStart = 0;
+      let activeClipDuration = null;
+      let activeClipIdx = 0;
+      const segmentDurations = [];
+      const clipGlobalStarts = [];
+
       // STEP 1: Build base video from uploaded media
       if (isQuickEditMode && mediaFiles.length > 1) {
         console.log("🎞️ [API-MEDIA] Quick Edit multi-clip mode with transitions");
@@ -3863,6 +4284,8 @@ app.post(
             }
 
             segmentPaths.push(finalSegmentPath);
+            const segDuration = await getVideoDuration(finalSegmentPath);
+            segmentDurations.push(segDuration);
 
         }
 
@@ -3889,6 +4312,45 @@ app.post(
           resolvedTransitionPlanContent: resolvedTransitionPlan,
           mediaFileCount: mediaFiles.length,
           transitionsByIndex: transitionsByIndex,
+        });
+
+        const activeClipId = resolvedEditorSelections?.trim?.activeClipId;
+        activeClipIdx = 0;
+        if (activeClipId && Array.isArray(resolvedEditorSelections?.media?.items)) {
+          const foundIdx = resolvedEditorSelections.media.items.findIndex(item => item.id === activeClipId);
+          if (foundIdx !== -1) {
+            activeClipIdx = foundIdx;
+          }
+        }
+
+        let accumulatedGlobalTime = 0;
+        for (let i = 0; i < mediaFiles.length; i++) {
+          if (i > 0) {
+            const transitionType = (transitionsByIndex[i] && transitionsByIndex[i] !== "none")
+              ? transitionsByIndex[i]
+              : (transitionsByIndex[i - 1] || "none");
+            const isNone = transitionType === "none" || transitionType === "";
+            const transitionDuration = isNone
+              ? 0.04
+              : Math.min(0.8, segmentDurations[i - 1] * 0.3, segmentDurations[i] * 0.3);
+            accumulatedGlobalTime -= transitionDuration;
+          }
+          clipGlobalStarts[i] = accumulatedGlobalTime;
+          accumulatedGlobalTime += segmentDurations[i];
+        }
+
+        activeClipGlobalStart = clipGlobalStarts[activeClipIdx] !== undefined ? clipGlobalStarts[activeClipIdx] : 0;
+
+        const activeClipRanges = resolvedEditorSelections?.trim?.clipRanges?.[activeClipId];
+        activeClipTrimStart = activeClipRanges ? Math.max(0, Number(activeClipRanges.start) || 0) : 0;
+        activeClipDuration = segmentDurations[activeClipIdx] || null;
+
+        console.log("🎬 [API-MEDIA] Active clip global offset calculated:", {
+          activeClipId,
+          activeClipIdx,
+          activeClipGlobalStart,
+          activeClipTrimStart,
+          activeClipDuration,
         });
 
         // Verify transitions exist
@@ -3935,6 +4397,10 @@ app.post(
           await processVideoRange(videoFile.path, baseOutputPath, primaryTrimStart, primaryTrimDuration);
           seconds = await getVideoDuration(baseOutputPath);
 
+          activeClipGlobalStart = 0;
+          activeClipTrimStart = primaryTrimStart;
+          activeClipDuration = seconds;
+
           const primaryMediaMeta = resolvedEditorSelections?.media?.items?.[0] || {};
           const primaryClipEffect = primaryMediaMeta?.effect && primaryMediaMeta.effect !== "none"
             ? primaryMediaMeta.effect
@@ -3980,10 +4446,16 @@ app.post(
           }
         } else {
           await processVideoRange(videoFile.path, baseOutputPath, primaryTrimStart, seconds);
+          activeClipGlobalStart = 0;
+          activeClipTrimStart = primaryTrimStart;
+          activeClipDuration = seconds;
         }
       } else if (imageFiles.length === 1) {
         console.log("🖼️ [API-MEDIA] Using single uploaded image as source:", imageFiles[0].originalname);
         await createVideoFromImage(imageFiles[0].path, baseOutputPath, seconds, aspect);
+        activeClipGlobalStart = 0;
+        activeClipTrimStart = 0;
+        activeClipDuration = seconds;
 
         if (isQuickEditMode) {
           const primaryMediaMeta = resolvedEditorSelections?.media?.items?.[0] || {};
@@ -4067,6 +4539,9 @@ app.post(
           });
         }
         console.log("✅ [API-MEDIA] Slideshow video created with transitions");
+        activeClipGlobalStart = 0;
+        activeClipTrimStart = 0;
+        activeClipDuration = seconds;
       }
 
       finalOutputPath = baseOutputPath;
@@ -4200,7 +4675,9 @@ app.post(
         isQuickEditMode,
       });
 
-      if (effects.selectedEffect && effects.selectedEffect !== "none") {
+      const isMultiClipQuickEdit = isQuickEditMode && mediaFiles.length > 1;
+
+      if (!isMultiClipQuickEdit && effects.selectedEffect && effects.selectedEffect !== "none") {
         const effectedPath = await applyEffectsToVideo(finalOutputPath, effects, seconds);
         if (effectedPath !== finalOutputPath) {
           generatedTempFiles.push(finalOutputPath);
@@ -4209,7 +4686,7 @@ app.post(
       }
 
       // Apply selected filter as an additional pass so filter + effect can both appear in exports.
-      if (resolvedSelectedFilter !== "none" && resolvedSelectedFilter !== effects.selectedEffect) {
+      if (!isMultiClipQuickEdit && resolvedSelectedFilter !== "none" && resolvedSelectedFilter !== effects.selectedEffect) {
         console.log("🎨 [API-MEDIA] Applying dedicated filter pass", {
           selectedFilter: resolvedSelectedFilter,
           baseEffect: effects.selectedEffect || "none",
@@ -4225,12 +4702,12 @@ app.post(
         }
       }
 
-      const textOverlayPath = (isQuickEditMode && mediaFiles.length > 1)
-        ? finalOutputPath
-        : await applyTextOverlayToVideo(finalOutputPath, resolvedTextOverlay);
-      if (textOverlayPath !== finalOutputPath) {
-        generatedTempFiles.push(finalOutputPath);
-        finalOutputPath = textOverlayPath;
+      if (!isQuickEditMode || mediaFiles.length <= 1) {
+        const textOverlayPath = await applyTextOverlayToVideo(finalOutputPath, resolvedTextOverlay);
+        if (textOverlayPath !== finalOutputPath) {
+          generatedTempFiles.push(finalOutputPath);
+          finalOutputPath = textOverlayPath;
+        }
       }
 
       // STEP 4.5: Merge editor audio tracks (extracted/imported) into final video
@@ -4248,13 +4725,64 @@ app.post(
       }
 
       // STEP 4.7: Burn captions into final video if present in editorSelections
-      const resolvedCaptions = resolvedEditorSelections?.captions || parsedEditorSelections?.captions;
+      let resolvedCaptions = resolvedEditorSelections?.captions || parsedEditorSelections?.captions;
+      let needsShift = Array.isArray(resolvedCaptions) && resolvedCaptions.length > 0;
+
       if (Array.isArray(resolvedCaptions) && resolvedCaptions.length > 0) {
+        if (needsShift) {
+          console.log(`🎬 [API-MEDIA] Shifting frontend captions. Total captions before shifting: ${resolvedCaptions.length}`);
+          const shiftedCaptions = [];
+          
+          for (const caption of resolvedCaptions) {
+            // Find which clip this caption belongs to
+            const clipId = caption.clipId;
+            let clipIdx = -1;
+            if (clipId && Array.isArray(resolvedEditorSelections?.media?.items)) {
+              clipIdx = resolvedEditorSelections.media.items.findIndex(item => item.id === clipId);
+            }
+            
+            // Fall back to active clip if no clipId found
+            const targetClipIdx = clipIdx !== -1 ? clipIdx : activeClipIdx;
+            const targetClipMeta = resolvedEditorSelections?.media?.items?.[targetClipIdx] || {};
+            const targetClipId = targetClipMeta?.id;
+            
+            const clipGlobalStart = clipGlobalStarts[targetClipIdx] !== undefined ? clipGlobalStarts[targetClipIdx] : activeClipGlobalStart;
+            
+            const rawClipTrim = targetClipId ? resolvedEditorSelections?.trim?.clipRanges?.[targetClipId] : null;
+            const clipTrimStart = rawClipTrim ? Math.max(0, Number(rawClipTrim.start) || 0) : 0;
+            const clipDuration = segmentDurations[targetClipIdx] || null;
+            
+            const shiftedStart = clipGlobalStart + (caption.startTime - clipTrimStart);
+            const shiftedEnd = clipGlobalStart + (caption.endTime - clipTrimStart);
+            
+            const localStart = caption.startTime - clipTrimStart;
+            const localEnd = caption.endTime - clipTrimStart;
+            
+            if (localEnd > 0 && (clipDuration === null || localStart < clipDuration)) {
+              shiftedCaptions.push({
+                ...caption,
+                startTime: Math.max(0, shiftedStart),
+                endTime: Math.max(0, shiftedEnd)
+              });
+            }
+          }
+          
+          resolvedCaptions = shiftedCaptions;
+          console.log(`🎬 [API-MEDIA] Shifting complete. Remaining captions after shifting: ${resolvedCaptions.length}`);
+        }
         try {
           console.log(`🎬 [API-MEDIA] Burning ${resolvedCaptions.length} captions into final video...`);
-          const assPath = makeLocalAssPath();
           const style = resolvedEditorSelections?.captionStyle || {};
-          await fs.promises.writeFile(assPath, buildAss(resolvedCaptions, style), "utf8");
+          console.log("🎨 [API-MEDIA] Caption style received:", JSON.stringify(style));
+
+          // Probe actual video dimensions so ASS PlayRes matches exactly
+          const { width: vWidth, height: vHeight } = await getVideoDimensions(finalOutputPath);
+          console.log(`📐 [API-MEDIA] Video dimensions for subtitles: ${vWidth}x${vHeight}`);
+
+          const assPath = makeLocalAssPath();
+          const assContent = buildAss(resolvedCaptions, style, vWidth, vHeight);
+          console.log("📄 [API-MEDIA] ASS file header (first 600 chars):\n" + assContent.substring(0, 600));
+          await fs.promises.writeFile(assPath, assContent, "utf8");
 
           const subtitleSource = normalizeSubtitlePath(assPath);
           const captionedOutputPath = makeTempFilePath("burned-captions.mp4");
@@ -4801,7 +5329,6 @@ app.post("/api/burn-captions", upload.none(), async (req, res) => {
       });
     }
 
-    const assPath = makeLocalAssPath();
     const style = req.body.captionStyle ? (typeof req.body.captionStyle === "string" ? JSON.parse(req.body.captionStyle) : req.body.captionStyle) : {
       fontFamily: "Arial",
       fontSize: 26,
@@ -4813,7 +5340,13 @@ app.post("/api/burn-captions", upload.none(), async (req, res) => {
       posX: 50,
       posY: 80
     };
-    await fs.promises.writeFile(assPath, buildAss(parsedCaptions, style), "utf8");
+
+    // Probe actual video dimensions so ASS PlayRes matches exactly
+    const { width: vWidth, height: vHeight } = await getVideoDimensions(videoPath);
+    console.log(`📐 [CAPTIONS] Video dimensions for subtitles: ${vWidth}x${vHeight}`);
+
+    const assPath = makeLocalAssPath();
+    await fs.promises.writeFile(assPath, buildAss(parsedCaptions, style, vWidth, vHeight), "utf8");
 
     const outputPath = makeTempFilePath("burned-captions.mp4");
     const subtitleSource = normalizeSubtitlePath(assPath);

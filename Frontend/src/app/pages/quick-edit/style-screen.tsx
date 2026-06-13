@@ -311,6 +311,7 @@ const CANVAS_PREVIEW_FILTERS = [
 
 const TimelineHub = memo(({
   mediaItems,
+  getClipGlobalStart,
   audioTracks,
   captions,
   currentCaption,
@@ -811,7 +812,8 @@ const TimelineHub = memo(({
               <div className="flex-1 border-b border-white/5 last:border-b-0 relative flex items-center bg-white/[0.01] rounded-2xl overflow-hidden">
                 <div className="absolute inset-0 flex gap-1 p-0">
                   {captions.map((caption: any) => {
-                    const captionLeft = caption.startTime * pixelsPerSecond;
+                    const clipStart = caption.clipId && getClipGlobalStart ? getClipGlobalStart(caption.clipId) : 0;
+                    const captionLeft = (clipStart + caption.startTime) * pixelsPerSecond;
                     const captionDuration = (caption.endTime - caption.startTime);
                     const captionWidth = Math.max(8, captionDuration * pixelsPerSecond);
                     const isCaptionActive = currentCaption?.id === caption.id;
@@ -1028,6 +1030,10 @@ const ToolInspector = memo(({
   setOverlayPosX,
   overlayPosY,
   setOverlayPosY,
+  overlayBgEnabled,
+  setOverlayBgEnabled,
+  overlayBgColorHex,
+  setOverlayBgColorHex,
   isTextPlacementMode,
   setIsTextPlacementMode,
   clipTransitions,
@@ -1839,6 +1845,29 @@ const ToolInspector = memo(({
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
+                <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 block mb-0.5">Background</label>
+                <button
+                  type="button"
+                  onClick={() => setOverlayBgEnabled(!overlayBgEnabled)}
+                  className={`w-full py-1.5 rounded text-[8px] font-black uppercase border transition-all ${overlayBgEnabled ? 'bg-purple-500/20 text-purple-300 border-purple-500/40 ring-2 ring-purple-500/30' : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10'}`}
+                >
+                  {overlayBgEnabled ? 'ON' : 'OFF'}
+                </button>
+              </div>
+              {overlayBgEnabled && (
+                <div>
+                  <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400">BG Color</label>
+                  <input
+                    type="color"
+                    value={overlayBgColorHex}
+                    onChange={(e) => setOverlayBgColorHex(e.target.value)}
+                    className="w-full h-6 rounded bg-transparent border border-white/10 cursor-pointer"
+                  />
+                </div>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
                 <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400">Position X</label>
                 <input
                   type="range"
@@ -1924,10 +1953,12 @@ const ToolInspector = memo(({
             <div className="space-y-2">
               {/* Caption list */}
               <div className="space-y-1 max-h-36 overflow-y-auto custom-scrollbar pr-0.5">
-                {captions.length === 0 ? (
+                {captions.filter((cap: any) => !cap.clipId || cap.clipId === activePreviewId).length === 0 ? (
                   <div className="py-3 text-center text-[8px] font-bold uppercase tracking-widest text-slate-600">No captions yet</div>
                 ) : (
-                  captions.map((cap: any) => (
+                  captions
+                    .filter((cap: any) => !cap.clipId || cap.clipId === activePreviewId)
+                    .map((cap: any) => (
                     <div
                       key={cap.id}
                       onClick={() => setCurrentCaption(cap)}
@@ -1998,6 +2029,7 @@ const ToolInspector = memo(({
                       text: newCaptionText.trim(),
                       startTime: newCaptionStart,
                       endTime: Math.max(newCaptionStart + 0.1, newCaptionEnd),
+                      clipId: activePreviewId,
                     }]);
                     setNewCaptionText('');
                     setNewCaptionStart(0);
@@ -2420,6 +2452,8 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
   const [overlayTextStylePreset, setOverlayTextStylePreset] = useState<string | null>(null);
   const [overlayPosX, setOverlayPosX] = useState(50);
   const [overlayPosY, setOverlayPosY] = useState(50);
+  const [overlayBgEnabled, setOverlayBgEnabled] = useState(false);
+  const [overlayBgColorHex, setOverlayBgColorHex] = useState('#000000');
   const [speedValue, setSpeedValue] = useState(1);
   const [rotationDegrees, setRotationDegrees] = useState(0);
   const [volumeLevel, setVolumeLevel] = useState(1);
@@ -2483,8 +2517,8 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
   const [animatedText, setAnimatedText] = useState('');
 
   // --- Caption state ---
-  const [captions, setCaptions] = useState<Array<{ id: string; text: string; startTime: number; endTime: number }>>([]);
-  const [currentCaption, setCurrentCaption] = useState<{ id: string; text: string; startTime: number; endTime: number } | null>(null);
+  const [captions, setCaptions] = useState<Array<{ id: string; text: string; startTime: number; endTime: number; clipId?: string }>>([]);
+  const [currentCaption, setCurrentCaption] = useState<{ id: string; text: string; startTime: number; endTime: number; clipId?: string } | null>(null);
   const [captionLanguage, setCaptionLanguage] = useState('en');
   const [captionStyle, setCaptionStyle] = useState({
     fontId: 'sans',
@@ -2717,10 +2751,14 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
         text: (seg.text || '').trim(),
         startTime: seg.start,
         endTime: seg.end,
+        clipId: activePreviewId,
       }));
 
-      // Set the captions state
-      setCaptions(newCaptions);
+      // Set the captions state, preserving other clips
+      setCaptions((prev: any) => [
+        ...prev.filter((c: any) => c.clipId !== activePreviewId),
+        ...newCaptions
+      ]);
       setAutoCaptionStatus('✅ Captions generated successfully using Gemini!');
     } catch (error: any) {
       console.error('Gemini transcription failed:', error);
@@ -2761,6 +2799,17 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
     return mediaItems.reduce((acc, item) => acc + getEffectiveDurationForItem(item), 0);
   }, [mediaItems, getEffectiveDurationForItem]);
 
+  const getClipGlobalStart = useCallback((clipId: string) => {
+    let accumulated = 0;
+    for (const item of mediaItems) {
+      if (item.id === clipId) {
+        return accumulated;
+      }
+      accumulated += getEffectiveDurationForItem(item);
+    }
+    return 0;
+  }, [mediaItems, getEffectiveDurationForItem]);
+
   // Load settings per clip when switching activePreviewId
   useEffect(() => {
     if (!activePreviewId) return;
@@ -2782,11 +2831,14 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
     setKeyframeAmount(settings.keyframeAmount ?? 1.25);
 
     setOverlayText(settings.overlayText || '');
+    setOverlayTextStylePreset(settings.overlayTextStylePreset || null);
     setOverlayFontId(settings.overlayFontId || 'serif');
     setOverlayFontSize(settings.overlayFontSize ?? 48);
     setOverlayColor(settings.overlayColor || '#FFFFFF');
     setOverlayPosX(settings.overlayPosX ?? 50);
     setOverlayPosY(settings.overlayPosY ?? 50);
+    setOverlayBgEnabled(settings.overlayBgEnabled ?? false);
+    setOverlayBgColorHex(settings.overlayBgColorHex || '#000000');
 
     setBlurAmount(settings.blurAmount ?? 10);
     setBrightness(settings.brightness ?? 1);
@@ -2830,11 +2882,14 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
         current.keyframeMode === keyframeMode &&
         current.keyframeAmount === keyframeAmount &&
         current.overlayText === overlayText &&
+        current.overlayTextStylePreset === overlayTextStylePreset &&
         current.overlayFontId === overlayFontId &&
         current.overlayFontSize === overlayFontSize &&
         current.overlayColor === overlayColor &&
         current.overlayPosX === overlayPosX &&
         current.overlayPosY === overlayPosY &&
+        current.overlayBgEnabled === overlayBgEnabled &&
+        current.overlayBgColorHex === overlayBgColorHex &&
         current.blurAmount === blurAmount &&
         current.brightness === brightness &&
         current.contrast === contrast &&
@@ -2868,11 +2923,14 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
           keyframeMode,
           keyframeAmount,
           overlayText,
+          overlayTextStylePreset,
           overlayFontId,
           overlayFontSize,
           overlayColor,
           overlayPosX,
           overlayPosY,
+          overlayBgEnabled,
+          overlayBgColorHex,
           blurAmount,
           brightness,
           contrast,
@@ -2904,11 +2962,14 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
     keyframeMode,
     keyframeAmount,
     overlayText,
+    overlayTextStylePreset,
     overlayFontId,
     overlayFontSize,
     overlayColor,
     overlayPosX,
     overlayPosY,
+    overlayBgEnabled,
+    overlayBgColorHex,
     blurAmount,
     brightness,
     contrast,
@@ -3086,7 +3147,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
 
       // Update active caption based on current video time
       const ct = videoRef.current.currentTime;
-      const activeCaption = captions.find(c => ct >= c.startTime && ct < c.endTime) ?? null;
+      const activeCaption = captions.find(c => (!c.clipId || c.clipId === activePreviewId) && ct >= c.startTime && ct < c.endTime) ?? null;
       setCurrentCaption(activeCaption);
     }
   };
@@ -4094,10 +4155,13 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
           textOverlay: {
             enabled: (settings.overlayText || '').trim().length > 0,
             text: settings.overlayText || '',
+            stylePreset: settings.overlayTextStylePreset || 'none',
             fontId: settings.overlayFontId || 'serif',
             fontFamily: textFontOptions.find((f) => f.id === settings.overlayFontId)?.family || textFontOptions[0].family,
             fontSize: settings.overlayFontSize ?? 48,
             color: settings.overlayColor || '#FFFFFF',
+            bgEnabled: settings.overlayBgEnabled ?? false,
+            bgColorHex: settings.overlayBgColorHex || '#000000',
             position: {
               x: settings.overlayPosX ?? 50,
               y: settings.overlayPosY ?? 50,
@@ -4165,10 +4229,13 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
       textOverlay: {
         enabled: overlayText.trim().length > 0,
         text: overlayText,
+        stylePreset: overlayTextStylePreset || 'none',
         fontId: overlayFontId,
         fontFamily: textFontOptions.find((f) => f.id === overlayFontId)?.family || textFontOptions[0].family,
         fontSize: overlayFontSize,
         color: overlayColor,
+        bgEnabled: overlayBgEnabled,
+        bgColorHex: overlayBgColorHex,
         position: {
           x: overlayPosX,
           y: overlayPosY,
@@ -4233,6 +4300,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
         text: caption.text,
         startTime: caption.startTime,
         endTime: caption.endTime,
+        clipId: caption.clipId,
       })),
       captionStyle: {
         fontId: captionStyle.fontId,
@@ -4522,6 +4590,10 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                         setOverlayPosX={setOverlayPosX}
                         overlayPosY={overlayPosY}
                         setOverlayPosY={setOverlayPosY}
+                        overlayBgEnabled={overlayBgEnabled}
+                        setOverlayBgEnabled={setOverlayBgEnabled}
+                        overlayBgColorHex={overlayBgColorHex}
+                        setOverlayBgColorHex={setOverlayBgColorHex}
                         isTextPlacementMode={isTextPlacementMode}
                         setIsTextPlacementMode={setIsTextPlacementMode}
                         clipTransitions={clipTransitions}
@@ -4897,6 +4969,9 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                         : 'translate(-50%, -50%)',
                       maxWidth: '88%',
                       ...getOverlayTextStylePresetCss(overlayTextStylePreset),
+                      background: overlayBgEnabled ? `${overlayBgColorHex}cc` : getOverlayTextStylePresetCss(overlayTextStylePreset).background,
+                      padding: overlayBgEnabled ? '4px 12px' : getOverlayTextStylePresetCss(overlayTextStylePreset).padding,
+                      borderRadius: overlayBgEnabled ? '6px' : getOverlayTextStylePresetCss(overlayTextStylePreset).borderRadius,
                     }}
                   >
                     {overlayText}
@@ -5151,6 +5226,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
           <div className="flex-1 overflow-hidden h-full">
             <TimelineHub
               mediaItems={mediaItems}
+              getClipGlobalStart={getClipGlobalStart}
               audioTracks={audioTracks}
               captions={captions}
               currentCaption={currentCaption}

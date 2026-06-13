@@ -149,11 +149,15 @@ export function downloadVideoBlob(blob: Blob, filename: string = "video.mp4"): v
  */
 export async function burnCaptions(
   videoPath: string,
-  captions: CaptionItem[]
+  captions: CaptionItem[],
+  captionStyle?: any
 ): Promise<Blob> {
   const formData = new FormData();
   formData.append("videoPath", videoPath);
   formData.append("captions", JSON.stringify(captions));
+  if (captionStyle) {
+    formData.append("captionStyle", JSON.stringify(captionStyle));
+  }
 
   const response = await fetch(buildApiUrl("/api/burn-captions"), {
     method: "POST",
