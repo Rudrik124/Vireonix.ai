@@ -13,18 +13,18 @@ const particles = Array.from({ length: 40 });
 // CONFIG - Match Landing Page Theme
 // ============================================
 const CONFIG = {
-  background: '#0B0A10',
-  accent: '#e879f9', // fuchsia-400
-  accentCyan: '#06B6D4',
-  accentPurple: '#c084fc', // purple-400
-  accentGlow: 'rgba(232, 121, 249, 0.5)',
-  accentLight: 'rgba(232, 121, 249, 0.12)',
+  background: 'linear-gradient(135deg, #050812 0%, #0d1222 30%, #171d33 60%, #1f2540 85%, #0d1222 100%)',
+  accent: '#3b82f6', // blue-500
+  accentCyan: '#8b5cf6', // purple-500
+  accentPurple: '#a855f7', // purple-500
+  accentGlow: 'rgba(59, 130, 246, 0.5)',
+  accentLight: 'rgba(59, 130, 246, 0.12)',
   text: '#FFFFFF',
   textMuted: 'rgba(255, 255, 255, 0.6)',
   textMuted2: 'rgba(255, 255, 255, 0.35)',
-  gradient: 'linear-gradient(135deg, #d946ef 0%, #9333ea 100%)', // fuchsia-500 to purple-600
+  gradient: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)', // blue to purple
   gradientCyan: 'linear-gradient(135deg, #06B6D4 0%, #3B82F6 100%)',
-  gradientHover: '0 10px 40px rgba(217, 70, 239, 0.45)',
+  gradientHover: '0 10px 40px rgba(59, 130, 246, 0.45)',
   glassBg: 'rgba(255, 255, 255, 0.04)',
   glassBorder: 'rgba(255, 255, 255, 0.12)',
 };
@@ -483,35 +483,15 @@ export function QuickEditUploadScreen() {
   return (
     <div 
       style={styles.page}
-      className="relative selection:bg-fuchsia-500/30"
+      className="relative selection:bg-blue-500/30 text-slate-200"
     >
-      {/* ===== LANDING PAGE MATCHING BACKGROUND EFFECTS ===== */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 bg-[#0B0A10]">
-        {/* Grid Glow */}
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:60px_60px] [perspective:1000px] [transform-style:preserve-3d]">
-           <div className="absolute inset-0 bg-gradient-to-t from-[#0B0A10] via-transparent to-[#0B0A10]" />
-        </div>
-        
-        {/* Gradient Blobs */}
-        <motion.div 
-          animate={{ x: [0, 100, 0], y: [0, -50, 0], scale: [1, 1.2, 1] }}
-          transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-0 right-1/4 w-[800px] h-[800px] bg-fuchsia-600/10 rounded-full blur-[120px]"
-        />
-        <motion.div 
-          animate={{ x: [0, -100, 0], y: [0, 50, 0], scale: [1, 1.1, 1] }}
-          transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute bottom-0 left-1/4 w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-[100px]"
-        />
+      {/* ===== BACKGROUND EFFECTS ===== */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden mix-blend-screen opacity-20">
+        <div className="absolute top-[-20%] left-[-10%] w-[80vw] h-[30vh] bg-gradient-to-r from-transparent via-blue-500 to-transparent blur-[90px] rotate-[35deg]" />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[100vw] h-[25vh] bg-gradient-to-r from-transparent via-purple-500 to-transparent blur-[100px] rotate-[-25deg]" />
       </div>
-
-      {/* MOUSE FOLLOW LIGHT EFFECT */}
-      <div 
-        className="pointer-events-none fixed inset-0 z-0 transition-opacity duration-300"
-        style={{
-          background: `radial-gradient(600px circle at ${mousePos.x}vw ${mousePos.y}vh, rgba(139, 92, 246, 0.08), transparent 40%)`
-        }}
-      />
+      <div className="fixed top-[5%] left-[5%] w-[60%] h-[60%] bg-blue-500/10 rounded-full blur-[150px] pointer-events-none z-0 mix-blend-screen" />
+      <div className="fixed bottom-[0%] right-[5%] w-[70%] h-[70%] bg-purple-500/10 rounded-full blur-[150px] pointer-events-none z-0 mix-blend-screen" />
 
       {/* ===== CORNER BADGES ===== */}
       <div style={{...styles.cornerBadge, ...styles.topLeft}}>

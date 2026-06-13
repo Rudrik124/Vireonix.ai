@@ -57,10 +57,10 @@ export function WalletPage() {
 
   const userName = session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || "User";
 
-  const totalCredits = 1250;
-  const creditsUsed = 1245;
-  const creditsPurchased = 2000;
-  const creditsRemaining = creditsPurchased - creditsUsed;
+  const totalCredits = 0;
+  const creditsUsed = 0;
+  const creditsPurchased = 0;
+  const creditsRemaining = 0;
   const isLowCredits = totalCredits < 100;
 
   const handleLogout = async () => {
@@ -76,15 +76,15 @@ export function WalletPage() {
   ];
 
   const pricingCards = [
-    { title: "Starter", credits: "100 Credits", price: "₹99", bonus: "+10 Bonus Credits", highlight: false },
-    { title: "Creator", credits: "500 Credits", price: "₹399", bonus: "+75 Bonus Credits", highlight: true, badge: "⭐ Best Value" },
-    { title: "Pro", credits: "1000 Credits", price: "₹699", bonus: "+200 Bonus Credits", highlight: false }
+    { title: "Plus", credits: "0 Credits", price: "₹99", bonus: "+0 Bonus Credits", highlight: false },
+    { title: "Pro", credits: "0 Credits", price: "₹199", bonus: "+0 Bonus Credits", highlight: true, badge: "⭐ Best Value" },
+    { title: "Premium", credits: "0 Credits", price: "₹299", bonus: "+0 Bonus Credits", highlight: false }
   ];
 
   const transactions = [
-    { title: "AI Video Generation", amount: "-25 Credits", date: "Today, 09:42 AM", type: "usage" },
-    { title: "Image to Video", amount: "-15 Credits", date: "Today, 08:18 AM", type: "usage" },
-    { title: "Credits Purchased", amount: "+500 Credits", date: "Yesterday, 14:30 PM", type: "purchase", bonus: "+75 Bonus Credits" }
+    { title: "AI Video Generation", amount: "-0 Credits", date: "Today, 09:42 AM", type: "usage" },
+    { title: "Image to Video", amount: "-0 Credits", date: "Today, 08:18 AM", type: "usage" },
+    { title: "Credits Purchased", amount: "+0 Credits", date: "Yesterday, 14:30 PM", type: "purchase", bonus: "+0 Bonus Credits" }
   ];
 
   const particles = Array.from({ length: 30 });
@@ -212,11 +212,11 @@ export function WalletPage() {
                   <div className="space-y-4 mb-8">
                     <div className="flex justify-between text-sm font-bold text-gray-400">
                       <span>Premium Creator • Active</span>
-                      <span>{Math.round((creditsRemaining / creditsPurchased) * 100)}% Remaining</span>
+                      <span>{creditsPurchased > 0 ? Math.round((creditsRemaining / creditsPurchased) * 100) : 0}% Remaining</span>
                     </div>
                     <div className="w-full h-2.5 bg-white/5 rounded-full overflow-hidden border border-white/10">
                       <motion.div 
-                        initial={{ width: 0 }} animate={{ width: `${(creditsRemaining / creditsPurchased) * 100}%` }} transition={{ duration: 1.5, delay: 0.5 }}
+                        initial={{ width: 0 }} animate={{ width: `${creditsPurchased > 0 ? (creditsRemaining / creditsPurchased) * 100 : 0}%` }} transition={{ duration: 1.5, delay: 0.5 }}
                         className="h-full bg-gradient-to-r from-fuchsia-500 to-purple-500 rounded-full relative"
                       >
                         <div className="absolute inset-0 bg-white/20 w-full h-full animate-[shimmer_2s_infinite] translate-x-[-100%]" />
@@ -401,9 +401,9 @@ export function WalletPage() {
               <h3 className="text-xl font-black mb-6 flex items-center gap-2"><Award className="w-5 h-5 text-yellow-400" /> Rewards</h3>
               <div className="space-y-4">
                 {[
-                  { title: "Daily Login", reward: "+5 Credits", icon: <Gift className="w-5 h-5 text-pink-400" />, action: "Claim" },
-                  { title: "Invite Friends", reward: "+100 Credits", icon: <Users className="w-5 h-5 text-blue-400" />, action: "Share" },
-                  { title: "Complete 20 Videos", reward: "+50 Credits", icon: <Video className="w-5 h-5 text-purple-400" />, action: "Track" }
+                  { title: "Daily Login", reward: "+0 Credits", icon: <Gift className="w-5 h-5 text-pink-400" />, action: "Claim" },
+                  { title: "Invite Friends", reward: "+0 Credits", icon: <Users className="w-5 h-5 text-blue-400" />, action: "Share" },
+                  { title: "Complete 20 Videos", reward: "+0 Credits", icon: <Video className="w-5 h-5 text-purple-400" />, action: "Track" }
                 ].map((reward, idx) => (
                   <div key={idx} className="flex items-center justify-between p-3 rounded-2xl hover:bg-white/5 transition-colors cursor-pointer group">
                     <div className="flex items-center gap-3">

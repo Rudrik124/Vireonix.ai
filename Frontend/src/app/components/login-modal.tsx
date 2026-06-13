@@ -55,6 +55,223 @@ const LoginStyles = () => (
   `}</style>
 );
 
+const typingPrompts = [
+  "A cinematic drone shot flying through Tokyo neon streets.",
+  "Luxury perfume advertisement with slow-motion water effects.",
+  "Marvel-style superhero cinematic entrance.",
+  "Apple-inspired premium product commercial.",
+  "Hyper realistic sci-fi spaceship landing on Mars."
+];
+
+const LeftVisuals = () => {
+  const [promptIndex, setPromptIndex] = useState(0);
+  const [charIndex, setCharIndex] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [stats, setStats] = useState({ videos: 0, creators: 0, uptime: 0 });
+
+  useEffect(() => {
+    const currentPrompt = typingPrompts[promptIndex];
+    let timer: NodeJS.Timeout;
+
+    if (!isDeleting && charIndex < currentPrompt.length) {
+      timer = setTimeout(() => setCharIndex(prev => prev + 1), 40);
+    } else if (isDeleting && charIndex > 0) {
+      timer = setTimeout(() => setCharIndex(prev => prev - 1), 20);
+    } else if (!isDeleting && charIndex === currentPrompt.length) {
+      timer = setTimeout(() => setIsDeleting(true), 3000);
+    } else if (isDeleting && charIndex === 0) {
+      setIsDeleting(false);
+      setPromptIndex((prev) => (prev + 1) % typingPrompts.length);
+    }
+
+    return () => clearTimeout(timer);
+  }, [charIndex, isDeleting, promptIndex]);
+
+  useEffect(() => {
+    // Number counting animation
+    let start = 0;
+    const interval = setInterval(() => {
+      start += 1;
+      setStats({
+        videos: Math.min(start * 3, 150),
+        creators: Math.min(start, 12),
+        uptime: Math.min(90 + (start * 0.1), 99.98)
+      });
+      if (start > 100) clearInterval(interval);
+    }, 20);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="relative w-full h-full p-8 xl:p-12 flex flex-col justify-center">
+      
+      {/* Background Typography */}
+      <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center gap-10 opacity-5 blur-xl select-none z-0">
+        <span className="text-[120px] font-black text-white leading-none">CREATE</span>
+        <span className="text-[120px] font-black text-white leading-none">RENDER</span>
+        <span className="text-[120px] font-black text-white leading-none">IMAGINE</span>
+        <span className="text-[120px] font-black text-white leading-none">MOTION</span>
+        <span className="text-[120px] font-black text-white leading-none">GENERATE</span>
+      </div>
+
+      {/* Particles & Stars */}
+      <div className="absolute inset-0 pointer-events-none z-0">
+        {[...Array(30)].map((_, i) => (
+          <div 
+            key={i}
+            className="absolute bg-white rounded-full opacity-20"
+            style={{
+              width: Math.random() * 3 + 'px',
+              height: Math.random() * 3 + 'px',
+              left: Math.random() * 100 + '%',
+              top: Math.random() * 100 + '%',
+              animation: `float-up ${10 + Math.random() * 10}s linear infinite`,
+              animationDelay: `-${Math.random() * 10}s`
+            }}
+          />
+        ))}
+      </div>
+
+      <div className="relative z-10 w-full max-w-2xl mx-auto flex flex-col h-full justify-between">
+        
+        {/* Top Hero Section */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} className="mt-12">
+          {/* Typing Prompt */}
+          <div className="bg-white/[0.03] backdrop-blur-[20px] border border-white/[0.08] rounded-2xl p-5 shadow-[0_0_40px_rgba(168,85,247,0.15)] relative overflow-hidden group">
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="flex items-center gap-3 text-fuchsia-300 font-mono text-sm relative z-10">
+              <span className="text-white/50">{'>'}</span>
+              <span>
+                {typingPrompts[promptIndex].substring(0, charIndex)}
+                <span className="animate-pulse">|</span>
+              </span>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Middle Status Cards */}
+        <div className="relative h-[300px] w-full my-8" style={{ perspective: '1000px' }}>
+          {/* Card 1 */}
+          <motion.div 
+            initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8, delay: 0.2 }}
+            className="absolute top-0 left-0 bg-white/[0.03] backdrop-blur-[20px] border border-white/[0.08] rounded-[24px] p-5 w-64 shadow-[0_0_40px_rgba(168,85,247,0.15)] login-float"
+            style={{ animationDelay: '0s' }}
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-lg">🎬</span>
+              <span className="text-xs font-bold text-white uppercase tracking-wider">Generation Complete</span>
+            </div>
+            <div className="text-sm text-white/90 mb-2 font-medium">Cyberpunk City Flythrough</div>
+            <div className="flex justify-between items-center text-[10px] text-white/60 mb-3">
+              <span className="text-emerald-400 font-bold bg-emerald-400/10 px-2 py-0.5 rounded">4K Export Ready</span>
+              <span>Render Time: 18s</span>
+            </div>
+            <div className="w-full bg-white/10 rounded-full h-1">
+              <div className="bg-emerald-400 h-full w-full rounded-full shadow-[0_0_10px_#34d399]"></div>
+            </div>
+          </motion.div>
+
+          {/* Card 2 */}
+          <motion.div 
+            initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.4 }}
+            className="absolute top-1/4 right-0 bg-white/[0.03] backdrop-blur-[20px] border border-white/[0.08] rounded-[24px] p-5 w-60 shadow-[0_0_40px_rgba(168,85,247,0.15)] login-float"
+            style={{ animationDelay: '1s' }}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">⚡</span>
+                <span className="text-xs font-bold text-white uppercase tracking-wider">AI Processing</span>
+              </div>
+              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]" />
+            </div>
+            <div className="space-y-2 text-[10px] uppercase tracking-wider">
+              <div className="flex justify-between"><span className="text-white/50">Model:</span> <span className="text-white font-bold">Veytrix Motion V2</span></div>
+              <div className="flex justify-between"><span className="text-white/50">GPU Cluster:</span> <span className="text-blue-400 font-bold">24 Nodes</span></div>
+              <div className="flex justify-between"><span className="text-white/50">Queue:</span> <span className="text-white font-bold">0 Pending</span></div>
+              <div className="flex justify-between"><span className="text-white/50">Status:</span> <span className="text-emerald-400 font-bold">Online</span></div>
+            </div>
+          </motion.div>
+
+          {/* Card 3 */}
+          <motion.div 
+            initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.6 }}
+            className="absolute top-[80%] left-[30%] bg-white/[0.03] backdrop-blur-[20px] border border-white/[0.08] rounded-[24px] py-5 pr-5 pl-8 w-72 shadow-[0_0_40px_rgba(168,85,247,0.15)] login-float"
+            style={{ animationDelay: '2s' }}
+          >
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-lg">🖼</span>
+              <span className="text-xs font-bold text-white uppercase tracking-wider">Workflow</span>
+            </div>
+            <div className="flex flex-col gap-2 text-[10px] font-bold tracking-wider text-white/70 uppercase relative">
+              <div className="absolute left-[3px] top-4 bottom-4 w-px bg-gradient-to-b from-blue-500 via-fuchsia-500 to-emerald-500 opacity-50" />
+              <div className="flex items-center gap-3"><div className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_#3b82f6]" /> Image Uploaded</div>
+              <div className="flex items-center gap-3"><div className="w-2 h-2 rounded-full bg-fuchsia-500 shadow-[0_0_8px_#d946ef]" /> AI Motion Generated</div>
+              <div className="flex items-center gap-3"><div className="w-2 h-2 rounded-full bg-purple-500 shadow-[0_0_8px_#a855f7]" /> Color Enhanced</div>
+              <div className="flex items-center gap-3"><div className="w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_8px_#6366f1] animate-pulse" /> Rendering</div>
+              <div className="flex items-center gap-3"><div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]" /> Export Complete</div>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Bottom Section */}
+        <div className="mt-auto space-y-6 pb-6">
+          {/* Stats */}
+          <div className="grid grid-cols-4 gap-4">
+            {[
+              { label: "Videos Generated", val: `${stats.videos}K+` },
+              { label: "Active Creators", val: `${stats.creators}K+` },
+              { label: "Platform Uptime", val: `${stats.uptime.toFixed(2)}%` },
+              { label: "Maximum Export", val: "4K" }
+            ].map((stat, i) => (
+              <div key={i} className="flex flex-col">
+                <span className="text-2xl font-black text-white">{stat.val}</span>
+                <span className="text-[9px] uppercase tracking-widest text-white/50 mt-1">{stat.label}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Mini Engine Status Panel */}
+          <div className="bg-white/[0.03] backdrop-blur-[20px] border border-white/[0.08] rounded-xl p-4 flex items-center justify-between text-[10px] uppercase font-bold tracking-wider shadow-lg">
+            <div className="flex items-center gap-2 text-white">
+              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]" />
+              AI Engine Online
+            </div>
+            <div className="flex items-center gap-6 text-white/50">
+              <span className="flex gap-1.5 items-center"><span className="text-white/30">GPU Cluster:</span> <span className="text-emerald-400">Active</span></span>
+              <span className="flex gap-1.5 items-center"><span className="text-white/30">Queue:</span> <span className="text-white">0 Jobs</span></span>
+              <span className="flex gap-1.5 items-center hidden xl:flex"><span className="text-white/30">Average Render:</span> <span className="text-white">23 sec</span></span>
+            </div>
+          </div>
+        </div>
+
+        {/* Feature Badges */}
+        <div className="absolute inset-0 pointer-events-none">
+          {[
+            { text: "✨ AI Powered", top: '5%', left: '80%', delay: '0s' },
+            { text: "🎥 4K Export", top: '15%', left: '0%', delay: '1.5s' },
+            { text: "⚡ Fast Rendering", top: '35%', left: '90%', delay: '0.8s' },
+            { text: "🎬 Prompt to Video", top: '55%', left: '-5%', delay: '2.2s' },
+            { text: "🖼 Image to Video", top: '75%', left: '85%', delay: '1.1s' },
+            { text: "🎞 Reference Editing", top: '85%', left: '-10%', delay: '2.5s' },
+            { text: "☁ Cloud Rendering", top: '25%', left: '85%', delay: '1.8s' },
+            { text: "🔒 Secure Storage", top: '45%', left: '-10%', delay: '0.5s' },
+            { text: "🚀 Commercial License", top: '95%', left: '75%', delay: '1.3s' },
+          ].map((badge, i) => (
+            <div 
+              key={i} 
+              className="absolute login-float bg-white/[0.03] backdrop-blur-[20px] border border-white/[0.08] text-[9px] uppercase font-bold tracking-wider text-white px-3 py-1.5 rounded-full shadow-[0_0_15px_rgba(255,255,255,0.05)]"
+              style={{ top: badge.top, left: badge.left, animationDelay: badge.delay }}
+            >
+              {badge.text}
+            </div>
+          ))}
+        </div>
+
+      </div>
+    </div>
+  );
+};
+
 export function LoginModal({ isOpen, onClose, customMessage, customTitle }: LoginModalProps) {
   const navigate = useNavigate();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
@@ -291,92 +508,7 @@ export function LoginModal({ isOpen, onClose, customMessage, customTitle }: Logi
           <div className="relative hidden lg:flex flex-col items-center justify-center overflow-hidden border-r border-white/5 bg-transparent z-10">
 
             
-            {/* Particles */}
-            {[...Array(20)].map((_, i) => (
-              <div 
-                key={i}
-                className="login-particle"
-                style={{
-                  left: `${Math.random() * 100}%`,
-                  top: `${Math.random() * 100}%`,
-                  animationDelay: `${Math.random() * 8}s`,
-                  animationDuration: `${6 + Math.random() * 4}s`
-                }}
-              />
-            ))}
-
-            <div className="relative z-10 w-full max-w-lg px-12">
-              <h2 className="text-4xl xl:text-5xl font-black text-white leading-tight tracking-tight mb-16 text-center shadow-black drop-shadow-2xl">
-                Generate cinematic AI videos instantly.
-              </h2>
-              
-              {/* Floating Elements Container */}
-              <div className="relative h-[360px] w-full mt-8" style={{ perspective: '1000px' }}>
-                
-                {/* Floating Card 1 */}
-                <div className="absolute top-0 left-0 login-float bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 w-52 shadow-2xl" style={{ animationDelay: '0s' }}>
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className="text-xl">🎬</span>
-                    <span className="text-sm font-semibold text-white">Rendering...</span>
-                  </div>
-                  <div className="w-full bg-white/10 rounded-full h-1.5 mt-2 overflow-hidden">
-                    <div className="bg-fuchsia-400 h-full w-[75%] rounded-full shadow-[0_0_10px_#c084fc]"></div>
-                  </div>
-                  <div className="text-right text-[10px] text-fuchsia-400 mt-1 font-mono">75%</div>
-                </div>
-
-                {/* Floating Card 2 */}
-                <div className="absolute top-1/4 right-0 login-float bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 w-52 shadow-2xl" style={{ animationDelay: '1s' }}>
-                  <div className="flex items-center gap-3 mb-1">
-                    <span className="text-xl">✨</span>
-                    <span className="text-sm font-semibold text-white">AI Processing</span>
-                  </div>
-                  <div className="text-xs text-blue-300 mt-1">Neural Networks: 12</div>
-                  <div className="flex gap-1 mt-2">
-                    {[...Array(6)].map((_, i) => (
-                      <div key={i} className="h-1 flex-1 bg-blue-500 rounded-full animate-pulse" style={{ animationDelay: `${i * 0.1}s` }} />
-                    ))}
-                  </div>
-                </div>
-
-                {/* Floating Card 3 */}
-                <div className="absolute bottom-[20%] left-10 login-float bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 w-60 shadow-2xl" style={{ animationDelay: '2s' }}>
-                  <div className="flex items-center gap-3 mb-1">
-                    <span className="text-xl">✅</span>
-                    <span className="text-sm font-semibold text-white">Video Ready</span>
-                  </div>
-                  <div className="text-xs text-emerald-400 mt-1 flex justify-between font-medium">
-                    <span>4K Export Complete</span>
-                    <span className="font-bold">100%</span>
-                  </div>
-                </div>
-
-                {/* Mini Video Preview Window */}
-                <div className="absolute bottom-0 right-10 login-float bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-2 w-64 shadow-2xl" style={{ animationDelay: '1.5s' }}>
-                  <div className="w-full h-32 bg-gray-950 rounded-xl border border-white/10 relative overflow-hidden flex items-center justify-center group">
-                    <div className="absolute inset-0 bg-gradient-to-br from-blue-900/40 to-purple-900/40" />
-                    <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=600&auto=format&fit=crop')] bg-cover bg-center opacity-40 mix-blend-overlay" />
-                    
-                    <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 group-hover:scale-110 transition-transform shadow-[0_0_15px_rgba(255,255,255,0.2)]">
-                      <div className="w-0 h-0 border-t-4 border-t-transparent border-l-6 border-l-white border-b-4 border-b-transparent ml-1" />
-                    </div>
-                    
-                    <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded text-[9px] font-bold text-white uppercase tracking-wider border border-white/10">PREVIEW</div>
-                    <div className="absolute top-2 right-2 flex gap-1">
-                       <span className="bg-purple-500/20 text-purple-300 border border-purple-500/30 px-1.5 py-0.5 rounded text-[9px] font-bold">4K</span>
-                       <span className="bg-white/10 text-white/70 border border-white/10 px-1.5 py-0.5 rounded text-[9px] font-bold">60fps</span>
-                    </div>
-                    
-                    <div className="absolute bottom-2 left-2 right-2">
-                      <div className="w-full h-1 bg-white/20 rounded-full overflow-hidden">
-                         <div className="h-full bg-fuchsia-400 w-1/3 rounded-full" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-            </div>
+            <LeftVisuals />
           </div>
 
           {/* RIGHT PANEL - LOGIN FORM */}

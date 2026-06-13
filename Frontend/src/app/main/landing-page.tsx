@@ -6,6 +6,7 @@ import { CheckCircleOutlined, GithubOutlined, TwitterOutlined, RocketOutlined, S
 import { LoginModal } from '../components/login-modal';
 import { Sparkles, Play, Video, Image as ImageIcon, Wand2, Music, CheckCircle2, Menu, Loader2, Star, Zap, Clapperboard, Globe, ShieldCheck, User, ChevronRight, ChevronDown, LogOut, Wallet } from 'lucide-react';
 import { useAuth } from '../context/auth-context';
+import { PrivacyPolicyContent, TermsOfServiceContent, RefundPolicyContent, AcceptableUsePolicyContent } from '../components/legal-policies-content';
 
 const { Title, Text } = Typography;
 
@@ -30,7 +31,25 @@ export function LandingPage() {
   const location = useLocation();
   useSEO('Lightning Fast Web Optimization | TurboSite', 'Make your site lightning fast with our 3-step optimization process. Audit, Optimize, and Deploy in seconds.');
 
+  useEffect(() => {
+    const savedScroll = sessionStorage.getItem('landingScrollY');
+    if (savedScroll) {
+      // Small timeout to ensure DOM is ready before scrolling
+      setTimeout(() => window.scrollTo(0, parseInt(savedScroll)), 10);
+    }
+
+    const handleScroll = () => {
+      sessionStorage.setItem('landingScrollY', window.scrollY.toString());
+    };
+    
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
+
   const [isDarkMode, setIsDarkMode] = useState(true);
+  const [activeLegalModal, setActiveLegalModal] = useState<'privacy' | 'terms' | 'refund' | 'acceptable' | null>(null);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [activeWorkflowModal, setActiveWorkflowModal] = useState<number | null>(null);
 
@@ -77,6 +96,15 @@ export function LandingPage() {
       navigate('/video-type');
     } else {
       localStorage.setItem("authRedirectUrl", "/video-type");
+      setIsLoginOpen(true);
+    }
+  };
+
+  const handleStartFree = () => {
+    if (isLoggedIn) {
+      navigate('/home');
+    } else {
+      localStorage.setItem("authRedirectUrl", "/home");
       setIsLoginOpen(true);
     }
   };
@@ -864,7 +892,7 @@ export function LandingPage() {
               Generate, edit, and export cinematic content in minutes.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Button onClick={() => navigate('/video-type')} type="primary" size="large" shape="round" className="h-14 px-10 text-lg font-bold bg-fuchsia-600 hover:bg-fuchsia-500 shadow-[0_0_20px_rgba(147,51,234,0.3)] hover:shadow-[0_0_30px_rgba(147,51,234,0.5)] transition-all border-none">
+              <Button onClick={handleStartFree} type="primary" size="large" shape="round" className="h-14 px-10 text-lg font-bold bg-fuchsia-600 hover:bg-fuchsia-500 shadow-[0_0_20px_rgba(147,51,234,0.3)] hover:shadow-[0_0_30px_rgba(147,51,234,0.5)] transition-all border-none">
                 Start Free
               </Button>
               <Button size="large" shape="round" className={`h-14 px-10 text-lg font-bold transition-all ${isDarkMode ? 'bg-transparent border-white/20 text-white hover:border-white/50 hover:bg-white/5' : ''}`}>
@@ -930,7 +958,7 @@ export function LandingPage() {
                   />
                 </div>
 
-                <Button type="primary" shape="round" className="h-12 px-8 font-bold bg-fuchsia-600 hover:bg-fuchsia-500 shadow-[0_0_15px_rgba(147,51,234,0.2)] hover:shadow-[0_0_25px_rgba(147,51,234,0.4)] transition-all w-fit border-none">
+                <Button onClick={handleStartFree} type="primary" shape="round" className="h-12 px-8 font-bold bg-fuchsia-600 hover:bg-fuchsia-500 shadow-[0_0_15px_rgba(147,51,234,0.2)] hover:shadow-[0_0_25px_rgba(147,51,234,0.4)] transition-all w-fit border-none">
                   Start Free Trial
                 </Button>
 
@@ -951,37 +979,66 @@ export function LandingPage() {
 
             {/* Bottom Row - Legal */}
             <div className={`pt-8 flex flex-col sm:flex-row justify-center items-center gap-4 sm:gap-6 text-xs opacity-50 border-t ${isDarkMode ? 'border-white/10' : 'border-black/10'}`}>
-              <a href="#" className="hover:text-fuchsia-500 transition-colors">Privacy Policy</a>
+              <a href="#" onClick={(e) => { e.preventDefault(); setActiveLegalModal('privacy'); }} className="hover:text-fuchsia-500 transition-colors cursor-pointer">Privacy Policy</a>
               <span className="hidden sm:inline">•</span>
-              <a href="#" className="hover:text-fuchsia-500 transition-colors">Terms of Service</a>
+              <a href="#" onClick={(e) => { e.preventDefault(); setActiveLegalModal('terms'); }} className="hover:text-fuchsia-500 transition-colors cursor-pointer">Terms of Service</a>
               <span className="hidden sm:inline">•</span>
-              <a href="#" className="hover:text-fuchsia-500 transition-colors">Refund Policy</a>
+              <a href="#" onClick={(e) => { e.preventDefault(); setActiveLegalModal('refund'); }} className="hover:text-fuchsia-500 transition-colors cursor-pointer">Refund Policy</a>
               <span className="hidden sm:inline">•</span>
-              <a href="#" className="hover:text-fuchsia-500 transition-colors">Acceptable Use Policy</a>
+              <a href="#" onClick={(e) => { e.preventDefault(); setActiveLegalModal('acceptable'); }} className="hover:text-fuchsia-500 transition-colors cursor-pointer">Acceptable Use Policy</a>
               <span className="hidden sm:inline">•</span>
               <a href="#" className="hover:text-fuchsia-500 transition-colors">Contact Us</a>
             </div>
           </div>
         </footer>
 
+        {/* LEGAL MODALS */}
+        <Modal
+          title={null}
+          open={!!activeLegalModal}
+          onCancel={() => setActiveLegalModal(null)}
+          footer={null}
+          width={800}
+          centered
+          closeIcon={false}
+          styles={{
+            body: { padding: '40px', position: 'relative' },
+            mask: { backdropFilter: 'blur(12px)', backgroundColor: 'rgba(0,0,0,0.6)' }
+          }}
+          className={isDarkMode ? 'dark-modal' : ''}
+        >
+          <button 
+            onClick={() => setActiveLegalModal(null)}
+            className="absolute top-6 right-6 z-50 w-10 h-10 bg-black/10 dark:bg-white/10 rounded-full hover:bg-black/20 dark:hover:bg-white/20 transition-all text-gray-400 hover:text-white border-none cursor-pointer flex items-center justify-center"
+          >
+            <CloseOutlined className="text-xl" />
+          </button>
+          <div className="text-white max-h-[70vh] overflow-y-auto pr-4 custom-scrollbar">
+            {activeLegalModal === 'privacy' && <PrivacyPolicyContent />}
+            {activeLegalModal === 'terms' && <TermsOfServiceContent />}
+            {activeLegalModal === 'refund' && <RefundPolicyContent />}
+            {activeLegalModal === 'acceptable' && <AcceptableUsePolicyContent />}
+          </div>
+        </Modal>
 
         {/* WORKFLOW PREMIUM MODALS */}
         <AnimatePresence>
           {activeWorkflowModal && (
-            <Modal
-              title={null}
-              open={!!activeWorkflowModal}
-              onCancel={() => setActiveWorkflowModal(null)}
-              footer={null}
-              width={850}
-              centered
-              closeIcon={<CloseOutlined className="text-xl p-2 bg-black/10 dark:bg-white/10 rounded-full hover:bg-black/20 dark:hover:bg-white/20 transition-all absolute top-6 right-6 z-50" />}
-              styles={{
-                body: { padding: '0px' },
-                mask: { backdropFilter: 'blur(12px)', backgroundColor: 'rgba(0,0,0,0.6)' }
-              }}
-              className={isDarkMode ? 'dark-modal premium-modal' : 'premium-modal'}
-            >
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+              <motion.div 
+                initial={{ opacity: 0 }} 
+                animate={{ opacity: 1 }} 
+                exit={{ opacity: 0 }} 
+                className="absolute inset-0 bg-black/60 backdrop-blur-md"
+                onClick={() => setActiveWorkflowModal(null)}
+              />
+              <div className="relative z-10 w-full max-w-[850px] mx-auto">
+              <button 
+                onClick={() => setActiveWorkflowModal(null)}
+                className="absolute top-6 right-6 z-[60] w-10 h-10 bg-black/10 dark:bg-white/10 rounded-full hover:bg-black/20 dark:hover:bg-white/20 transition-all text-gray-400 hover:text-white border-none cursor-pointer flex items-center justify-center"
+              >
+                <CloseOutlined className="text-xl" />
+              </button>
               {(() => {
                 const workflow = workflows.find(w => w.id === activeWorkflowModal);
                 if (!workflow) return null;
@@ -1035,12 +1092,13 @@ export function LandingPage() {
                         <Button type="primary" size="large" shape="round" className="h-14 px-12 text-lg font-bold bg-fuchsia-500 hover:bg-fuchsia-600 shadow-[0_10px_30px_rgba(168,85,247,0.4)] border-0" onClick={() => { setActiveWorkflowModal(null); navigate('/video-type'); }}>
                           Try {workflow.title} Free
                         </Button>
+                        </div>
                       </div>
-                    </div>
-                  </motion.div>
-                );
-              })()}
-            </Modal>
+                    </motion.div>
+                  );
+                })()}
+              </div>
+            </div>
           )}
         </AnimatePresence>
 

@@ -187,12 +187,14 @@
 
 /* Premium Modal Overrides */
 .premium-modal .ant-modal-content {
-  background-color: #130E24 !important;
-  border: 1px solid rgba(168, 85, 247, 0.2) !important;
-  border-radius: 24px !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
 }
 
 html:not(.dark) .premium-modal .ant-modal-content {
-  background-color: #ffffff !important;
+  background-color: transparent !important;
   border: none !important;
+  box-shadow: none !important;
 }
