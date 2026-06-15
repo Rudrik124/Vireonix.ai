@@ -8,6 +8,8 @@ import { DeveloperCreditsPage } from "../portals/developer/pages/developer-credi
 import { DeveloperTesterCreditsPage } from "../portals/developer/pages/developer-tester-credits-page";
 import { DeveloperErrorLogsPage } from "../portals/developer/pages/developer-error-logs-page";
 import { DeveloperSecurityEventsPage } from "../portals/developer/pages/developer-security-events-page";
+import { DeveloperAuthenticationMonitoringPage } from "../portals/developer/pages/developer-authentication-monitoring-page";
+import { DeveloperPromptSecurityMonitoringPage } from "../portals/developer/pages/developer-prompt-security-monitoring-page";
 import DeveloperAnalyticsPage from "../portals/developer/pages/developer-analytics-page";
 import LoginActivityPage from "./developer/login-activity-page";
 import { DeveloperFeedbackPage } from "../portals/developer/pages/developer-feedback-page";
@@ -319,6 +321,22 @@ export const router = createBrowserRouter([
     element: (
       <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
         <DeveloperSecurityEventsPage />
+      </PortalGate>
+    ),
+  },
+  {
+    path: "/developer/authentication-monitoring",
+    element: (
+      <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+        <DeveloperAuthenticationMonitoringPage />
+      </PortalGate>
+    ),
+  },
+  {
+    path: "/developer/prompt-security-monitoring",
+    element: (
+      <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+        <DeveloperPromptSecurityMonitoringPage />
       </PortalGate>
     ),
   },

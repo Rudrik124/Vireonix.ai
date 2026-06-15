@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../../app/context/auth-context";
 import { supabase } from "../../../lib/supabase";
+import { SecurityOverviewDashboard } from "../components/security-overview-dashboard";
 
 type SecurityEventCategory = 'AUTH' | 'PROMPT' | 'FILE_UPLOAD' | 'RATE_LIMIT' | 'API' | 'ADMIN' | 'AI_COST' | 'SECURITY_ALERT';
 type SecurityEventSeverity = 'INFO' | 'WARNING' | 'CRITICAL';
@@ -315,6 +316,11 @@ export function DeveloperSecurityEventsPage() {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Security Overview Dashboard */}
+        <div className="mb-12">
+          <SecurityOverviewDashboard />
+        </div>
+
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <motion.div
