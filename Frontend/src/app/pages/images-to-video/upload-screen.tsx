@@ -11,6 +11,7 @@ import { Textarea } from "../../components/ui/textarea";
 import { useAuth } from "../../context/auth-context";
 import { BrandLogo } from "../../components/brand-logo";
 import { Switch } from "../../components/ui/switch";
+import { useRedirectParam } from "../../lib/useRedirectParam";
 
 const frameStyleOptions = [
   { label: "16:9", ratio: "YouTube", icon: Monitor },
@@ -57,6 +58,7 @@ const dummyRecent = [
 export function ImagesToVideoUploadScreen() {
   const navigate = useNavigate();
   const { isLoggedIn, session, logout } = useAuth();
+  const redirectTo = useRedirectParam();
 
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userName = session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || "User";
@@ -140,13 +142,13 @@ export function ImagesToVideoUploadScreen() {
       {/* HEADER */}
       <div className="pt-6 px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-4 relative z-50 w-full mb-8 border-b border-white/5 pb-6 bg-[#050812]/40 backdrop-blur-md">
         <div className="flex flex-col gap-1">
-          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-3 group cursor-pointer" onClick={() => navigate('/features')}>
+          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-3 group cursor-pointer" onClick={() => navigate(redirectTo || '/features')}>
             <BrandLogo size={42} className="relative z-10" />
             <span className="text-xl font-black tracking-tight text-white group-hover:text-purple-400 transition-colors">
               VEYTRIX<span className="text-purple-500">.AI</span> <span className="text-sm text-slate-400 ml-2 font-medium tracking-widest uppercase">Studio</span>
             </span>
           </motion.div>
-          <motion.button initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }} onClick={() => navigate('/features')} className="flex items-center gap-1.5 text-[10px] uppercase font-bold tracking-widest text-slate-500 hover:text-white transition-colors ml-[54px]">
+          <motion.button initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }} onClick={() => navigate(redirectTo || '/features')} className="flex items-center gap-1.5 text-[10px] uppercase font-bold tracking-widest text-slate-500 hover:text-white transition-colors ml-[54px]">
             <ArrowLeft className="w-3 h-3" /> Exit Studio
           </motion.button>
         </div>

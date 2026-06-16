@@ -239,7 +239,7 @@ export function TesterDashboardPage() {
             <Sparkles className="w-4 h-4" /> ✨ TEST ENVIRONMENT ACTIVE
           </motion.div>
           <h2 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-slate-400 mb-6 drop-shadow-[0_0_20px_rgba(255,255,255,0.1)]">
-            Welcome back, {profile.name || profile.email}
+            Welcome back, Tester
           </h2>
           <p className="text-xl font-medium text-slate-400 max-w-2xl mx-auto flex flex-col items-center gap-2">
             <span className="flex items-center gap-2 text-emerald-400 animate-[pulse_3s_ease-in-out_infinite]"><div className="w-2.5 h-2.5 rounded-full bg-emerald-400" /> 🟢 AI Sandbox Running</span>

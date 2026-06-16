@@ -61,7 +61,29 @@ import {
   HelpCircle,
   Upload,
   Sliders,
-  Activity
+  Activity,
+  Ban,
+  Sunrise,
+  Wind,
+  Vibrate,
+  Flashlight,
+  Tv,
+  Clock3,
+  Crosshair,
+  Droplets,
+  MoveHorizontal,
+  MoveRight,
+  Square,
+  Gauge,
+  CircleOff,
+  Clapperboard,
+  MoonStar,
+  Sun,
+  Snowflake,
+  Contrast,
+  Smile,
+  Lightbulb,
+  Aperture
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router";
 import { Button } from "../../components/ui/button";
@@ -1095,34 +1117,45 @@ const ToolInspector = memo(({
             <span className="text-[9px] font-black uppercase tracking-widest text-slate-300">Filters</span>
             <span className="text-[8px] text-slate-500 font-bold uppercase">Color Presets</span>
           </div>
-          <div className="space-y-1.5 max-h-56 overflow-y-auto custom-scrollbar pr-1">
-            <button
-              onClick={() => setSelectedFilter('none')}
-              className={`w-full px-2.5 py-2 rounded-lg text-left text-[9px] font-bold uppercase tracking-wider transition-colors ${selectedFilter === 'none' ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40' : 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10'}`}
-            >
-              No Filter
-            </button>
+          <div className="grid grid-cols-3 gap-[16px] max-h-[350px] overflow-y-auto pr-2 pb-4 [&::-webkit-scrollbar]:w-[5px] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gradient-to-b [&::-webkit-scrollbar-thumb]:from-[#7C3AED] [&::-webkit-scrollbar-thumb]:to-[#A855F7] [&::-webkit-scrollbar-thumb]:rounded-full">
             {[
-              { id: 'cinematic', label: 'Cinematic' },
-              { id: 'moody', label: 'Moody' },
-              { id: 'warm-tone', label: 'Warm Tone' },
-              { id: 'cool-tone', label: 'Cool Tone' },
-              { id: 'vintage', label: 'Vintage' },
-              { id: 'black-white', label: 'Black & White' },
-              { id: 'teal-orange', label: 'Teal & Orange' },
-              { id: 'dreamy-glow', label: 'Dreamy Glow' },
-              { id: 'film-look', label: 'Film Look' },
-              { id: 'vhs', label: 'VHS' },
-              { id: 'soft-skin', label: 'Soft Skin' },
-              { id: 'neon-glow', label: 'Neon Glow' },
-              { id: 'hdr-pop', label: 'HDR Pop' },
+              { id: 'none', label: 'No Filter', icon: CircleOff },
+              { id: 'cinematic', label: 'Cinematic', icon: Clapperboard },
+              { id: 'moody', label: 'Moody', icon: MoonStar },
+              { id: 'warm-tone', label: 'Warm Tone', icon: Sun },
+              { id: 'cool-tone', label: 'Cool Tone', icon: Snowflake },
+              { id: 'vintage', label: 'Vintage', icon: Clock3 },
+              { id: 'black-white', label: 'Black & White', icon: Contrast },
+              { id: 'teal-orange', label: 'Teal & Orange', icon: Palette },
+              { id: 'dreamy-glow', label: 'Dreamy Glow', icon: Sparkles },
+              { id: 'film-look', label: 'Film Look', icon: Film },
+              { id: 'vhs', label: 'VHS', icon: Tv },
+              { id: 'soft-skin', label: 'Soft Skin', icon: Smile },
+              { id: 'neon-glow', label: 'Neon Glow', icon: Lightbulb },
+              { id: 'hdr-pop', label: 'HDR Pop', icon: Aperture },
             ].map((f) => (
               <button
                 key={f.id}
                 onClick={() => setSelectedFilter(f.id as any)}
-                className={`w-full px-2.5 py-2 rounded-lg text-left text-[9px] font-bold uppercase tracking-wider transition-colors ${selectedFilter === f.id ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40' : 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10'}`}
+                type="button"
+                className={`flex flex-col items-center justify-center w-full h-[95px] rounded-[20px] backdrop-blur-[20px] transition-all duration-300 group ${
+                  selectedFilter === f.id 
+                    ? 'bg-gradient-to-b from-[rgba(168,85,247,0.18)] to-[rgba(124,58,237,0.08)] border border-[#A855F7] shadow-[0_0_25px_rgba(168,85,247,0.35)] scale-[1.03]' 
+                    : 'bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.08)] shadow-[0_10px_30px_rgba(0,0,0,0.25)] hover:-translate-y-[4px] hover:scale-[1.04] hover:border-[#A855F7] hover:shadow-[0_0_15px_rgba(168,85,247,0.2)] cursor-pointer'
+                }`}
               >
-                {f.label}
+                <f.icon 
+                  size={28} 
+                  strokeWidth={2.2} 
+                  className={`transition-colors duration-300 ${
+                    selectedFilter === f.id ? 'text-[#FFD84D]' : 'text-[#B794F4] group-hover:drop-shadow-[0_0_8px_rgba(183,148,244,0.8)]'
+                  }`} 
+                />
+                <span className={`mt-[12px] text-[8px] sm:text-[9px] font-bold uppercase tracking-widest text-center leading-tight px-2 line-clamp-2 ${
+                  selectedFilter === f.id ? 'text-white' : 'text-white/90'
+                }`}>
+                  {f.label}
+                </span>
               </button>
             ))}
           </div>
@@ -1135,34 +1168,45 @@ const ToolInspector = memo(({
             <span className="text-[9px] font-black uppercase tracking-widest text-slate-300">Effects</span>
             <span className="text-[8px] text-slate-500 font-bold uppercase">Visual FX</span>
           </div>
-          <div className="space-y-1.5 max-h-48 overflow-y-auto custom-scrollbar pr-1">
-            <button
-              onClick={() => setSelectedEffect('none')}
-              className={`w-full px-2.5 py-2 rounded-lg text-left text-[9px] font-bold uppercase tracking-wider transition-colors ${selectedEffect === 'none' ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40' : 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10'}`}
-            >
-              No Effect
-            </button>
+          <div className="grid grid-cols-3 gap-[16px] max-h-[350px] overflow-y-auto pr-2 pb-4 [&::-webkit-scrollbar]:w-[5px] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gradient-to-b [&::-webkit-scrollbar-thumb]:from-[#7C3AED] [&::-webkit-scrollbar-thumb]:to-[#A855F7] [&::-webkit-scrollbar-thumb]:rounded-full">
             {[
-              { id: 'fade-in', label: 'Fade In' },
-              { id: 'velocity', label: 'Velocity Edit' },
-              { id: 'motion-blur', label: 'Motion Blur' },
-              { id: 'shake', label: 'Shake' },
-              { id: 'flash-effect', label: 'Flash Transition' },
-              { id: 'rgb-split', label: 'RGB Split (Chromatic Aberration)' },
-              { id: 'film-grain', label: 'Film Grain' },
-              { id: 'soft-glow', label: 'Soft Glow' },
-              { id: 'old-tv', label: 'Old TV' },
-              { id: 'slow-motion', label: 'Slow Motion' },
-              { id: 'smooth-zoom', label: 'Smooth Zoom' },
-              { id: 'glitch', label: 'Glitch' },
-              { id: 'motion-tracking', label: 'Motion Tracking' },
+              { id: 'none', label: 'No Effect', icon: Ban },
+              { id: 'fade-in', label: 'Fade In', icon: Sunrise },
+              { id: 'velocity', label: 'Velocity Edit', icon: Zap },
+              { id: 'motion-blur', label: 'Motion Blur', icon: Wind },
+              { id: 'shake', label: 'Shake', icon: Vibrate },
+              { id: 'flash-effect', label: 'Flash Transition', icon: Flashlight },
+              { id: 'rgb-split', label: 'RGB Split', icon: Palette },
+              { id: 'film-grain', label: 'Film Grain', icon: Film },
+              { id: 'soft-glow', label: 'Soft Glow', icon: Sparkles },
+              { id: 'old-tv', label: 'Old TV', icon: Tv },
+              { id: 'slow-motion', label: 'Slow Motion', icon: Clock3 },
+              { id: 'smooth-zoom', label: 'Smooth Zoom', icon: ZoomIn },
+              { id: 'glitch', label: 'Glitch', icon: ScanLine },
+              { id: 'motion-tracking', label: 'Motion Tracking', icon: Crosshair },
             ].map((eff) => (
               <button
                 key={eff.id}
                 onClick={() => setSelectedEffect(eff.id as any)}
-                className={`w-full px-2.5 py-2 rounded-lg text-left text-[9px] font-bold uppercase tracking-wider transition-colors ${selectedEffect === eff.id ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40' : 'bg-white/5 text-slate-300 border-white/10 hover:bg-white/10'}`}
+                type="button"
+                className={`flex flex-col items-center justify-center w-full h-[95px] rounded-[20px] backdrop-blur-[20px] transition-all duration-300 group ${
+                  selectedEffect === eff.id 
+                    ? 'bg-gradient-to-b from-[rgba(168,85,247,0.18)] to-[rgba(124,58,237,0.08)] border border-[#A855F7] shadow-[0_0_25px_rgba(168,85,247,0.35)] scale-[1.03]' 
+                    : 'bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.08)] shadow-[0_10px_30px_rgba(0,0,0,0.25)] hover:-translate-y-[4px] hover:scale-[1.04] hover:border-[#A855F7] hover:shadow-[0_0_15px_rgba(168,85,247,0.2)] cursor-pointer'
+                }`}
               >
-                {eff.label}
+                <eff.icon 
+                  size={28} 
+                  strokeWidth={2.2} 
+                  className={`transition-colors duration-300 ${
+                    selectedEffect === eff.id ? 'text-[#FFD84D]' : 'text-[#B794F4] group-hover:drop-shadow-[0_0_8px_rgba(183,148,244,0.8)]'
+                  }`} 
+                />
+                <span className={`mt-[12px] text-[8px] sm:text-[9px] font-bold uppercase tracking-widest text-center leading-tight px-2 line-clamp-2 ${
+                  selectedEffect === eff.id ? 'text-white' : 'text-white/90'
+                }`}>
+                  {eff.label}
+                </span>
               </button>
             ))}
           </div>
@@ -1414,20 +1458,20 @@ const ToolInspector = memo(({
               ? `Clip: ${activePreviewId.slice(0, 8)} • ${clipTransitions[activePreviewId] || 'none'}`
               : 'Select clip from Timeline first'}
           </div>
-          <div className="space-y-1.5 max-h-48 overflow-y-auto custom-scrollbar pr-1">
+          <div className="grid grid-cols-3 gap-[16px] max-h-[350px] overflow-y-auto pr-2 pb-4 [&::-webkit-scrollbar]:w-[5px] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gradient-to-b [&::-webkit-scrollbar-thumb]:from-[#7C3AED] [&::-webkit-scrollbar-thumb]:to-[#A855F7] [&::-webkit-scrollbar-thumb]:rounded-full">
             {[
-              { id: 'fade-transition', label: 'Fade Transition' },
-              { id: 'zoom-transition', label: 'Zoom Transition' },
-              { id: 'blur-transition', label: 'Blur Transition' },
-              { id: 'swipe-transition', label: 'Swipe Transition' },
-              { id: 'spin-transition', label: 'Spin Transition' },
-              { id: 'whip-pan-transition', label: 'Whip Pan Transition' },
-              { id: 'glitch-transition', label: 'Glitch Transition' },
-              { id: 'mask-transition', label: 'Mask Transition' },
-              { id: 'flash-transition', label: 'Flash Transition' },
-              { id: 'camera-shake-transition', label: 'Camera Shake Transition' },
-              { id: 'match-cut-transition', label: 'Match Cut Transition' },
-              { id: 'speed-ramp-transition', label: 'Speed Ramp Transition' },
+              { id: 'fade-transition', label: 'Fade Transition', icon: Droplets },
+              { id: 'zoom-transition', label: 'Zoom Transition', icon: ZoomIn },
+              { id: 'blur-transition', label: 'Blur Transition', icon: Wind },
+              { id: 'swipe-transition', label: 'Swipe Transition', icon: MoveHorizontal },
+              { id: 'spin-transition', label: 'Spin Transition', icon: RotateCw },
+              { id: 'whip-pan-transition', label: 'Whip Pan Transition', icon: MoveRight },
+              { id: 'glitch-transition', label: 'Glitch Transition', icon: ScanLine },
+              { id: 'mask-transition', label: 'Mask Transition', icon: Square },
+              { id: 'flash-transition', label: 'Flash Transition', icon: Zap },
+              { id: 'camera-shake-transition', label: 'Camera Shake Transition', icon: Vibrate },
+              { id: 'match-cut-transition', label: 'Match Cut Transition', icon: Scissors },
+              { id: 'speed-ramp-transition', label: 'Speed Ramp Transition', icon: Gauge },
             ].map((tr) => (
               <button
                 key={tr.id}
@@ -1437,9 +1481,24 @@ const ToolInspector = memo(({
                   applyTransitionForActiveClip(tr.id as any);
                 }}
                 type="button"
-                className={`w-full px-2.5 py-2 rounded-lg text-left text-[9px] font-bold uppercase tracking-wider transition-colors ${activePreviewId && clipTransitions[activePreviewId] === tr.id ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40' : 'bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10'}`}
+                className={`flex flex-col items-center justify-center w-full h-[95px] rounded-[20px] backdrop-blur-[20px] transition-all duration-300 group ${
+                  activePreviewId && clipTransitions[activePreviewId] === tr.id 
+                    ? 'bg-gradient-to-b from-[rgba(168,85,247,0.18)] to-[rgba(124,58,237,0.08)] border border-[#A855F7] shadow-[0_0_25px_rgba(168,85,247,0.35)] scale-[1.03]' 
+                    : 'bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.08)] shadow-[0_10px_30px_rgba(0,0,0,0.25)] hover:-translate-y-[4px] hover:scale-[1.04] hover:border-[#A855F7] hover:shadow-[0_0_15px_rgba(168,85,247,0.2)] cursor-pointer'
+                }`}
               >
-                {tr.label}
+                <tr.icon 
+                  size={28} 
+                  strokeWidth={2.2} 
+                  className={`transition-colors duration-300 ${
+                    activePreviewId && clipTransitions[activePreviewId] === tr.id ? 'text-[#FFD84D]' : 'text-[#B794F4] group-hover:drop-shadow-[0_0_8px_rgba(183,148,244,0.8)]'
+                  }`} 
+                />
+                <span className={`mt-[12px] text-[8px] sm:text-[9px] font-bold uppercase tracking-widest text-center leading-tight px-2 line-clamp-2 ${
+                  activePreviewId && clipTransitions[activePreviewId] === tr.id ? 'text-white' : 'text-white/90'
+                }`}>
+                  {tr.label}
+                </span>
               </button>
             ))}
           </div>

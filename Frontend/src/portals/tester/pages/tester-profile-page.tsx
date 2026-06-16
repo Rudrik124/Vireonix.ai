@@ -1,7 +1,56 @@
 import { useAuth } from "../../../app/context/auth-context";
 import { useNavigate } from "react-router";
 import { useState, useEffect } from "react";
-import { User, Clock, Shield, LogOut, Activity, Zap } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  ArrowLeft,
+  CheckCircle2,
+  Edit3,
+  User,
+  Calendar,
+  Globe,
+  Clock,
+  Shield,
+  Video,
+  Bug,
+  Mail,
+  UserCircle,
+  Languages,
+  Bell,
+  Moon,
+  Camera,
+  Save,
+  X,
+  Play,
+  BarChart,
+  Sparkles,
+  Users,
+  AlertCircle,
+  XCircle,
+  Zap,
+  CreditCard,
+  TrendingUp,
+  Wallet,
+  Activity,
+  LogIn,
+  Lock,
+  Smartphone,
+  Laptop,
+  Key,
+  ShieldCheck,
+  Target,
+  CheckSquare,
+  Crosshair,
+  Award,
+  Trophy,
+  Star,
+  Medal,
+  AlertTriangle,
+  LogOut,
+  UserMinus,
+  Trash2,
+  Cpu
+} from "lucide-react";
 import { buildApiUrl } from "../../../lib/api";
 
 interface ActivityLog {
@@ -9,7 +58,28 @@ interface ActivityLog {
   action: string;
   timestamp: string;
   details: string;
+  icon: any;
+  color: string;
 }
+
+const GlassCard = ({
+  children,
+  className = "",
+  delay = 0,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  delay?: number;
+}) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.5, delay }}
+    className={`bg-white/[0.03] backdrop-blur-[20px] border border-white/[0.08] rounded-3xl shadow-[0_0_40px_rgba(168,85,247,0.15)] overflow-hidden ${className}`}
+  >
+    {children}
+  </motion.div>
+);
 
 export function TesterProfilePage() {
   const { profile, isLoading, logout, session } = useAuth();
@@ -19,53 +89,64 @@ export function TesterProfilePage() {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
+
   const [editMode, setEditMode] = useState(false);
   const [timezone, setTimezone] = useState(profile?.timezone || "UTC");
   const [contactEmail, setContactEmail] = useState(profile?.email || "");
-  const [testingModeEnabled, setTestingModeEnabled] = useState(profile?.testingModeEnabled || false);
+  const [testingModeEnabled, setTestingModeEnabled] = useState(
+    profile?.testingModeEnabled || false
+  );
   const [togglingTestingMode, setTogglingTestingMode] = useState(false);
 
-  const [activityLog] = useState<ActivityLog[]>([
+  const activityLog: ActivityLog[] = [
     {
       id: "ACT-001",
       action: "Bug Report Submitted",
-      timestamp: "2026-05-28 14:32",
-      details: "Video generation timeout issue (BUG-012)",
+      timestamp: "2 hours ago",
+      details: "Video generation timeout issue",
+      icon: Bug,
+      color: "text-red-400",
     },
     {
       id: "ACT-002",
-      action: "Test Case Passed",
-      timestamp: "2026-05-28 12:15",
-      details: "TC-003: Advanced parameter testing",
+      action: "Test Video Generated",
+      timestamp: "Today",
+      details: "4K cinematic preview",
+      icon: Video,
+      color: "text-purple-400",
     },
     {
       id: "ACT-003",
-      action: "Video Generated",
-      timestamp: "2026-05-28 10:45",
-      details: "VID-045: 4K cinematic test",
+      action: "Test Case Passed",
+      timestamp: "Yesterday",
+      details: "Advanced parameter validation",
+      icon: CheckSquare,
+      color: "text-green-400",
     },
     {
       id: "ACT-004",
       action: "Credits Used",
-      timestamp: "2026-05-27 16:20",
-      details: "-50 credits for video generation",
+      timestamp: "Yesterday",
+      details: "50 credits consumed",
+      icon: Zap,
+      color: "text-yellow-400",
     },
     {
       id: "ACT-005",
       action: "Login",
-      timestamp: "2026-05-27 09:00",
-      details: "Signed in from Chrome/Windows",
+      timestamp: "2 days ago",
+      details: "Chrome Windows",
+      icon: LogIn,
+      color: "text-blue-400",
     },
-    {
-      id: "ACT-006",
-      action: "Feature Access Granted",
-      timestamp: "2026-05-26 14:00",
-      details: "Access to 4K testing granted",
-    },
-  ]);
+  ];
 
   if (isLoading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+    return (
+      <div className="min-h-screen bg-[#050816] flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
   }
 
   if (!profile) {
@@ -74,8 +155,10 @@ export function TesterProfilePage() {
   }
 
   const handleLogout = async () => {
-    await logout();
-    navigate("/", { replace: true });
+    if (window.confirm("Are you sure you want to sign out?")) {
+      await logout();
+      navigate("/", { replace: true });
+    }
   };
 
   const handleSaveProfile = () => {
@@ -86,7 +169,6 @@ export function TesterProfilePage() {
   const handleToggleTestingMode = async () => {
     setTogglingTestingMode(true);
     try {
-      // Get the access token from the session
       const token = session?.access_token;
       if (!token) {
         console.error("No access token available");
@@ -94,12 +176,11 @@ export function TesterProfilePage() {
         return;
       }
 
-      // Call API to toggle testing mode
       const response = await fetch(buildApiUrl("/api/tester/toggle-testing-mode"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ enabled: !testingModeEnabled }),
       });
@@ -117,258 +198,512 @@ export function TesterProfilePage() {
     }
   };
 
-  const roleColors = {
-    super_admin: "bg-red-600",
-    admin: "bg-orange-600",
-    developer: "bg-blue-600",
-    tester: "bg-purple-600",
-  };
-
-  const roleDescriptions = {
-    super_admin: "Super Administrator - Full system access",
-    admin: "Administrator - Portal and user management",
-    developer: "Developer - Feature development and bug fixes",
-    tester: "Tester - Testing and quality assurance",
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 to-purple-800">
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8 flex justify-between items-center">
-          <div>
-            <h1 className="text-4xl font-bold text-white mb-2">My Profile</h1>
-            <p className="text-purple-200">Manage your testing account and preferences</p>
-          </div>
+    <div className="min-h-screen bg-[#050816] text-white relative overflow-hidden font-sans selection:bg-purple-500/30">
+      {/* Background Elements */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-purple-900/20 blur-[120px]" />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-blue-900/20 blur-[120px]" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+      </div>
+
+      <div className="container mx-auto px-4 py-8 relative z-10 max-w-7xl">
+        {/* PAGE HEADER */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-10"
+        >
           <button
-            onClick={() => navigate("/tester/dashboard")}
-            className="bg-purple-700 hover:bg-purple-600 text-white px-4 py-2 rounded transition"
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-6 group"
           >
-            Back
+            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+            Back to Dashboard
           </button>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Profile Card */}
-          <div className="lg:col-span-1">
-            <div className="bg-purple-700 p-6 rounded-lg">
-              {/* Avatar */}
-              <div className="flex flex-col items-center mb-6">
-                <div className="w-20 h-20 bg-gradient-to-br from-blue-400 to-purple-400 rounded-full flex items-center justify-center mb-4">
-                  <User className="w-10 h-10 text-white" />
-                </div>
-                <h2 className="text-xl font-bold text-white text-center">{profile.name || "Tester"}</h2>
-                <p className="text-purple-300 text-sm text-center mt-1">{profile.email}</p>
-              </div>
-
-              {/* Role Badge */}
-              <div className={`${roleColors[profile.role as keyof typeof roleColors] || "bg-purple-600"} text-white px-4 py-2 rounded-lg text-center mb-4 font-semibold`}>
-                {profile.role.charAt(0).toUpperCase() + profile.role.slice(1)}
-              </div>
-
-              <p className="text-purple-200 text-sm text-center mb-6">
-                {roleDescriptions[profile.role as keyof typeof roleDescriptions]}
+          
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div>
+              <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400 mb-2">
+                My Profile
+              </h1>
+              <p className="text-slate-400 text-lg">
+                Manage your tester account, permissions and activity.
               </p>
+            </div>
+            
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-2 rounded-full backdrop-blur-md">
+                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                <span className="text-sm font-medium text-slate-200">Tester Account Active</span>
+              </div>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setEditMode(!editMode)}
+                className="flex items-center gap-2 bg-white/10 hover:bg-white/15 border border-white/20 px-5 py-2 rounded-full backdrop-blur-md transition-colors font-medium"
+              >
+                {editMode ? <X className="w-4 h-4" /> : <Edit3 className="w-4 h-4" />}
+                {editMode ? "Cancel Edit" : "Edit Profile"}
+              </motion.button>
+            </div>
+          </div>
+        </motion.div>
 
-              {/* Key Stats */}
-              <div className="space-y-3 border-t border-purple-600 pt-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-purple-200 text-sm">Account Created</span>
-                  <span className="text-white font-semibold">2026-03-15</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-purple-200 text-sm">Status</span>
-                  <span className="text-green-400 font-semibold">✓ Active</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-purple-200 text-sm">Testing Mode</span>
-                  <button
-                    onClick={handleToggleTestingMode}
-                    disabled={togglingTestingMode}
-                    className={`px-3 py-1 rounded font-semibold text-sm transition ${
-                      testingModeEnabled
-                        ? "bg-green-600 hover:bg-green-700 text-white"
-                        : "bg-red-600 hover:bg-red-700 text-white"
-                    } ${togglingTestingMode ? "opacity-50 cursor-not-allowed" : ""}`}
-                  >
-                    {togglingTestingMode ? "..." : testingModeEnabled ? "Enabled" : "Disabled"}
-                  </button>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* LEFT SIDEBAR PROFILE CARD */}
+          <div className="lg:col-span-1 space-y-8">
+            <GlassCard delay={0.1}>
+              <div className="p-6 flex flex-col items-center relative">
+                <div className="absolute inset-0 bg-gradient-to-b from-purple-500/10 to-transparent opacity-50"></div>
+                
+                <motion.div 
+                  className="w-28 h-28 rounded-full bg-gradient-to-br from-purple-500 to-blue-600 p-[2px] mb-6 relative z-10"
+                  whileHover={{ scale: 1.05 }}
+                >
+                  <div className="w-full h-full bg-[#050816] rounded-full flex items-center justify-center relative overflow-hidden">
+                    <div className="absolute inset-0 bg-purple-500/20 blur-xl"></div>
+                    <User className="w-12 h-12 text-purple-300 relative z-10" />
+                  </div>
+                </motion.div>
+
+                <h2 className="text-2xl font-bold text-white mb-1 relative z-10">{profile.name || "Test Engineer"}</h2>
+                <p className="text-slate-400 mb-6 relative z-10">{profile.email}</p>
+
+                <div className="w-full space-y-4 relative z-10">
+                  <div className="flex items-center justify-between p-3 rounded-2xl bg-white/5 border border-white/10">
+                    <div className="flex items-center gap-3">
+                      <Shield className="w-5 h-5 text-purple-400" />
+                      <span className="text-slate-300 text-sm">Badge</span>
+                    </div>
+                    <span className="text-white font-medium text-sm">QA Tester</span>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 rounded-2xl bg-white/5 border border-white/10">
+                    <div className="flex items-center gap-3">
+                      <Activity className="w-5 h-5 text-green-400" />
+                      <span className="text-slate-300 text-sm">Status</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-green-500" />
+                      <span className="text-white font-medium text-sm">Active</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 rounded-2xl bg-white/5 border border-white/10">
+                    <div className="flex items-center gap-3">
+                      <Cpu className="w-5 h-5 text-blue-400" />
+                      <span className="text-slate-300 text-sm">Testing Mode</span>
+                    </div>
+                    <button
+                      onClick={handleToggleTestingMode}
+                      disabled={togglingTestingMode}
+                      className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold transition-all ${
+                        testingModeEnabled 
+                          ? "bg-green-500/20 text-green-400 border border-green-500/30" 
+                          : "bg-white/10 text-slate-400 border border-white/10 hover:bg-white/20"
+                      }`}
+                    >
+                      <div className={`w-1.5 h-1.5 rounded-full ${testingModeEnabled ? "bg-green-400" : "bg-slate-400"}`} />
+                      {testingModeEnabled ? "Enabled" : "Disabled"}
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 mt-6">
+                    <div className="p-3 rounded-2xl bg-white/5 border border-white/10 flex flex-col gap-1">
+                      <Calendar className="w-4 h-4 text-slate-400" />
+                      <span className="text-xs text-slate-400">Member Since</span>
+                      <span className="text-sm font-medium text-white">Mar 2026</span>
+                    </div>
+                    <div className="p-3 rounded-2xl bg-white/5 border border-white/10 flex flex-col gap-1">
+                      <Globe className="w-4 h-4 text-slate-400" />
+                      <span className="text-xs text-slate-400">Timezone</span>
+                      <span className="text-sm font-medium text-white">{timezone}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="p-3 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-slate-400" />
+                      <span className="text-xs text-slate-400">Last Login</span>
+                    </div>
+                    <span className="text-xs font-medium text-white">2 hours ago</span>
+                  </div>
+                  
+                  <div className="p-4 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-center">
+                    <p className="text-xs text-purple-300 leading-relaxed">
+                      Quality Assurance Tester - Responsible for executing test scenarios and verifying generative AI models.
+                    </p>
+                  </div>
                 </div>
               </div>
+            </GlassCard>
+
+            <div className="grid grid-cols-2 gap-4">
+              <GlassCard delay={0.2} className="p-5 flex flex-col items-center justify-center text-center group cursor-default">
+                <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                  <Video className="w-5 h-5 text-blue-400" />
+                </div>
+                <span className="text-3xl font-bold text-white mb-1">1,204</span>
+                <span className="text-xs text-slate-400">Videos Tested</span>
+              </GlassCard>
+              <GlassCard delay={0.3} className="p-5 flex flex-col items-center justify-center text-center group cursor-default">
+                <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                  <Bug className="w-5 h-5 text-red-400" />
+                </div>
+                <span className="text-3xl font-bold text-white mb-1">87</span>
+                <span className="text-xs text-slate-400">Bug Reports</span>
+              </GlassCard>
             </div>
           </div>
 
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Profile Settings */}
-            <div className="bg-purple-700 p-6 rounded-lg">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-semibold text-white flex items-center gap-2">
-                  <Shield className="w-6 h-6" />
+          {/* MAIN CONTENT AREA */}
+          <div className="lg:col-span-2 space-y-8">
+            
+            {/* RIGHT PROFILE SETTINGS CARD */}
+            <GlassCard delay={0.2} className="p-0">
+              <div className="p-6 border-b border-white/10">
+                <h3 className="text-xl font-semibold text-white flex items-center gap-2">
+                  <UserCircle className="w-5 h-5 text-purple-400" />
                   Profile Settings
-                </h2>
-                <button
-                  onClick={() => setEditMode(!editMode)}
-                  className={`px-4 py-2 rounded transition ${
-                    editMode
-                      ? "bg-red-600 hover:bg-red-700"
-                      : "bg-blue-600 hover:bg-blue-700"
-                  } text-white`}
-                >
-                  {editMode ? "Cancel" : "Edit Profile"}
-                </button>
+                </h3>
               </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="text-white font-semibold block mb-2">Email</label>
-                  <input
-                    type="email"
-                    value={profile.email}
-                    disabled
-                    className="w-full px-4 py-2 rounded text-white bg-purple-600 disabled:opacity-50"
-                  />
-                  <p className="text-purple-300 text-xs mt-1">Primary email cannot be changed</p>
-                </div>
-
-                <div>
-                  <label className="text-white font-semibold block mb-2">Full Name</label>
-                  <input
-                    type="text"
-                    value={profile.name || ""}
-                    disabled={!editMode}
-                    className="w-full px-4 py-2 rounded text-white bg-purple-600"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-white font-semibold block mb-2">Timezone</label>
-                  <select
-                    value={timezone}
-                    onChange={(e) => setTimezone(e.target.value)}
-                    disabled={!editMode}
-                    className="w-full px-4 py-2 rounded text-white bg-purple-600"
-                  >
-                    <option value="UTC">UTC</option>
-                    <option value="EST">Eastern Time (EST)</option>
-                    <option value="CST">Central Time (CST)</option>
-                    <option value="MST">Mountain Time (MST)</option>
-                    <option value="PST">Pacific Time (PST)</option>
-                    <option value="GMT">Greenwich Mean Time (GMT)</option>
-                    <option value="IST">Indian Standard Time (IST)</option>
-                    <option value="JST">Japan Standard Time (JST)</option>
-                  </select>
+              <div className="p-6 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-slate-300">Email Address</label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                      <input 
+                        type="email" 
+                        value={profile.email} 
+                        readOnly 
+                        className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-slate-400 cursor-not-allowed focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-slate-300">Username</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-medium">@</span>
+                      <input 
+                        type="text" 
+                        defaultValue={profile.name?.toLowerCase().replace(/\s+/g, '') || "tester123"} 
+                        disabled={!editMode}
+                        className={`w-full border rounded-xl py-2.5 pl-9 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-colors ${editMode ? "bg-white/10 border-white/20" : "bg-white/5 border-white/10 opacity-70"}`}
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 {editMode && (
-                  <button
-                    onClick={handleSaveProfile}
-                    className="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded transition font-semibold"
+                  <motion.div 
+                    initial={{ opacity: 0, height: 0 }} 
+                    animate={{ opacity: 1, height: 'auto' }}
+                    className="pt-4 flex items-center justify-end gap-3 border-t border-white/10"
                   >
-                    Save Changes
-                  </button>
+                    <button 
+                      onClick={() => setEditMode(false)}
+                      className="px-5 py-2 rounded-full border border-white/10 hover:bg-white/5 text-white transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      onClick={handleSaveProfile}
+                      className="flex items-center gap-2 px-6 py-2 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-medium shadow-[0_0_20px_rgba(168,85,247,0.4)] transition-all"
+                    >
+                      <Save className="w-4 h-4" />
+                      Save Changes
+                    </button>
+                  </motion.div>
                 )}
               </div>
-            </div>
+            </GlassCard>
 
-            {/* Permissions & Features */}
-            <div className="bg-purple-700 p-6 rounded-lg">
-              <h2 className="text-2xl font-semibold text-white flex items-center gap-2 mb-4">
-                <Shield className="w-6 h-6" />
-                Your Permissions
-              </h2>
-
-              <div className="space-y-2">
-                <div className="flex items-center gap-3 p-3 bg-purple-600 rounded">
-                  <div className="w-4 h-4 bg-green-400 rounded"></div>
-                  <span className="text-white">Submit and track bug reports</span>
-                </div>
-                <div className="flex items-center gap-3 p-3 bg-purple-600 rounded">
-                  <div className="w-4 h-4 bg-green-400 rounded"></div>
-                  <span className="text-white">Execute assigned test cases</span>
-                </div>
-                <div className="flex items-center gap-3 p-3 bg-purple-600 rounded">
-                  <div className="w-4 h-4 bg-green-400 rounded"></div>
-                  <span className="text-white">Access test environment</span>
-                </div>
-                <div className="flex items-center gap-3 p-3 bg-purple-600 rounded">
-                  <div className="w-4 h-4 bg-green-400 rounded"></div>
-                  <span className="text-white">Generate test videos</span>
-                </div>
-                <div className="flex items-center gap-3 p-3 bg-purple-600 rounded">
-                  <div className="w-4 h-4 bg-green-400 rounded"></div>
-                  <span className="text-white">View testing analytics</span>
-                </div>
-                <div className="flex items-center gap-3 p-3 bg-purple-600 rounded">
-                  <div className="w-4 h-4 bg-yellow-400 rounded"></div>
-                  <span className="text-white">Access 4K testing (Beta)</span>
-                </div>
-                <div className="flex items-center gap-3 p-3 bg-purple-600 rounded">
-                  <div className="w-4 h-4 bg-gray-400 rounded"></div>
-                  <span className="text-gray-300">Manage other testers (Admin only)</span>
-                </div>
+            {/* PERMISSIONS CARD */}
+            <GlassCard delay={0.3} className="p-6">
+              <h3 className="text-xl font-semibold text-white flex items-center gap-2 mb-6">
+                <ShieldCheck className="w-5 h-5 text-purple-400" />
+                Access & Permissions
+              </h3>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {[
+                  { icon: Bug, title: "Bug Reporting", desc: "Submit and manage bug reports", status: "Granted", color: "green" },
+                  { icon: Play, title: "Test Execution", desc: "Execute assigned testing tasks", status: "Granted", color: "green" },
+                  { icon: Video, title: "Video Generation", desc: "Generate testing videos", status: "Granted", color: "green" },
+                  { icon: BarChart, title: "Analytics", desc: "Access tester analytics", status: "Granted", color: "green" },
+                  { icon: Sparkles, title: "4K Beta Testing", desc: "Experimental feature access", status: "Beta", color: "purple" },
+                  { icon: Users, title: "Team Management", desc: "Admin only functionality", status: "Restricted", color: "red" },
+                ].map((perm, idx) => (
+                  <motion.div 
+                    key={idx}
+                    whileHover={{ scale: 1.02, backgroundColor: "rgba(255,255,255,0.08)" }}
+                    className="p-4 rounded-2xl bg-white/5 border border-white/10 flex items-start gap-4 transition-colors"
+                  >
+                    <div className={`p-2 rounded-xl bg-${perm.color}-500/10 text-${perm.color}-400 mt-1`}>
+                      <perm.icon className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-1">
+                        <h4 className="text-white font-medium">{perm.title}</h4>
+                        <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full border ${
+                          perm.status === 'Granted' ? 'bg-green-500/10 text-green-400 border-green-500/20' :
+                          perm.status === 'Beta' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' :
+                          'bg-red-500/10 text-red-400 border-red-500/20'
+                        }`}>
+                          {perm.status}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-400">{perm.desc}</p>
+                    </div>
+                  </motion.div>
+                ))}
               </div>
-            </div>
+            </GlassCard>
 
-            {/* Testing Credits */}
-            <div className="bg-purple-700 p-6 rounded-lg">
-              <h2 className="text-2xl font-semibold text-white flex items-center gap-2 mb-4">
-                <Zap className="w-6 h-6" />
+            {/* TESTING CREDITS */}
+            <GlassCard delay={0.4} className="p-6">
+              <h3 className="text-xl font-semibold text-white flex items-center gap-2 mb-6">
+                <Wallet className="w-5 h-5 text-purple-400" />
                 Testing Credits
-              </h2>
+              </h3>
 
-              <div className="grid grid-cols-3 gap-4">
-                <div className="bg-purple-600 p-4 rounded text-center">
-                  <p className="text-purple-300 text-sm">Available</p>
-                  <p className="text-white text-3xl font-bold">{profile.credits?.developerCredits || 0}</p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-white/5 to-white/0 border border-white/10 relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 p-3 opacity-20 group-hover:scale-110 transition-transform"><CreditCard className="w-8 h-8" /></div>
+                  <p className="text-xs text-slate-400 mb-1">Available Credits</p>
+                  <p className="text-2xl font-bold text-white">{profile.credits?.developerCredits || 0}</p>
+                  <div className="mt-3 h-1 w-full bg-white/10 rounded-full overflow-hidden">
+                    <div className="h-full bg-purple-500 w-full"></div>
+                  </div>
                 </div>
-                <div className="bg-purple-600 p-4 rounded text-center">
-                  <p className="text-purple-300 text-sm">Used This Month</p>
-                  <p className="text-white text-3xl font-bold">689</p>
+                
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-white/5 to-white/0 border border-white/10 relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 p-3 opacity-20 group-hover:scale-110 transition-transform"><Zap className="w-8 h-8" /></div>
+                  <p className="text-xs text-slate-400 mb-1">Used This Month</p>
+                  <p className="text-2xl font-bold text-white">689</p>
+                  <div className="mt-3 h-1 w-full bg-white/10 rounded-full overflow-hidden">
+                    <div className="h-full bg-blue-500 w-[68%]"></div>
+                  </div>
                 </div>
-                <div className="bg-purple-600 p-4 rounded text-center">
-                  <p className="text-purple-300 text-sm">Weekly Limit</p>
-                  <p className="text-white text-3xl font-bold">500</p>
+
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-white/5 to-white/0 border border-white/10 relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 p-3 opacity-20 group-hover:scale-110 transition-transform"><TrendingUp className="w-8 h-8" /></div>
+                  <p className="text-xs text-slate-400 mb-1">Weekly Quota</p>
+                  <p className="text-2xl font-bold text-white">500</p>
+                  <div className="mt-3 h-1 w-full bg-white/10 rounded-full overflow-hidden">
+                    <div className="h-full bg-white/30 w-full"></div>
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-white/5 to-white/0 border border-white/10 relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 p-3 opacity-20 group-hover:scale-110 transition-transform"><Activity className="w-8 h-8" /></div>
+                  <p className="text-xs text-slate-400 mb-1">Remaining</p>
+                  <p className="text-2xl font-bold text-green-400">124</p>
+                  <div className="mt-3 h-1 w-full bg-white/10 rounded-full overflow-hidden">
+                    <div className="h-full bg-green-500 w-[24%]"></div>
+                  </div>
                 </div>
               </div>
-            </div>
+            </GlassCard>
 
-            {/* Danger Zone */}
-            <div className="bg-red-900 border border-red-700 p-6 rounded-lg">
-              <h2 className="text-xl font-semibold text-white mb-4">Danger Zone</h2>
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded transition font-semibold"
-              >
-                <LogOut className="w-5 h-5" />
-                Sign Out
-              </button>
-              <p className="text-red-200 text-sm mt-3">You will be logged out and returned to the login page.</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Activity Log */}
-        <div className="mt-8">
-          <h2 className="text-2xl font-semibold text-white flex items-center gap-2 mb-4">
-            <Activity className="w-6 h-6" />
-            Recent Activity
-          </h2>
-
-          <div className="space-y-3">
-            {activityLog.map((activity) => (
-              <div key={activity.id} className="bg-purple-700 p-4 rounded-lg flex items-center justify-between">
-                <div className="flex-1">
-                  <h3 className="text-white font-semibold">{activity.action}</h3>
-                  <p className="text-purple-300 text-sm">{activity.details}</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* RECENT ACTIVITY */}
+              <GlassCard delay={0.5} className="p-6">
+                <h3 className="text-xl font-semibold text-white flex items-center gap-2 mb-6">
+                  <Clock className="w-5 h-5 text-purple-400" />
+                  Recent Activity
+                </h3>
+                
+                <div className="relative pl-6 space-y-6 before:absolute before:inset-0 before:left-[11px] before:w-px before:bg-gradient-to-b before:from-purple-500/50 before:to-transparent">
+                  {activityLog.map((log, index) => (
+                    <motion.div 
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.6 + (index * 0.1) }}
+                      key={log.id} 
+                      className="relative"
+                    >
+                      <div className={`absolute -left-8 p-1 rounded-full bg-[#050816] border border-white/10 ${log.color} shadow-[0_0_10px_currentColor] z-10`}>
+                        <log.icon className="w-3 h-3" />
+                      </div>
+                      <div className="bg-white/5 border border-white/10 rounded-xl p-3 hover:bg-white/10 transition-colors">
+                        <div className="flex justify-between items-start mb-1">
+                          <h4 className="text-sm font-medium text-white">{log.action}</h4>
+                          <span className="text-[10px] text-slate-500">{log.timestamp}</span>
+                        </div>
+                        <p className="text-xs text-slate-400">{log.details}</p>
+                      </div>
+                    </motion.div>
+                  ))}
                 </div>
-                <div className="text-right">
-                  <p className="text-purple-300 text-sm flex items-center gap-1">
-                    <Clock className="w-4 h-4" />
-                    {activity.timestamp}
+              </GlassCard>
+
+              {/* TESTER PERFORMANCE */}
+              <GlassCard delay={0.6} className="p-6">
+                <h3 className="text-xl font-semibold text-white flex items-center gap-2 mb-6">
+                  <Target className="w-5 h-5 text-purple-400" />
+                  Tester Performance
+                </h3>
+                
+                <div className="space-y-4">
+                  <div className="p-4 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-blue-500/10 text-blue-400 rounded-lg"><CheckSquare className="w-4 h-4" /></div>
+                      <span className="text-sm text-slate-300">Tests Completed</span>
+                    </div>
+                    <span className="text-lg font-bold text-white">1,402</span>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-green-500/10 text-green-400 rounded-lg"><Crosshair className="w-4 h-4" /></div>
+                      <span className="text-sm text-slate-300">Pass Rate</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-lg font-bold text-white">94%</span>
+                      <div className="w-16 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                        <div className="w-[94%] h-full bg-green-500" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-red-500/10 text-red-400 rounded-lg"><Bug className="w-4 h-4" /></div>
+                      <span className="text-sm text-slate-300">Bug Accuracy</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-lg font-bold text-white">98%</span>
+                      <div className="w-16 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                        <div className="w-[98%] h-full bg-red-500" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-yellow-500/10 text-yellow-400 rounded-lg"><Clock className="w-4 h-4" /></div>
+                      <span className="text-sm text-slate-300">Avg. Review Time</span>
+                    </div>
+                    <span className="text-lg font-bold text-white">4.2m</span>
+                  </div>
+                </div>
+              </GlassCard>
+            </div>
+
+            {/* ACHIEVEMENTS */}
+            <GlassCard delay={0.7} className="p-6">
+              <h3 className="text-xl font-semibold text-white flex items-center gap-2 mb-6">
+                <Trophy className="w-5 h-5 text-yellow-400" />
+                Achievements
+              </h3>
+              
+              <div className="flex flex-wrap gap-3">
+                {[
+                  { icon: Award, label: "Early Tester", color: "from-purple-500 to-indigo-500" },
+                  { icon: Bug, label: "Bug Hunter", color: "from-red-500 to-orange-500" },
+                  { icon: Sparkles, label: "AI Explorer", color: "from-blue-500 to-cyan-500" },
+                  { icon: Zap, label: "Fast Reviewer", color: "from-yellow-500 to-amber-500" },
+                  { icon: Star, label: "Top Contributor", color: "from-emerald-500 to-teal-500" },
+                ].map((badge, idx) => (
+                  <motion.div 
+                    key={idx}
+                    whileHover={{ scale: 1.05 }}
+                    className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 shadow-[inset_0_0_20px_rgba(255,255,255,0.02)] cursor-default group"
+                  >
+                    <div className={`p-1 rounded-full bg-gradient-to-br ${badge.color} shadow-[0_0_10px_currentColor] group-hover:animate-pulse`}>
+                      <badge.icon className="w-3 h-3 text-white" />
+                    </div>
+                    <span className="text-sm font-medium text-slate-200">{badge.label}</span>
+                  </motion.div>
+                ))}
+              </div>
+            </GlassCard>
+
+            {/* SECURITY SECTION */}
+            <GlassCard delay={0.8} className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-semibold text-white flex items-center gap-2">
+                  <Lock className="w-5 h-5 text-purple-400" />
+                  Account Security
+                </h3>
+                <button className="text-sm text-purple-400 hover:text-purple-300 font-medium transition-colors">
+                  Manage Sessions
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 rounded-xl bg-white/5 border border-white/10 flex items-center gap-4">
+                  <div className="p-3 bg-white/5 rounded-lg border border-white/10"><Smartphone className="w-5 h-5 text-slate-300" /></div>
+                  <div>
+                    <h4 className="text-sm font-medium text-white mb-0.5">Two-Factor Auth</h4>
+                    <p className="text-xs text-green-400">Enabled (Authenticator App)</p>
+                  </div>
+                </div>
+                <div className="p-4 rounded-xl bg-white/5 border border-white/10 flex items-center gap-4">
+                  <div className="p-3 bg-white/5 rounded-lg border border-white/10"><Key className="w-5 h-5 text-slate-300" /></div>
+                  <div>
+                    <h4 className="text-sm font-medium text-white mb-0.5">Password</h4>
+                    <p className="text-xs text-slate-400">Last changed 45 days ago</p>
+                  </div>
+                </div>
+                <div className="p-4 rounded-xl bg-white/5 border border-white/10 flex items-center gap-4">
+                  <div className="p-3 bg-white/5 rounded-lg border border-white/10"><Laptop className="w-5 h-5 text-slate-300" /></div>
+                  <div>
+                    <h4 className="text-sm font-medium text-white mb-0.5">Current Session</h4>
+                    <p className="text-xs text-slate-400">Mac OS • Chrome • Active Now</p>
+                  </div>
+                </div>
+                <div className="p-4 rounded-xl bg-white/5 border border-white/10 flex items-center gap-4">
+                  <div className="p-3 bg-white/5 rounded-lg border border-white/10"><ShieldCheck className="w-5 h-5 text-slate-300" /></div>
+                  <div>
+                    <h4 className="text-sm font-medium text-white mb-0.5">Trusted Devices</h4>
+                    <p className="text-xs text-slate-400">2 devices authorized</p>
+                  </div>
+                </div>
+              </div>
+            </GlassCard>
+
+            {/* DANGER ZONE */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.9 }}
+              className="mt-12 bg-red-500/5 backdrop-blur-[20px] border border-red-500/20 rounded-3xl p-6 relative overflow-hidden"
+            >
+              <div className="absolute inset-0 bg-gradient-to-b from-red-500/5 to-transparent"></div>
+              <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div>
+                  <h3 className="text-xl font-semibold text-red-400 flex items-center gap-2 mb-2">
+                    <AlertTriangle className="w-5 h-5" />
+                    Danger Zone
+                  </h3>
+                  <p className="text-slate-400 text-sm max-w-md">
+                    Destructive actions related to your tester account. Some actions require administrative approval.
                   </p>
                 </div>
+                <div className="flex flex-col gap-3 min-w-[200px]">
+                  <button 
+                    onClick={handleLogout}
+                    className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white transition-colors text-sm font-medium"
+                  >
+                    <LogOut className="w-4 h-4 text-slate-400" />
+                    Sign Out
+                  </button>
+                  <button className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-red-500/20 border border-white/10 hover:border-red-500/30 text-white hover:text-red-300 transition-colors text-sm font-medium">
+                    <UserMinus className="w-4 h-4" />
+                    Deactivate Account
+                  </button>
+                  <button className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 transition-colors text-sm font-medium">
+                    <Trash2 className="w-4 h-4" />
+                    Delete Profile
+                  </button>
+                </div>
               </div>
-            ))}
+            </motion.div>
+
           </div>
         </div>
       </div>

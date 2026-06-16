@@ -339,7 +339,7 @@ export function AIGenerativeVideoPage() {
           </motion.div>
           <motion.button 
             initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}
-            onClick={() => navigate('/features')}
+            onClick={() => navigate(redirectTo || '/features')}
             className="flex items-center gap-1.5 text-[10px] uppercase font-bold tracking-widest text-slate-500 hover:text-white transition-colors ml-[54px]"
           >
             <ArrowLeft className="w-3 h-3" /> Back to Features

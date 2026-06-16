@@ -23,7 +23,7 @@ export function DeveloperUserRiskScoringPage() {
       <div className="sticky top-0 z-50 backdrop-blur-sm bg-slate-950/80 border-b border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <button
-            onClick={() => navigate("/developer")}
+            onClick={() => navigate(-1)}
             className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors"
           >
             <ChevronLeft size={20} />

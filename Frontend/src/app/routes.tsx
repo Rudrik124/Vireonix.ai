@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate, useRouteError } from "react-router";
+import { createBrowserRouter, Navigate, useRouteError, Outlet, ScrollRestoration } from "react-router";
 import React from "react";
 import { PortalGate } from "../shared/routing/route-guards";
 // Developer Portal
@@ -243,9 +243,21 @@ const legacyUserRoutes = [
   },
 ];
 
+function RootLayout() {
+  return (
+    <>
+      <ScrollRestoration />
+      <Outlet />
+    </>
+  );
+}
+
 export const router = createBrowserRouter([
   {
-    path: "/auth/callback",
+    element: <RootLayout />,
+    children: [
+      {
+        path: "/auth/callback",
     async lazy() {
       const { AuthCallbackPage } = await import("./pages/Auth/auth-callback");
       return { Component: AuthCallbackPage };
@@ -754,5 +766,7 @@ export const router = createBrowserRouter([
   {
     path: "*",
     element: <Navigate to="/" replace />,
+  }
+    ]
   }
 ]);
