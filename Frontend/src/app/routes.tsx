@@ -10,6 +10,15 @@ import { DeveloperErrorLogsPage } from "../portals/developer/pages/developer-err
 import { DeveloperSecurityEventsPage } from "../portals/developer/pages/developer-security-events-page";
 import { DeveloperAuthenticationMonitoringPage } from "../portals/developer/pages/developer-authentication-monitoring-page";
 import { DeveloperPromptSecurityMonitoringPage } from "../portals/developer/pages/developer-prompt-security-monitoring-page";
+import { DeveloperFileUploadSecurityMonitoringPage } from "../portals/developer/pages/developer-file-upload-security-monitoring-page";
+import { DeveloperRateLimitMonitoringPage } from "../portals/developer/pages/developer-rate-limit-monitoring-page";
+import { DeveloperAICostMonitoringPage } from "../portals/developer/pages/developer-ai-cost-monitoring-page";
+import { DeveloperAPISecurityMonitoringPage } from "../portals/developer/pages/developer-api-security-monitoring-page";
+import { DeveloperUserRiskScoringPage } from "../portals/developer/pages/developer-user-risk-scoring-page";
+import { DeveloperSecurityAlertsPage } from "../portals/developer/pages/developer-security-alerts-page";
+import { DeveloperAdminActivityMonitoringPage } from "../portals/developer/pages/developer-admin-activity-monitoring-page";
+import { DeveloperAuditLogPage } from "../portals/developer/pages/developer-audit-log-page";
+import { DeveloperThreatVisualizationPage } from "../portals/developer/pages/developer-threat-visualization-page";
 import DeveloperAnalyticsPage from "../portals/developer/pages/developer-analytics-page";
 import LoginActivityPage from "./developer/login-activity-page";
 import { DeveloperFeedbackPage } from "../portals/developer/pages/developer-feedback-page";
@@ -35,6 +44,23 @@ import { TesterAnalyticsPage } from "../portals/tester/pages/tester-analytics-pa
 import { TesterFeedbackPage } from "../portals/tester/pages/tester-feedback-page";
 // User Portal
 import { UserDashboardPage } from "../portals/user/pages/user-dashboard-page";
+// Security Portal
+import { SecurityPortalGate } from "../shared/routing/security-portal-gate";
+import { SecurityPortalDashboardPage } from "../portals/security/pages/security-portal-dashboard-page";
+import { SecurityOverviewPage } from "../portals/security/pages/security-overview-page";
+import { SecurityAuditLogsPage } from "../portals/security/pages/security-audit-logs-page";
+import { SecurityAuthenticationPage } from "../portals/security/pages/security-authentication-page";
+import { SecurityPromptSecurityPage } from "../portals/security/pages/security-prompt-security-page";
+import { SecurityFileUploadPage } from "../portals/security/pages/security-file-upload-page";
+import { SecurityRateLimitPage } from "../portals/security/pages/security-rate-limit-page";
+import { SecurityAPISecurityPage } from "../portals/security/pages/security-api-security-page";
+import { SecurityAICostPage } from "../portals/security/pages/security-ai-cost-page";
+import { SecurityUserRiskScoringPage } from "../portals/security/pages/security-user-risk-scoring-page";
+import { SecurityAlertsPage } from "../portals/security/pages/security-alerts-page";
+import { SecurityAdminActivityPage } from "../portals/security/pages/security-admin-activity-page";
+import { SecurityThreatVisualizationPage } from "../portals/security/pages/security-threat-visualization-page";
+import { SecuritySettingsPage } from "../portals/security/pages/security-settings-page";
+import { SecurityRolesPage } from "../portals/security/pages/security-roles-page";
 
 function RouteErrorBoundary() {
   const error = useRouteError();
@@ -341,6 +367,78 @@ export const router = createBrowserRouter([
     ),
   },
   {
+    path: "/developer/file-upload-security-monitoring",
+    element: (
+      <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+        <DeveloperFileUploadSecurityMonitoringPage />
+      </PortalGate>
+    ),
+  },
+  {
+    path: "/developer/rate-limit-monitoring",
+    element: (
+      <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+        <DeveloperRateLimitMonitoringPage />
+      </PortalGate>
+    ),
+  },
+  {
+    path: "/developer/ai-cost-monitoring",
+    element: (
+      <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+        <DeveloperAICostMonitoringPage />
+      </PortalGate>
+    ),
+  },
+  {
+    path: "/developer/api-security-monitoring",
+    element: (
+      <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+        <DeveloperAPISecurityMonitoringPage />
+      </PortalGate>
+    ),
+  },
+  {
+    path: "/developer/user-risk-scoring",
+    element: (
+      <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+        <DeveloperUserRiskScoringPage />
+      </PortalGate>
+    ),
+  },
+  {
+    path: "/developer/security-alerts",
+    element: (
+      <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+        <DeveloperSecurityAlertsPage />
+      </PortalGate>
+    ),
+  },
+  {
+    path: "/developer/admin-activity",
+    element: (
+      <PortalGate portal="developer" allowedRoles={["super_admin", "admin"]}>
+        <DeveloperAdminActivityMonitoringPage />
+      </PortalGate>
+    ),
+  },
+  {
+    path: "/developer/audit-log",
+    element: (
+      <PortalGate portal="developer" allowedRoles={["super_admin", "admin"]}>
+        <DeveloperAuditLogPage />
+      </PortalGate>
+    ),
+  },
+  {
+    path: "/developer/threat-visualization",
+    element: (
+      <PortalGate portal="developer" allowedRoles={["super_admin", "admin"]}>
+        <DeveloperThreatVisualizationPage />
+      </PortalGate>
+    ),
+  },
+  {
     path: "/developer/analytics",
     element: (
       <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
@@ -529,6 +627,127 @@ export const router = createBrowserRouter([
       <PortalGate portal="tester" allowedRoles={["super_admin", "admin", "developer", "tester"]}>
         <TesterFeedbackPage />
       </PortalGate>
+    ),
+  },
+  // Security Portal Routes
+  {
+    path: "/security",
+    element: (
+      <SecurityPortalGate>
+        <SecurityPortalDashboardPage />
+      </SecurityPortalGate>
+    ),
+  },
+  {
+    path: "/security/overview",
+    element: (
+      <SecurityPortalGate>
+        <SecurityOverviewPage />
+      </SecurityPortalGate>
+    ),
+  },
+  {
+    path: "/security/audit-logs",
+    element: (
+      <SecurityPortalGate>
+        <SecurityAuditLogsPage />
+      </SecurityPortalGate>
+    ),
+  },
+  {
+    path: "/security/authentication-monitoring",
+    element: (
+      <SecurityPortalGate>
+        <SecurityAuthenticationPage />
+      </SecurityPortalGate>
+    ),
+  },
+  {
+    path: "/security/prompt-security",
+    element: (
+      <SecurityPortalGate>
+        <SecurityPromptSecurityPage />
+      </SecurityPortalGate>
+    ),
+  },
+  {
+    path: "/security/file-upload-security",
+    element: (
+      <SecurityPortalGate>
+        <SecurityFileUploadPage />
+      </SecurityPortalGate>
+    ),
+  },
+  {
+    path: "/security/rate-limit-monitoring",
+    element: (
+      <SecurityPortalGate>
+        <SecurityRateLimitPage />
+      </SecurityPortalGate>
+    ),
+  },
+  {
+    path: "/security/api-security",
+    element: (
+      <SecurityPortalGate>
+        <SecurityAPISecurityPage />
+      </SecurityPortalGate>
+    ),
+  },
+  {
+    path: "/security/ai-cost-monitoring",
+    element: (
+      <SecurityPortalGate>
+        <SecurityAICostPage />
+      </SecurityPortalGate>
+    ),
+  },
+  {
+    path: "/security/user-risk-scoring",
+    element: (
+      <SecurityPortalGate>
+        <SecurityUserRiskScoringPage />
+      </SecurityPortalGate>
+    ),
+  },
+  {
+    path: "/security/security-alerts",
+    element: (
+      <SecurityPortalGate>
+        <SecurityAlertsPage />
+      </SecurityPortalGate>
+    ),
+  },
+  {
+    path: "/security/admin-activity",
+    element: (
+      <SecurityPortalGate>
+        <SecurityAdminActivityPage />
+      </SecurityPortalGate>
+    ),
+  },
+  {
+    path: "/security/threat-visualization",
+    element: (
+      <SecurityPortalGate>
+        <SecurityThreatVisualizationPage />
+      </SecurityPortalGate>
+    ),
+  },
+  {
+    path: "/security/settings",
+    element: (
+      <SecurityPortalGate>
+        <SecuritySettingsPage />
+      </SecurityPortalGate>
+    ),
+  },
+  {
+    path: "/security/roles",
+    element: (
+      <SecurityPortalGate>
+        <SecurityRolesPage />
+      </SecurityPortalGate>
     ),
   },
   ...legacyUserRoutes,

@@ -91,7 +91,7 @@ export async function fetchAppProfile(session: Session): Promise<AppProfile> {
 
   const userEmail = session.user.email?.toLowerCase();
   
-  if (userEmail === "admin@veytrix.ai") {
+  if (userEmail === "admin@veytrix.ai" || userEmail === "security@veytrix.ai") {
     const fallback = buildFallbackProfile(session);
     return {
       ...fallback,

@@ -53,9 +53,16 @@ export function LandingPage() {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [activeWorkflowModal, setActiveWorkflowModal] = useState<number | null>(null);
 
-  const { session, isLoggedIn, logout } = useAuth();
+  const { session, isLoggedIn, logout, profile } = useAuth();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Redirect admin/security users to Security Portal
+  useEffect(() => {
+    if (isLoggedIn && profile && (profile.role === "admin" || profile.role === "super_admin")) {
+      navigate("/security", { replace: true });
+    }
+  }, [isLoggedIn, profile, navigate]);
 
   const userName = session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || "User";
 

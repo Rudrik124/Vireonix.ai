@@ -68,6 +68,17 @@ const getInternalFallbackProfile = (user) => {
   return null;
 };
 
+/**
+ * Extract Bearer token from Authorization header
+ */
+const getBearerToken = (req) => {
+  const authHeader = req.headers.authorization || "";
+  if (authHeader.startsWith("Bearer ")) {
+    return authHeader.substring(7);
+  }
+  return null;
+};
+
 const findInternalProfile = async (user) => {
   const selectProfile = async (tableName) => {
     for (const columns of ["id, email, role", "id, email"]) {

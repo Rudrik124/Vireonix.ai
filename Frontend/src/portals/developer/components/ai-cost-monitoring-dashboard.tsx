@@ -2,22 +2,17 @@ import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
   AlertCircle,
-  BarChart3,
-  FileText,
+  Calendar,
+  DollarSign,
   Filter,
-  HardDrive,
-  Image,
-  Lock,
-  Music,
   RefreshCw,
-  Bug,
   Wifi,
   WifiOff,
-  Video,
-  CheckCircle,
-  Calendar,
   User,
-  AlertTriangle,
+  Zap,
+  TrendingUp,
+  BarChart3,
+  PieChart as PieChartIcon,
 } from 'lucide-react';
 import {
   LineChart,
@@ -25,7 +20,6 @@ import {
   BarChart,
   Bar,
   PieChart,
-  Pie,
   Cell,
   XAxis,
   YAxis,
@@ -33,79 +27,55 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  AreaChart,
+  Area,
 } from 'recharts';
-import { useFileUploadSecurityMonitoring } from '../../../hooks/useFileUploadSecurityMonitoring';
-import type { FileUploadFilterOptions, FileUploadAction } from '../../../services/file-upload-security.service';
+import { useAICostMonitoring } from '../../../hooks/useAICostMonitoring';
+import type { AICostFilterOptions, AIFeatureType } from '../../../services/ai-cost-monitoring.service';
 
 const metricCards = [
   {
-    key: 'imagesUploaded',
-    label: 'Images Uploaded',
-    icon: Image,
+    key: 'runwayRequestsToday',
+    label: 'Runway Requests Today',
+    icon: Zap,
     color: 'blue',
-    description: 'Successful image uploads',
+    description: 'AI feature requests processed today',
   },
   {
-    key: 'videosUploaded',
-    label: 'Videos Uploaded',
-    icon: Video,
+    key: 'estimatedCostToday',
+    label: 'Estimated Cost Today',
+    icon: DollarSign,
+    color: 'green',
+    description: 'Total cost incurred today',
+    suffix: '$',
+  },
+  {
+    key: 'costPerUser',
+    label: 'Cost Per User',
+    icon: User,
     color: 'purple',
-    description: 'Successful video uploads',
+    description: 'Average cost per unique user',
+    suffix: '$',
   },
   {
-    key: 'audioUploaded',
-    label: 'Audio Uploaded',
-    icon: Music,
-    color: 'cyan',
-    description: 'Successful audio uploads',
-  },
-  {
-    key: 'rejectedFiles',
-    label: 'Rejected Files',
-    icon: AlertCircle,
-    color: 'red',
-    description: 'Total rejected uploads',
-  },
-  {
-    key: 'malwareDetected',
-    label: 'Malware Detected',
-    icon: Bug,
-    color: 'rose',
-    description: 'Malware threats detected',
-  },
-  {
-    key: 'wrongMimeType',
-    label: 'Wrong MIME Type',
-    icon: FileText,
+    key: 'costPerFeature',
+    label: 'Cost Per Feature',
+    icon: BarChart3,
     color: 'orange',
-    description: 'Incorrect file types',
-  },
-  {
-    key: 'fileTooLarge',
-    label: 'File Too Large',
-    icon: HardDrive,
-    color: 'amber',
-    description: 'Oversized files rejected',
-  },
-  {
-    key: 'corruptedFiles',
-    label: 'Corrupted Files',
-    icon: AlertTriangle,
-    color: 'pink',
-    description: 'Damaged files detected',
+    description: 'Average cost per feature type',
+    suffix: '$',
   },
 ];
 
 const colorClasses = {
   blue: 'text-blue-400 bg-blue-900/20',
-  purple: 'text-purple-400 bg-purple-900/20',
-  cyan: 'text-cyan-400 bg-cyan-900/20',
-  red: 'text-red-400 bg-red-900/20',
-  rose: 'text-rose-400 bg-rose-900/20',
-  orange: 'text-orange-400 bg-orange-900/20',
-  amber: 'text-amber-400 bg-amber-900/20',
-  pink: 'text-pink-400 bg-pink-900/20',
   green: 'text-green-400 bg-green-900/20',
+  purple: 'text-purple-400 bg-purple-900/20',
+  orange: 'text-orange-400 bg-orange-900/20',
+  red: 'text-red-400 bg-red-900/20',
+  cyan: 'text-cyan-400 bg-cyan-900/20',
+  pink: 'text-pink-400 bg-pink-900/20',
+  amber: 'text-amber-400 bg-amber-900/20',
 };
 
 function MetricCard({
@@ -148,8 +118,8 @@ function MetricCard({
             animate={{ scale: 1 }}
             className={`text-2xl font-bold ${colorClasses[color as keyof typeof colorClasses]}`}
           >
-            {value.toLocaleString()}
             {suffix}
+            {value.toFixed(2)}
           </motion.div>
         )}
       </div>
@@ -157,33 +127,29 @@ function MetricCard({
   );
 }
 
-export function FileUploadSecurityMonitoringDashboard() {
+export function AICostMonitoringDashboard() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [userId, setUserId] = useState('');
-  const [actionFilter, setActionFilter] = useState<FileUploadAction | ''>('');
-  const [fileTypeFilter, setFileTypeFilter] = useState('all');
-  const [trendDays, setTrendDays] = useState(7);
+  const [featureFilter, setFeatureFilter] = useState<AIFeatureType | ''>('');
+  const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly'>('daily');
+  const [periodDays, setPeriodDays] = useState(7);
 
-  const filters: FileUploadFilterOptions = useMemo(
+  const filters: AICostFilterOptions = useMemo(
     () => ({
       startDate: startDate || undefined,
       endDate: endDate || undefined,
       userId: userId || undefined,
-      action: (actionFilter || undefined) as FileUploadAction | undefined,
-      fileType: fileTypeFilter !== 'all' ? fileTypeFilter : undefined,
+      feature: (featureFilter || undefined) as AIFeatureType | undefined,
     }),
-    [startDate, endDate, userId, actionFilter, fileTypeFilter]
+    [startDate, endDate, userId, featureFilter]
   );
 
   const {
     metrics,
     events,
-    rejectionBreakdown,
-    fileTypeDistribution,
-    uploadTrends,
-    malwareDetections,
-    averageFileSizes,
+    featureBreakdown,
+    trends,
     totalEvents,
     isLoading,
     error,
@@ -192,27 +158,31 @@ export function FileUploadSecurityMonitoringDashboard() {
     page,
     totalPages,
     goToPage,
-  } = useFileUploadSecurityMonitoring(filters, trendDays);
+  } = useAICostMonitoring(filters, period, periodDays);
 
   const handleRefresh = async () => {
     await refresh();
   };
 
-  const actions: FileUploadAction[] = [
-    'UPLOAD_SUCCESS',
-    'UPLOAD_REJECTED',
-    'WRONG_MIME_TYPE',
-    'FILE_TOO_LARGE',
-    'MALWARE_DETECTED',
-    'CORRUPTED_FILE',
+  const features: AIFeatureType[] = [
+    'VIDEO_GENERATION',
+    'IMAGE_GENERATION',
+    'TEXT_ANALYSIS',
+    'VOICEOVER_GENERATION',
+    'SUBTITLE_GENERATION',
+    'SCENE_ANALYSIS',
+    'EFFECT_RENDERING',
+    'AI_EDIT',
   ];
+
+  const chartColors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316', '#ec4899'];
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">File Upload Security Monitoring</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">AI Cost Monitoring</h1>
           <div className="flex items-center gap-2">
             <motion.div
               animate={{
@@ -274,6 +244,7 @@ export function FileUploadSecurityMonitoringDashboard() {
             color={card.color}
             description={card.description}
             isLoading={isLoading}
+            suffix={card.suffix || ''}
           />
         ))}
       </motion.div>
@@ -287,18 +258,16 @@ export function FileUploadSecurityMonitoringDashboard() {
       >
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>
-            <p className="text-sm text-slate-400 mb-2">Total Uploads</p>
-            <p className="text-3xl font-bold text-white">{metrics.totalUploads.toLocaleString()}</p>
+            <p className="text-sm text-slate-400 mb-2">Total Cost (Period)</p>
+            <p className="text-3xl font-bold text-green-400">${metrics.totalCost.toFixed(2)}</p>
           </div>
           <div>
-            <p className="text-sm text-slate-400 mb-2">Success Rate</p>
-            <p className="text-3xl font-bold text-green-400">{metrics.successRate.toFixed(2)}%</p>
+            <p className="text-sm text-slate-400 mb-2">Average Cost Per Request</p>
+            <p className="text-3xl font-bold text-blue-400">${metrics.averageRequestCost.toFixed(4)}</p>
           </div>
           <div>
-            <p className="text-sm text-slate-400 mb-2">Security Issues</p>
-            <p className="text-3xl font-bold text-red-400">
-              {(metrics.rejectedFiles + metrics.malwareDetected + metrics.corruptedFiles).toLocaleString()}
-            </p>
+            <p className="text-sm text-slate-400 mb-2">Total Features</p>
+            <p className="text-3xl font-bold text-purple-400">{featureBreakdown.length}</p>
           </div>
         </div>
       </motion.div>
@@ -313,7 +282,7 @@ export function FileUploadSecurityMonitoringDashboard() {
         <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
           <Filter className="w-5 h-5" /> Filters
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           {/* Start Date */}
           <div>
             <label className="block text-sm text-slate-400 mb-2">Start Date</label>
@@ -357,50 +326,34 @@ export function FileUploadSecurityMonitoringDashboard() {
             </div>
           </div>
 
-          {/* Action Filter */}
+          {/* Feature Filter */}
           <div>
-            <label className="block text-sm text-slate-400 mb-2">Action</label>
+            <label className="block text-sm text-slate-400 mb-2">Feature</label>
             <select
-              value={actionFilter}
-              onChange={(e) => setActionFilter(e.target.value as FileUploadAction | '')}
+              value={featureFilter}
+              onChange={(e) => setFeatureFilter(e.target.value as AIFeatureType | '')}
               className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm"
             >
-              <option value="">All Actions</option>
-              {actions.map((action) => (
-                <option key={action} value={action}>
-                  {action.replace(/_/g, ' ')}
+              <option value="">All Features</option>
+              {features.map((feature) => (
+                <option key={feature} value={feature}>
+                  {feature.replace(/_/g, ' ')}
                 </option>
               ))}
             </select>
           </div>
 
-          {/* File Type Filter */}
+          {/* Period Selector */}
           <div>
-            <label className="block text-sm text-slate-400 mb-2">File Type</label>
+            <label className="block text-sm text-slate-400 mb-2">View Period</label>
             <select
-              value={fileTypeFilter}
-              onChange={(e) => setFileTypeFilter(e.target.value)}
+              value={period}
+              onChange={(e) => setPeriod(e.target.value as 'daily' | 'weekly' | 'monthly')}
               className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm"
             >
-              <option value="all">All Types</option>
-              <option value="image">Images</option>
-              <option value="video">Videos</option>
-              <option value="audio">Audio</option>
-              <option value="other">Other</option>
-            </select>
-          </div>
-
-          {/* Trend Days */}
-          <div>
-            <label className="block text-sm text-slate-400 mb-2">Trend Days</label>
-            <select
-              value={trendDays}
-              onChange={(e) => setTrendDays(Number(e.target.value))}
-              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm"
-            >
-              <option value={7}>Last 7 days</option>
-              <option value={14}>Last 14 days</option>
-              <option value={30}>Last 30 days</option>
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
             </select>
           </div>
         </div>
@@ -408,17 +361,50 @@ export function FileUploadSecurityMonitoringDashboard() {
 
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Upload Trends */}
-        {uploadTrends.length > 0 && (
+        {/* Cost Trends */}
+        {trends.length > 0 && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3 }}
             className="rounded-lg border border-slate-700/50 bg-slate-900/30 backdrop-blur-md p-6"
           >
-            <h3 className="text-lg font-semibold text-white mb-4">Upload Trends</h3>
+            <h3 className="text-lg font-semibold text-white mb-4">Cost Trends ({period})</h3>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={uploadTrends}>
+              <AreaChart data={trends}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                <XAxis dataKey="date" stroke="#94a3b8" />
+                <YAxis stroke="#94a3b8" />
+                <Tooltip
+                  contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569' }}
+                  labelStyle={{ color: '#f1f5f9' }}
+                  formatter={(value: any) => [`$${value.toFixed(2)}`, 'Cost']}
+                />
+                <Legend />
+                <Area
+                  type="monotone"
+                  dataKey="cost"
+                  stroke="#10b981"
+                  fill="#10b981"
+                  name="Total Cost"
+                  fillOpacity={0.6}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </motion.div>
+        )}
+
+        {/* Request Volume */}
+        {trends.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+            className="rounded-lg border border-slate-700/50 bg-slate-900/30 backdrop-blur-md p-6"
+          >
+            <h3 className="text-lg font-semibold text-white mb-4">Request Volume ({period})</h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={trends}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                 <XAxis dataKey="date" stroke="#94a3b8" />
                 <YAxis stroke="#94a3b8" />
@@ -426,159 +412,87 @@ export function FileUploadSecurityMonitoringDashboard() {
                   contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569' }}
                   labelStyle={{ color: '#f1f5f9' }}
                 />
-                <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="successful"
-                  stroke="#10b981"
-                  name="Successful"
-                  dot={{ fill: '#10b981' }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="rejected"
-                  stroke="#ef4444"
-                  name="Rejected"
-                  dot={{ fill: '#ef4444' }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="failed"
-                  stroke="#f97316"
-                  name="Failed"
-                  dot={{ fill: '#f97316' }}
-                />
-              </LineChart>
+                <Bar dataKey="requests" fill="#3b82f6" name="Requests" />
+              </BarChart>
             </ResponsiveContainer>
           </motion.div>
         )}
+      </div>
 
-        {/* File Type Distribution */}
-        {fileTypeDistribution.length > 0 && (
+      {/* Feature Cost Breakdown */}
+      {featureBreakdown.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Feature Cost Distribution Chart */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
+            transition={{ delay: 0.5 }}
             className="rounded-lg border border-slate-700/50 bg-slate-900/30 backdrop-blur-md p-6"
           >
-            <h3 className="text-lg font-semibold text-white mb-4">File Type Distribution</h3>
+            <h3 className="text-lg font-semibold text-white mb-4">Cost by Feature</h3>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
-                  data={fileTypeDistribution}
-                  dataKey="count"
-                  nameKey="type"
+                  data={featureBreakdown}
+                  dataKey="totalCost"
+                  nameKey="feature"
                   cx="50%"
                   cy="50%"
                   outerRadius={100}
                   label
                 >
-                  {fileTypeDistribution.map((entry, index) => {
-                    const colors = ['#3b82f6', '#a855f7', '#06b6d4', '#8b5cf6'];
-                    return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />;
-                  })}
+                  {featureBreakdown.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={chartColors[index % chartColors.length]} />
+                  ))}
                 </Pie>
                 <Tooltip
                   contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569' }}
                   labelStyle={{ color: '#f1f5f9' }}
+                  formatter={(value: any) => `$${value.toFixed(2)}`}
                 />
               </PieChart>
             </ResponsiveContainer>
           </motion.div>
-        )}
-      </div>
 
-      {/* Rejection Breakdown & Average Sizes */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Rejection Breakdown */}
-        {rejectionBreakdown.length > 0 && (
+          {/* Feature Cost Details */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5 }}
             className="rounded-lg border border-slate-700/50 bg-slate-900/30 backdrop-blur-md p-6"
           >
-            <h3 className="text-lg font-semibold text-white mb-4">Rejection Breakdown</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={rejectionBreakdown}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                <XAxis dataKey="reason" stroke="#94a3b8" />
-                <YAxis stroke="#94a3b8" />
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569' }}
-                  labelStyle={{ color: '#f1f5f9' }}
-                />
-                <Bar dataKey="count" fill="#ef4444" />
-              </BarChart>
-            </ResponsiveContainer>
-          </motion.div>
-        )}
-
-        {/* Average File Sizes */}
-        {averageFileSizes.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            className="rounded-lg border border-slate-700/50 bg-slate-900/30 backdrop-blur-md p-6"
-          >
-            <h3 className="text-lg font-semibold text-white mb-4">Average File Sizes</h3>
-            <div className="space-y-3">
-              {averageFileSizes.map((item) => (
-                <div key={item.type} className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-slate-300 font-semibold">{item.type}</p>
-                    <p className="text-xs text-slate-500">{item.count} files</p>
+            <h3 className="text-lg font-semibold text-white mb-4">Feature Cost Details</h3>
+            <div className="space-y-3 max-h-80 overflow-y-auto">
+              {featureBreakdown.map((feature, idx) => (
+                <motion.div
+                  key={feature.feature}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: idx * 0.05 }}
+                  className="p-3 rounded-lg border border-slate-700/30 bg-slate-800/50"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-semibold text-white">
+                      {feature.feature.replace(/_/g, ' ')}
+                    </span>
+                    <span className="text-xs text-slate-400">{feature.count} requests</span>
                   </div>
-                  <p className="text-sm font-mono text-blue-400">{item.avgSize}</p>
-                </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-slate-500">Total: ${feature.totalCost.toFixed(2)}</p>
+                      <p className="text-xs text-slate-500">Avg: ${feature.averageCost.toFixed(4)}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-bold text-green-400">
+                        {((feature.totalCost / featureBreakdown.reduce((sum, f) => sum + f.totalCost, 0)) * 100).toFixed(1)}%
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
               ))}
             </div>
           </motion.div>
-        )}
-      </div>
-
-      {/* Malware Detections */}
-      {malwareDetections.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.6 }}
-          className="rounded-lg border border-slate-700/50 bg-slate-900/30 backdrop-blur-md p-6"
-        >
-          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-            <Bug className="w-5 h-5 text-rose-400" />
-            Recent Malware Detections
-          </h3>
-          <div className="space-y-3 max-h-80 overflow-y-auto">
-            {malwareDetections.map((detection) => (
-              <motion.div
-                key={detection.id}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="p-3 rounded-lg border border-rose-700/30 bg-rose-900/20"
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <Bug className="w-4 h-4 text-rose-400" />
-                    <span className="text-sm font-semibold text-rose-400">
-                      {detection.metadata?.file_name || 'Unknown file'}
-                    </span>
-                  </div>
-                  <span className="text-xs text-slate-500">
-                    {new Date(detection.created_at).toLocaleString()}
-                  </span>
-                </div>
-                {detection.metadata?.malware_signature && (
-                  <p className="text-xs text-rose-300 ml-6">
-                    Signature: {detection.metadata.malware_signature}
-                  </p>
-                )}
-                <p className="text-xs text-slate-400 ml-6 mt-1">{detection.event_message}</p>
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
+        </div>
       )}
 
       {/* Events Table */}
@@ -590,16 +504,16 @@ export function FileUploadSecurityMonitoringDashboard() {
       >
         <div className="p-6 border-b border-slate-700/50">
           <h2 className="text-lg font-semibold text-white">
-            File Upload Events ({totalEvents})
+            AI Cost Events ({totalEvents})
           </h2>
         </div>
 
         {isLoading ? (
           <div className="p-8 text-center text-slate-400">
-            <div className="animate-pulse">Loading file upload events...</div>
+            <div className="animate-pulse">Loading AI cost events...</div>
           </div>
         ) : events.length === 0 ? (
-          <div className="p-8 text-center text-slate-400">No file upload events found</div>
+          <div className="p-8 text-center text-slate-400">No AI cost events found</div>
         ) : (
           <>
             <div className="overflow-x-auto">
@@ -610,19 +524,22 @@ export function FileUploadSecurityMonitoringDashboard() {
                       Timestamp
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-slate-300">
-                      Action
+                      User ID
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-slate-300">
-                      File Name
+                      Feature
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-slate-300">
-                      File Size
+                      Model
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-slate-300">
-                      MIME Type
+                      Cost
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-slate-300">
-                      Severity
+                      Tokens
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-300">
+                      Duration
                     </th>
                   </tr>
                 </thead>
@@ -638,50 +555,27 @@ export function FileUploadSecurityMonitoringDashboard() {
                       <td className="px-6 py-4 text-sm text-slate-300">
                         {new Date(event.created_at).toLocaleString()}
                       </td>
+                      <td className="px-6 py-4 text-sm text-slate-400">
+                        {event.user_id || 'System'}
+                      </td>
                       <td className="px-6 py-4 text-sm">
-                        <span
-                          className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold ${
-                            event.action === 'UPLOAD_SUCCESS'
-                              ? 'text-green-400 bg-green-900/20'
-                              : event.action === 'MALWARE_DETECTED'
-                              ? 'text-rose-400 bg-rose-900/20'
-                              : event.action === 'FILE_TOO_LARGE'
-                              ? 'text-amber-400 bg-amber-900/20'
-                              : event.action === 'WRONG_MIME_TYPE'
-                              ? 'text-orange-400 bg-orange-900/20'
-                              : event.action === 'CORRUPTED_FILE'
-                              ? 'text-pink-400 bg-pink-900/20'
-                              : 'text-red-400 bg-red-900/20'
-                          }`}
-                        >
-                          <AlertCircle className="w-3 h-3" />
+                        <span className="text-blue-400 font-semibold">
                           {event.action.replace(/_/g, ' ')}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-sm text-slate-400 truncate max-w-xs">
-                        {event.metadata?.file_name || 'N/A'}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-slate-400">
-                        {event.metadata?.file_size
-                          ? `${(event.metadata.file_size / 1024 / 1024).toFixed(2)} MB`
-                          : 'N/A'}
-                      </td>
                       <td className="px-6 py-4 text-sm text-slate-400 font-mono text-xs">
-                        {event.metadata?.mime_type || 'Unknown'}
+                        {event.metadata?.model || 'N/A'}
                       </td>
                       <td className="px-6 py-4 text-sm">
-                        <span
-                          className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold ${
-                            event.severity === 'CRITICAL'
-                              ? 'text-rose-400 bg-rose-900/20'
-                              : event.severity === 'WARNING'
-                              ? 'text-amber-400 bg-amber-900/20'
-                              : 'text-blue-400 bg-blue-900/20'
-                          }`}
-                        >
-                          {event.severity === 'CRITICAL' && <AlertCircle className="w-3 h-3" />}
-                          {event.severity}
+                        <span className="font-semibold text-green-400">
+                          ${(event.metadata?.cost || 0).toFixed(4)}
                         </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-400">
+                        {event.metadata?.tokens_used?.toLocaleString() || 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-400">
+                        {event.metadata?.duration_ms ? `${event.metadata.duration_ms}ms` : 'N/A'}
                       </td>
                     </motion.tr>
                   ))}
