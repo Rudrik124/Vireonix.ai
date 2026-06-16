@@ -34,10 +34,3 @@ export function SecurityUserRiskScoringPage() {
     </div>
   );
 }
-
-  return (
-    <div>
-      <UserRiskScoringDashboard />
-    </div>
-  );
-}

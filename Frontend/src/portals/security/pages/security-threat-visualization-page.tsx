@@ -34,10 +34,3 @@ export function SecurityThreatVisualizationPage() {
     </div>
   );
 }
-
-  return (
-    <div>
-      <ThreatVisualizationDashboard />
-    </div>
-  );
-}
