@@ -46,23 +46,23 @@ export async function logSecurityPortalActivity(
 ): Promise<SecurityPortalActivityLog> {
   try {
     const { data, error } = await supabase
-      .from("security_events")
+      .from("audit_logs")
       .insert([
         {
-          category: "SECURITY_PORTAL",
+          user_id: event.user_id,
+          user_email: event.user_email,
           event_type: event.event_type,
           severity: "INFO",
           description: `${event.event_type}: ${event.action}`,
           action: event.action,
           metadata: {
-            user_id: event.user_id,
-            user_email: event.user_email,
             module: event.module,
             ip_address: event.ip_address,
             device_info: event.device_info,
             details: event.details,
           },
-          created_at: new Date().toISOString(),
+          ip_address: event.ip_address,
+          device_info: event.device_info,
         },
       ])
       .select()
@@ -103,15 +103,17 @@ export async function fetchSecurityPortalActivityLogs(
 ): Promise<SecurityPortalActivityLog[]> {
   try {
     let query = supabase
-      .from("security_events")
-      .select("*")
-      .eq("category", "SECURITY_PORTAL");
+      .from("audit_logs")
+      .select("*");
 
     if (filters?.startDate) {
       query = query.gte("created_at", filters.startDate);
     }
     if (filters?.endDate) {
       query = query.lte("created_at", filters.endDate);
+    }
+    if (filters?.userId) {
+      query = query.eq("user_id", filters.userId);
     }
 
     const { data, error } = await query
@@ -124,14 +126,14 @@ export async function fetchSecurityPortalActivityLogs(
       const metadata = typeof event.metadata === "string" ? JSON.parse(event.metadata) : event.metadata;
       return {
         id: event.id,
-        user_id: metadata.user_id,
-        user_email: metadata.user_email,
+        user_id: event.user_id,
+        user_email: event.user_email,
         event_type: event.event_type as SecurityPortalEventType,
-        module: metadata.module,
+        module: metadata?.module,
         action: event.action,
-        details: metadata.details,
-        ip_address: metadata.ip_address,
-        device_info: metadata.device_info,
+        details: metadata?.details,
+        ip_address: event.ip_address,
+        device_info: event.device_info,
         timestamp: event.created_at,
         created_at: event.created_at,
       };

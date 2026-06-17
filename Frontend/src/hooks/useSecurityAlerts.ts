@@ -109,7 +109,7 @@ export function useSecurityAlerts(filters: AlertFilterOptions): UseSecurityAlert
 
   // Subscribe to real-time updates
   useEffect(() => {
-    let unsubscribe: () => void = () => {};
+    let unsubscribe: (() => void) | null = null;
 
     try {
       unsubscribe = subscribeToSecurityAlerts((newAlert) => {
@@ -121,7 +121,9 @@ export function useSecurityAlerts(filters: AlertFilterOptions): UseSecurityAlert
     }
 
     return () => {
-      unsubscribe();
+      if (typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
     };
   }, []);
 

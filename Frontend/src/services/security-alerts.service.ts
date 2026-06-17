@@ -302,32 +302,40 @@ export async function resolveAlert(
   }
 }
 
-export async function subscribeToSecurityAlerts(
+export function subscribeToSecurityAlerts(
   callback: (alert: SecurityAlert) => void
-): Promise<() => void> {
+): () => void {
   try {
     const subscription = supabase
-      .from('security_events')
-      .on('*', (payload: any) => {
-        if (payload.new) {
-          const alert: SecurityAlert = {
-            id: payload.new.id,
-            alert_type: getAlertType(payload.new.category, payload.new.action),
-            severity: payload.new.severity,
-            title: getAlertTitle(payload.new.category, payload.new.action),
-            description: payload.new.event_message,
-            user_id: payload.new.user_id,
-            ip_address: payload.new.metadata?.ip_address,
-            created_at: payload.new.created_at,
-            metadata: payload.new.metadata,
-          };
-          callback(alert);
+      .channel('security_events')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'security_events',
+        },
+        (payload: any) => {
+          if (payload.new) {
+            const alert: SecurityAlert = {
+              id: payload.new.id,
+              alert_type: getAlertType(payload.new.category, payload.new.action),
+              severity: payload.new.severity,
+              title: getAlertTitle(payload.new.category, payload.new.action),
+              description: payload.new.event_message,
+              user_id: payload.new.user_id,
+              ip_address: payload.new.metadata?.ip_address,
+              created_at: payload.new.created_at,
+              metadata: payload.new.metadata,
+            };
+            callback(alert);
+          }
         }
-      })
+      )
       .subscribe();
 
     return () => {
-      subscription.unsubscribe();
+      subscription?.unsubscribe?.();
     };
   } catch (error) {
     console.error('Error subscribing to alerts:', error);

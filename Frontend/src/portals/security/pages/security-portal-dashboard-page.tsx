@@ -39,19 +39,19 @@ const SECURITY_MODULES = [
   {
     id: "prompt-security",
     label: "Prompt Security",
-    path: "/security/prompt-security-monitoring",
+    path: "/security/prompt-security",
     icon: MessageSquare,
     color: "purple",
   },
   {
     id: "file-upload",
     label: "File Upload Security",
-    path: "/security/file-upload-security-monitoring",
+    path: "/security/file-upload-security",
     icon: Upload,
     color: "cyan",
   },
   { id: "rate-limit", label: "Rate Limit Monitoring", path: "/security/rate-limit-monitoring", icon: Zap, color: "amber" },
-  { id: "api-security", label: "API Security", path: "/security/api-security-monitoring", icon: Shield, color: "blue" },
+  { id: "api-security", label: "API Security", path: "/security/api-security", icon: Shield, color: "blue" },
   { id: "ai-cost", label: "AI Cost Monitoring", path: "/security/ai-cost-monitoring", icon: TrendingUp, color: "green" },
   { id: "user-risk", label: "User Risk Scoring", path: "/security/user-risk-scoring", icon: AlertTriangle, color: "orange" },
   {
@@ -64,7 +64,7 @@ const SECURITY_MODULES = [
   {
     id: "admin-activity",
     label: "Admin Activity",
-    path: "/security/admin-activity-monitoring",
+    path: "/security/admin-activity",
     icon: Activity,
     color: "indigo",
   },
