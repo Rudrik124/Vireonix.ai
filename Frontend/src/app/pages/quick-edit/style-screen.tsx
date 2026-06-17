@@ -20,6 +20,7 @@ import {
   Settings,
   Layers,
   ChevronRight,
+  ChevronLeft,
   Info,
   CheckCircle2,
   Zap,
@@ -2350,6 +2351,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
   // -- State Management --
   const [selectedStyle, setSelectedStyle] = useState("youtube");
   const [aspectRatio, setAspectRatio] = useState('16:9');
+  const [isFormatMenuOpen, setIsFormatMenuOpen] = useState(false);
   const [isCustomFrameOpen, setIsCustomFrameOpen] = useState(false);
   const [customFrame, setCustomFrame] = useState({ width: 1920, height: 1080 });
   const [fps, setFps] = useState(60);
@@ -2387,8 +2389,8 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
     }
     setActiveTool(null);
   };
-
   const [mediaItems, setMediaItems] = useState<Array<{ id: string, file: File | null, preview: string, type: 'video' | 'image', duration: number }>>([]);
+  const [isMediaPoolVisible, setIsMediaPoolVisible] = useState(true);
   const [activePreviewId, setActivePreviewId] = useState<string | null>(null);
   const [audioTracks, setAudioTracks] = useState<Array<{ id: string, name: string, type: 'extracted' | 'direct', file?: File }>>([]);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
@@ -3816,13 +3818,13 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
   // -- Effects --
   useEffect(() => {
     const style = editingStyles.find(s => s.id === selectedStyle);
-    if (style && !isCustomFrameOpen) {
+    if (style) {
       setAspectRatio(style.ratio);
       // Auto-set standard FPS based on style if needed
       if (style.id === 'youtube') setFps(60);
       else setFps(30);
     }
-  }, [selectedStyle, isCustomFrameOpen]);
+  }, [selectedStyle]);
 
   const getRatioValue = () => {
     if (aspectRatio === '16:9') return 16 / 9;
@@ -5208,13 +5210,28 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
 
           </section>
 
-          {/* Right Column: Media Pool */}
-          <aside className="w-[280px] flex-none flex flex-col bg-[#0B1020]/40 border-l border-white/10 backdrop-blur-md overflow-hidden select-none">
-            <div className="p-4 border-b border-white/5 bg-black/20">
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">Media Pool</span>
-            </div>
+          {/* Toggle Media Pool Button */}
+          <div className="relative flex items-center z-50" style={{ width: 0 }}>
+            <button
+              onClick={() => setIsMediaPoolVisible(!isMediaPoolVisible)}
+              className="absolute right-0 w-6 h-12 bg-[#0B1020]/90 border border-white/10 border-r-0 rounded-l-md flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
+            >
+              {isMediaPoolVisible ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+            </button>
+          </div>
 
-            <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+          {/* Right Column: Media Pool */}
+          <motion.aside
+            initial={false}
+            animate={{ width: isMediaPoolVisible ? 280 : 0, opacity: isMediaPoolVisible ? 1 : 0 }}
+            className="flex-none flex flex-col bg-[#0B1020]/40 border-l border-white/10 backdrop-blur-md overflow-hidden select-none"
+          >
+            <div className="w-[280px] h-full flex flex-col">
+              <div className="p-4 border-b border-white/5 bg-black/20">
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">Media Pool</span>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
               <div className="flex flex-col gap-3">
                 {mediaItems.map((item, i) => (
                   <div
@@ -5273,7 +5290,8 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                 />
               </div>
             </div>
-          </aside>
+            </div>
+          </motion.aside>
 
         </div>
 
@@ -5338,12 +5356,48 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
           </button>
         </div>
 
-        <div className="flex items-center">
-          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/5 text-slate-300 hover:bg-white/10 transition-all font-bold text-[9px] uppercase tracking-wider">
+        <div className="flex items-center relative">
+          <button 
+            onClick={() => setIsFormatMenuOpen(!isFormatMenuOpen)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/5 text-slate-300 hover:bg-white/10 transition-all font-bold text-[9px] uppercase tracking-wider"
+          >
             <Smartphone className="w-3.5 h-3.5 text-fuchsia-400" />
             <span>Format: {aspectRatio}</span>
-            <ChevronRight className="w-3 h-3 text-slate-500" />
+            <ChevronRight className={`w-3 h-3 text-slate-500 transition-transform ${isFormatMenuOpen ? '-rotate-90' : ''}`} />
           </button>
+          
+          {isFormatMenuOpen && (
+            <>
+              {/* Invisible overlay to close on click outside */}
+              <div 
+                className="fixed inset-0 z-40" 
+                onClick={() => setIsFormatMenuOpen(false)} 
+              />
+              <div className="absolute bottom-full left-0 mb-2 w-48 bg-[#0B1020]/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden flex flex-col py-1">
+                {[
+                  { id: '16:9', label: 'YouTube (16:9)', icon: Youtube },
+                  { id: '9:16', label: 'Instagram (9:16)', icon: Instagram },
+                  { id: '1:1', label: 'Square (1:1)', icon: Square },
+                  { id: '4:3', label: 'Classic (4:3)', icon: Monitor },
+                  { id: '21:9', label: 'Cinematic (21:9)', icon: Film },
+                  { id: 'Custom', label: 'Custom Frame', icon: Maximize2 }
+                ].map((fmt) => (
+                  <button
+                    key={fmt.id}
+                    onClick={() => {
+                      setAspectRatio(fmt.id);
+                      setIsFormatMenuOpen(false);
+                      if (fmt.id === 'Custom') setIsCustomFrameOpen(true);
+                    }}
+                    className={`flex items-center gap-3 px-3 py-2 text-[10px] font-black uppercase tracking-widest transition-colors w-full text-left ${aspectRatio === fmt.id ? 'bg-purple-500/20 text-purple-300' : 'text-slate-300 hover:bg-white/10 hover:text-white'}`}
+                  >
+                    <fmt.icon className="w-4 h-4 opacity-70" />
+                    {fmt.label}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
         </div>
 
         <div className="flex items-center gap-3">
@@ -5389,6 +5443,50 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
         onClose={() => setIsMusicPickerOpen(false)}
         videoDuration={Math.max(...mediaItems.map(m => m.duration), 10)}
       />
+
+      {/* Custom Frame Dialog */}
+      <Dialog open={isCustomFrameOpen} onOpenChange={setIsCustomFrameOpen}>
+        <DialogContent className="bg-[#0B1020] border-white/10 text-slate-200">
+          <DialogHeader>
+            <DialogTitle>Custom Frame Size</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4 py-4">
+            <div className="space-y-2">
+              <Label className="text-xs font-bold uppercase tracking-wider text-slate-400">Width (px)</Label>
+              <input
+                type="number"
+                value={customFrame.width}
+                onChange={(e) => setCustomFrame(prev => ({ ...prev, width: Number(e.target.value) || 0 }))}
+                className="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-purple-500 text-white"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-bold uppercase tracking-wider text-slate-400">Height (px)</Label>
+              <input
+                type="number"
+                value={customFrame.height}
+                onChange={(e) => setCustomFrame(prev => ({ ...prev, height: Number(e.target.value) || 0 }))}
+                className="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-purple-500 text-white"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-3 mt-4">
+            <Button variant="ghost" onClick={() => setIsCustomFrameOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              className="bg-purple-600 hover:bg-purple-700 text-white"
+              onClick={() => {
+                setAspectRatio('Custom');
+                setIsCustomFrameOpen(false);
+              }}
+            >
+              Apply
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
 
       {/* Custom Styles overrides */}
       <style dangerouslySetInnerHTML={{
