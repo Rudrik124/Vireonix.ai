@@ -56,37 +56,25 @@ import {
 type DashboardIcon = ComponentType<{ className?: string }>;
 
 const revenueData = [
-  { name: "Mon", revenue: 4000 },
-  { name: "Tue", revenue: 3000 },
-  { name: "Wed", revenue: 5000 },
-  { name: "Thu", revenue: 8000 },
-  { name: "Fri", revenue: 6000 },
-  { name: "Sat", revenue: 9000 },
-  { name: "Sun", revenue: 12000 },
+  { name: "Mon", revenue: 0 },
+  { name: "Tue", revenue: 0 },
+  { name: "Wed", revenue: 0 },
+  { name: "Thu", revenue: 0 },
+  { name: "Fri", revenue: 0 },
+  { name: "Sat", revenue: 0 },
+  { name: "Sun", revenue: 0 },
 ];
 
-const fakeActivity = [
-  { id: 1, text: "User generated YouTube Short", time: "Just now" },
-  { id: 2, text: "AI edited reel", time: "2m ago" },
-  { id: 3, text: "Credit purchased", time: "5m ago" },
-  { id: 4, text: "Export completed", time: "12m ago" },
-  { id: 5, text: "New signup", time: "15m ago" },
-];
+const fakeActivity: any[] = [];
 
-const fakeJobs = [
-  { id: 1, name: "Video Generated", status: "Completed", time: "1m ago" },
-  { id: 2, name: "AI Manual Edit", status: "Completed", time: "5m ago" },
-  { id: 3, name: "Image to Video", status: "Completed", time: "14m ago" },
-  { id: 4, name: "Subtitle Generated", status: "Completed", time: "22m ago" },
-  { id: 5, name: "Export Finished", status: "Completed", time: "30m ago" },
-];
+const fakeJobs: any[] = [];
 
 const worldRegions = [
-  { name: "India", activity: 85 },
-  { name: "USA", activity: 92 },
-  { name: "UK", activity: 64 },
-  { name: "Germany", activity: 45 },
-  { name: "Japan", activity: 78 },
+  { name: "India", activity: 0 },
+  { name: "USA", activity: 0 },
+  { name: "UK", activity: 0 },
+  { name: "Germany", activity: 0 },
+  { name: "Japan", activity: 0 },
 ];
 
 const notifications = [
@@ -229,10 +217,10 @@ export function DeveloperDashboardPage() {
   ];
 
   const statCards = [
-    { label: "Users", value: stats?.totalUsers?.toLocaleString() || "0", icon: Users, growth: "+12.5%" },
-    { label: "AI Requests", value: stats?.aiRequests?.toLocaleString() || "0", icon: Zap, growth: "+24.1%" },
-    { label: "Credits", value: stats?.creditsConsumed?.toLocaleString() || "0", icon: Activity, growth: "-4.2%" },
-    { label: "Revenue", value: `$${stats?.revenue?.toLocaleString() || "0"}`, icon: Wallet, growth: "+18.2%" },
+    { label: "Users", value: stats?.totalUsers?.toLocaleString() || "0", icon: Users, growth: "+0%" },
+    { label: "AI Requests", value: stats?.aiRequests?.toLocaleString() || "0", icon: Zap, growth: "+0%" },
+    { label: "Credits", value: stats?.creditsConsumed?.toLocaleString() || "0", icon: Activity, growth: "0%" },
+    { label: "Revenue", value: `$${stats?.revenue?.toLocaleString() || "0"}`, icon: Wallet, growth: "+0%" },
   ];
 
   return (
@@ -272,20 +260,6 @@ export function DeveloperDashboardPage() {
             </div>
 
             <div className="flex items-center gap-4">
-              <button 
-                onClick={() => handleNavigate("/developer/dashboard")}
-                className="relative p-2 text-fuchsia-400 hover:text-fuchsia-300 transition-colors rounded-full hover:bg-fuchsia-500/10 flex items-center gap-2"
-                title="Wallet"
-              >
-                <Wallet className="h-5 w-5" />
-              </button>
-
-              <button className="relative p-2 text-slate-400 hover:text-white transition-colors rounded-full hover:bg-white/5">
-                <Bell className="h-5 w-5" />
-                <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-indigo-500 animate-pulse"></span>
-              </button>
-              
-              <div className="h-4 w-px bg-white/10 mx-1"></div>
 
               <div className="relative">
                 <button
@@ -376,10 +350,10 @@ export function DeveloperDashboardPage() {
 
               <div className="flex flex-wrap gap-4 md:gap-8">
                 {[
-                  { l: "Users Online", v: "1,248" },
-                  { l: "AI Requests Today", v: "48.2K" },
-                  { l: "Revenue Today", v: "$4,290" },
-                  { l: "Credits Remaining", v: "842K" }
+                  { l: "Users Online", v: "0" },
+                  { l: "AI Requests Today", v: "0" },
+                  { l: "Revenue Today", v: "$0" },
+                  { l: "Credits Remaining", v: "0" }
                 ].map((m, i) => (
                   <motion.div 
                     initial={hasVisited ? false : { opacity: 0, y: 10 }}
@@ -740,15 +714,15 @@ export function DeveloperDashboardPage() {
                 </div>
                 <div className="flex justify-between text-sm border-b border-white/5 pb-2">
                   <span className="text-slate-400">Projects</span>
-                  <span className="text-slate-200">12</span>
+                  <span className="text-slate-200">0</span>
                 </div>
                 <div className="flex justify-between text-sm border-b border-white/5 pb-2">
                   <span className="text-slate-400">Commits</span>
-                  <span className="text-slate-200">4,862</span>
+                  <span className="text-slate-200">0</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-400">AI Managed</span>
-                  <span className="text-slate-200 font-semibold text-indigo-400">2.8M</span>
+                  <span className="text-slate-200 font-semibold text-indigo-400">0</span>
                 </div>
               </div>
             </motion.div>
@@ -809,8 +783,6 @@ export function DeveloperDashboardPage() {
           <div className="max-w-[1600px] mx-auto px-6 py-8 flex flex-col md:flex-row items-center justify-between gap-4">
             <div>
               <p className="font-bold text-white text-sm">VEYTRIX.AI</p>
-              <p className="text-xs text-slate-500 mt-1">Designed & Developed by Manjith Singh</p>
-              <p className="text-xs text-slate-500">Founder & Lead Developer</p>
             </div>
             <div className="text-center md:text-right">
               <p className="text-xs text-slate-500">© 2026 All Rights Reserved</p>

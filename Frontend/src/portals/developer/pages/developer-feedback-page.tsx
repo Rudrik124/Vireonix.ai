@@ -299,10 +299,10 @@ export function DeveloperFeedbackPage() {
             {/* Feedback Summary Cards */}
             <div className="lg:col-span-8 grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
-                { label: "Total Feedback", value: 1248, icon: MessageCircle, color: "blue" },
-                { label: "Feature Requests", value: 328, icon: Lightbulb, color: "cyan" },
-                { label: "Bug Reports", value: 142, icon: Bug, color: "rose" },
-                { label: "Satisfaction", value: 94, suffix: "%", icon: Star, color: "amber" },
+                { label: "Total Feedback", value: 0, icon: MessageCircle, color: "blue" },
+                { label: "Feature Requests", value: 0, icon: Lightbulb, color: "cyan" },
+                { label: "Bug Reports", value: 0, icon: Bug, color: "rose" },
+                { label: "Satisfaction", value: 0, suffix: "%", icon: Star, color: "amber" },
               ].map((stat, idx) => (
                 <motion.div key={idx} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.1 }} className="group relative overflow-hidden flex flex-col p-6 rounded-[24px] bg-[rgba(8,12,24,0.68)] backdrop-blur-[24px] border border-white/[0.06] shadow-[0_12px_40px_rgba(0,0,0,0.35)] transition-all duration-300 hover:-translate-y-1 hover:border-white/20">
                   <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -325,10 +325,10 @@ export function DeveloperFeedbackPage() {
                </h3>
                <div className="grid grid-cols-2 gap-4">
                  {[
-                   { label: "Avg Rating", value: 4.9, decimals: 1 },
-                   { label: "Feature Votes", value: 8.2, suffix: "K", decimals: 1 },
-                   { label: "Discussions", value: 426 },
-                   { label: "Response Time", value: 2.3, suffix: "h", decimals: 1 }
+                   { label: "Avg Rating", value: 0, decimals: 1 },
+                   { label: "Feature Votes", value: 0, suffix: "", decimals: 1 },
+                   { label: "Discussions", value: 0 },
+                   { label: "Response Time", value: 0, suffix: "h", decimals: 1 }
                  ].map((snap, i) => (
                    <div key={i} className="bg-white/[0.02] border border-white/[0.05] p-4 rounded-[16px]">
                      <p className="text-xl font-black text-white mb-1"><AnimatedNumber value={snap.value} suffix={snap.suffix} decimals={snap.decimals} /></p>

@@ -170,12 +170,25 @@ const ParticleBackground = memo(() => {
 export function AIGenerativeVideoPage() {
   const navigate = useNavigate();
   const redirectTo = useRedirectParam();
-  const { isLoggedIn, session, logout } = useAuth();
+  const { isLoggedIn, session, logout, profile } = useAuth();
   const { isDeveloperTestMode, usageContext } = usePortalTestingContext();
   
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isAIAssistantOpen, setIsAIAssistantOpen] = useState(false);
   const userName = session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || "User";
+  const [recentGenerations, setRecentGenerations] = useState<HistoryItem[]>([]);
+
+  const loadRecentGenerations = () => {
+    try {
+      const saved = localStorage.getItem('veytrix_history');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        const filtered = parsed.filter((item: HistoryItem) => item.tool === 'forge');
+        setRecentGenerations(filtered.slice(0, 4));
+      }
+    } catch (e) {}
+  };
   
   const [prompt, setPrompt] = useState("");
   const [negativePrompt, setNegativePrompt] = useState("");
@@ -234,6 +247,7 @@ export function AIGenerativeVideoPage() {
   useEffect(() => {
     setMounted(true);
     setErrorMessage("");
+    loadRecentGenerations();
   }, []);
 
   const handleSurpriseMe = () => {
@@ -287,6 +301,8 @@ export function AIGenerativeVideoPage() {
           watermark
         }
       });
+      
+      loadRecentGenerations();
 
       localStorage.setItem("generatedVideo", data.video);
       localStorage.removeItem("generatedVideoError");
@@ -348,18 +364,10 @@ export function AIGenerativeVideoPage() {
 
         <div className="flex flex-wrap items-center justify-center sm:justify-end gap-3 w-full sm:w-auto">
           <div className="hidden lg:flex items-center gap-3 bg-white/5 border border-white/10 rounded-full px-4 py-1.5 mr-2">
-            <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-400"><span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> GPU Online</span>
-            <span className="w-px h-3 bg-white/20 mx-1" />
-            <span className="flex items-center gap-1.5 text-xs font-bold text-amber-400"><Battery className="w-3.5 h-3.5" /> 450 Credits</span>
+            <span className="flex items-center gap-1.5 text-xs font-bold text-amber-400"><Battery className="w-3.5 h-3.5" /> {profile?.credits?.userCredits ?? 0} Credits</span>
           </div>
 
-          <button className="p-2 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-colors hidden sm:block">
-            <Moon className="w-4 h-4 text-slate-300" />
-          </button>
-          
-          <button className="p-2 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-colors hidden sm:block">
-            <Bell className="w-4 h-4 text-slate-300" />
-          </button>
+
 
           <button onClick={() => setIsHistoryOpen(true)} className="flex items-center gap-2 bg-white/5 hover:bg-white/10 px-4 py-2 rounded-full border border-white/10 transition-all text-slate-300 hover:text-white shadow-lg">
             <History className="w-4 h-4" />
@@ -683,94 +691,93 @@ export function AIGenerativeVideoPage() {
           </div>
         </div>
 
-        {/* GENERATION QUEUE */}
-        <div className="mb-12">
-          <h3 className="text-sm font-black uppercase tracking-widest text-slate-300 mb-6 flex items-center gap-2"><Activity className="w-4 h-4" /> Generation Queue</h3>
-          <div className="bg-[#10162A]/60 border border-white/5 rounded-3xl overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm text-slate-400">
-                <thead className="text-[10px] uppercase tracking-widest bg-white/5 text-slate-500">
-                  <tr>
-                    <th className="px-6 py-4">Prompt</th>
-                    <th className="px-6 py-4">Status</th>
-                    <th className="px-6 py-4">Progress</th>
-                    <th className="px-6 py-4">ETA</th>
-                    <th className="px-6 py-4 text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {dummyQueue.map(q => (
-                    <tr key={q.id} className="hover:bg-white/5 transition-colors">
-                      <td className="px-6 py-4 font-medium text-slate-200 truncate max-w-[200px]">{q.prompt}</td>
-                      <td className="px-6 py-4">
-                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${q.status === 'Generating' ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' : 'bg-slate-500/20 text-slate-400 border border-slate-500/30'}`}>
-                          {q.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 w-48">
-                        <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
-                          <motion.div initial={{ width: 0 }} animate={{ width: `${q.progress}%` }} className="h-full bg-gradient-to-r from-purple-500 to-fuchsia-500 rounded-full" />
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 font-mono text-xs">{q.eta}</td>
-                      <td className="px-6 py-4 text-right">
-                        <button className="p-2 hover:bg-white/10 rounded-lg transition-colors text-slate-400 hover:text-red-400"><X className="w-4 h-4" /></button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
         {/* RECENT GENERATIONS */}
         <div className="mb-20">
           <h3 className="text-sm font-black uppercase tracking-widest text-slate-300 mb-6 flex items-center gap-2"><History className="w-4 h-4" /> Recent Generations</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {dummyRecent.map(r => (
-              <div key={r.id} className="bg-[#10162A]/60 border border-white/5 rounded-2xl overflow-hidden group hover:border-purple-500/30 transition-all shadow-lg hover:shadow-[0_0_30px_rgba(168,85,247,0.1)]">
-                <div className="relative aspect-video overflow-hidden bg-black/50">
-                  <img src={r.thumbnail} alt="Thumbnail" className="w-full h-full object-cover opacity-70 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500" />
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 backdrop-blur-sm">
-                    <button className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center hover:scale-110 transition-transform"><Play className="w-5 h-5 ml-1" /></button>
+          {recentGenerations.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 px-4 bg-[#10162A]/60 border border-white/5 rounded-3xl opacity-60">
+              <History className="w-12 h-12 text-slate-500 mb-4" />
+              <p className="text-sm font-black uppercase tracking-widest text-slate-400">No recent creations</p>
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-2">Start generating to see your history here</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {recentGenerations.map(r => (
+                <div key={r.id} onClick={() => handleHistorySelect(r)} className="cursor-pointer bg-[#10162A]/60 border border-white/5 rounded-2xl overflow-hidden group hover:border-purple-500/30 transition-all shadow-lg hover:shadow-[0_0_30px_rgba(168,85,247,0.1)] flex flex-col">
+                  <div className="relative aspect-video overflow-hidden bg-black/80 flex items-center justify-center">
+                    <Video className="w-8 h-8 text-white/20 group-hover:scale-110 transition-transform duration-500" />
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 backdrop-blur-sm">
+                      <div className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center hover:scale-110 transition-transform"><Play className="w-5 h-5 ml-1" /></div>
+                    </div>
                   </div>
-                  <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button className="p-1.5 bg-black/60 rounded text-white hover:bg-purple-500 transition-colors"><Download className="w-4 h-4" /></button>
-                    <button className="p-1.5 bg-black/60 rounded text-white hover:bg-purple-500 transition-colors"><Heart className="w-4 h-4" /></button>
+                  <div className="p-4 flex-1 flex flex-col">
+                    <p className="text-sm font-medium text-slate-200 line-clamp-1 mb-2 flex-1">{r.title}</p>
+                    <div className="flex justify-between items-center text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-auto">
+                      <span>{r.config?.quality || '1080p'} • {r.config?.duration || '5'}s</span>
+                      <span>{new Date(r.timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+                    </div>
                   </div>
                 </div>
-                <div className="p-4">
-                  <p className="text-sm font-medium text-slate-200 line-clamp-1 mb-2">{r.prompt}</p>
-                  <div className="flex justify-between items-center text-[10px] text-slate-500 font-bold uppercase tracking-widest">
-                    <span>{r.resolution} • {r.duration}</span>
-                    <span>{r.created}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
       </div>
 
       {/* Floating AI Assistant */}
       <div className="fixed bottom-6 right-6 z-50 hidden lg:block">
-        <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="bg-[#10162A]/90 backdrop-blur-xl border border-fuchsia-500/30 rounded-2xl p-4 shadow-[0_10px_40px_rgba(0,0,0,0.5)] w-72">
-          <div className="flex items-center gap-2 mb-3 pb-3 border-b border-white/10">
-            <Cpu className="w-5 h-5 text-fuchsia-400" />
-            <span className="text-xs font-black uppercase tracking-widest text-white">AI Assistant</span>
-          </div>
-          <p className="text-xs text-slate-400 mb-3">Try enhancing your prompt with:</p>
-          <div className="space-y-2">
-            <button onClick={() => setPrompt(p => p + " cinematic lighting")} className="w-full text-left px-3 py-2 text-[11px] font-medium text-fuchsia-200 bg-fuchsia-500/10 hover:bg-fuchsia-500/20 rounded-lg transition-colors border border-fuchsia-500/20">
-              + Add cinematic lighting
-            </button>
-            <button onClick={() => setPrompt(p => p + " 8k resolution")} className="w-full text-left px-3 py-2 text-[11px] font-medium text-fuchsia-200 bg-fuchsia-500/10 hover:bg-fuchsia-500/20 rounded-lg transition-colors border border-fuchsia-500/20">
-              + Add 8k resolution
-            </button>
-          </div>
-        </motion.div>
+        <AnimatePresence>
+          {isAIAssistantOpen ? (
+            <motion.div 
+              key="expanded"
+              initial={{ opacity: 0, scale: 0.9, y: 20 }} 
+              animate={{ opacity: 1, scale: 1, y: 0 }} 
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ duration: 0.2 }}
+              className="bg-[#10162A]/90 backdrop-blur-xl border border-fuchsia-500/30 rounded-2xl p-4 shadow-[0_10px_40px_rgba(0,0,0,0.5)] w-72 origin-bottom-right relative"
+            >
+              <button 
+                onClick={() => setIsAIAssistantOpen(false)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+              <div className="flex items-center gap-2 mb-3 pb-3 border-b border-white/10 pr-6">
+                <Sparkles className="w-5 h-5 text-fuchsia-400" />
+                <span className="text-xs font-black uppercase tracking-widest text-white">AI Assistant</span>
+              </div>
+              <p className="text-xs text-slate-400 mb-3">Try enhancing your prompt with:</p>
+              <div className="space-y-2">
+                <button onClick={() => { setPrompt(p => p + " cinematic lighting"); setIsAIAssistantOpen(false); }} className="w-full text-left px-3 py-2 text-[11px] font-medium text-fuchsia-200 bg-fuchsia-500/10 hover:bg-fuchsia-500/20 rounded-lg transition-colors border border-fuchsia-500/20">
+                  + Add cinematic lighting
+                </button>
+                <button onClick={() => { setPrompt(p => p + " 8k resolution"); setIsAIAssistantOpen(false); }} className="w-full text-left px-3 py-2 text-[11px] font-medium text-fuchsia-200 bg-fuchsia-500/10 hover:bg-fuchsia-500/20 rounded-lg transition-colors border border-fuchsia-500/20">
+                  + Add 8k resolution
+                </button>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.button 
+              key="collapsed"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              whileHover={{ scale: 1.1, rotate: 10 }}
+              whileTap={{ scale: 0.95 }}
+              transition={{ duration: 0.3, type: "spring", stiffness: 200, damping: 15 }}
+              onClick={() => setIsAIAssistantOpen(true)}
+              className="relative w-14 h-14 bg-fuchsia-500/20 backdrop-blur-xl border border-fuchsia-400/30 text-fuchsia-300 rounded-full shadow-[0_0_25px_rgba(168,85,247,0.4)] flex items-center justify-center overflow-hidden group cursor-pointer"
+            >
+              <motion.div 
+                animate={{ opacity: [0.4, 0.8, 0.4], scale: [0.9, 1.1, 0.9] }} 
+                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                className="absolute inset-0 bg-gradient-to-tr from-fuchsia-600/50 to-purple-600/50 rounded-full blur-md"
+              />
+              <Sparkles className="w-6 h-6 relative z-10 drop-shadow-[0_0_10px_rgba(168,85,247,0.8)]" />
+            </motion.button>
+          )}
+        </AnimatePresence>
       </div>
 
       <LoadingModal state={loadingState} message={loadingMessage} onDismiss={() => { setLoadingState(null); setErrorMessage(""); }} />

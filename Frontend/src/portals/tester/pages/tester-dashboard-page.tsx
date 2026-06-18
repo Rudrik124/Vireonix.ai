@@ -332,8 +332,6 @@ export function TesterDashboardPage() {
           <div className="w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent mb-6" />
           <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-600 space-y-2">
             <p className="text-slate-500">VEYTRIX.AI TESTER PORTAL</p>
-            <p>Built by <span className="text-purple-400/70">Manjith Singh</span> • Founder & Lead Developer</p>
-            <p className="font-mono text-cyan-600/50">Sandbox Build v2.1</p>
           </div>
         </footer>
 

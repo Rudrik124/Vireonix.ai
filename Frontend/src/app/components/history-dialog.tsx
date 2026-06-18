@@ -22,7 +22,7 @@ import { Button } from "./ui/button";
 export interface HistoryItem {
   id: string;
   title: string;
-  tool: 'quick-edit' | 'reference-video' | 'forge' | 'avatar';
+  tool: 'quick-edit' | 'reference-video' | 'forge' | 'avatar' | 'image-to-video';
   timestamp: number;
   preview?: string;
   config: any;
@@ -38,8 +38,9 @@ interface HistoryDialogProps {
 const toolConfig = {
   'quick-edit': { label: 'Quick AI Studio', icon: Zap, color: 'text-amber-400', bg: 'bg-amber-400/10' },
   'reference-video': { label: 'Reference Video Studio', icon: Video, color: 'text-purple-400', bg: 'bg-purple-400/10' },
-  'forge': { label: 'Video Forge Studio', icon: Sparkles, color: 'text-fuchsia-400', bg: 'bg-fuchsia-400/10' },
-  'avatar': { label: 'Avatar Pro Studio', icon: ImageIcon, color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
+  'forge': { label: 'AI Video Generation', icon: Sparkles, color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
+  'avatar': { label: 'AI Avatar Studio', icon: ImageIcon, color: 'text-blue-400', bg: 'bg-blue-400/10' },
+  'image-to-video': { label: 'Direct Image to Video', icon: ImageIcon, color: 'text-blue-400', bg: 'bg-blue-400/10' },
 };
 
 export function HistoryDialog({ open, onOpenChange, onSelect }: HistoryDialogProps) {

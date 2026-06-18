@@ -98,48 +98,7 @@ export function TesterProfilePage() {
   );
   const [togglingTestingMode, setTogglingTestingMode] = useState(false);
 
-  const activityLog: ActivityLog[] = [
-    {
-      id: "ACT-001",
-      action: "Bug Report Submitted",
-      timestamp: "2 hours ago",
-      details: "Video generation timeout issue",
-      icon: Bug,
-      color: "text-red-400",
-    },
-    {
-      id: "ACT-002",
-      action: "Test Video Generated",
-      timestamp: "Today",
-      details: "4K cinematic preview",
-      icon: Video,
-      color: "text-purple-400",
-    },
-    {
-      id: "ACT-003",
-      action: "Test Case Passed",
-      timestamp: "Yesterday",
-      details: "Advanced parameter validation",
-      icon: CheckSquare,
-      color: "text-green-400",
-    },
-    {
-      id: "ACT-004",
-      action: "Credits Used",
-      timestamp: "Yesterday",
-      details: "50 credits consumed",
-      icon: Zap,
-      color: "text-yellow-400",
-    },
-    {
-      id: "ACT-005",
-      action: "Login",
-      timestamp: "2 days ago",
-      details: "Chrome Windows",
-      icon: LogIn,
-      color: "text-blue-400",
-    },
-  ];
+  const activityLog: ActivityLog[] = [];
 
   if (isLoading) {
     return (
@@ -221,7 +180,7 @@ export function TesterProfilePage() {
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
             Back to Dashboard
           </button>
-          
+
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
               <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400 mb-2">
@@ -231,7 +190,7 @@ export function TesterProfilePage() {
                 Manage your tester account, permissions and activity.
               </p>
             </div>
-            
+
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-2 rounded-full backdrop-blur-md">
                 <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
@@ -256,8 +215,8 @@ export function TesterProfilePage() {
             <GlassCard delay={0.1}>
               <div className="p-6 flex flex-col items-center relative">
                 <div className="absolute inset-0 bg-gradient-to-b from-purple-500/10 to-transparent opacity-50"></div>
-                
-                <motion.div 
+
+                <motion.div
                   className="w-28 h-28 rounded-full bg-gradient-to-br from-purple-500 to-blue-600 p-[2px] mb-6 relative z-10"
                   whileHover={{ scale: 1.05 }}
                 >
@@ -298,11 +257,10 @@ export function TesterProfilePage() {
                     <button
                       onClick={handleToggleTestingMode}
                       disabled={togglingTestingMode}
-                      className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold transition-all ${
-                        testingModeEnabled 
-                          ? "bg-green-500/20 text-green-400 border border-green-500/30" 
+                      className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold transition-all ${testingModeEnabled
+                          ? "bg-green-500/20 text-green-400 border border-green-500/30"
                           : "bg-white/10 text-slate-400 border border-white/10 hover:bg-white/20"
-                      }`}
+                        }`}
                     >
                       <div className={`w-1.5 h-1.5 rounded-full ${testingModeEnabled ? "bg-green-400" : "bg-slate-400"}`} />
                       {testingModeEnabled ? "Enabled" : "Disabled"}
@@ -321,7 +279,7 @@ export function TesterProfilePage() {
                       <span className="text-sm font-medium text-white">{timezone}</span>
                     </div>
                   </div>
-                  
+
                   <div className="p-3 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Clock className="w-4 h-4 text-slate-400" />
@@ -329,7 +287,7 @@ export function TesterProfilePage() {
                     </div>
                     <span className="text-xs font-medium text-white">2 hours ago</span>
                   </div>
-                  
+
                   <div className="p-4 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-center">
                     <p className="text-xs text-purple-300 leading-relaxed">
                       Quality Assurance Tester - Responsible for executing test scenarios and verifying generative AI models.
@@ -344,14 +302,14 @@ export function TesterProfilePage() {
                 <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                   <Video className="w-5 h-5 text-blue-400" />
                 </div>
-                <span className="text-3xl font-bold text-white mb-1">1,204</span>
+                <span className="text-3xl font-bold text-white mb-1">0</span>
                 <span className="text-xs text-slate-400">Videos Tested</span>
               </GlassCard>
               <GlassCard delay={0.3} className="p-5 flex flex-col items-center justify-center text-center group cursor-default">
                 <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                   <Bug className="w-5 h-5 text-red-400" />
                 </div>
-                <span className="text-3xl font-bold text-white mb-1">87</span>
+                <span className="text-3xl font-bold text-white mb-1">0</span>
                 <span className="text-xs text-slate-400">Bug Reports</span>
               </GlassCard>
             </div>
@@ -359,7 +317,7 @@ export function TesterProfilePage() {
 
           {/* MAIN CONTENT AREA */}
           <div className="lg:col-span-2 space-y-8">
-            
+
             {/* RIGHT PROFILE SETTINGS CARD */}
             <GlassCard delay={0.2} className="p-0">
               <div className="p-6 border-b border-white/10">
@@ -374,10 +332,10 @@ export function TesterProfilePage() {
                     <label className="text-sm font-medium text-slate-300">Email Address</label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                      <input 
-                        type="email" 
-                        value={profile.email} 
-                        readOnly 
+                      <input
+                        type="email"
+                        value={profile.email}
+                        readOnly
                         className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-slate-400 cursor-not-allowed focus:outline-none"
                       />
                     </div>
@@ -386,9 +344,9 @@ export function TesterProfilePage() {
                     <label className="text-sm font-medium text-slate-300">Username</label>
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-medium">@</span>
-                      <input 
-                        type="text" 
-                        defaultValue={profile.name?.toLowerCase().replace(/\s+/g, '') || "tester123"} 
+                      <input
+                        type="text"
+                        defaultValue={profile.name?.toLowerCase().replace(/\s+/g, '') || "tester123"}
                         disabled={!editMode}
                         className={`w-full border rounded-xl py-2.5 pl-9 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-colors ${editMode ? "bg-white/10 border-white/20" : "bg-white/5 border-white/10 opacity-70"}`}
                       />
@@ -397,18 +355,18 @@ export function TesterProfilePage() {
                 </div>
 
                 {editMode && (
-                  <motion.div 
-                    initial={{ opacity: 0, height: 0 }} 
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
                     className="pt-4 flex items-center justify-end gap-3 border-t border-white/10"
                   >
-                    <button 
+                    <button
                       onClick={() => setEditMode(false)}
                       className="px-5 py-2 rounded-full border border-white/10 hover:bg-white/5 text-white transition-colors"
                     >
                       Cancel
                     </button>
-                    <button 
+                    <button
                       onClick={handleSaveProfile}
                       className="flex items-center gap-2 px-6 py-2 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-medium shadow-[0_0_20px_rgba(168,85,247,0.4)] transition-all"
                     >
@@ -426,7 +384,7 @@ export function TesterProfilePage() {
                 <ShieldCheck className="w-5 h-5 text-purple-400" />
                 Access & Permissions
               </h3>
-              
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {[
                   { icon: Bug, title: "Bug Reporting", desc: "Submit and manage bug reports", status: "Granted", color: "green" },
@@ -436,7 +394,7 @@ export function TesterProfilePage() {
                   { icon: Sparkles, title: "4K Beta Testing", desc: "Experimental feature access", status: "Beta", color: "purple" },
                   { icon: Users, title: "Team Management", desc: "Admin only functionality", status: "Restricted", color: "red" },
                 ].map((perm, idx) => (
-                  <motion.div 
+                  <motion.div
                     key={idx}
                     whileHover={{ scale: 1.02, backgroundColor: "rgba(255,255,255,0.08)" }}
                     className="p-4 rounded-2xl bg-white/5 border border-white/10 flex items-start gap-4 transition-colors"
@@ -447,11 +405,10 @@ export function TesterProfilePage() {
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-1">
                         <h4 className="text-white font-medium">{perm.title}</h4>
-                        <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full border ${
-                          perm.status === 'Granted' ? 'bg-green-500/10 text-green-400 border-green-500/20' :
-                          perm.status === 'Beta' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' :
-                          'bg-red-500/10 text-red-400 border-red-500/20'
-                        }`}>
+                        <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full border ${perm.status === 'Granted' ? 'bg-green-500/10 text-green-400 border-green-500/20' :
+                            perm.status === 'Beta' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' :
+                              'bg-red-500/10 text-red-400 border-red-500/20'
+                          }`}>
                           {perm.status}
                         </span>
                       </div>
@@ -478,31 +435,31 @@ export function TesterProfilePage() {
                     <div className="h-full bg-purple-500 w-full"></div>
                   </div>
                 </div>
-                
+
                 <div className="p-4 rounded-2xl bg-gradient-to-br from-white/5 to-white/0 border border-white/10 relative overflow-hidden group">
                   <div className="absolute top-0 right-0 p-3 opacity-20 group-hover:scale-110 transition-transform"><Zap className="w-8 h-8" /></div>
                   <p className="text-xs text-slate-400 mb-1">Used This Month</p>
-                  <p className="text-2xl font-bold text-white">689</p>
+                  <p className="text-2xl font-bold text-white">0</p>
                   <div className="mt-3 h-1 w-full bg-white/10 rounded-full overflow-hidden">
-                    <div className="h-full bg-blue-500 w-[68%]"></div>
+                    <div className="h-full bg-blue-500 w-[0%]"></div>
                   </div>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-gradient-to-br from-white/5 to-white/0 border border-white/10 relative overflow-hidden group">
                   <div className="absolute top-0 right-0 p-3 opacity-20 group-hover:scale-110 transition-transform"><TrendingUp className="w-8 h-8" /></div>
                   <p className="text-xs text-slate-400 mb-1">Weekly Quota</p>
-                  <p className="text-2xl font-bold text-white">500</p>
+                  <p className="text-2xl font-bold text-white">0</p>
                   <div className="mt-3 h-1 w-full bg-white/10 rounded-full overflow-hidden">
-                    <div className="h-full bg-white/30 w-full"></div>
+                    <div className="h-full bg-white/30 w-[0%]"></div>
                   </div>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-gradient-to-br from-white/5 to-white/0 border border-white/10 relative overflow-hidden group">
                   <div className="absolute top-0 right-0 p-3 opacity-20 group-hover:scale-110 transition-transform"><Activity className="w-8 h-8" /></div>
                   <p className="text-xs text-slate-400 mb-1">Remaining</p>
-                  <p className="text-2xl font-bold text-green-400">124</p>
+                  <p className="text-2xl font-bold text-green-400">{profile.credits?.developerCredits || 0}</p>
                   <div className="mt-3 h-1 w-full bg-white/10 rounded-full overflow-hidden">
-                    <div className="h-full bg-green-500 w-[24%]"></div>
+                    <div className="h-full bg-green-500 w-[100%]"></div>
                   </div>
                 </div>
               </div>
@@ -515,14 +472,14 @@ export function TesterProfilePage() {
                   <Clock className="w-5 h-5 text-purple-400" />
                   Recent Activity
                 </h3>
-                
+
                 <div className="relative pl-6 space-y-6 before:absolute before:inset-0 before:left-[11px] before:w-px before:bg-gradient-to-b before:from-purple-500/50 before:to-transparent">
                   {activityLog.map((log, index) => (
-                    <motion.div 
+                    <motion.div
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.6 + (index * 0.1) }}
-                      key={log.id} 
+                      key={log.id}
                       className="relative"
                     >
                       <div className={`absolute -left-8 p-1 rounded-full bg-[#050816] border border-white/10 ${log.color} shadow-[0_0_10px_currentColor] z-10`}>
@@ -546,14 +503,14 @@ export function TesterProfilePage() {
                   <Target className="w-5 h-5 text-purple-400" />
                   Tester Performance
                 </h3>
-                
+
                 <div className="space-y-4">
                   <div className="p-4 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-blue-500/10 text-blue-400 rounded-lg"><CheckSquare className="w-4 h-4" /></div>
                       <span className="text-sm text-slate-300">Tests Completed</span>
                     </div>
-                    <span className="text-lg font-bold text-white">1,402</span>
+                    <span className="text-lg font-bold text-white">0</span>
                   </div>
 
                   <div className="p-4 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between">
@@ -562,9 +519,9 @@ export function TesterProfilePage() {
                       <span className="text-sm text-slate-300">Pass Rate</span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="text-lg font-bold text-white">94%</span>
+                      <span className="text-lg font-bold text-white">0%</span>
                       <div className="w-16 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                        <div className="w-[94%] h-full bg-green-500" />
+                        <div className="w-[0%] h-full bg-green-500" />
                       </div>
                     </div>
                   </div>
@@ -575,9 +532,9 @@ export function TesterProfilePage() {
                       <span className="text-sm text-slate-300">Bug Accuracy</span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="text-lg font-bold text-white">98%</span>
+                      <span className="text-lg font-bold text-white">0%</span>
                       <div className="w-16 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                        <div className="w-[98%] h-full bg-red-500" />
+                        <div className="w-[0%] h-full bg-red-500" />
                       </div>
                     </div>
                   </div>
@@ -587,7 +544,7 @@ export function TesterProfilePage() {
                       <div className="p-2 bg-yellow-500/10 text-yellow-400 rounded-lg"><Clock className="w-4 h-4" /></div>
                       <span className="text-sm text-slate-300">Avg. Review Time</span>
                     </div>
-                    <span className="text-lg font-bold text-white">4.2m</span>
+                    <span className="text-lg font-bold text-white">0m</span>
                   </div>
                 </div>
               </GlassCard>
@@ -599,7 +556,7 @@ export function TesterProfilePage() {
                 <Trophy className="w-5 h-5 text-yellow-400" />
                 Achievements
               </h3>
-              
+
               <div className="flex flex-wrap gap-3">
                 {[
                   { icon: Award, label: "Early Tester", color: "from-purple-500 to-indigo-500" },
@@ -608,7 +565,7 @@ export function TesterProfilePage() {
                   { icon: Zap, label: "Fast Reviewer", color: "from-yellow-500 to-amber-500" },
                   { icon: Star, label: "Top Contributor", color: "from-emerald-500 to-teal-500" },
                 ].map((badge, idx) => (
-                  <motion.div 
+                  <motion.div
                     key={idx}
                     whileHover={{ scale: 1.05 }}
                     className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 shadow-[inset_0_0_20px_rgba(255,255,255,0.02)] cursor-default group"
@@ -667,7 +624,7 @@ export function TesterProfilePage() {
             </GlassCard>
 
             {/* DANGER ZONE */}
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.9 }}
@@ -685,7 +642,7 @@ export function TesterProfilePage() {
                   </p>
                 </div>
                 <div className="flex flex-col gap-3 min-w-[200px]">
-                  <button 
+                  <button
                     onClick={handleLogout}
                     className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white transition-colors text-sm font-medium"
                   >

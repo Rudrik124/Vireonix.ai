@@ -99,10 +99,10 @@ export function DeveloperCreditsPage() {
   const [isAdding, setIsAdding] = useState(false);
   
   const [stats, setStats] = useState({
-    userCreditsTotal: 500000,
-    developerCreditsTotal: 100000,
-    dailyConsumption: 12540,
-    averagePerUser: 84,
+    userCreditsTotal: 0,
+    developerCreditsTotal: 0,
+    dailyConsumption: 0,
+    averagePerUser: 0,
   });
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -138,16 +138,12 @@ export function DeveloperCreditsPage() {
         fetchCreditTransactions(),
       ]);
       setStats({
-        userCreditsTotal: statsData.userCreditsTotal || 500000,
-        developerCreditsTotal: statsData.developerCreditsTotal || 100000,
-        dailyConsumption: statsData.dailyConsumption || 12540,
-        averagePerUser: statsData.averagePerUser || 84,
+        userCreditsTotal: statsData.userCreditsTotal || 0,
+        developerCreditsTotal: statsData.developerCreditsTotal || 0,
+        dailyConsumption: statsData.dailyConsumption || 0,
+        averagePerUser: statsData.averagePerUser || 0,
       });
-      setTransactions(transactionsData.transactions || [
-        { id: "1", user: "system", type: "purchase", amount: 20000, reason: "Developer Pool Updated", date: "2026-06-10" },
-        { id: "2", user: "tester1@example.com", type: "usage", amount: -250, reason: "Video Generation", date: "2026-06-10" },
-        { id: "3", user: "dev@example.com", type: "allocation", amount: 5000, reason: "Allocated", date: "2026-06-09" }
-      ]);
+      setTransactions(transactionsData.transactions || []);
     } catch (error) {
       console.error("Failed to load credits data:", error);
     } finally {
@@ -273,8 +269,8 @@ export function DeveloperCreditsPage() {
         {/* KPI Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-12">
           {[
-            { icon: Users, label: "User Credits", value: stats.userCreditsTotal, color: "blue", change: "+18%" },
-            { icon: Code, label: "Developer Credits", value: stats.developerCreditsTotal, color: "indigo", change: "+8%" },
+            { icon: Users, label: "User Credits", value: stats.userCreditsTotal, color: "blue", change: "+0%" },
+            { icon: Code, label: "Developer Credits", value: stats.developerCreditsTotal, color: "indigo", change: "+0%" },
             { icon: Zap, label: "Daily Consumption", value: stats.dailyConsumption, color: "yellow", change: "Today" },
             { icon: BarChart3, label: "Average Per User", value: stats.averagePerUser, color: "emerald", suffix: " Cr" },
           ].map((stat, idx) => (
@@ -354,13 +350,13 @@ export function DeveloperCreditsPage() {
                         <div>
                           <div className="flex justify-between mb-3 text-sm font-bold uppercase tracking-widest">
                             <span className="text-blue-400 flex items-center gap-2"><Users className="w-4 h-4" /> User Credits</span>
-                            <span className="text-white">452K / 500K <span className="text-slate-500 ml-2">90%</span></span>
+                            <span className="text-white">0 / 0 <span className="text-slate-500 ml-2">0%</span></span>
                           </div>
                           <div className="w-full bg-white/5 rounded-full h-3 border border-white/10 overflow-hidden relative">
                             <motion.div 
                               className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-600 to-cyan-400 rounded-full" 
                               initial={{ width: "0%" }}
-                              animate={{ width: "90%" }}
+                              animate={{ width: "0%" }}
                               transition={{ duration: 1.5, ease: "easeOut" }}
                             >
                               <div className="w-full h-full bg-[linear-gradient(90deg,transparent_0%,rgba(255,255,255,0.2)_50%,transparent_100%)] animate-[shimmer_2s_infinite]" />
@@ -371,13 +367,13 @@ export function DeveloperCreditsPage() {
                         <div>
                           <div className="flex justify-between mb-3 text-sm font-bold uppercase tracking-widest">
                             <span className="text-indigo-400 flex items-center gap-2"><Code className="w-4 h-4" /> Developer Credits</span>
-                            <span className="text-white">78K / 100K <span className="text-slate-500 ml-2">78%</span></span>
+                            <span className="text-white">0 / 0 <span className="text-slate-500 ml-2">0%</span></span>
                           </div>
                           <div className="w-full bg-white/5 rounded-full h-3 border border-white/10 overflow-hidden relative">
                             <motion.div 
                               className="absolute top-0 left-0 h-full bg-gradient-to-r from-indigo-600 to-purple-500 rounded-full" 
                               initial={{ width: "0%" }}
-                              animate={{ width: "78%" }}
+                              animate={{ width: "0%" }}
                               transition={{ duration: 1.5, ease: "easeOut", delay: 0.2 }}
                             >
                               <div className="w-full h-full bg-[linear-gradient(90deg,transparent_0%,rgba(255,255,255,0.2)_50%,transparent_100%)] animate-[shimmer_2s_infinite]" />
@@ -402,15 +398,15 @@ export function DeveloperCreditsPage() {
                       <div className="space-y-4">
                         <div className="flex justify-between items-center text-sm font-bold">
                           <span className="text-slate-400">Today's Allocation</span>
-                          <span className="text-emerald-400">+18K</span>
+                          <span className="text-emerald-400">+0</span>
                         </div>
                         <div className="flex justify-between items-center text-sm font-bold">
                           <span className="text-slate-400">Remaining Capacity</span>
-                          <span className="text-white">48K</span>
+                          <span className="text-white">0</span>
                         </div>
                         <div className="flex justify-between items-center text-sm font-bold">
                           <span className="text-slate-400">Average Usage</span>
-                          <span className="text-white">84 Credits/User</span>
+                          <span className="text-white">0 Credits/User</span>
                         </div>
                       </div>
                     </div>
@@ -423,9 +419,9 @@ export function DeveloperCreditsPage() {
                   {/* Left Col: Circular Visuals & AI Insight */}
                   <div className="lg:col-span-2 space-y-6">
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                      <CircularProgress percentage={65} label="Video Gen" color="blue" icon={Video} />
-                      <CircularProgress percentage={20} label="Image AI" color="purple" icon={ImageIcon} />
-                      <CircularProgress percentage={15} label="Manual Edit" color="emerald" icon={Scissors} />
+                      <CircularProgress percentage={0} label="Video Gen" color="blue" icon={Video} />
+                      <CircularProgress percentage={0} label="Image AI" color="purple" icon={ImageIcon} />
+                      <CircularProgress percentage={0} label="Manual Edit" color="emerald" icon={Scissors} />
                     </div>
 
                     {/* AI Insight Card */}
@@ -437,7 +433,7 @@ export function DeveloperCreditsPage() {
                       <div className="relative z-10">
                         <h3 className="text-sm font-bold text-white uppercase tracking-widest mb-1">AI Recommendation</h3>
                         <p className="text-slate-400 font-medium text-sm leading-relaxed">
-                          Current usage suggests Developer credits are being underutilized. Consider reallocating <span className="text-cyan-400 font-bold">12%</span> to user credits to prevent a bottleneck during the next peak usage window.
+                          Current usage suggests Developer credits are being underutilized. Consider reallocating <span className="text-cyan-400 font-bold">0%</span> to user credits to prevent a bottleneck during the next peak usage window.
                         </p>
                       </div>
                     </div>
@@ -467,23 +463,7 @@ export function DeveloperCreditsPage() {
                       
                       <div className="space-y-6 flex-1 relative">
                         <div className="absolute top-2 bottom-2 left-4 w-px bg-white/10" />
-                        {[
-                          { icon: Plus, amount: "+5,000", desc: "Allocated", time: "2 min ago", color: "emerald" },
-                          { icon: Video, amount: "-250", desc: "Video Generation", time: "15 min ago", color: "blue" },
-                          { icon: CreditCard, amount: "+20,000", desc: "Purchased", time: "1 hr ago", color: "purple" },
-                          { icon: Users, amount: "Update", desc: "Dev Pool Updated", time: "3 hrs ago", color: "slate" },
-                        ].map((item, i) => (
-                          <div key={i} className="flex gap-4 items-center relative z-10">
-                            <div className={`w-8 h-8 rounded-full bg-${item.color}-500/20 border border-${item.color}-500/30 flex items-center justify-center shrink-0 backdrop-blur-md`}>
-                              <item.icon className={`w-3.5 h-3.5 text-${item.color}-400`} />
-                            </div>
-                            <div className="flex-1">
-                              <p className={`text-sm font-bold ${item.amount.startsWith('+') ? 'text-emerald-400' : item.amount.startsWith('-') ? 'text-rose-400' : 'text-slate-300'}`}>{item.amount}</p>
-                              <p className="text-xs text-slate-400">{item.desc}</p>
-                            </div>
-                            <span className="text-[10px] font-bold text-slate-500 uppercase">{item.time}</span>
-                          </div>
-                        ))}
+                        {[] as any[]}
                       </div>
                     </div>
 

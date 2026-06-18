@@ -313,8 +313,8 @@ export function DeveloperTesterCreditsPage() {
         {/* KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-10">
           {[
-            { icon: Users, label: "Total Testers", value: testers.length, color: "blue", change: "+3 Today" },
-            { icon: Zap, label: "Credits Assigned", value: totalCreditsAssigned, color: "indigo", change: "+8%" },
+            { icon: Users, label: "Total Testers", value: testers.length, color: "blue", change: "+0 Today" },
+            { icon: Zap, label: "Credits Assigned", value: totalCreditsAssigned, color: "indigo", change: "+0%" },
             { icon: TrendingUp, label: "Total Used", value: totalCreditsUsed, color: "emerald", change: "Today" },
           ].map((stat, idx) => (
             <motion.div
@@ -478,7 +478,7 @@ export function DeveloperTesterCreditsPage() {
                 <div>
                   <h3 className="text-xs font-bold text-white uppercase tracking-widest mb-1">AI Suggestion</h3>
                   <p className="text-slate-400 font-medium text-xs leading-relaxed">
-                    Current usage indicates <span className="text-white font-bold">12 testers</span> are consuming less than 20% of allocated credits. Recommended: Reallocate unused credits to active testers.
+                    Current usage indicates <span className="text-white font-bold">0 testers</span> are consuming less than 0% of allocated credits. Recommended: Reallocate unused credits to active testers.
                   </p>
                 </div>
               </div>
@@ -589,9 +589,9 @@ export function DeveloperTesterCreditsPage() {
                       <h3 className="text-sm font-bold uppercase tracking-widest text-white mb-6 flex items-center gap-2"><BarChart3 className="w-4 h-4 text-blue-400" /> Distribution</h3>
                       <div className="space-y-6">
                         {[
-                          { label: "Today's Allocation", pct: 82, color: "blue" },
-                          { label: "Weekly Usage", pct: 64, color: "indigo" },
-                          { label: "Monthly Budget", pct: 90, color: "purple" }
+                          { label: "Today's Allocation", pct: 0, color: "blue" },
+                          { label: "Weekly Usage", pct: 0, color: "indigo" },
+                          { label: "Monthly Budget", pct: 0, color: "purple" }
                         ].map((bar, i) => (
                           <div key={i}>
                             <div className="flex justify-between mb-2 text-xs font-bold uppercase tracking-widest text-slate-400">

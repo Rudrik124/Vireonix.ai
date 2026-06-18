@@ -214,11 +214,7 @@ export function VideoTypePage() {
           </span>
         </div>
         
-        <nav className="hidden md:flex gap-8 text-sm font-semibold text-gray-400">
-          <a href="#" className="hover:text-purple-400 hover:drop-shadow-[0_0_10px_rgba(168, 85, 247,0.5)] transition-all">Features</a>
-          <a href="#" className="hover:text-purple-400 hover:drop-shadow-[0_0_10px_rgba(168, 85, 247,0.5)] transition-all">Workflow</a>
-          <a href="#" className="hover:text-purple-400 hover:drop-shadow-[0_0_10px_rgba(168, 85, 247,0.5)] transition-all">Pricing</a>
-        </nav>
+
 
         <div className="flex items-center gap-4">
           <button className="md:hidden text-white/70 hover:text-white" onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}>

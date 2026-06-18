@@ -127,24 +127,24 @@ export function TesterAnalyticsPage() {
   }, [dateRange, profile, authLoading]);
 
   const mockAnalyticsData: AnalyticsData = {
-    bugsFound: 47,
-    criticalBugs: 5,
-    testsPassed: 98,
-    testsRun: 125,
-    avgResolutionTime: 5.8,
-    creditUsed: 689,
+    bugsFound: 0,
+    criticalBugs: 0,
+    testsPassed: 0,
+    testsRun: 0,
+    avgResolutionTime: 0,
+    creditUsed: 0,
     bugSeverity: {
-      critical: 5,
-      high: 8,
-      medium: 18,
-      low: 23,
+      critical: 0,
+      high: 0,
+      medium: 0,
+      low: 0,
     },
     featureCoverage: {
-      videoGenerator: 95,
-      authentication: 87,
-      billing: 72,
-      uiux: 65,
-      performance: 58,
+      videoGenerator: 0,
+      authentication: 0,
+      billing: 0,
+      uiux: 0,
+      performance: 0,
     },
   };
 
@@ -824,9 +824,7 @@ export function TesterAnalyticsPage() {
         <footer className="mt-16 text-center pb-8">
           <div className="w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent mb-6" />
           <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-600 space-y-2">
-            <p className="text-slate-500">VEYTRIX.AI ANALYTICS ENGINE</p>
-            <p>Built by <span className="text-purple-400/70">Manjith Singh</span> • Founder & Lead Developer</p>
-            <p className="font-mono text-cyan-600/50">Sandbox Build v2.1</p>
+            <p className="text-slate-500">VEYTRIX.AI TESTER PORTAL</p>
           </div>
         </footer>
 

@@ -248,10 +248,10 @@ export function DeveloperUsersPage() {
           {/* Quick Stats Row */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
             {[
-              { icon: Users, label: "Total Users", value: 15426, color: "text-indigo-400", change: "+12%" },
-              { icon: Activity, label: "Active Users", value: 8214, color: "text-emerald-400", change: "+6%" },
-              { icon: Zap, label: "Credits Issued", value: 842000, color: "text-blue-400" },
-              { icon: Video, label: "Videos Generated", value: 2800000, color: "text-purple-400" },
+              { icon: Users, label: "Total Users", value: 0, color: "text-indigo-400", change: "+0%" },
+              { icon: Activity, label: "Active Users", value: 0, color: "text-emerald-400", change: "+0%" },
+              { icon: Zap, label: "Credits Issued", value: 0, color: "text-blue-400" },
+              { icon: Video, label: "Videos Generated", value: 0, color: "text-purple-400" },
             ].map((stat, idx) => (
               <motion.div
                 key={stat.label}
