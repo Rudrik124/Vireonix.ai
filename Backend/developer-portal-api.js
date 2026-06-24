@@ -3008,7 +3008,7 @@ router.post("/api/tester/updates/:reportId/action", verifyTesterOrDeveloperAcces
     if (action === "closed") {
       const { error: updateError } = await getSupabaseClient()
         .from("bug_reports")
-        .update({ status: "fixed", reviewed_by: testerId, reviewed_at: new Date().toISOString(), resolved_at: new Date().toISOString() })
+        .update({ status: "fixed", resolved_at: new Date().toISOString() })
         .eq("id", reportId);
 
       if (updateError) {
@@ -3044,6 +3044,21 @@ router.post("/api/tester/updates/:reportId/action", verifyTesterOrDeveloperAcces
       if (insertError) {
         console.error("Failed to insert follow-up report:", insertError);
         return res.status(500).json({ error: insertError.message });
+      }
+
+      return res.json({ success: true });
+    }
+
+    if (action === "resend") {
+      // Resend the report to developer by setting status back to "open"
+      const { error: updateError } = await getSupabaseClient()
+        .from("bug_reports")
+        .update({ status: "open" })
+        .eq("id", reportId);
+
+      if (updateError) {
+        console.error("Failed to resend report to developer:", updateError);
+        return res.status(500).json({ error: updateError.message });
       }
 
       return res.json({ success: true });

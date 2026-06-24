@@ -91,6 +91,8 @@ export function TesterBugReportsPage() {
     description: "",
   });
   const [expandedDevelopers, setExpandedDevelopers] = useState<Record<string, boolean>>({});
+  const [updateActions, setUpdateActions] = useState<Record<string, "pending" | "completed" | null>>({});
+  const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
 
   // Mouse Parallax for Ambient Lighting
   const mouseX = useMotionValue(0);
@@ -135,10 +137,14 @@ export function TesterBugReportsPage() {
     name: developer,
     items: bugReports
       .filter((bug) => {
-        // Show updates that belong to this developer and have notes (from developer)
+        // Show updates that belong to this developer.
+        // Include if developer added notes OR the report status indicates a developer action (in-review/fixed/verified).
         const isAssigned = bug.assigned_developer === developer;
         const hasNotes = !!bug.notes && bug.notes.trim().length > 0;
-        return isAssigned && hasNotes;
+        const statusFlag = (bug.status || "").toLowerCase();
+        const developerActionStatuses = ["in-review", "fixed", "verified"];
+        const isDeveloperAction = developerActionStatuses.includes(statusFlag);
+        return isAssigned && (hasNotes || isDeveloperAction);
       })
       .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()),
   }));
@@ -226,6 +232,29 @@ export function TesterBugReportsPage() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
       console.error('Failed to prepare follow-up report', err);
+    }
+  };
+
+  const handleUpdateCompleted = (bugId: string) => {
+    setUpdateActions((prev) => ({ ...prev, [bugId]: "completed" }));
+  };
+
+  const handleUpdatePending = (bugId: string) => {
+    setUpdateActions((prev) => ({ ...prev, [bugId]: "pending" }));
+  };
+
+  const handleResendToDeveloper = async (bugId: string) => {
+    setActionLoading((prev) => ({ ...prev, [bugId]: true }));
+    try {
+      // Send the report back to developer (set status back to open)
+      await submitTesterUpdateAction(bugId, 'resend');
+      setUpdateActions((prev) => ({ ...prev, [bugId]: null }));
+      await fetchBugReports();
+      setShowSuccess(true);
+    } catch (err) {
+      console.error('Failed to resend to developer', err);
+    } finally {
+      setActionLoading((prev) => ({ ...prev, [bugId]: false }));
     }
   };
 
@@ -756,20 +785,47 @@ export function TesterBugReportsPage() {
                             <p className="text-white font-semibold mb-3 leading-relaxed">{bug.notes}</p>
                             <p className="text-[10px] uppercase tracking-[0.35em] text-slate-500 mb-1">Related Bug</p>
                             <p className="text-sm font-medium text-slate-100 mb-3">{bug.title}</p>
-                            <div className="flex items-center gap-3 mb-3">
-                              <button
-                                onClick={() => handleTesterClose(bug.id)}
-                                className="px-3 py-2 bg-emerald-600/80 hover:bg-emerald-500 rounded-lg text-xs font-bold text-white"
-                              >
-                                CLOSED
-                              </button>
-                              <button
-                                onClick={() => handleTesterBugReport(bug)}
-                                className="px-3 py-2 bg-rose-600/80 hover:bg-rose-500 rounded-lg text-xs font-bold text-white"
-                              >
-                                BUG REPORT
-                              </button>
-                            </div>
+                            
+                            {updateActions[bug.id] === null || updateActions[bug.id] === undefined ? (
+                              <div className="flex items-center gap-3 mb-3">
+                                <button
+                                  onClick={() => handleUpdateCompleted(bug.id)}
+                                  className="px-3 py-2 bg-emerald-600/80 hover:bg-emerald-500 rounded-lg text-xs font-bold text-white transition"
+                                >
+                                  COMPLETED
+                                </button>
+                                <button
+                                  onClick={() => handleUpdatePending(bug.id)}
+                                  className="px-3 py-2 bg-yellow-600/80 hover:bg-yellow-500 rounded-lg text-xs font-bold text-white transition"
+                                >
+                                  PENDING
+                                </button>
+                                <button
+                                  onClick={() => handleTesterBugReport(bug)}
+                                  className="px-3 py-2 bg-rose-600/80 hover:bg-rose-500 rounded-lg text-xs font-bold text-white transition"
+                                >
+                                  NEW BUG REPORT
+                                </button>
+                              </div>
+                            ) : updateActions[bug.id] === "completed" ? (
+                              <div className="mb-3 px-3 py-2 bg-emerald-600/30 rounded-lg border border-emerald-500/50">
+                                <p className="text-xs font-bold text-emerald-300">✓ Marked as Completed</p>
+                              </div>
+                            ) : updateActions[bug.id] === "pending" ? (
+                              <div className="flex items-center gap-3 mb-3">
+                                <div className="px-3 py-2 bg-yellow-600/30 rounded-lg border border-yellow-500/50 flex-1">
+                                  <p className="text-xs font-bold text-yellow-300">⚠ Marked as Pending</p>
+                                </div>
+                                <button
+                                  onClick={() => handleResendToDeveloper(bug.id)}
+                                  disabled={actionLoading[bug.id]}
+                                  className="px-3 py-2 bg-indigo-600/80 hover:bg-indigo-500 disabled:opacity-50 rounded-lg text-xs font-bold text-white transition"
+                                >
+                                  {actionLoading[bug.id] ? "Sending..." : "RESEND"}
+                                </button>
+                              </div>
+                            ) : null}
+
                             <div className="grid gap-2 text-[11px] text-slate-400">
                               <span>Status: <span className="text-white">{bug.status === 'in-review' ? 'In Review' : bug.status}</span></span>
                               <span>{new Date(bug.updated_at).toLocaleString()}</span>

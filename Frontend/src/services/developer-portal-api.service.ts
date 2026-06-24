@@ -322,7 +322,7 @@ async function callTesterAPI(endpoint: string, options?: RequestInit) {
   return response.json();
 }
 
-export async function submitTesterUpdateAction(reportId: string, action: 'closed' | 'bug_report') {
+export async function submitTesterUpdateAction(reportId: string, action: 'closed' | 'bug_report' | 'resend') {
   return callTesterAPI(`/tester/updates/${reportId}/action`, {
     method: 'POST',
     body: JSON.stringify({ action }),
