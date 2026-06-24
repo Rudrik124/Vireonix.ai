@@ -2881,8 +2881,6 @@ router.patch("/api/developer/reports/:reportId", verifyDeveloperAccess, async (r
     const updateFields = {
       status: normalizedStatus,
       notes: typeof comment === "string" ? comment.trim() || null : null,
-      reviewed_by: req.profile?.id || null,
-      reviewed_at: new Date().toISOString(),
       resolved_at: normalizedStatus === "fixed" ? new Date().toISOString() : null,
     };
 
