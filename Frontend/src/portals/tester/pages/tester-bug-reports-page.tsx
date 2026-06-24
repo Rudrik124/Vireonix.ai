@@ -135,12 +135,10 @@ export function TesterBugReportsPage() {
     name: developer,
     items: bugReports
       .filter((bug) => {
-        // Only show updates that belong to this developer, have notes, and are not completed
+        // Show updates that belong to this developer and have notes (from developer)
         const isAssigned = bug.assigned_developer === developer;
         const hasNotes = !!bug.notes && bug.notes.trim().length > 0;
-        const isCompleted = (bug.status || "").toLowerCase();
-        const completedStatuses = ["fixed", "verified"];
-        return isAssigned && hasNotes && !completedStatuses.includes(isCompleted);
+        return isAssigned && hasNotes;
       })
       .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()),
   }));

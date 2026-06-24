@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
-import { AlertCircle, ArrowLeft, CheckCircle2, RefreshCcw, Eye } from "lucide-react";
+import { AlertCircle, ArrowLeft, CheckCircle2, RefreshCcw, Eye, Bell, X } from "lucide-react";
+import { useAuth } from "../../../app/context/auth-context";
 import { useRealtime } from "../../../hooks/useRealtime";
 import {
   fetchDeveloperReports,
@@ -17,14 +18,24 @@ type DeveloperReport = {
   severity?: string;
   attachment_count?: number;
   attachment_urls?: string[];
+  notes?: string;
+  tester_name?: string;
+};
+
+type NotificationMessage = {
+  id: string;
+  reportId: string;
+  title: string;
+  developer: string;
+  severity: string;
+  timestamp: Date;
 };
 
 const fallbackDeveloperColumns = [
   "RUDRIK",
-  "MOHAN",
+  "UDAY",
   "MANJITH",
   "HARSHITHA",
-  "UDAY",
   "SASWATEE",
 ];
 
@@ -45,6 +56,8 @@ function formatTimestamp(timestamp?: string) {
 
 export function DeveloperReportPage() {
   const navigate = useNavigate();
+  const { profile } = useAuth();
+  
   const [activeTab, setActiveTab] = useState(tabs[0].key);
   const [reports, setReports] = useState<DeveloperReport[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -55,6 +68,9 @@ export function DeveloperReportPage() {
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [openFilter, setOpenFilter] = useState<"all" | "processing" | "completed">("all");
   const [expandedColumns, setExpandedColumns] = useState<Record<string, boolean>>({});
+  const [notifications, setNotifications] = useState<NotificationMessage[]>([]);
+  const [seenReportIds, setSeenReportIds] = useState<Set<string>>(new Set());
+  const [previousReportCount, setPreviousReportCount] = useState(0);
 
   const toggleColumnExpanded = (developer: string) => {
     setExpandedColumns((prev) => ({ ...prev, [developer]: !prev[developer] }));
@@ -66,14 +82,51 @@ export function DeveloperReportPage() {
 
     try {
       const data = await fetchDeveloperReports();
-      setReports(Array.isArray(data) ? data : []);
+      const newReports = Array.isArray(data) ? data : [];
+      
+      // Detect new reports assigned to current developer and create notifications
+      if (profile?.full_name || profile?.email) {
+        const currentDeveloper = fallbackDeveloperColumns.find(
+          (dev) =>
+            profile?.full_name?.toUpperCase().includes(dev) ||
+            profile?.email?.toUpperCase().includes(dev)
+        );
+        
+        if (currentDeveloper && newReports.length > previousReportCount) {
+          const newReportsList = newReports.filter((r) => !seenReportIds.has(r.id));
+          
+          newReportsList.forEach((report) => {
+            if (report.assigned_developer === currentDeveloper && report.status === "open") {
+              const notification: NotificationMessage = {
+                id: `notif-${report.id}-${Date.now()}`,
+                reportId: report.id,
+                title: report.title,
+                developer: currentDeveloper,
+                severity: report.severity || "medium",
+                timestamp: new Date(),
+              };
+              
+              setNotifications((prev) => [notification, ...prev]);
+              // Auto-dismiss after 5 seconds
+              setTimeout(() => {
+                setNotifications((prev) => prev.filter((n) => n.id !== notification.id));
+              }, 5000);
+            }
+          });
+          
+          setSeenReportIds((prev) => new Set([...prev, ...newReportsList.map((r) => r.id)]));
+        }
+      }
+      
+      setReports(newReports);
+      setPreviousReportCount(newReports.length);
       setLastUpdated(formatTimestamp(new Date().toISOString()));
     } catch (fetchError: unknown) {
       setError(fetchError instanceof Error ? fetchError.message : "Unable to load reports");
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [profile, seenReportIds, previousReportCount]);
 
   useEffect(() => {
     loadReports();
@@ -126,15 +179,14 @@ export function DeveloperReportPage() {
 
   const { isConnected } = useRealtime(subscriptions);
 
-  // Fixed ordered developer columns (exact six names)
+  // Fixed ordered developer columns (exactly five names)
   const developerColumns = useMemo(() => {
     return [
       "RUDRIK",
-      "MOHAN",
       "UDAY",
       "MANJITH",
-      "SASWATEE",
       "HARSHITHA",
+      "SASWATEE",
     ];
   }, []);
 
@@ -164,7 +216,7 @@ export function DeveloperReportPage() {
     const processingStatuses = ["open", "in-review"];
     const completedStatuses = ["fixed", "verified"];
 
-    if (openFilter === "all") return reports;
+    if (openFilter === "all") return reports.filter((r) => processingStatuses.includes(r.status?.toLowerCase() || ""));
     if (openFilter === "processing") return reports.filter((r) => processingStatuses.includes(r.status?.toLowerCase() || ""));
     return reports.filter((r) => completedStatuses.includes(r.status?.toLowerCase() || ""));
   }, [reports, openFilter]);
@@ -218,7 +270,7 @@ export function DeveloperReportPage() {
               <AlertCircle className="h-5 w-5 text-indigo-400" />
               <div>
                 <p className="text-sm text-slate-300">Active report stream</p>
-                <p className="text-xs text-slate-500">A single view with exactly 6 developer columns in each tab.</p>
+                <p className="text-xs text-slate-500">A single view with exactly 5 developer columns in each tab.</p>
               </div>
             </div>
             <div className="flex items-center gap-2 rounded-full border border-white/10 bg-slate-950/70 px-3 py-1 text-xs text-slate-300">
@@ -233,6 +285,41 @@ export function DeveloperReportPage() {
             {actionMessage}
           </div>
         ) : null}
+
+        {/* Notification Toasts */}
+        <div className="fixed top-6 right-6 z-50 space-y-3 max-w-md">
+          {notifications.map((notification) => {
+            const severityColors = {
+              critical: "bg-red-500/20 border-red-500/30 text-red-200",
+              high: "bg-orange-500/20 border-orange-500/30 text-orange-200",
+              medium: "bg-yellow-500/20 border-yellow-500/30 text-yellow-200",
+              low: "bg-emerald-500/20 border-emerald-500/30 text-emerald-200",
+            };
+            
+            return (
+              <div
+                key={notification.id}
+                className={`rounded-2xl border p-4 backdrop-blur-sm animate-in slide-in-from-top-4 ${
+                  severityColors[notification.severity as keyof typeof severityColors] || severityColors.medium
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  <Bell className="h-5 w-5 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm">New bug report for {notification.developer}</p>
+                    <p className="text-xs mt-1 opacity-90 line-clamp-2">{notification.title}</p>
+                  </div>
+                  <button
+                    onClick={() => setNotifications((prev) => prev.filter((n) => n.id !== notification.id))}
+                    className="flex-shrink-0 hover:opacity-70 transition"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
 
         <div className="rounded-3xl border border-white/10 bg-slate-900/70 p-4">
           <div className="mb-4 flex flex-wrap gap-2">
