@@ -426,12 +426,25 @@ export function LoginModal({ isOpen, onClose, customMessage, customTitle }: Logi
             const profile = await fetchAppProfile(data.session);
             await recordLoginActivity(data.session, profile);
             
-            if (profile.role === "admin" || profile.role === "super_admin") {
-              nextRoute = "/admin/dashboard";
-            } else if (profile.role === "developer") {
+            const userEmail = data.session.user.email?.toLowerCase() || "";
+            
+            if (userEmail === "developer@veytrix.ai") {
               nextRoute = "/developer/dashboard";
-            } else if (profile.role === "tester") {
+            } else if (userEmail === "tester@veytrix.ai") {
               nextRoute = "/tester/dashboard";
+            } else if (userEmail === "security@veytrix.ai") {
+              nextRoute = "/security/dashboard";
+            } else if (userEmail.endsWith("@gmail.com")) {
+              nextRoute = "/video-type";
+            } else {
+              // Fallback to role-based routing
+              if (profile.role === "admin" || profile.role === "super_admin") {
+                nextRoute = "/admin/dashboard";
+              } else if (profile.role === "developer") {
+                nextRoute = "/developer/dashboard";
+              } else if (profile.role === "tester") {
+                nextRoute = "/tester/dashboard";
+              }
             }
           }
           

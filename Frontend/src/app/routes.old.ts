@@ -4,7 +4,7 @@ export const router = createBrowserRouter([
   {
     path: "/",
     async lazy() {
-      const { VideoTypePage } = await import("./main/video-type-page");
+      const { VideoTypePage } = await import("./main/home-page");
       return { Component: VideoTypePage };
     }
   },

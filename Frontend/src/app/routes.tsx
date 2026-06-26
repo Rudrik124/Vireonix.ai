@@ -93,7 +93,7 @@ const legacyUserRoutes = [
   {
     path: "/video-type",
     async lazy() {
-      const { VideoTypePage } = await import("./main/video-type-page");
+      const { VideoTypePage } = await import("./main/home-page");
       return { Component: VideoTypePage };
     }
   },
@@ -258,515 +258,515 @@ export const router = createBrowserRouter([
     children: [
       {
         path: "/auth/callback",
-    async lazy() {
-      const { AuthCallbackPage } = await import("./pages/Auth/auth-callback");
-      return { Component: AuthCallbackPage };
-    }
-  },
-  {
-    path: "/developer/auth",
-    async lazy() {
-      const { DeveloperAccessPage } = await import("../portals/developer/pages/developer-access-page");
-      return { Component: DeveloperAccessPage };
-    }
-  },
-  // User Portal Routes
-  {
-    path: "/user/dashboard",
-    element: (
-      <PortalGate portal="user">
-        <UserDashboardPage />
-      </PortalGate>
-    ),
-  },
-  // Legacy routes for backward compatibility
-  {
-    path: "/app",
-    element: (
-      <PortalGate portal="user">
-        <UserDashboardPage />
-      </PortalGate>
-    ),
-  },
-  // Developer Portal Routes
-  {
-    path: "/developer/dashboard",
-    element: (
-      <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
-        <DeveloperDashboardPage />
-      </PortalGate>
-    ),
-  },
-  {
-    path: "/developer/users",
-    element: (
-      <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
-        <DeveloperUsersPage />
-      </PortalGate>
-    ),
-  },
-  {
-    path: "/developer/credits",
-    element: (
-      <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
-        <DeveloperCreditsPage />
-      </PortalGate>
-    ),
-  },
-  {
-    path: "/developer/costs",
-    element: (
-      <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
-        <DeveloperCostsPage />
-      </PortalGate>
-    ),
-  },
-  {
-    path: "/developer/revenue-profit",
-    element: (
-      <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
-        <DeveloperRevenueProfit />
-      </PortalGate>
-    ),
-  },
-  {
-    path: "/developer/profit-distribution",
-    element: (
-      <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
-        <DeveloperProfitDistribution />
-      </PortalGate>
-    ),
-  },
-  {
-    path: "/developer/tester-credits",
-    element: (
-      <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
-        <DeveloperTesterCreditsPage />
-      </PortalGate>
-    ),
-  },
-  // Developer testing lab removed
-  {
-    path: "/developer/error-logs",
-    element: (
-      <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
-        <DeveloperErrorLogsPage />
-      </PortalGate>
-    ),
-  },
-  {
-    path: "/developer/security-events",
-    element: (
-      <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
-        <DeveloperSecurityEventsPage />
-      </PortalGate>
-    ),
-  },
-  {
-    path: "/developer/authentication-monitoring",
-    element: (
-      <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
-        <DeveloperAuthenticationMonitoringPage />
-      </PortalGate>
-    ),
-  },
-  {
-    path: "/developer/prompt-security-monitoring",
-    element: (
-      <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
-        <DeveloperPromptSecurityMonitoringPage />
-      </PortalGate>
-    ),
-  },
-  {
-    path: "/developer/file-upload-security-monitoring",
-    element: (
-      <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
-        <DeveloperFileUploadSecurityMonitoringPage />
-      </PortalGate>
-    ),
-  },
-  {
-    path: "/developer/rate-limit-monitoring",
-    element: (
-      <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
-        <DeveloperRateLimitMonitoringPage />
-      </PortalGate>
-    ),
-  },
-  {
-    path: "/developer/ai-cost-monitoring",
-    element: (
-      <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
-        <DeveloperAICostMonitoringPage />
-      </PortalGate>
-    ),
-  },
-  {
-    path: "/developer/api-security-monitoring",
-    element: (
-      <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
-        <DeveloperAPISecurityMonitoringPage />
-      </PortalGate>
-    ),
-  },
-  {
-    path: "/developer/user-risk-scoring",
-    element: (
-      <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
-        <DeveloperUserRiskScoringPage />
-      </PortalGate>
-    ),
-  },
-  {
-    path: "/developer/security-alerts",
-    element: (
-      <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
-        <DeveloperSecurityAlertsPage />
-      </PortalGate>
-    ),
-  },
-  {
-    path: "/developer/admin-activity",
-    element: (
-      <PortalGate portal="developer" allowedRoles={["super_admin", "admin"]}>
-        <DeveloperAdminActivityMonitoringPage />
-      </PortalGate>
-    ),
-  },
-  {
-    path: "/developer/audit-log",
-    element: (
-      <PortalGate portal="developer" allowedRoles={["super_admin", "admin"]}>
-        <DeveloperAuditLogPage />
-      </PortalGate>
-    ),
-  },
-  {
-    path: "/developer/threat-visualization",
-    element: (
-      <PortalGate portal="developer" allowedRoles={["super_admin", "admin"]}>
-        <DeveloperThreatVisualizationPage />
-      </PortalGate>
-    ),
-  },
-  {
-    path: "/developer/analytics",
-    element: (
-      <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
-        <DeveloperAnalyticsPage />
-      </PortalGate>
-    ),
-  },
-  {
-    path: "/developer/reports",
-    element: (
-      <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
-        <DeveloperReportPage />
-      </PortalGate>
-    ),
-  },
-  {
-    path: "/developer/feedback",
-    element: (
-      <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
-        <DeveloperFeedbackPage />
-      </PortalGate>
-    ),
-  },
-  {
-    path: "/developer/settings",
-    element: (
-      <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
-        <DeveloperSettingsPage />
-      </PortalGate>
-    ),
-  },
-  {
-    path: "/developer/workflows",
-    element: (
-      <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
-        <DeveloperWorkflowLabPage />
-      </PortalGate>
-    ),
-  },
-  {
-    path: "/developer/logs",
-    element: (
-      <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
-        <DeveloperLogsPage />
-      </PortalGate>
-    ),
-  },
-  {
-    path: "/developer/operations",
-    element: (
-      <PortalGate portal="developer" allowedRoles={["super_admin", "admin"]}>
-        <DeveloperOperationsPage />
-      </PortalGate>
-    ),
-  },
-  {
-    path: "/developer/login-activity",
-    element: (
-      <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
-        <React.Suspense fallback={<div>Loading...</div>}>
-          <LoginActivityPage />
-        </React.Suspense>
-      </PortalGate>
-    ),
-  },
-  {
-    path: "/developer/analytics",
-    element: (
-      <PortalGate portal="developer" allowedRoles={["super_admin", "admin"]}>
-        <DeveloperAnalyticsPage />
-      </PortalGate>
-    ),
-  },
-  // Legacy internal routes for backward compatibility
-  {
-    path: "/internal",
-    element: (
-      <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer", "tester"]}>
-        <DeveloperDashboardPage />
-      </PortalGate>
-    ),
-  },
-  {
-    path: "/internal/workflows",
-    element: (
-      <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer", "tester"]}>
-        <DeveloperWorkflowLabPage />
-      </PortalGate>
-    ),
-  },
-  {
-    path: "/internal/logs",
-    element: (
-      <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer", "tester"]}>
-        <DeveloperLogsPage />
-      </PortalGate>
-    ),
-  },
-  {
-    path: "/internal/operations",
-    element: (
-      <PortalGate portal="developer" allowedRoles={["super_admin", "admin"]}>
-        <DeveloperOperationsPage />
-      </PortalGate>
-    ),
-  },
-  // Admin Portal Routes
-  {
-    path: "/admin/dashboard",
-    element: (
-      <PortalGate portal="admin" allowedRoles={["super_admin", "admin"]}>
-        <AdminDashboardPage />
-      </PortalGate>
-    ),
-  },
-  {
-    path: "/admin/testing-credentials",
-    element: (
-      <PortalGate portal="admin" allowedRoles={["super_admin", "admin"]}>
-        <TestingCredentialsPage />
-      </PortalGate>
-    ),
-  },
-  // Tester Portal Routes
-  {
-    path: "/tester/dashboard",
-    element: (
-      <PortalGate portal="tester" allowedRoles={["super_admin", "admin", "developer", "tester"]}>
-        <TesterDashboardPage />
-      </PortalGate>
-    ),
-  },
-  {
-    path: "/tester/test-environment",
-    element: (
-      <PortalGate portal="tester" allowedRoles={["super_admin", "admin", "developer", "tester"]}>
-        <TesterTestEnvironmentPage />
-      </PortalGate>
-    ),
-  },
-  {
-    path: "/tester/bug-reports",
-    element: (
-      <PortalGate portal="tester" allowedRoles={["super_admin", "admin", "developer", "tester"]}>
-        <TesterBugReportsPage />
-      </PortalGate>
-    ),
-  },
-  {
-    path: "/tester/test-cases",
-    element: (
-      <PortalGate portal="tester" allowedRoles={["super_admin", "admin", "developer", "tester"]}>
-        <TesterTestCasesPage />
-      </PortalGate>
-    ),
-  },
-  {
-    path: "/tester/credits",
-    element: (
-      <PortalGate portal="tester" allowedRoles={["super_admin", "admin", "developer", "tester"]}>
-        <TesterCreditsPage />
-      </PortalGate>
-    ),
-  },
+        async lazy() {
+          const { AuthCallbackPage } = await import("./pages/Auth/auth-callback");
+          return { Component: AuthCallbackPage };
+        }
+      },
+      {
+        path: "/developer/auth",
+        async lazy() {
+          const { DeveloperAccessPage } = await import("../portals/developer/pages/developer-access-page");
+          return { Component: DeveloperAccessPage };
+        }
+      },
+      // User Portal Routes
+      {
+        path: "/user/dashboard",
+        element: (
+          <PortalGate portal="user">
+            <UserDashboardPage />
+          </PortalGate>
+        ),
+      },
+      // Legacy routes for backward compatibility
+      {
+        path: "/app",
+        element: (
+          <PortalGate portal="user">
+            <UserDashboardPage />
+          </PortalGate>
+        ),
+      },
+      // Developer Portal Routes
+      {
+        path: "/developer/dashboard",
+        element: (
+          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+            <DeveloperDashboardPage />
+          </PortalGate>
+        ),
+      },
+      {
+        path: "/developer/users",
+        element: (
+          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+            <DeveloperUsersPage />
+          </PortalGate>
+        ),
+      },
+      {
+        path: "/developer/credits",
+        element: (
+          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+            <DeveloperCreditsPage />
+          </PortalGate>
+        ),
+      },
+      {
+        path: "/developer/costs",
+        element: (
+          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+            <DeveloperCostsPage />
+          </PortalGate>
+        ),
+      },
+      {
+        path: "/developer/revenue-profit",
+        element: (
+          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+            <DeveloperRevenueProfit />
+          </PortalGate>
+        ),
+      },
+      {
+        path: "/developer/profit-distribution",
+        element: (
+          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+            <DeveloperProfitDistribution />
+          </PortalGate>
+        ),
+      },
+      {
+        path: "/developer/tester-credits",
+        element: (
+          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+            <DeveloperTesterCreditsPage />
+          </PortalGate>
+        ),
+      },
+      // Developer testing lab removed
+      {
+        path: "/developer/error-logs",
+        element: (
+          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+            <DeveloperErrorLogsPage />
+          </PortalGate>
+        ),
+      },
+      {
+        path: "/developer/security-events",
+        element: (
+          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+            <DeveloperSecurityEventsPage />
+          </PortalGate>
+        ),
+      },
+      {
+        path: "/developer/authentication-monitoring",
+        element: (
+          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+            <DeveloperAuthenticationMonitoringPage />
+          </PortalGate>
+        ),
+      },
+      {
+        path: "/developer/prompt-security-monitoring",
+        element: (
+          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+            <DeveloperPromptSecurityMonitoringPage />
+          </PortalGate>
+        ),
+      },
+      {
+        path: "/developer/file-upload-security-monitoring",
+        element: (
+          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+            <DeveloperFileUploadSecurityMonitoringPage />
+          </PortalGate>
+        ),
+      },
+      {
+        path: "/developer/rate-limit-monitoring",
+        element: (
+          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+            <DeveloperRateLimitMonitoringPage />
+          </PortalGate>
+        ),
+      },
+      {
+        path: "/developer/ai-cost-monitoring",
+        element: (
+          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+            <DeveloperAICostMonitoringPage />
+          </PortalGate>
+        ),
+      },
+      {
+        path: "/developer/api-security-monitoring",
+        element: (
+          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+            <DeveloperAPISecurityMonitoringPage />
+          </PortalGate>
+        ),
+      },
+      {
+        path: "/developer/user-risk-scoring",
+        element: (
+          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+            <DeveloperUserRiskScoringPage />
+          </PortalGate>
+        ),
+      },
+      {
+        path: "/developer/security-alerts",
+        element: (
+          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+            <DeveloperSecurityAlertsPage />
+          </PortalGate>
+        ),
+      },
+      {
+        path: "/developer/admin-activity",
+        element: (
+          <PortalGate portal="developer" allowedRoles={["super_admin", "admin"]}>
+            <DeveloperAdminActivityMonitoringPage />
+          </PortalGate>
+        ),
+      },
+      {
+        path: "/developer/audit-log",
+        element: (
+          <PortalGate portal="developer" allowedRoles={["super_admin", "admin"]}>
+            <DeveloperAuditLogPage />
+          </PortalGate>
+        ),
+      },
+      {
+        path: "/developer/threat-visualization",
+        element: (
+          <PortalGate portal="developer" allowedRoles={["super_admin", "admin"]}>
+            <DeveloperThreatVisualizationPage />
+          </PortalGate>
+        ),
+      },
+      {
+        path: "/developer/analytics",
+        element: (
+          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+            <DeveloperAnalyticsPage />
+          </PortalGate>
+        ),
+      },
+      {
+        path: "/developer/reports",
+        element: (
+          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+            <DeveloperReportPage />
+          </PortalGate>
+        ),
+      },
+      {
+        path: "/developer/feedback",
+        element: (
+          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+            <DeveloperFeedbackPage />
+          </PortalGate>
+        ),
+      },
+      {
+        path: "/developer/settings",
+        element: (
+          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+            <DeveloperSettingsPage />
+          </PortalGate>
+        ),
+      },
+      {
+        path: "/developer/workflows",
+        element: (
+          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+            <DeveloperWorkflowLabPage />
+          </PortalGate>
+        ),
+      },
+      {
+        path: "/developer/logs",
+        element: (
+          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+            <DeveloperLogsPage />
+          </PortalGate>
+        ),
+      },
+      {
+        path: "/developer/operations",
+        element: (
+          <PortalGate portal="developer" allowedRoles={["super_admin", "admin"]}>
+            <DeveloperOperationsPage />
+          </PortalGate>
+        ),
+      },
+      {
+        path: "/developer/login-activity",
+        element: (
+          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+            <React.Suspense fallback={<div>Loading...</div>}>
+              <LoginActivityPage />
+            </React.Suspense>
+          </PortalGate>
+        ),
+      },
+      {
+        path: "/developer/analytics",
+        element: (
+          <PortalGate portal="developer" allowedRoles={["super_admin", "admin"]}>
+            <DeveloperAnalyticsPage />
+          </PortalGate>
+        ),
+      },
+      // Legacy internal routes for backward compatibility
+      {
+        path: "/internal",
+        element: (
+          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer", "tester"]}>
+            <DeveloperDashboardPage />
+          </PortalGate>
+        ),
+      },
+      {
+        path: "/internal/workflows",
+        element: (
+          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer", "tester"]}>
+            <DeveloperWorkflowLabPage />
+          </PortalGate>
+        ),
+      },
+      {
+        path: "/internal/logs",
+        element: (
+          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer", "tester"]}>
+            <DeveloperLogsPage />
+          </PortalGate>
+        ),
+      },
+      {
+        path: "/internal/operations",
+        element: (
+          <PortalGate portal="developer" allowedRoles={["super_admin", "admin"]}>
+            <DeveloperOperationsPage />
+          </PortalGate>
+        ),
+      },
+      // Admin Portal Routes
+      {
+        path: "/admin/dashboard",
+        element: (
+          <PortalGate portal="admin" allowedRoles={["super_admin", "admin"]}>
+            <AdminDashboardPage />
+          </PortalGate>
+        ),
+      },
+      {
+        path: "/admin/testing-credentials",
+        element: (
+          <PortalGate portal="admin" allowedRoles={["super_admin", "admin"]}>
+            <TestingCredentialsPage />
+          </PortalGate>
+        ),
+      },
+      // Tester Portal Routes
+      {
+        path: "/tester/dashboard",
+        element: (
+          <PortalGate portal="tester" allowedRoles={["super_admin", "admin", "developer", "tester"]}>
+            <TesterDashboardPage />
+          </PortalGate>
+        ),
+      },
+      {
+        path: "/tester/test-environment",
+        element: (
+          <PortalGate portal="tester" allowedRoles={["super_admin", "admin", "developer", "tester"]}>
+            <TesterTestEnvironmentPage />
+          </PortalGate>
+        ),
+      },
+      {
+        path: "/tester/bug-reports",
+        element: (
+          <PortalGate portal="tester" allowedRoles={["super_admin", "admin", "developer", "tester"]}>
+            <TesterBugReportsPage />
+          </PortalGate>
+        ),
+      },
+      {
+        path: "/tester/test-cases",
+        element: (
+          <PortalGate portal="tester" allowedRoles={["super_admin", "admin", "developer", "tester"]}>
+            <TesterTestCasesPage />
+          </PortalGate>
+        ),
+      },
+      {
+        path: "/tester/credits",
+        element: (
+          <PortalGate portal="tester" allowedRoles={["super_admin", "admin", "developer", "tester"]}>
+            <TesterCreditsPage />
+          </PortalGate>
+        ),
+      },
 
-  {
-    path: "/tester/profile",
-    element: (
-      <PortalGate portal="tester" allowedRoles={["super_admin", "admin", "developer", "tester"]}>
-        <TesterProfilePage />
-      </PortalGate>
-    ),
-  },
+      {
+        path: "/tester/profile",
+        element: (
+          <PortalGate portal="tester" allowedRoles={["super_admin", "admin", "developer", "tester"]}>
+            <TesterProfilePage />
+          </PortalGate>
+        ),
+      },
 
-  {
-    path: "/tester/analytics",
-    element: (
-      <PortalGate portal="tester" allowedRoles={["super_admin", "admin", "developer", "tester"]}>
-        <TesterAnalyticsPage />
-      </PortalGate>
-    ),
-  },
-  {
-    path: "/tester/feedback",
-    element: (
-      <PortalGate portal="tester" allowedRoles={["super_admin", "admin", "developer", "tester"]}>
-        <TesterFeedbackPage />
-      </PortalGate>
-    ),
-  },
-  // Security Portal Routes
-  {
-    path: "/security",
-    element: (
-      <SecurityPortalGate>
-        <SecurityPortalDashboardPage />
-      </SecurityPortalGate>
-    ),
-  },
-  {
-    path: "/security/overview",
-    element: (
-      <SecurityPortalGate>
-        <SecurityOverviewPage />
-      </SecurityPortalGate>
-    ),
-  },
-  {
-    path: "/security/audit-logs",
-    element: (
-      <SecurityPortalGate>
-        <SecurityAuditLogsPage />
-      </SecurityPortalGate>
-    ),
-  },
-  {
-    path: "/security/authentication-monitoring",
-    element: (
-      <SecurityPortalGate>
-        <SecurityAuthenticationPage />
-      </SecurityPortalGate>
-    ),
-  },
-  {
-    path: "/security/prompt-security",
-    element: (
-      <SecurityPortalGate>
-        <SecurityPromptSecurityPage />
-      </SecurityPortalGate>
-    ),
-  },
-  {
-    path: "/security/file-upload-security",
-    element: (
-      <SecurityPortalGate>
-        <SecurityFileUploadPage />
-      </SecurityPortalGate>
-    ),
-  },
-  {
-    path: "/security/rate-limit-monitoring",
-    element: (
-      <SecurityPortalGate>
-        <SecurityRateLimitPage />
-      </SecurityPortalGate>
-    ),
-  },
-  {
-    path: "/security/api-security",
-    element: (
-      <SecurityPortalGate>
-        <SecurityAPISecurityPage />
-      </SecurityPortalGate>
-    ),
-  },
-  {
-    path: "/security/ai-cost-monitoring",
-    element: (
-      <SecurityPortalGate>
-        <SecurityAICostPage />
-      </SecurityPortalGate>
-    ),
-  },
-  {
-    path: "/security/user-risk-scoring",
-    element: (
-      <SecurityPortalGate>
-        <SecurityUserRiskScoringPage />
-      </SecurityPortalGate>
-    ),
-  },
-  {
-    path: "/security/security-alerts",
-    element: (
-      <SecurityPortalGate>
-        <SecurityAlertsPage />
-      </SecurityPortalGate>
-    ),
-  },
-  {
-    path: "/security/admin-activity",
-    element: (
-      <SecurityPortalGate>
-        <SecurityAdminActivityPage />
-      </SecurityPortalGate>
-    ),
-  },
-  {
-    path: "/security/threat-visualization",
-    element: (
-      <SecurityPortalGate>
-        <SecurityThreatVisualizationPage />
-      </SecurityPortalGate>
-    ),
-  },
-  {
-    path: "/security/settings",
-    element: (
-      <SecurityPortalGate>
-        <SecuritySettingsPage />
-      </SecurityPortalGate>
-    ),
-  },
-  {
-    path: "/security/roles",
-    element: (
-      <SecurityPortalGate>
-        <SecurityRolesPage />
-      </SecurityPortalGate>
-    ),
-  },
-  ...legacyUserRoutes,
-  {
-    path: "*",
-    element: <Navigate to="/" replace />,
-  }
+      {
+        path: "/tester/analytics",
+        element: (
+          <PortalGate portal="tester" allowedRoles={["super_admin", "admin", "developer", "tester"]}>
+            <TesterAnalyticsPage />
+          </PortalGate>
+        ),
+      },
+      {
+        path: "/tester/feedback",
+        element: (
+          <PortalGate portal="tester" allowedRoles={["super_admin", "admin", "developer", "tester"]}>
+            <TesterFeedbackPage />
+          </PortalGate>
+        ),
+      },
+      // Security Portal Routes
+      {
+        path: "/security",
+        element: (
+          <SecurityPortalGate>
+            <SecurityPortalDashboardPage />
+          </SecurityPortalGate>
+        ),
+      },
+      {
+        path: "/security/overview",
+        element: (
+          <SecurityPortalGate>
+            <SecurityOverviewPage />
+          </SecurityPortalGate>
+        ),
+      },
+      {
+        path: "/security/audit-logs",
+        element: (
+          <SecurityPortalGate>
+            <SecurityAuditLogsPage />
+          </SecurityPortalGate>
+        ),
+      },
+      {
+        path: "/security/authentication-monitoring",
+        element: (
+          <SecurityPortalGate>
+            <SecurityAuthenticationPage />
+          </SecurityPortalGate>
+        ),
+      },
+      {
+        path: "/security/prompt-security",
+        element: (
+          <SecurityPortalGate>
+            <SecurityPromptSecurityPage />
+          </SecurityPortalGate>
+        ),
+      },
+      {
+        path: "/security/file-upload-security",
+        element: (
+          <SecurityPortalGate>
+            <SecurityFileUploadPage />
+          </SecurityPortalGate>
+        ),
+      },
+      {
+        path: "/security/rate-limit-monitoring",
+        element: (
+          <SecurityPortalGate>
+            <SecurityRateLimitPage />
+          </SecurityPortalGate>
+        ),
+      },
+      {
+        path: "/security/api-security",
+        element: (
+          <SecurityPortalGate>
+            <SecurityAPISecurityPage />
+          </SecurityPortalGate>
+        ),
+      },
+      {
+        path: "/security/ai-cost-monitoring",
+        element: (
+          <SecurityPortalGate>
+            <SecurityAICostPage />
+          </SecurityPortalGate>
+        ),
+      },
+      {
+        path: "/security/user-risk-scoring",
+        element: (
+          <SecurityPortalGate>
+            <SecurityUserRiskScoringPage />
+          </SecurityPortalGate>
+        ),
+      },
+      {
+        path: "/security/security-alerts",
+        element: (
+          <SecurityPortalGate>
+            <SecurityAlertsPage />
+          </SecurityPortalGate>
+        ),
+      },
+      {
+        path: "/security/admin-activity",
+        element: (
+          <SecurityPortalGate>
+            <SecurityAdminActivityPage />
+          </SecurityPortalGate>
+        ),
+      },
+      {
+        path: "/security/threat-visualization",
+        element: (
+          <SecurityPortalGate>
+            <SecurityThreatVisualizationPage />
+          </SecurityPortalGate>
+        ),
+      },
+      {
+        path: "/security/settings",
+        element: (
+          <SecurityPortalGate>
+            <SecuritySettingsPage />
+          </SecurityPortalGate>
+        ),
+      },
+      {
+        path: "/security/roles",
+        element: (
+          <SecurityPortalGate>
+            <SecurityRolesPage />
+          </SecurityPortalGate>
+        ),
+      },
+      ...legacyUserRoutes,
+      {
+        path: "*",
+        element: <Navigate to="/" replace />,
+      }
     ]
   }
 ]);

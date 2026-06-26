@@ -91,6 +91,11 @@ import { Button } from "../../components/ui/button";
 import { Switch } from "../../components/ui/switch";
 import { Textarea } from "../../components/ui/textarea";
 import { buildApiUrl } from "../../../lib/api";
+import { useAuth } from "../../context/auth-context";
+import { useAspectRatio, PRESET_RATIOS } from "./hooks/useAspectRatio";
+import { AspectRatioCard } from "./components/AspectRatioCard";
+import { CustomRatioModal } from "./components/CustomRatioModal";
+import { SlidersHorizontal } from "lucide-react";
 
 import { HistoryDialog, type HistoryItem, saveToHistory } from "../../components/history-dialog";
 import { PremiumModal } from "../../components/premium-modal";
@@ -2328,6 +2333,7 @@ const ToolInspector = memo(({
 });
 
 export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
+  const { profile } = useAuth();
   type FilterType =
     | 'none'
     | 'cinematic'
@@ -2350,10 +2356,8 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
 
   // -- State Management --
   const [selectedStyle, setSelectedStyle] = useState("youtube");
-  const [aspectRatio, setAspectRatio] = useState('16:9');
-  const [isFormatMenuOpen, setIsFormatMenuOpen] = useState(false);
+  const { aspectRatio, applyAspectRatio, formattedRatio, getRatioValue } = useAspectRatio();
   const [isCustomFrameOpen, setIsCustomFrameOpen] = useState(false);
-  const [customFrame, setCustomFrame] = useState({ width: 1920, height: 1080 });
   const [fps, setFps] = useState(60);
   const [exportQuality, setExportQuality] = useState("1080p");
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
@@ -2381,7 +2385,10 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
     console.log("Loading project from history:", item);
     if (item.config) {
       if (item.config.style) setSelectedStyle(item.config.style);
-      if (item.config.ratio) setAspectRatio(item.config.ratio);
+      if (item.config.ratio) {
+        const preset = PRESET_RATIOS[item.config.ratio];
+        if (preset) applyAspectRatio(preset.width, preset.height, preset.name);
+      }
       if (item.config.fps) setFps(item.config.fps);
       if (item.config.exportQuality) setExportQuality(item.config.exportQuality);
       if (item.config.watermark !== undefined) setWatermark(item.config.watermark);
@@ -3819,23 +3826,17 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
   useEffect(() => {
     const style = editingStyles.find(s => s.id === selectedStyle);
     if (style) {
-      setAspectRatio(style.ratio);
+      if (style.ratio) {
+        const preset = PRESET_RATIOS[style.ratio];
+        if (preset) applyAspectRatio(preset.width, preset.height, preset.name);
+      }
       // Auto-set standard FPS based on style if needed
       if (style.id === 'youtube') setFps(60);
       else setFps(30);
     }
   }, [selectedStyle]);
 
-  const getRatioValue = () => {
-    if (aspectRatio === '16:9') return 16 / 9;
-    if (aspectRatio === '9:16') return 9 / 16;
-    if (aspectRatio === '1:1') return 1;
-    if (aspectRatio === '4:3') return 4 / 3;
-    if (aspectRatio === '4:5') return 4 / 5;
-    if (aspectRatio === '21:9') return 21 / 9;
-    if (aspectRatio === 'Custom') return customFrame.width / customFrame.height;
-    return 16 / 9;
-  };
+
 
   const getPreviewCssFilter = () => {
     if (selectedEffect === 'blur') return `blur(${blurAmount}px)`;
@@ -4255,7 +4256,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
     const editorSelections = {
       style: {
         selected: selectedStyle,
-        aspectRatio,
+        aspectRatio: formattedRatio,
         fps,
         exportQuality,
         watermark,
@@ -4384,7 +4385,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
       tool: 'quick-edit',
       config: {
         style: selectedStyle,
-        ratio: aspectRatio,
+        ratio: formattedRatio,
         fps,
         exportQuality,
         watermark,
@@ -4409,7 +4410,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
     navigate(`/quick-edit/processing${location.search}`, {
       state: {
         selectedStyle,
-        aspectRatio,
+        aspectRatio: formattedRatio,
         fps,
         exportQuality,
         watermark,
@@ -4523,38 +4524,11 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
-
-          <div className="flex items-center gap-4">
-            <button className="flex flex-col items-center gap-1 text-slate-400 hover:text-white transition-colors group">
-              <ImageIcon className="w-4 h-4 group-hover:scale-110 transition-transform" />
-              <span className="text-[8px] font-bold">Photos</span>
-            </button>
-            <button className="flex flex-col items-center gap-1 text-slate-400 hover:text-white transition-colors group">
-              <Video className="w-4 h-4 group-hover:scale-110 transition-transform" />
-              <span className="text-[8px] font-bold">Media</span>
-            </button>
-            <button className="flex flex-col items-center gap-1 text-slate-400 hover:text-white transition-colors group">
-              <Sparkles className="w-4 h-4 group-hover:scale-110 transition-transform" />
-              <span className="text-[8px] font-bold">Elements</span>
-            </button>
-            <button className="flex flex-col items-center gap-1 text-slate-400 hover:text-white transition-colors group">
-              <div className="text-[12px] leading-none font-bold">T</div>
-              <span className="text-[8px] font-bold">Text</span>
-            </button>
-            <button className="flex flex-col items-center gap-1 text-slate-400 hover:text-white transition-colors group">
-              <Music className="w-4 h-4 group-hover:scale-110 transition-transform" />
-              <span className="text-[8px] font-bold">Music</span>
-            </button>
-            <button className="flex flex-col items-center gap-1 text-purple-400 hover:text-purple-300 transition-colors group">
-              <Volume2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
-              <span className="text-[8px] font-bold">Sound FX</span>
-            </button>
-          </div>
         </div>
 
         <div className="flex-1 flex justify-center">
           <div className="flex items-center gap-2 text-sm font-bold text-slate-200">
-            <span>Jun 09, 2026</span>
+            <span>{new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}</span>
             <button className="p-1 hover:bg-white/10 rounded transition-colors text-slate-400">
               <Edit2 className="w-3 h-3" />
             </button>
@@ -4564,20 +4538,22 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1 text-amber-400 text-[10px] font-bold px-2 py-1 bg-amber-400/10 rounded border border-amber-400/20">
             <Star className="w-3 h-3" />
-            <span>+ 0.00</span>
+            <span>+ {profile?.credits?.userCredits ?? '0.00'}</span>
           </div>
-          <button className="p-1.5 hover:bg-white/10 rounded text-slate-400 transition-colors">
-            <Monitor className="w-4 h-4" />
-          </button>
-          <button className="p-1.5 hover:bg-white/10 rounded text-slate-400 transition-colors">
-            <Download className="w-4 h-4" />
-          </button>
-          <button className="p-1.5 hover:bg-white/10 rounded text-slate-400 transition-colors">
-            <HelpCircle className="w-4 h-4" />
-          </button>
-          <button className="p-1.5 hover:bg-white/10 rounded text-slate-400 transition-colors">
-            <Upload className="w-4 h-4" />
-          </button>
+          <motion.button
+            whileHover={{ scale: 1.02, boxShadow: '0 0 20px rgba(168, 85, 247,0.2)' }}
+            whileTap={{ scale: 0.98 }}
+            onClick={handleGenerate}
+            className="relative h-9 px-6 rounded-lg flex items-center gap-2 transition-all overflow-hidden bg-gradient-to-r from-purple-600 via-fuchsia-500 to-purple-400 text-[#0B1020] cursor-pointer"
+          >
+            <motion.div
+              animate={{ opacity: [0.2, 0.4, 0.2], scale: [1, 1.1, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              className="absolute inset-0 bg-white/15 blur-lg"
+            />
+            <Sparkles className="w-3.5 h-3.5 relative z-10" />
+            <span className="text-[10px] font-black uppercase tracking-[0.15em] relative z-10">Generate Quick Edit</span>
+          </motion.button>
         </div>
       </header>
 
@@ -4746,51 +4722,50 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                         setExpandedSections={setExpandedSections}
                       />
                     </div>
+                    {/* Canvas Format Grid */}
+                    <div className="mt-4">
+                      <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest block mb-2">Canvas Format</span>
+                      <div className="grid grid-cols-1 gap-3">
+                        <AspectRatioCard
+                          label="YouTube"
+                          ratio="16:9"
+                          icon={MonitorPlay}
+                          description="Best for YouTube & Desktop"
+                          isSelected={aspectRatio.name === 'YouTube'}
+                          onClick={() => applyAspectRatio(16, 9, 'YouTube')}
+                        />
+                        <AspectRatioCard
+                          label="Instagram"
+                          ratio="9:16"
+                          icon={Smartphone}
+                          description="Reels, Shorts & TikTok"
+                          isSelected={aspectRatio.name === 'Instagram'}
+                          onClick={() => applyAspectRatio(9, 16, 'Instagram')}
+                        />
+                        <AspectRatioCard
+                          label="Square"
+                          ratio="1:1"
+                          icon={Square}
+                          description="Instagram Posts"
+                          isSelected={aspectRatio.name === 'Square'}
+                          onClick={() => applyAspectRatio(1, 1, 'Square')}
+                        />
+                        <AspectRatioCard
+                          label="Custom"
+                          ratio="Custom"
+                          icon={SlidersHorizontal}
+                          description={aspectRatio.name === 'Custom' ? `${aspectRatio.width} × ${aspectRatio.height}` : "Width × Height"}
+                          isSelected={aspectRatio.name === 'Custom'}
+                          onClick={() => setIsCustomFrameOpen(true)}
+                        />
+                      </div>
+                    </div>
                   </>
                 )}
               </div>
             </div>
 
-            {/* Category / Items Column (Right) */}
-            <div className={`flex-none flex flex-col bg-black/20 relative transition-all ${isCategoriesOpen ? 'w-[100px]' : 'w-[40px]'}`}>
-              <div className="p-2 border-b border-white/5 flex items-center justify-center bg-black/30">
-                <button
-                  onClick={() => setIsCategoriesOpen(!isCategoriesOpen)}
-                  className="p-1 rounded hover:bg-white/10 text-slate-400 hover:text-white transition-all w-full flex justify-center"
-                >
-                  <svg
-                    className={`w-4 h-4 transition-transform ${isCategoriesOpen ? 'rotate-180' : ''}`}
-                    fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                  </svg>
-                </button>
-              </div>
 
-              {isCategoriesOpen && (
-                <div className="p-2 space-y-1 overflow-y-auto custom-scrollbar flex-1 border-b border-white/5">
-                  {[
-                    { label: 'Favorite', icon: Star },
-                    { label: 'Cartoon', icon: Sparkles },
-                    { label: 'Fast Swish', icon: Zap },
-                    { label: 'Funny', icon: HelpCircle },
-                    { label: 'Machine', icon: Monitor },
-                    { label: 'Ringing', icon: Music },
-                    { label: 'Vehicles', icon: Video },
-                    { label: 'Transitions', icon: Sliders },
-                    { label: 'My Effect', icon: Zap }
-                  ].map((cat, idx) => (
-                    <button key={cat.label} className={`w-full flex items-center gap-2 p-2 rounded transition-colors text-left group ${idx === 0 ? 'bg-white/10 text-white' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'}`}>
-                      <cat.icon className={`w-3 h-3 ${idx === 0 ? 'text-purple-400' : 'group-hover:text-purple-400'}`} />
-                      <span className="text-[9px] font-bold truncate">{cat.label}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-
-
-
-            </div>
 
           </aside>
 
@@ -5204,7 +5179,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
 
               {/* FPS & Ratio status info */}
               <div className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
-                {aspectRatio} • {fps} FPS
+                {formattedRatio} • {fps} FPS
               </div>
             </div>
 
@@ -5357,47 +5332,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
         </div>
 
         <div className="flex items-center relative">
-          <button 
-            onClick={() => setIsFormatMenuOpen(!isFormatMenuOpen)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/5 text-slate-300 hover:bg-white/10 transition-all font-bold text-[9px] uppercase tracking-wider"
-          >
-            <Smartphone className="w-3.5 h-3.5 text-fuchsia-400" />
-            <span>Format: {aspectRatio}</span>
-            <ChevronRight className={`w-3 h-3 text-slate-500 transition-transform ${isFormatMenuOpen ? '-rotate-90' : ''}`} />
-          </button>
-          
-          {isFormatMenuOpen && (
-            <>
-              {/* Invisible overlay to close on click outside */}
-              <div 
-                className="fixed inset-0 z-40" 
-                onClick={() => setIsFormatMenuOpen(false)} 
-              />
-              <div className="absolute bottom-full left-0 mb-2 w-48 bg-[#0B1020]/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden flex flex-col py-1">
-                {[
-                  { id: '16:9', label: 'YouTube (16:9)', icon: Youtube },
-                  { id: '9:16', label: 'Instagram (9:16)', icon: Instagram },
-                  { id: '1:1', label: 'Square (1:1)', icon: Square },
-                  { id: '4:3', label: 'Classic (4:3)', icon: Monitor },
-                  { id: '21:9', label: 'Cinematic (21:9)', icon: Film },
-                  { id: 'Custom', label: 'Custom Frame', icon: Maximize2 }
-                ].map((fmt) => (
-                  <button
-                    key={fmt.id}
-                    onClick={() => {
-                      setAspectRatio(fmt.id);
-                      setIsFormatMenuOpen(false);
-                      if (fmt.id === 'Custom') setIsCustomFrameOpen(true);
-                    }}
-                    className={`flex items-center gap-3 px-3 py-2 text-[10px] font-black uppercase tracking-widest transition-colors w-full text-left ${aspectRatio === fmt.id ? 'bg-purple-500/20 text-purple-300' : 'text-slate-300 hover:bg-white/10 hover:text-white'}`}
-                  >
-                    <fmt.icon className="w-4 h-4 opacity-70" />
-                    {fmt.label}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
+          {/* Format dropdown removed, moved to toolbox as cards */}
         </div>
 
         <div className="flex items-center gap-3">
@@ -5407,20 +5342,6 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
           >
             Discard
           </button>
-          <motion.button
-            whileHover={{ scale: 1.02, boxShadow: '0 0 20px rgba(168, 85, 247,0.2)' }}
-            whileTap={{ scale: 0.98 }}
-            onClick={handleGenerate}
-            className="relative h-9 px-6 rounded-lg flex items-center gap-2 transition-all overflow-hidden bg-gradient-to-r from-purple-600 via-fuchsia-500 to-purple-400 text-[#0B1020] cursor-pointer"
-          >
-            <motion.div
-              animate={{ opacity: [0.2, 0.4, 0.2], scale: [1, 1.1, 1] }}
-              transition={{ duration: 2, repeat: Infinity }}
-              className="absolute inset-0 bg-white/15 blur-lg"
-            />
-            <Sparkles className="w-3.5 h-3.5 relative z-10" />
-            <span className="text-[10px] font-black uppercase tracking-[0.15em] relative z-10">Generate Quick Edit</span>
-          </motion.button>
         </div>
       </footer>
 
@@ -5437,6 +5358,13 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
         feature={premiumFeature}
       />
 
+      <CustomRatioModal 
+        open={isCustomFrameOpen}
+        onOpenChange={setIsCustomFrameOpen}
+        currentWidth={aspectRatio.width}
+        currentHeight={aspectRatio.height}
+        onApply={applyAspectRatio}
+      />
       {/* Music Picker Modal */}
       <MusicPickerModal
         isOpen={isMusicPickerOpen}
@@ -5444,48 +5372,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
         videoDuration={Math.max(...mediaItems.map(m => m.duration), 10)}
       />
 
-      {/* Custom Frame Dialog */}
-      <Dialog open={isCustomFrameOpen} onOpenChange={setIsCustomFrameOpen}>
-        <DialogContent className="bg-[#0B1020] border-white/10 text-slate-200">
-          <DialogHeader>
-            <DialogTitle>Custom Frame Size</DialogTitle>
-          </DialogHeader>
-          <div className="grid grid-cols-2 gap-4 py-4">
-            <div className="space-y-2">
-              <Label className="text-xs font-bold uppercase tracking-wider text-slate-400">Width (px)</Label>
-              <input
-                type="number"
-                value={customFrame.width}
-                onChange={(e) => setCustomFrame(prev => ({ ...prev, width: Number(e.target.value) || 0 }))}
-                className="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-purple-500 text-white"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs font-bold uppercase tracking-wider text-slate-400">Height (px)</Label>
-              <input
-                type="number"
-                value={customFrame.height}
-                onChange={(e) => setCustomFrame(prev => ({ ...prev, height: Number(e.target.value) || 0 }))}
-                className="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-purple-500 text-white"
-              />
-            </div>
-          </div>
-          <div className="flex justify-end gap-3 mt-4">
-            <Button variant="ghost" onClick={() => setIsCustomFrameOpen(false)}>
-              Cancel
-            </Button>
-            <Button 
-              className="bg-purple-600 hover:bg-purple-700 text-white"
-              onClick={() => {
-                setAspectRatio('Custom');
-                setIsCustomFrameOpen(false);
-              }}
-            >
-              Apply
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+
 
 
       {/* Custom Styles overrides */}
