@@ -4153,10 +4153,13 @@ app.post(
         console.log("🎞️ [API-MEDIA] Quick Edit multi-clip mode with transitions");
         console.log("📐 [API-MEDIA] Clip trim ranges:", resolvedEditorSelections?.trim?.clipRanges || {});
 
-        const segmentPaths = [];
+        const processedSegments = [];
+        const CONCURRENCY_LIMIT = 2;
         
-        for (let i = 0; i < mediaFiles.length; i++) {
-          const media = mediaFiles[i];
+        for (let chunkStart = 0; chunkStart < mediaFiles.length; chunkStart += CONCURRENCY_LIMIT) {
+          const chunk = mediaFiles.slice(chunkStart, chunkStart + CONCURRENCY_LIMIT);
+          const chunkResults = await Promise.all(chunk.map(async (media, localIdx) => {
+            const i = chunkStart + localIdx;
           const segmentPath = makeTempFilePath(`qclip-${i}.mp4`);
           const mediaMeta = resolvedEditorSelections?.media?.items?.[i] || {};
           const mediaId = mediaMeta?.id;
@@ -4236,57 +4239,63 @@ app.post(
             }
           }
 
-            // Apply per-clip editor adjustments (trim, speed, rotate, volume, zoom, crop, keyframe)
-            const perClipSelections = { ...resolvedEditorSelections };
-            // Override with per-clip properties from mediaMeta if provided
-            if (mediaMeta?.speed !== undefined) {
-              perClipSelections.speed = { value: mediaMeta.speed, enabled: Math.abs(mediaMeta.speed - 1) > 0.001 };
-            }
-            if (mediaMeta?.rotate !== undefined) {
-              perClipSelections.rotate = { degrees: mediaMeta.rotate, enabled: mediaMeta.rotate % 360 !== 0 };
-            }
-            if (mediaMeta?.volume !== undefined) {
-              perClipSelections.volume = { level: mediaMeta.volume, muted: false, enabled: Math.abs(mediaMeta.volume - 1) > 0.001 };
-            }
-            if (mediaMeta?.zoom !== undefined) {
-              perClipSelections.zoom = { amount: mediaMeta.zoom, enabled: Math.abs(mediaMeta.zoom - 1) > 0.001 };
-            }
-            if (mediaMeta?.crop) {
-              perClipSelections.crop = {
-                enabled: true,
-                widthPct: mediaMeta.crop.widthPct,
-                heightPct: mediaMeta.crop.heightPct,
-                centerX: mediaMeta.crop.centerX,
-                centerY: mediaMeta.crop.centerY,
-              };
-            }
-            if (mediaMeta?.keyframe) {
-              perClipSelections.keyframe = {
-                enabled: true,
-                mode: mediaMeta.keyframe.mode,
-                amount: mediaMeta.keyframe.amount,
-                points: mediaMeta.keyframe.points,
-              };
-            }
-            // Apply editor adjustments
-            const adjustedPath = await applyEditorAdjustments(finalSegmentPath, perClipSelections);
-            if (adjustedPath !== finalSegmentPath) {
-              generatedTempFiles.push(adjustedPath);
-              finalSegmentPath = adjustedPath;
-            }
+          // Apply per-clip editor adjustments (trim, speed, rotate, volume, zoom, crop, keyframe)
+          const perClipSelections = { ...resolvedEditorSelections };
+          // Override with per-clip properties from mediaMeta if provided
+          if (mediaMeta?.speed !== undefined) {
+            perClipSelections.speed = { value: mediaMeta.speed, enabled: Math.abs(mediaMeta.speed - 1) > 0.001 };
+          }
+          if (mediaMeta?.rotate !== undefined) {
+            perClipSelections.rotate = { degrees: mediaMeta.rotate, enabled: mediaMeta.rotate % 360 !== 0 };
+          }
+          if (mediaMeta?.volume !== undefined) {
+            perClipSelections.volume = { level: mediaMeta.volume, muted: false, enabled: Math.abs(mediaMeta.volume - 1) > 0.001 };
+          }
+          if (mediaMeta?.zoom !== undefined) {
+            perClipSelections.zoom = { amount: mediaMeta.zoom, enabled: Math.abs(mediaMeta.zoom - 1) > 0.001 };
+          }
+          if (mediaMeta?.crop) {
+            perClipSelections.crop = {
+              enabled: true,
+              widthPct: mediaMeta.crop.widthPct,
+              heightPct: mediaMeta.crop.heightPct,
+              centerX: mediaMeta.crop.centerX,
+              centerY: mediaMeta.crop.centerY,
+            };
+          }
+          if (mediaMeta?.keyframe) {
+            perClipSelections.keyframe = {
+              enabled: true,
+              mode: mediaMeta.keyframe.mode,
+              amount: mediaMeta.keyframe.amount,
+              points: mediaMeta.keyframe.points,
+            };
+          }
+          // Apply editor adjustments
+          const adjustedPath = await applyEditorAdjustments(finalSegmentPath, perClipSelections);
+          if (adjustedPath !== finalSegmentPath) {
+            generatedTempFiles.push(adjustedPath);
+            finalSegmentPath = adjustedPath;
+          }
 
-            // Apply text overlay if present (per-clip or global)
-            const textOverlay = mediaMeta?.textOverlay?.enabled ? mediaMeta.textOverlay : null;
-            const overlayPath = await applyTextOverlayToVideo(finalSegmentPath, textOverlay);
-            if (overlayPath !== finalSegmentPath) {
-              generatedTempFiles.push(overlayPath);
-              finalSegmentPath = overlayPath;
-            }
+          // Apply text overlay if present (per-clip or global)
+          const textOverlay = mediaMeta?.textOverlay?.enabled ? mediaMeta.textOverlay : null;
+          const overlayPath = await applyTextOverlayToVideo(finalSegmentPath, textOverlay);
+          if (overlayPath !== finalSegmentPath) {
+            generatedTempFiles.push(overlayPath);
+            finalSegmentPath = overlayPath;
+          }
 
-            segmentPaths.push(finalSegmentPath);
-            const segDuration = await getVideoDuration(finalSegmentPath);
-            segmentDurations.push(segDuration);
+          const segDuration = await getVideoDuration(finalSegmentPath);
+          return { finalSegmentPath, segDuration };
+        }));
+        processedSegments.push(...chunkResults);
+      }
 
+        const segmentPaths = [];
+        for (const seg of processedSegments) {
+          segmentPaths.push(seg.finalSegmentPath);
+          segmentDurations.push(seg.segDuration);
         }
 
         // Log segment paths for merge verification
@@ -4507,11 +4516,18 @@ app.post(
         const perImageSeconds = Math.max(1, Math.floor(seconds / imageFiles.length) || 1);
 
         const segmentPaths = [];
-        for (let i = 0; i < imageFiles.length; i++) {
+        const CONCURRENCY_LIMIT = 3;
+        
+        for (let chunkStart = 0; chunkStart < imageFiles.length; chunkStart += CONCURRENCY_LIMIT) {
+          const chunk = imageFiles.slice(chunkStart, chunkStart + CONCURRENCY_LIMIT);
+          const chunkResults = await Promise.all(chunk.map(async (img, localIdx) => {
+            const i = chunkStart + localIdx;
           const segmentPath = makeTempFilePath(`segment-${i}.mp4`);
-          await createVideoFromImage(imageFiles[i].path, segmentPath, perImageSeconds, aspect);
-          segmentPaths.push(segmentPath);
+          await createVideoFromImage(img.path, segmentPath, perImageSeconds, aspect);
           generatedTempFiles.push(segmentPath);
+          return segmentPath;
+          }));
+          segmentPaths.push(...chunkResults);
         }
 
         // Apply transitions between image segments
