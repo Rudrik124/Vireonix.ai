@@ -4,8 +4,12 @@
  * Workflow: User Prompt → Moderation → Approved/Blocked
  */
 
+const { getOpenAIModerationConfig } = require('./openaiConfig');
+
 class Moderation {
   constructor(options = {}) {
+    this.openai = getOpenAIModerationConfig(options.openai || {});
+
     // Unsafe Content Categories
     this.unsafeKeywords = {
       nsfw: [
@@ -80,6 +84,55 @@ class Moderation {
    * @returns {object} - {status: 'APPROVED'|'BLOCKED', reason: string, details: object}
    */
   moderate(prompt) {
+    return this.moderateLocal(prompt);
+  }
+
+  /**
+   * Main moderation function using OpenAI moderation API when configured.
+   * Falls back to local moderation if the API is unavailable.
+   * @param {string} prompt - User prompt to moderate
+   * @returns {Promise<object>} - Moderation result
+   */
+  async moderateAsync(prompt) {
+    if (!prompt || typeof prompt !== 'string') {
+      return {
+        status: 'APPROVED',
+        reason: 'Empty or invalid prompt',
+        details: { warning: 'No content to moderate' }
+      };
+    }
+
+    const localCheck = this.moderateLocal(prompt);
+
+    if (!this.openai.isConfigured) {
+      return localCheck;
+    }
+
+    try {
+      const openAiCheck = await this.checkOpenAIModeration(prompt);
+
+      if (openAiCheck.status === 'BLOCKED') {
+        return openAiCheck;
+      }
+
+      return localCheck;
+    } catch (error) {
+      return {
+        ...localCheck,
+        details: {
+          ...localCheck.details,
+          moderationFallback: 'openai_moderation_unavailable',
+          moderationError: error.message
+        }
+      };
+    }
+  }
+
+  /**
+   * Local moderation fallback and post-check.
+   * @private
+   */
+  moderateLocal(prompt) {
     if (!prompt || typeof prompt !== 'string') {
       return {
         status: 'APPROVED',
@@ -114,6 +167,76 @@ class Moderation {
       details: {
         checksPerformed: ['unsafe content', 'deepfake detection', 'copyright abuse'],
         allChecksPassed: true
+      }
+    };
+  }
+
+  /**
+   * Call the OpenAI moderation endpoint.
+   * @private
+   */
+  async checkOpenAIModeration(prompt) {
+    const response = await fetch('https://api.openai.com/v1/moderations', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${this.openai.apiKey}`
+      },
+      body: JSON.stringify({
+        model: this.openai.model,
+        input: prompt
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`OpenAI moderation request failed (${response.status}): ${errorText}`);
+    }
+
+    const payload = await response.json();
+    const result = payload?.results?.[0] || {};
+    const detectedCategories = Object.entries(result.categories || {})
+      .filter(([, isDetected]) => Boolean(isDetected))
+      .map(([category]) => category);
+    const normalizedCategories = [...new Set(detectedCategories.map((category) => {
+      if (category.startsWith('sexual')) return 'nsfw';
+      if (category.startsWith('violence')) return 'violence';
+      if (category.startsWith('hate')) return 'hateSpeech';
+      if (category.startsWith('harassment')) return 'harassment';
+      if (category.startsWith('self-harm')) return 'selfHarm';
+      if (category.startsWith('illicit')) return 'illegalActivities';
+      return category;
+    }))];
+
+    if (!result.flagged && detectedCategories.length === 0) {
+      return {
+        status: 'APPROVED',
+        reason: 'Prompt passed OpenAI moderation',
+        details: {
+          provider: 'openai',
+          model: this.openai.model,
+          flagged: false,
+          categories: []
+        }
+      };
+    }
+
+    return {
+      status: 'BLOCKED',
+      reason: `Reason: ${normalizedCategories[0]?.toUpperCase() || 'OPENAI MODERATION'}`,
+      details: {
+        provider: 'openai',
+        model: this.openai.model,
+        flagged: Boolean(result.flagged),
+        unsafeContent: {
+          detected: true,
+          categories: normalizedCategories,
+          openaiCategories: detectedCategories,
+          categoryScores: result.category_scores || {},
+          reason: normalizedCategories[0]?.toUpperCase() || 'OPENAI MODERATION'
+        },
+        deepfakeRequest: this.checkDeepfakeRequest(prompt).details,
+        copyrightAbuse: this.checkCopyrightAbuse(prompt).details
       }
     };
   }

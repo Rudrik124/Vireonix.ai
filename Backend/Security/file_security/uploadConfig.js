@@ -9,6 +9,7 @@ const crypto = require('crypto');
 const FileValidator = require('./fileValidator');
 const MimeChecker = require('./mimeChecker');
 const SizeLimiter = require('./sizeLimiter');
+const { getCloudflareConfig } = require('./cloudflareConfig');
 
 class UploadConfig {
   constructor(options = {}) {
@@ -18,6 +19,7 @@ class UploadConfig {
     this.sizeLimiter = new SizeLimiter(options.sizeLimiter || {});
     // Use largest category limit as default
     this.maxFileSize = options.maxFileSize || 50 * 1024 * 1024;
+    this.cloudflare = getCloudflareConfig(options.cloudflare || {});
     this.supabaseStorage = {
       url:
         options.supabaseStorage?.url ||
@@ -80,6 +82,20 @@ class UploadConfig {
       bucket: this.supabaseStorage.bucket,
       folder: this.supabaseStorage.folder,
       isConfigured: Boolean(this.supabaseStorage.url && this.supabaseStorage.apiKey)
+    };
+  }
+
+  /**
+   * Get Cloudflare configuration for file-security workflows
+   * @returns {object} - Cloudflare API configuration
+   */
+  getCloudflareConfig() {
+    return {
+      accountId: this.cloudflare.accountId,
+      zoneId: this.cloudflare.zoneId,
+      email: this.cloudflare.email,
+      isConfigured: this.cloudflare.isConfigured,
+      hasApiToken: Boolean(this.cloudflare.apiToken)
     };
   }
 

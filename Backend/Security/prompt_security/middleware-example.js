@@ -16,6 +16,7 @@ const blacklist = new Blacklist({
  * Use: app.use(aiSafetyMiddleware) or app.post('/endpoint', aiSafetyMiddleware, handler)
  */
 const aiSafetyMiddleware = (req, res, next) => {
+  (async () => {
   // Only check if body contains prompt
   if (!req.body || !req.body.prompt) {
     return next();
@@ -45,7 +46,7 @@ const aiSafetyMiddleware = (req, res, next) => {
   }
 
   // Step 2: AI Safety Checkpoint
-  const moderationResult = moderation.moderate(prompt);
+  const moderationResult = await moderation.moderateAsync(prompt);
 
   if (moderationResult.status === 'BLOCKED') {
     console.log(`[SECURITY] Prompt blocked: ${moderationResult.reason}`);
@@ -75,6 +76,14 @@ const aiSafetyMiddleware = (req, res, next) => {
   req.moderationApproved = true;
   req.promptSafetyCheckPassed = true;
   next();
+  })().catch((error) => {
+    console.error('[SECURITY] Prompt moderation failed:', error);
+    return res.status(500).json({
+      status: 'BLOCKED',
+      reason: 'Moderation service unavailable',
+      errorCode: 'MODERATION_ERROR'
+    });
+  });
 };
 
 /**
@@ -82,6 +91,7 @@ const aiSafetyMiddleware = (req, res, next) => {
  * Use for highly sensitive endpoints
  */
 const strictSafetyMiddleware = (req, res, next) => {
+  (async () => {
   if (!req.body || !req.body.prompt) {
     return next();
   }
@@ -90,7 +100,7 @@ const strictSafetyMiddleware = (req, res, next) => {
   const userId = req.user?.id || req.ip;
 
   // Immediate rejection for any deepfake or extreme content attempts
-  const result = moderation.moderate(prompt);
+  const result = await moderation.moderateAsync(prompt);
 
   if (result.details.deepfakeRequest?.detected) {
     console.log(`[STRICT SECURITY] Deepfake attempt by ${userId}`);
@@ -113,6 +123,14 @@ const strictSafetyMiddleware = (req, res, next) => {
   }
 
   next();
+  })().catch((error) => {
+    console.error('[STRICT SECURITY] Prompt moderation failed:', error);
+    return res.status(500).json({
+      status: 'BLOCKED',
+      reason: 'Moderation service unavailable',
+      errorCode: 'MODERATION_ERROR'
+    });
+  });
 };
 
 /**
@@ -189,6 +207,7 @@ app.post('/api/content/generate', strictSafetyMiddleware, aiSafetyMiddleware, (r
  * Body: { prompts: string[] }
  */
 app.post('/api/batch/process', (req, res) => {
+  (async () => {
   const { prompts } = req.body;
   const userId = req.user?.id || req.ip;
 
@@ -205,15 +224,16 @@ app.post('/api/batch/process', (req, res) => {
   }
 
   // Moderate each prompt
-  const results = prompts.map((prompt, idx) => {
-    const modResult = moderation.moderate(prompt);
-    return {
+  const results = [];
+  for (const [idx, prompt] of prompts.entries()) {
+    const modResult = await moderation.moderateAsync(prompt);
+    results.push({
       index: idx,
       prompt: prompt.substring(0, 50) + '...',
       status: modResult.status,
       reason: modResult.reason
-    };
-  });
+    });
+  }
 
   // Check if any were blocked
   const blockedCount = results.filter(r => r.status === 'BLOCKED').length;
@@ -227,6 +247,10 @@ app.post('/api/batch/process', (req, res) => {
     blockedCount,
     results
   });
+  })().catch((error) => {
+    console.error('[API] Batch moderation failed:', error);
+    return res.status(500).json({ error: 'Moderation service unavailable' });
+  });
 });
 
 /**
@@ -235,13 +259,14 @@ app.post('/api/batch/process', (req, res) => {
  * Body: { prompt: string }
  */
 app.post('/api/safety/check', (req, res) => {
+  (async () => {
   const { prompt } = req.body;
 
   if (!prompt) {
     return res.status(400).json({ error: 'Prompt is required' });
   }
 
-  const result = moderation.moderate(prompt);
+  const result = await moderation.moderateAsync(prompt);
 
   res.json({
     prompt: prompt.substring(0, 100) + (prompt.length > 100 ? '...' : ''),
@@ -249,6 +274,10 @@ app.post('/api/safety/check', (req, res) => {
     reason: result.reason,
     details: result.details,
     safeToProcess: result.status === 'APPROVED'
+  });
+  })().catch((error) => {
+    console.error('[API] Safety check failed:', error);
+    return res.status(500).json({ error: 'Moderation service unavailable' });
   });
 });
 
