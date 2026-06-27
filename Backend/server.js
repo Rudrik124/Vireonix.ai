@@ -5,6 +5,8 @@ process.on("uncaughtException", console.error);
 process.on("unhandledRejection", console.error);
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 import multer from "multer";
 import ffmpeg from "fluent-ffmpeg";
 import ffmpegPath from "ffmpeg-static";
@@ -20,6 +22,14 @@ import { generateScenesWithImages, generateScenes } from "./server-scenes.js";
 import { createVideoFromImages } from "./server-video-from-images.js";
 import { createCinematicVideo } from "./server-cinematic-video.js";
 import developerPortalAPI from "./developer-portal-api.js";
+import { attachAuthMiddleware } from "./Security/api_security/authMiddleware.js";
+import { initSecurityEventsLogger, logSecurityEvent } from "./security-events-logger.js";
+import PromptSanitizer from "./Security/prompt_security/promptSanitizer.js";
+import Blacklist from "./Security/prompt_security/blacklist.js";
+import Moderation from "./Security/prompt_security/moderation.js";
+import { scanMiddleware as malwareScan } from './Security/file_security/malwareScanner.js';
+import { validateBody } from './Security/input_validation/validateZod.js';
+import { PromptSchema, SceneImagesSchema, ImagesArraySchema, CinematicSchema } from './Security/input_validation/schemas.js';
 
 dotenv.config();
 
@@ -70,8 +80,64 @@ fal.config({
 
 const app = express();
 
-app.use(cors());
-app.use(express.json());
+// Security middleware order (Helmet -> CORS -> Rate limiter -> JSON/body parsers)
+app.use(helmet({
+  // Reduce information leakage and enable commonly recommended headers
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      connectSrc: ["'self'", 'https:'],
+      imgSrc: ["'self'", 'data:', 'blob:'],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      frameAncestors: ["'none'"],
+    }
+  },
+  referrerPolicy: { policy: 'no-referrer' },
+  crossOriginEmbedderPolicy: true,
+  crossOriginOpenerPolicy: { policy: 'same-origin' }
+}));
+
+// CORS: only allow the configured frontend origin
+const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || process.env.VITE_FRONTEND_ORIGIN || '';
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, curl, server-to-server)
+    if (!origin) return callback(null, true);
+    if (!FRONTEND_ORIGIN) return callback(new Error('CORS configuration error: FRONTEND_ORIGIN not set'));
+    if (origin === FRONTEND_ORIGIN) return callback(null, true);
+    return callback(new Error('CORS policy: Origin not allowed'));
+  },
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Forwarded-For'],
+  credentials: true,
+  optionsSuccessStatus: 204,
+};
+
+app.use(cors(corsOptions));
+
+// Rate limiter - simple global limiter; specific routes may override
+const limiter = rateLimit({
+  windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS) || 60 * 1000, // 1 minute
+  max: Number(process.env.RATE_LIMIT_MAX) || 60, // limit per window per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use(limiter);
+
+// JSON body parser with size limit
+app.use(express.json({ limit: process.env.JSON_BODY_LIMIT || '1mb' }));
+
+// Attach auth middleware after basic security middleware (auth should see validated body later)
+attachAuthMiddleware(app);
+
+// Handle invalid JSON payloads gracefully
+app.use((err, req, res, next) => {
+  if (err && err.type === 'entity.parse.failed') {
+    return res.status(400).json({ success: false, error: 'Invalid JSON payload' });
+  }
+  return next(err);
+});
 
 // ✅ SET FFMPEG
 if (ffmpegPath && fs.existsSync(ffmpegPath)) {
@@ -465,7 +531,91 @@ console.log("🌐 Global fetch available:", typeof fetch !== "undefined");
 const supabase = createClient(supabaseUrl, supabaseKey);
 console.log("🔗 Supabase bucket configured:", supabaseBucket);
 console.log("🔗 Supabase bucket map:", SUPABASE_BUCKETS);
+initSecurityEventsLogger(supabase);
 const INTERNAL_ROLES = new Set(["super_admin", "admin", "developer", "tester"]);
+const promptSanitizer = new PromptSanitizer();
+const promptBlacklist = new Blacklist();
+const promptModeration = new Moderation();
+
+const moderatePromptRequest = async ({ prompt, req, userId = null, source = "generation" }) => {
+  const rawPrompt = typeof prompt === "string" ? prompt.trim() : "";
+  if (!rawPrompt) {
+    return {
+      allowed: false,
+      reason: "Prompt is required",
+      statusCode: 400,
+    };
+  }
+
+  const sanitizerResult = promptSanitizer.sanitize(rawPrompt);
+  const sanitizedPrompt = sanitizerResult.sanitized?.trim() || rawPrompt;
+  const blacklistResult = promptBlacklist.check(sanitizedPrompt);
+
+  if (blacklistResult.isBlocked) {
+    const reason = blacklistResult.reason || "Prompt contains blocked content";
+    await logSecurityEvent({
+      userId,
+      category: "PROMPT",
+      action: "PROMPT_BLOCKED",
+      severity: "WARNING",
+      eventMessage: `Blocked ${source} request via blacklist`,
+      eventSource: "server.js",
+      ipAddress: req?.ip || req?.headers?.["x-forwarded-for"] || null,
+      userAgent: req?.headers?.["user-agent"] || null,
+      resourceType: "prompt",
+      metadata: {
+        source,
+        reason,
+        matches: blacklistResult.matches,
+        category: blacklistResult.category,
+      },
+    });
+
+    return {
+      allowed: false,
+      reason,
+      statusCode: 400,
+      details: blacklistResult,
+    };
+  }
+
+  const moderationResult = await promptModeration.moderateAsync(sanitizedPrompt);
+  if (moderationResult.status !== "APPROVED") {
+    const reason = moderationResult.reason || "Prompt failed moderation";
+    await logSecurityEvent({
+      userId,
+      category: "PROMPT",
+      action: "PROMPT_BLOCKED",
+      severity: "WARNING",
+      eventMessage: `Blocked ${source} request via moderation`,
+      eventSource: "server.js",
+      ipAddress: req?.ip || req?.headers?.["x-forwarded-for"] || null,
+      userAgent: req?.headers?.["user-agent"] || null,
+      resourceType: "prompt",
+      metadata: {
+        source,
+        reason,
+        moderation: moderationResult.details,
+        sanitizedPrompt,
+      },
+    });
+
+    return {
+      allowed: false,
+      reason,
+      statusCode: 400,
+      details: moderationResult,
+    };
+  }
+
+  return {
+    allowed: true,
+    sanitizedPrompt,
+    sanitizerResult,
+    blacklistResult,
+    moderationResult,
+  };
+};
 
 // Optional: log available buckets at startup for debugging
 supabase.storage
@@ -3637,20 +3787,10 @@ app.post("/search-image", async (req, res) => {
 
 // ✅ MAIN ROUTE - API Video Generation
 // Accepts JSON with: { prompt, duration, frame }
-app.post("/generate", async (req, res) => {
+app.post("/generate", validateBody(PromptSchema), async (req, res) => {
   const { prompt, duration, frame, effects } = req.body;
   const requestStartedAt = Date.now();
   const actor = await getRequestActor(req);
-  const { usageLogId, usageContext } = await createUsageLog({
-    req,
-    actor,
-    featureKey: "video.generate",
-    creditsRequested: Math.max(1, Math.ceil((Number(duration) || 10) / 10)),
-    metadata: {
-      frame: frame || "16:9",
-      provider: String(req?.body?.provider || videoProvider || "json2video").toLowerCase(),
-    },
-  });
 
   try {
     console.log("📍 [API] Video generation request received");
@@ -3662,7 +3802,35 @@ app.post("/generate", async (req, res) => {
 
     const seconds = Math.max(3, Math.min(180, Number(duration) || 10));
     const effectPromptSnippet = buildEffectPromptSnippet(effects);
-    const finalPrompt = [String(prompt || "").trim(), effectPromptSnippet].filter(Boolean).join(" ");
+    const rawPrompt = [String(prompt || "").trim(), effectPromptSnippet].filter(Boolean).join(" ");
+
+    const moderationCheck = await moderatePromptRequest({
+      prompt: rawPrompt,
+      req,
+      userId: actor?.id || null,
+      source: "generate",
+    });
+
+    if (!moderationCheck.allowed) {
+      return res.status(moderationCheck.statusCode || 400).json({
+        success: false,
+        error: moderationCheck.reason,
+      });
+    }
+
+    const finalPrompt = moderationCheck.sanitizedPrompt;
+    const { usageLogId, usageContext } = await createUsageLog({
+      req,
+      actor,
+      featureKey: "video.generate",
+      creditsRequested: Math.max(1, Math.ceil((Number(duration) || 10) / 10)),
+      metadata: {
+        frame: frame || "16:9",
+        provider: String(req?.body?.provider || videoProvider || "json2video").toLowerCase(),
+        moderatedPrompt: finalPrompt,
+      },
+    });
+
     console.log("Usage context:", usageContext);
 
     console.log("📝 [API] Generation config: duration=" + seconds + "s, ratio=" + (frame || "16:9"));
@@ -4859,7 +5027,7 @@ app.post(
 // ✅ SCENE AND IMAGE GENERATION ENDPOINT
 // Takes { prompt } as input
 // Returns { scenes: [...], images: [...] }
-app.post("/api/scene-images", async (req, res) => {
+app.post("/api/scene-images", validateBody(SceneImagesSchema), async (req, res) => {
   try {
     const { prompt } = req.body;
 
@@ -4867,6 +5035,19 @@ app.post("/api/scene-images", async (req, res) => {
       return res.status(400).json({
         success: false,
         error: "Prompt is required",
+      });
+    }
+
+    const moderationCheck = await moderatePromptRequest({
+      prompt,
+      req,
+      source: "scene-images",
+    });
+
+    if (!moderationCheck.allowed) {
+      return res.status(moderationCheck.statusCode || 400).json({
+        success: false,
+        error: moderationCheck.reason,
       });
     }
 
@@ -4879,9 +5060,9 @@ app.post("/api/scene-images", async (req, res) => {
       });
     }
 
-    console.log("📍 [SCENES] Generating scenes and images for prompt:", prompt.substring(0, 50));
+    console.log("📍 [SCENES] Generating scenes and images for prompt:", moderationCheck.sanitizedPrompt.substring(0, 50));
 
-    const result = await generateScenesWithImages(prompt, unsplashAccessKey);
+    const result = await generateScenesWithImages(moderationCheck.sanitizedPrompt, unsplashAccessKey);
 
     console.log("✅ [SCENES] Generated", result.scenes.length, "scenes and", result.images.length, "images");
 
@@ -4904,7 +5085,7 @@ app.post("/api/scene-images", async (req, res) => {
 // ✅ VIDEO CREATION FROM IMAGES ENDPOINT
 // Takes { images: [...], options: {...} } as input
 // Returns { success: true, video: "url_or_path" }
-app.post("/api/video-from-images", async (req, res) => {
+app.post("/api/video-from-images", validateBody(ImagesArraySchema), async (req, res) => {
   const { images, options = {}, userId = null } = req.body;
 
   try {
@@ -5029,7 +5210,7 @@ app.post("/api/video-from-images", async (req, res) => {
 // ✅ CINEMATIC VIDEO CREATION ENDPOINT
 // Takes { images: [...], options: {...}, userId: "user-uuid" } as input with motion effects
 // Returns { success: true, video: "url_or_path" }
-app.post("/api/cinematic-video", async (req, res) => {
+app.post("/api/cinematic-video", validateBody(CinematicSchema), async (req, res) => {
   const { images, options = {}, userId = null } = req.body;
 
   try {
@@ -5397,7 +5578,7 @@ app.post("/api/burn-captions", upload.none(), async (req, res) => {
 });
 
 // ✅ TRANSCRIPTION ENDPOINT (Gemini 2.5 Flash with Mock Fallback)
-app.post("/api/transcribe", upload.single("file"), async (req, res) => {
+app.post("/api/transcribe", upload.single("file"), malwareScan(), async (req, res) => {
   let audioPath = null;
   let geminiUploadedFileUri = null;
   try {
@@ -5816,7 +5997,7 @@ app.get("/api/music/tracks", async (req, res) => {
 });
 
 // ✅ Process audio (trim and adjust volume)
-app.post("/api/process-audio", upload.single("audioFile"), async (req, res) => {
+app.post("/api/process-audio", upload.single("audioFile"), malwareScan(), async (req, res) => {
   try {
     const { startTime = 0, endTime, volume = 80, format = "mp3" } = req.body;
     const audioFile = req.file;
@@ -5877,7 +6058,7 @@ app.post("/api/process-audio", upload.single("audioFile"), async (req, res) => {
 });
 
 // ✅ Convert audio format
-app.post("/api/convert-audio", upload.single("audioFile"), async (req, res) => {
+app.post("/api/convert-audio", upload.single("audioFile"), malwareScan(), async (req, res) => {
   try {
     const { format = "mp3" } = req.body;
     const audioFile = req.file;
@@ -5929,7 +6110,7 @@ app.post("/api/convert-audio", upload.single("audioFile"), async (req, res) => {
 });
 
 // ✅ GET audio metadata
-app.post("/api/audio-metadata", upload.single("audioFile"), async (req, res) => {
+app.post("/api/audio-metadata", upload.single("audioFile"), malwareScan(), async (req, res) => {
   try {
     const audioFile = req.file;
 

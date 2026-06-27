@@ -488,4 +488,4 @@ class PromptSanitizer {
   }
 }
 
-module.exports = PromptSanitizer;
+export default PromptSanitizer;

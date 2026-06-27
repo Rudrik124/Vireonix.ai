@@ -12,22 +12,22 @@
  * - Payload signing and verification
  */
 
-const crypto = require('crypto');
+import crypto from 'crypto';
 
 class JWTPolicy {
   constructor(options = {}) {
     this.config = {
       // Algorithm for token signing
-      algorithm: options.algorithm || 'HS256',
+      algorithm: options.algorithm || process.env.JWT_ALGORITHM || 'HS256',
       
       // Secret key for signing
-      secretKey: options.secretKey || 'default-secret-key',
+      secretKey: options.secretKey || process.env.JWT_SECRET || process.env.AUTH_JWT_SECRET || 'default-secret-key',
       
       // Token expiry time (seconds)
-      tokenExpiry: options.tokenExpiry || 3600, // 1 hour
+      tokenExpiry: options.tokenExpiry || Number(process.env.AUTH_ACCESS_TOKEN_TTL_SECONDS || process.env.JWT_ACCESS_TOKEN_TTL_SECONDS || 3600), // 1 hour
       
       // Refresh token expiry (seconds)
-      refreshTokenExpiry: options.refreshTokenExpiry || 604800, // 7 days
+      refreshTokenExpiry: options.refreshTokenExpiry || Number(process.env.AUTH_REFRESH_TOKEN_TTL_SECONDS || process.env.JWT_REFRESH_TOKEN_TTL_SECONDS || 604800), // 7 days
       
       // Enable token rotation
       enableRotation: options.enableRotation !== false,

@@ -11,6 +11,8 @@
  * - Secure serialization
  */
 
+import crypto from "crypto";
+
 class CookieSecurity {
   constructor(options = {}) {
     this.config = {
@@ -18,13 +20,13 @@ class CookieSecurity {
       httpOnly: options.httpOnly !== false,
       
       // Secure: cookie only sent over HTTPS
-      secure: options.secure !== false,
+      secure: options.secure !== false && (process.env.NODE_ENV === 'production' || process.env.AUTH_COOKIE_SECURE === 'true'),
       
       // SameSite: prevents CSRF attacks
       // strict: only same-site requests
       // lax: same-site + safe cross-site (GET)
       // none: allow cross-site (requires Secure)
-      sameSite: options.sameSite || 'strict',
+      sameSite: options.sameSite || process.env.AUTH_COOKIE_SAMESITE || 'strict',
       
       // Path: which URLs receive the cookie
       path: options.path || '/',
@@ -33,7 +35,7 @@ class CookieSecurity {
       domain: options.domain || undefined,
       
       // Max-Age: cookie lifetime in seconds
-      maxAge: options.maxAge || 86400, // 24 hours
+      maxAge: options.maxAge || Number(process.env.AUTH_COOKIE_MAX_AGE || 86400), // 24 hours
       
       // Priority: browser preference (high/medium/low)
       priority: options.priority || 'high',
@@ -48,7 +50,7 @@ class CookieSecurity {
       enableSignature: options.enableSignature !== false,
       
       // Secret key for signing
-      secretKey: options.secretKey || 'default-secret-key'
+      secretKey: options.secretKey || process.env.AUTH_COOKIE_SECRET || process.env.JWT_SECRET || 'default-secret-key'
     };
     
     this.stats = {
@@ -194,7 +196,6 @@ class CookieSecurity {
    * Sign cookie value
    */
   signCookie(value) {
-    const crypto = require('crypto');
     const hmac = crypto.createHmac('sha256', this.config.secretKey);
     hmac.update(value);
     const signature = hmac.digest('hex');
@@ -285,4 +286,5 @@ class CookieSecurity {
   }
 }
 
-module.exports = CookieSecurity;
+export { CookieSecurity };
+export default CookieSecurity;

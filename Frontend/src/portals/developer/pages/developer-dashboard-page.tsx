@@ -43,6 +43,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../../app/context/auth-context";
 import { useDashboardStats } from "../../../hooks/useDashboardData";
+import { fetchCloudflarePortalOverview } from "../../../services/developer-portal-api.service";
 import {
   AreaChart,
   Area,
@@ -146,6 +147,12 @@ export function DeveloperDashboardPage() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isCopilotOpen, setIsCopilotOpen] = useState(false);
   const [activeActivities, setActiveActivities] = useState(fakeActivity);
+  const [cloudflareStatus, setCloudflareStatus] = useState({
+    configured: false,
+    source: "fallback",
+    summary: { requests: 0, bandwidthBytes: 0, blockedRequests: 0, uniqueVisitors: 0, threats: 0 },
+    security: { criticalAlerts: 0, activeThreats: 0, failedLogins: 0, blockedRequests: 0, systemHealth: 95 },
+  });
   const [hasVisited] = useState(() => sessionStorage.getItem("devDashboardVisited") === "true");
 
   useEffect(() => {
@@ -178,6 +185,23 @@ export function DeveloperDashboardPage() {
     } else {
       window.scrollTo(0, 0);
     }
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    fetchCloudflarePortalOverview()
+      .then((payload) => {
+        if (!isMounted) return;
+        setCloudflareStatus(payload);
+      })
+      .catch((error) => {
+        console.error("Failed to load Cloudflare overview:", error);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const handleNavigate = (path: string) => {

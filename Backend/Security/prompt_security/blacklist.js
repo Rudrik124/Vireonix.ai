@@ -15,7 +15,7 @@
  * Prompt → blacklist.check() → Match Found? → Yes: Block | No: Continue
  */
 
-const crypto = require('crypto');
+import crypto from 'crypto';
 
 class Blacklist {
   constructor(options = {}) {
@@ -717,4 +717,4 @@ class Blacklist {
   }
 }
 
-module.exports = Blacklist;
+export default Blacklist;

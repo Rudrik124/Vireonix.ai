@@ -86,6 +86,10 @@ export async function fetchDashboardStats() {
   return callDeveloperAPI('/dashboard/stats');
 }
 
+export async function fetchCloudflarePortalOverview() {
+  return callDeveloperAPI('/cloudflare/overview');
+}
+
 // ============ USERS ============
 
 export async function fetchUsers(page = 1, limit = 20) {

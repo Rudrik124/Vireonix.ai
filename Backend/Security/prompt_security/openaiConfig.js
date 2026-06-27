@@ -3,8 +3,12 @@
  * Loads the moderation API key for prompt-security workflows only.
  */
 
-const path = require('path');
-const dotenv = require('dotenv');
+import path from 'path';
+import { fileURLToPath } from 'url';
+import dotenv from 'dotenv';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 dotenv.config({
   path: path.resolve(__dirname, '..', '..', '.env'),
@@ -25,6 +29,4 @@ function getOpenAIModerationConfig(options = {}) {
   };
 }
 
-module.exports = {
-  getOpenAIModerationConfig
-};
+export { getOpenAIModerationConfig };

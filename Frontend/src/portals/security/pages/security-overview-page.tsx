@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../../app/context/auth-context";
 import { logSecurityPortalActivity } from "../../../services/security-portal.service";
+import { fetchCloudflarePortalOverview } from "../../../services/developer-portal-api.service";
 
 function MetricCard({
   label,
@@ -87,6 +88,31 @@ export function SecurityOverviewPage() {
       }).catch(console.error);
     }
   }, [profile]);
+
+  useEffect(() => {
+    let isActive = true;
+
+    fetchCloudflarePortalOverview()
+      .then((data) => {
+        if (!isActive) return;
+        setStats((prev) => ({
+          ...prev,
+          totalEvents: data?.summary?.requests ?? prev.totalEvents,
+          criticalAlerts: data?.security?.criticalAlerts ?? prev.criticalAlerts,
+          failedLogins: data?.security?.failedLogins ?? prev.failedLogins,
+          blockedRequests: data?.security?.blockedRequests ?? prev.blockedRequests,
+          systemHealth: data?.security?.systemHealth ?? prev.systemHealth,
+          activeThreats: data?.security?.activeThreats ?? prev.activeThreats,
+        }));
+      })
+      .catch((error) => {
+        console.error("Failed to load Cloudflare security overview:", error);
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
 
   return (
     <div className="space-y-6">

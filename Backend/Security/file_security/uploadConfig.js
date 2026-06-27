@@ -11,6 +11,8 @@ const MimeChecker = require('./mimeChecker');
 const SizeLimiter = require('./sizeLimiter');
 const { getCloudflareConfig } = require('./cloudflareConfig');
 
+const defaultBucket = process.env.SUPABASE_STORAGE_BUCKET || 'user-assets';
+
 class UploadConfig {
   constructor(options = {}) {
     this.uploadDir = options.uploadDir || 'uploads/';
@@ -38,11 +40,13 @@ class UploadConfig {
         options.supabaseStorage?.bucket ||
         process.env.SUPABASE_BUCKET_FILE_SECURITY ||
         process.env.SUPABASE_STORAGE_BUCKET ||
-        'file-security',
+        defaultBucket,
       folder:
         options.supabaseStorage?.folder ||
         process.env.SUPABASE_STORAGE_FOLDER_FILE_SECURITY ||
-        'File security'
+        'File security',
+      privateOnly: options.supabaseStorage?.privateOnly !== false,
+      signedUrlExpirySeconds: Number(options.supabaseStorage?.signedUrlExpirySeconds || process.env.SUPABASE_STORAGE_SIGNED_URL_TTL_SECONDS || 300)
     };
   }
 
@@ -81,6 +85,8 @@ class UploadConfig {
       apiKey: this.supabaseStorage.apiKey,
       bucket: this.supabaseStorage.bucket,
       folder: this.supabaseStorage.folder,
+      privateOnly: this.supabaseStorage.privateOnly,
+      signedUrlExpirySeconds: this.supabaseStorage.signedUrlExpirySeconds,
       isConfigured: Boolean(this.supabaseStorage.url && this.supabaseStorage.apiKey)
     };
   }

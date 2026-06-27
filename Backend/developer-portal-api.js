@@ -1,6 +1,9 @@
 import express from "express";
 import { logSecurityEvent, securityEventTemplates, extractRequestMetadata } from "./security-events-logger.js";
 import { getSupabaseClient as getAuthSupabaseClient } from "./Security/auth/supabaseClient.js";
+import cloudflareConfigModule from "./Security/file_security/cloudflareConfig.js";
+
+const { getCloudflareConfig } = cloudflareConfigModule;
 
 const router = express.Router();
 
@@ -281,6 +284,141 @@ const verifyTesterOrDeveloperAccess = async (req, res, next) => {
   }
 };
 
+const verifyPortalAccess = async (req, res, next) => {
+  try {
+    const auth = await authenticateInternalRequest(req, res);
+    if (!auth) return;
+
+    const allowedRoles = ["admin", "super_admin", "developer", "security_admin", "security_analyst", "security_viewer"];
+    if (!allowedRoles.includes(auth.profile.role)) {
+      return res.status(403).json({ error: "Insufficient permissions" });
+    }
+
+    next();
+  } catch (error) {
+    console.error("Portal access verification error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+const buildCloudflareFallbackPayload = (config) => {
+  const configured = Boolean(config.apiToken && config.accountId);
+  return {
+    configured,
+    source: configured ? "cloudflare-api" : "fallback",
+    generatedAt: new Date().toISOString(),
+    accountId: config.accountId || null,
+    zoneId: config.zoneId || null,
+    summary: {
+      requests: 0,
+      bandwidthBytes: 0,
+      blockedRequests: 0,
+      uniqueVisitors: 0,
+      threats: 0,
+    },
+    security: {
+      criticalAlerts: 0,
+      activeThreats: 0,
+      failedLogins: 0,
+      blockedRequests: 0,
+      systemHealth: configured ? 98 : 95,
+    },
+    recentEvents: [],
+    notes: configured
+      ? []
+      : ["Cloudflare API token and account ID are not configured. Showing safe fallback metrics."],
+  };
+};
+
+const fetchCloudflarePortalOverview = async () => {
+  const config = getCloudflareConfig();
+  if (!config.apiToken) {
+    return buildCloudflareFallbackPayload(config);
+  }
+
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const until = new Date().toISOString();
+  const headers = {
+    Authorization: `Bearer ${config.apiToken}`,
+    "Content-Type": "application/json",
+  };
+
+  const analyticsUrl = config.zoneId
+    ? `https://api.cloudflare.com/client/v4/zones/${config.zoneId}/analytics/dashboard?since=${encodeURIComponent(since)}&until=${encodeURIComponent(until)}&interval=1d`
+    : `https://api.cloudflare.com/client/v4/accounts/${config.accountId}/analytics/dashboard?since=${encodeURIComponent(since)}&until=${encodeURIComponent(until)}&interval=1d`;
+
+  const firewallUrl = config.zoneId
+    ? `https://api.cloudflare.com/client/v4/zones/${config.zoneId}/firewall/events?limit=10&direction=desc`
+    : `https://api.cloudflare.com/client/v4/accounts/${config.accountId}/firewall/events?limit=10&direction=desc`;
+
+  const [analyticsResponse, firewallResponse] = await Promise.allSettled([
+    fetch(analyticsUrl, { headers }),
+    fetch(firewallUrl, { headers }),
+  ]);
+
+  const fallback = buildCloudflareFallbackPayload(config);
+
+  if (analyticsResponse.status === "rejected") {
+    return {
+      ...fallback,
+      source: "fallback",
+      notes: ["Cloudflare analytics endpoint could not be reached. Showing safe fallback metrics."],
+    };
+  }
+
+  const analyticsData = await analyticsResponse.value.json().catch(() => null);
+  const firewallData = firewallResponse.status === "fulfilled"
+    ? await firewallResponse.value.json().catch(() => null)
+    : null;
+
+  const analyticsResult = analyticsData?.result || analyticsData || {};
+  const totals = analyticsResult?.totals || analyticsResult?.summary || analyticsResult?.data?.totals || {};
+  const requests = Number(totals.requests || totals.all?.requests || analyticsResult?.requests || 0) || 0;
+  const bandwidthBytes = Number(totals.bandwidth || totals.bytes || totals.bytes_proxied || analyticsResult?.bandwidth || 0) || 0;
+  const uniqueVisitors = Number(totals.uniques || totals.unique_visitors || totals.uniqueVisitors || analyticsResult?.uniqueVisitors || 0) || 0;
+  const threats = Number(totals.threats || totals.bot_requests || totals.attack_requests || analyticsResult?.threats || 0) || 0;
+
+  const events = Array.isArray(firewallData?.result) ? firewallData.result : [];
+  const blockedRequests = events.filter((event) => {
+    const action = String(event?.action || "").toLowerCase();
+    return ["block", "challenge", "managed_challenge", "jschl"].includes(action);
+  }).length;
+  const criticalAlerts = events.filter((event) => {
+    const severity = String(event?.severity || "").toLowerCase();
+    const action = String(event?.action || "").toLowerCase();
+    return severity === "high" || severity === "critical" || action === "block";
+  }).length;
+
+  return {
+    configured: true,
+    source: "cloudflare-api",
+    generatedAt: new Date().toISOString(),
+    accountId: config.accountId || null,
+    zoneId: config.zoneId || null,
+    summary: {
+      requests,
+      bandwidthBytes,
+      blockedRequests,
+      uniqueVisitors,
+      threats,
+    },
+    security: {
+      criticalAlerts,
+      activeThreats: Math.max(0, Math.round(threats / 10)),
+      failedLogins: 0,
+      blockedRequests,
+      systemHealth: Math.max(88, 100 - Math.min(20, Math.round((blockedRequests + threats) / 50))),
+    },
+    recentEvents: events.slice(0, 5).map((event) => ({
+      action: event?.action || "unknown",
+      ruleId: event?.rule_id || event?.ruleId || null,
+      severity: event?.severity || "info",
+      source: event?.source || "cloudflare",
+      timestamp: event?.timestamp || event?.created_at || new Date().toISOString(),
+    })),
+  };
+};
+
 // ============ DASHBOARD STATS ============
 
 /**
@@ -383,6 +521,26 @@ router.get("/api/developer/dashboard/stats", verifyDeveloperAccess, async (req, 
   } catch (error) {
     console.error("Dashboard stats error:", error);
     res.status(500).json({ error: "Failed to fetch dashboard stats" });
+  }
+});
+
+router.get("/api/developer/cloudflare/overview", verifyPortalAccess, async (_req, res) => {
+  try {
+    const payload = await fetchCloudflarePortalOverview();
+    res.json(payload);
+  } catch (error) {
+    console.error("Cloudflare overview error:", error);
+    res.status(500).json({ error: "Failed to fetch Cloudflare overview" });
+  }
+});
+
+router.get("/api/security/cloudflare/overview", verifyPortalAccess, async (_req, res) => {
+  try {
+    const payload = await fetchCloudflarePortalOverview();
+    res.json(payload);
+  } catch (error) {
+    console.error("Security Cloudflare overview error:", error);
+    res.status(500).json({ error: "Failed to fetch Cloudflare overview" });
   }
 });
 

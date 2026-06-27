@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { supabase } from "../../lib/supabase";
 import { canAccessPortal } from "../../shared/auth/permissions";
 import type { AuthContextType, AppProfile, AppRole } from "../../shared/types/auth";
@@ -10,6 +10,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<AuthContextType["session"]>(null);
   const [profile, setProfile] = useState<AppProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const previousPathRef = useRef<string | null>(typeof window !== "undefined" ? window.location.pathname : null);
 
   const refreshProfile = async () => {
     if (!session) {
@@ -84,22 +85,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const clearStoredClientSession = () => {
+  const clearStoredClientSession = useCallback(() => {
     if (typeof window === "undefined") {
       return;
     }
 
     localStorage.removeItem("portalIntent");
     localStorage.removeItem("justLoggedIn");
+    localStorage.removeItem("authRedirectUrl");
 
     Object.keys(localStorage).forEach((key) => {
       if (key.startsWith("sb-") && key.endsWith("-auth-token")) {
         localStorage.removeItem(key);
       }
     });
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async (redirectTo?: string) => {
     clearStoredClientSession();
 
     try {
@@ -112,9 +114,61 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(null);
       setProfile(null);
       setIsLoading(false);
-      window.location.href = "/";
+      if (redirectTo) {
+        window.location.replace(redirectTo);
+      }
     }
-  };
+  }, [clearStoredClientSession]);
+
+  const getLoginRoute = useCallback((pathname: string) => {
+    if (pathname.startsWith("/developer")) {
+      return "/developer/auth";
+    }
+
+    if (pathname.startsWith("/admin")) {
+      return "/admin/auth";
+    }
+
+    if (pathname.startsWith("/tester")) {
+      return "/tester/auth";
+    }
+
+    return "/";
+  }, []);
+
+  const isProtectedPath = useCallback((pathname: string) => {
+    return pathname === "/app" || pathname === "/user/dashboard" || pathname.startsWith("/developer") || pathname.startsWith("/admin") || pathname.startsWith("/tester") || pathname.startsWith("/user");
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !session) {
+      return;
+    }
+
+    const handleHistoryNavigation = async () => {
+      const pathname = window.location.pathname;
+      const previousPath = previousPathRef.current;
+      previousPathRef.current = pathname;
+
+      if (!previousPath || previousPath === pathname) {
+        return;
+      }
+
+      const leavingProtectedArea = isProtectedPath(previousPath) && !isProtectedPath(pathname) && pathname !== "/auth/callback";
+      if (!leavingProtectedArea) {
+        return;
+      }
+
+      const loginRoute = getLoginRoute(pathname);
+      await logout(loginRoute);
+    };
+
+    window.addEventListener("popstate", handleHistoryNavigation);
+
+    return () => {
+      window.removeEventListener("popstate", handleHistoryNavigation);
+    };
+  }, [getLoginRoute, isProtectedPath, logout, session]);
 
   const hasRole = (role: AppRole | AppRole[]) => {
     if (!profile) {

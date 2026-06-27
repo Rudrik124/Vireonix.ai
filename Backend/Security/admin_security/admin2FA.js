@@ -1,4 +1,4 @@
-const crypto = require('crypto');
+import crypto from 'crypto';
 
 class Admin2FA {
   constructor(options = {}) {
@@ -421,4 +421,5 @@ class Admin2FA {
   }
 }
 
-module.exports = Admin2FA;
+export { Admin2FA };
+export default Admin2FA;

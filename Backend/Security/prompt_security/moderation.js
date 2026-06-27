@@ -4,7 +4,7 @@
  * Workflow: User Prompt → Moderation → Approved/Blocked
  */
 
-const { getOpenAIModerationConfig } = require('./openaiConfig');
+import { getOpenAIModerationConfig } from './openaiConfig.js';
 
 class Moderation {
   constructor(options = {}) {
@@ -105,7 +105,15 @@ class Moderation {
     const localCheck = this.moderateLocal(prompt);
 
     if (!this.openai.isConfigured) {
-      return localCheck;
+      return {
+        status: 'BLOCKED',
+        reason: 'OpenAI moderation is not configured',
+        details: {
+          ...localCheck.details,
+          moderationFallback: 'openai_moderation_unavailable',
+          moderationError: 'OPENAI_MODERATION_API_KEY is missing'
+        }
+      };
     }
 
     try {
@@ -115,10 +123,19 @@ class Moderation {
         return openAiCheck;
       }
 
-      return localCheck;
-    } catch (error) {
       return {
         ...localCheck,
+        details: {
+          ...localCheck.details,
+          provider: 'openai',
+          model: this.openai.model,
+          moderationFallback: 'openai_moderation_passed'
+        }
+      };
+    } catch (error) {
+      return {
+        status: 'BLOCKED',
+        reason: 'OpenAI moderation service unavailable',
         details: {
           ...localCheck.details,
           moderationFallback: 'openai_moderation_unavailable',
@@ -412,4 +429,4 @@ class Moderation {
   }
 }
 
-module.exports = Moderation;
+export default Moderation;
