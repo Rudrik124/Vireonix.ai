@@ -595,7 +595,7 @@ const TimelineHub = memo(({
               <motion.div
                 initial={false}
                 animate={{ left: `${playheadLeft}px` }}
-                transition={{ duration: isDragging ? 0.05 : 0, type: "tween" }}
+                transition={{ duration: isDragging ? 0.05 : isPlaying ? 0.1 : 0, ease: "linear" }}
                 className="absolute top-0 bottom-0 w-[2px] bg-red-500 z-30 shadow-[0_0_10px_rgba(239,68,68,0.8)] pointer-events-none"
                 style={{ transform: 'translateX(-50%)' }}
               >
@@ -2777,6 +2777,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const previewFrameRef = useRef<HTMLDivElement>(null);
+  const pendingTransitionSeekRef = useRef<{ clipId: string; seekTime: number } | null>(null);
 
   // --- Auto-caption handler (Gemini via backend) ---
   const handleAutoCaption = useCallback(async () => {
@@ -2877,6 +2878,14 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
     }
     return 0;
   }, [mediaItems, getEffectiveDurationForItem]);
+
+  const getTargetStartTime = useCallback((item: any) => {
+    const trim = getTrimRangeForItem(item.id, item.duration);
+    if (pendingTransitionSeekRef.current && pendingTransitionSeekRef.current.clipId === item.id) {
+      return Math.min(trim.end, trim.start + pendingTransitionSeekRef.current.seekTime);
+    }
+    return trim.start;
+  }, [getTrimRangeForItem]);
 
   // Load settings per clip when switching activePreviewId
   useEffect(() => {
@@ -3097,14 +3106,21 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
     triggerClipTransition(nextId);
   }, [activePreviewId, triggerClipTransition]);
 
-  const playNextMedia = useCallback(() => {
-    console.log("📹 [PLAYBACK] playNextMedia called for item:", activePreviewId);
-    const currentIndex = mediaItems.findIndex(i => i.id === activePreviewId);
+  const playNextMedia = useCallback((endedClipId?: string) => {
+    const currentId = endedClipId || activePreviewId;
+    if (!currentId) return;
+
+    if (endedClipId && endedClipId !== activePreviewId) {
+      console.log("📹 [PLAYBACK] playNextMedia ignored stale end event for:", endedClipId, "current active:", activePreviewId);
+      return;
+    }
+
+    console.log("📹 [PLAYBACK] playNextMedia called for item:", currentId);
+    const currentIndex = mediaItems.findIndex(i => i.id === currentId);
     if (currentIndex !== -1 && currentIndex < mediaItems.length - 1) {
       const nextId = mediaItems[currentIndex + 1].id;
       console.log("📹 [PLAYBACK] Transitioning to next clip:", nextId);
       triggerClipTransition(nextId);
-      // Don't try to play here - let the transition completion handler manage playback
       setIsPlaying(true);
     } else {
       console.log("📹 [PLAYBACK] No more clips to play");
@@ -3167,7 +3183,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
         if (currentLocalTime >= trim.end) {
           videoRef.current.currentTime = trim.end;
           setProgress(((timeBefore + (trim.end - trim.start)) / (totalDuration || 1)) * 100 || 0);
-          playNextMedia();
+          playNextMedia(activeItem.id);
           return;
         }
         currentLocalTime = Math.max(0, currentLocalTime - trim.start);
@@ -3295,7 +3311,11 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
       const playPromise = video.play();
       if (playPromise !== undefined) {
         playPromise.catch(err => {
-          console.warn("📹 [PLAYBACK] useEffect play failed:", err);
+          console.warn("📹 [PLAYBACK] useEffect play failed, trying muted fallback:", err);
+          // If autoplay with audio is blocked, force muted playback for reliable preview.
+          setIsMuted(true);
+          video.muted = true;
+          video.play().catch(e => console.log("Video play fallback failed", e));
         });
       }
     } else {
@@ -3349,28 +3369,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
     }
   }, [isMuted, volumeLevel, selectedMusic]);
 
-  useEffect(() => {
-    if (videoRef.current) {
-      // Reset video to beginning when switching videos
-      const activeItem = mediaItems.find(i => i.id === activePreviewId);
-      if (activeItem?.type === 'video') {
-        videoRef.current.currentTime = 0;
-      }
-
-      if (isPlaying) {
-        videoRef.current.play().catch(() => {
-          // If autoplay with audio is blocked, force muted playback for reliable preview.
-          setIsMuted(true);
-          if (videoRef.current) {
-            videoRef.current.muted = true;
-            videoRef.current.play().catch(e => console.log("Video play failed", e));
-          }
-        });
-      } else {
-        videoRef.current.pause();
-      }
-    }
-  }, [isPlaying, activePreviewId, mediaItems]);
+  // Duplicate playback useEffect removed to prevent conflicts
 
   useEffect(() => {
     if (selectedEffect === 'none') {
@@ -3402,11 +3401,16 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
   useEffect(() => {
     const activeItem = mediaItems.find((i) => i.id === activePreviewId);
     if (!activeItem || activeItem.type !== 'video' || !videoRef.current) return;
+    if (videoRef.current.readyState < 1) return; // Wait for metadata before clamping/seeking
+    const targetStart = getTargetStartTime(activeItem);
     const trim = getTrimRangeForItem(activeItem.id, activeItem.duration);
-    if (videoRef.current.currentTime < trim.start || videoRef.current.currentTime > trim.end) {
-      videoRef.current.currentTime = trim.start;
+    if (videoRef.current.currentTime < targetStart || videoRef.current.currentTime > trim.end) {
+      videoRef.current.currentTime = targetStart;
+      if (pendingTransitionSeekRef.current && pendingTransitionSeekRef.current.clipId === activePreviewId) {
+        pendingTransitionSeekRef.current = null;
+      }
     }
-  }, [activePreviewId, mediaItems, getTrimRangeForItem, clipTrimRanges]);
+  }, [activePreviewId, mediaItems, getTrimRangeForItem, clipTrimRanges, getTargetStartTime]);
 
   // Compute overlay text style CSS from selected preset for use in preview
   const overlayTextStylePresetCss = getOverlayTextStylePresetCss(overlayTextStylePreset);
@@ -3720,12 +3724,35 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
       const elapsed = performance.now() - transitionOverlay.startAt;
       const p = Math.min(1, elapsed / transitionOverlay.durationMs);
       setTransitionProgress(p);
+
+      // Smoothly advance timeline progress (redline) during transition
+      const fromItem = mediaItems.find((item: any) => item.id === transitionOverlay.fromId);
+      if (fromItem) {
+        const timeBefore = getClipGlobalStart(transitionOverlay.fromId);
+        const durationA = getEffectiveDurationForItem(fromItem);
+        const boundaryTime = timeBefore + durationA;
+        const totalDuration = getTotalEffectiveDuration();
+
+        const transitionDurationSec = transitionOverlay.durationMs / 1000;
+        const currentTransitionTime = p * transitionDurationSec;
+        const globalTime = boundaryTime + currentTransitionTime;
+        const progressPercentage = (globalTime / (totalDuration || 1)) * 100;
+        setProgress(Math.min(progressPercentage, 100) || 0);
+      }
+
       if (p < 1) {
         raf = requestAnimationFrame(tick);
       } else {
         // Transition preview finished - update to the next clip
         console.log("✅ [TRANSITIONS] Preview animation completed for transition:", transitionOverlay.type);
         console.log("📹 [PLAYBACK] Switching to next clip after transition, isPlaying:", isPlaying);
+        
+        // Store transition duration as a pending seek offset for the incoming clip
+        pendingTransitionSeekRef.current = {
+          clipId: transitionOverlay.toId,
+          seekTime: transitionOverlay.durationMs / 1000,
+        };
+
         setActivePreviewId(transitionOverlay.toId);
         setTransitionOverlay(null);
         setTransitionProgress(0);
@@ -3746,7 +3773,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
 
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [transitionOverlay, isPlaying]);
+  }, [transitionOverlay, isPlaying, mediaItems, getClipGlobalStart, getEffectiveDurationForItem, getTotalEffectiveDuration]);
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
@@ -3754,8 +3781,14 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
     const activeItem = mediaItems.find(i => i.id === activePreviewId);
 
     if (isPlaying && activeItem?.type === 'image') {
-      const startTime = Date.now();
-      const imageDuration = (activeItem.duration || 3) * 1000;
+      let seekOffsetMs = 0;
+      if (pendingTransitionSeekRef.current && pendingTransitionSeekRef.current.clipId === activePreviewId) {
+        seekOffsetMs = pendingTransitionSeekRef.current.seekTime * 1000;
+        pendingTransitionSeekRef.current = null; // Clear it
+      }
+
+      const startTime = Date.now() - seekOffsetMs;
+      const imageDuration = Math.max(0, (activeItem.duration || 3) * 1000 - seekOffsetMs);
 
       progressInterval = setInterval(() => {
         const elapsed = Date.now() - startTime;
@@ -3771,7 +3804,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
       }, 100);
 
       timer = setTimeout(() => {
-        playNextMedia();
+        playNextMedia(activeItem.id);
       }, imageDuration);
     }
     return () => {
@@ -4819,7 +4852,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                             ref={videoRef}
                             key={`video-${activePreviewItem.id}`}
                             onTimeUpdate={handleTimeUpdate}
-                            onEnded={playNextMedia}
+                            onEnded={() => playNextMedia(activePreviewItem.id)}
                             onLoadStart={() => {
                               console.log("📹 [PLAYBACK] onLoadStart");
                             }}
@@ -4835,16 +4868,25 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                               if (videoRef.current) {
                                 const activeItem = mediaItems.find(i => i.id === activePreviewId);
                                 if (activeItem?.type === 'video') {
-                                  const trim = getTrimRangeForItem(activeItem.id, activeItem.duration);
+                                  const targetStart = getTargetStartTime(activeItem);
                                   const videoElement = videoRef.current;
-                                  videoElement.currentTime = trim.start;
-                                  console.log("📹 [PLAYBACK] Video loaded, current time set to:", trim.start, "isPlaying:", isPlaying);
+                                  videoElement.currentTime = targetStart;
+                                  console.log("📹 [PLAYBACK] Video loaded, current time set to:", targetStart, "isPlaying:", isPlaying);
+                                  
+                                  // Clear the pending seek offset once applied
+                                  if (pendingTransitionSeekRef.current && pendingTransitionSeekRef.current.clipId === activePreviewId) {
+                                    pendingTransitionSeekRef.current = null;
+                                  }
+
                                   // Immediately try to play if isPlaying is true
                                   if (isPlaying) {
                                     setTimeout(() => {
                                       if (videoElement) {
                                         videoElement.play().catch(err => {
-                                          console.warn("📹 [PLAYBACK] Play attempt failed on load:", err);
+                                          console.warn("📹 [PLAYBACK] Play attempt failed on load, trying muted fallback:", err);
+                                          setIsMuted(true);
+                                          videoElement.muted = true;
+                                          videoElement.play().catch(e => console.log("Video play fallback failed on load", e));
                                         });
                                       }
                                     }, 10);
@@ -4861,10 +4903,25 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                                 setTimeout(() => {
                                   if (videoElement) {
                                     videoElement.play().catch(err => {
-                                      console.warn("📹 [PLAYBACK] Play attempt failed:", err);
+                                      console.warn("📹 [PLAYBACK] Play attempt failed on canplay, trying muted fallback:", err);
+                                      setIsMuted(true);
+                                      videoElement.muted = true;
+                                      videoElement.play().catch(e => console.log("Video play fallback failed on canplay", e));
                                     });
                                   }
                                 }, 10);
+                              }
+                            }}
+                            onSeeked={(e) => {
+                              const videoElement = e.currentTarget;
+                              console.log("📹 [PLAYBACK] onSeeked fired, isPlaying:", isPlaying, "paused:", videoElement.paused);
+                              if (isPlaying && videoElement && videoElement.paused) {
+                                videoElement.play().catch(err => {
+                                  console.warn("📹 [PLAYBACK] Play attempt failed on seeked, trying muted fallback:", err);
+                                  setIsMuted(true);
+                                  videoElement.muted = true;
+                                  videoElement.play().catch(e => console.log("Video play fallback failed on seeked", e));
+                                });
                               }
                             }}
                             onError={(e) => {
@@ -5107,11 +5164,32 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
 
                 <button
                   onClick={() => {
-                    if (videoRef.current) videoRef.current.currentTime = 0;
-                    if (audioRef.current) audioRef.current.currentTime = 0;
+                    setIsPlaying(false);
                     setProgress(0);
+                    setReadLinePosition(0);
+                    // Go back to first clip
+                    const firstId = mediaItems[0]?.id ?? null;
+                    if (firstId) setActivePreviewId(firstId);
+                    // Reset video to trim start
+                    if (videoRef.current) {
+                      const firstItem = mediaItems[0];
+                      if (firstItem?.type === 'video') {
+                        const trim = getTrimRangeForItem(firstItem.id, firstItem.duration);
+                        videoRef.current.currentTime = trim.start;
+                        videoRef.current.pause();
+                      }
+                    }
+                    if (audioRef.current) {
+                      audioRef.current.currentTime = 0;
+                      audioRef.current.pause();
+                    }
+                    if (bgMusicRef.current) {
+                      bgMusicRef.current.currentTime = 0;
+                      bgMusicRef.current.pause();
+                    }
                   }}
                   className="p-1 text-slate-400 hover:text-white transition-colors"
+                  title="Reset to beginning"
                 >
                   <RefreshCw className="w-4 h-4" />
                 </button>
