@@ -99,7 +99,7 @@ app.use(helmet({
 }));
 
 // CORS: only allow the configured frontend origin
-const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || process.env.VITE_FRONTEND_ORIGIN || '';
+const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || process.env.VITE_FRONTEND_ORIGIN || 'http://localhost:5173';
 const corsOptions = {
   origin: function (origin, callback) {
     // Allow requests with no origin (mobile apps, curl, server-to-server)
@@ -109,7 +109,7 @@ const corsOptions = {
     return callback(new Error('CORS policy: Origin not allowed'));
   },
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Forwarded-For'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Forwarded-For', 'X-Portal', 'X-Usage-Type', 'X-Skip-Credit-Check', 'x-veytrix-flow'],
   credentials: true,
   optionsSuccessStatus: 204,
 };

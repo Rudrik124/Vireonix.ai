@@ -2778,6 +2778,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const previewFrameRef = useRef<HTMLDivElement>(null);
   const pendingTransitionSeekRef = useRef<{ clipId: string; seekTime: number } | null>(null);
+  const lastTriggeredEndRef = useRef<string | null>(null);
 
   // --- Auto-caption handler (Gemini via backend) ---
   const handleAutoCaption = useCallback(async () => {
@@ -2889,6 +2890,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
 
   // Load settings per clip when switching activePreviewId
   useEffect(() => {
+    lastTriggeredEndRef.current = null;
     if (!activePreviewId) return;
     const settings = clipSettings[activePreviewId] || {};
 
@@ -2932,11 +2934,19 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
     setSmoothZoomAmount(settings.smoothZoomAmount ?? 0.35);
     setFilmGrainOpacity(settings.filmGrainOpacity ?? 0.4);
 
+    // Clear pending seek offset if active clip is an image and we are paused
+    const activeItem = mediaItems.find(i => i.id === activePreviewId);
+    if (!isPlaying && activeItem?.type === 'image') {
+      if (pendingTransitionSeekRef.current && pendingTransitionSeekRef.current.clipId === activePreviewId) {
+        pendingTransitionSeekRef.current = null;
+      }
+    }
+
     const timer = setTimeout(() => {
       lastLoadedIdRef.current = activePreviewId;
     }, 0);
     return () => clearTimeout(timer);
-  }, [activePreviewId]);
+  }, [activePreviewId, isPlaying, mediaItems]);
 
 
   // Sync state changes to clipSettings per clip
@@ -3063,6 +3073,27 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
   ]);
 
 
+  const safePlay = useCallback((videoElement: HTMLVideoElement | null) => {
+    if (!videoElement || !videoElement.isConnected || !isPlaying) return;
+
+    // Check if video is already playing
+    if (!videoElement.paused) return;
+
+    videoElement.play().catch(err => {
+      if (err.name === 'AbortError') {
+        console.log("📹 [PLAYBACK] Play request aborted (media unmounted/reloaded).");
+        return;
+      }
+      console.warn("📹 [PLAYBACK] Play failed, trying muted fallback:", err);
+      setIsMuted(true);
+      videoElement.muted = true;
+      if (videoElement.isConnected && isPlaying && videoElement.paused) {
+        videoElement.play().catch(e => console.log("Muted play fallback failed", e));
+      }
+    });
+  }, [isPlaying, setIsMuted]);
+
+
   const triggerClipTransition = useCallback((nextId: string) => {
     if (!activePreviewId || activePreviewId === nextId) {
       setActivePreviewId(nextId);
@@ -3099,12 +3130,8 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
       setActivePreviewId(null);
       return;
     }
-    if (!activePreviewId || activePreviewId === nextId) {
-      setActivePreviewId(nextId);
-      return;
-    }
-    triggerClipTransition(nextId);
-  }, [activePreviewId, triggerClipTransition]);
+    setActivePreviewId(nextId);
+  }, []);
 
   const playNextMedia = useCallback((endedClipId?: string) => {
     const currentId = endedClipId || activePreviewId;
@@ -3167,6 +3194,12 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
       const activeIndex = mediaItems.findIndex(i => i.id === activePreviewId);
       if (activeIndex < 0) return; // Safety check
 
+      // If we are currently waiting for a transition seek to complete, ignore or hold the position
+      if (pendingTransitionSeekRef.current && pendingTransitionSeekRef.current.clipId === activePreviewId) {
+        console.log("📹 [PLAYBACK] handleTimeUpdate ignored because transition seek is pending for:", activePreviewId);
+        return;
+      }
+
       const activeItem = activeIndex >= 0 ? mediaItems[activeIndex] : null;
       const timeBefore = mediaItems
         .slice(0, activeIndex)
@@ -3181,9 +3214,12 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
           currentLocalTime = trim.start;
         }
         if (currentLocalTime >= trim.end) {
-          videoRef.current.currentTime = trim.end;
-          setProgress(((timeBefore + (trim.end - trim.start)) / (totalDuration || 1)) * 100 || 0);
-          playNextMedia(activeItem.id);
+          if (lastTriggeredEndRef.current !== activeItem.id) {
+            lastTriggeredEndRef.current = activeItem.id;
+            console.log("📹 [PLAYBACK] Clip reached end in handleTimeUpdate:", activeItem.id);
+            setProgress(((timeBefore + (trim.end - trim.start)) / (totalDuration || 1)) * 100 || 0);
+            playNextMedia(activeItem.id);
+          }
           return;
         }
         currentLocalTime = Math.max(0, currentLocalTime - trim.start);
@@ -3249,7 +3285,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
       const itemEffectiveDuration = getEffectiveDurationForItem(item);
       if (clampedSeekTime <= accumulated + itemEffectiveDuration) {
         const offset = clampedSeekTime - accumulated;
-        triggerClipTransition(item.id);
+        setActivePreviewId(item.id);
         // Use a tiny timeout to let the video/img mount before seeking
         setTimeout(() => {
           if (videoRef.current && item.type === 'video') {
@@ -3266,7 +3302,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
     }
     setProgress(pos);
     setReadLinePosition(pos);
-  }, [mediaItems, getEffectiveDurationForItem, getTotalEffectiveDuration, triggerClipTransition, getTrimRangeForItem]);
+  }, [mediaItems, getEffectiveDurationForItem, getTotalEffectiveDuration, setActivePreviewId, getTrimRangeForItem]);
 
   const moveReadLine = (deltaSeconds: number) => {
     const totalDuration = getTotalEffectiveDuration();
@@ -3308,20 +3344,11 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
     console.log("📹 [PLAYBACK] useEffect updating play state:", { isPlaying, videoElementExists: !!video });
 
     if (isPlaying) {
-      const playPromise = video.play();
-      if (playPromise !== undefined) {
-        playPromise.catch(err => {
-          console.warn("📹 [PLAYBACK] useEffect play failed, trying muted fallback:", err);
-          // If autoplay with audio is blocked, force muted playback for reliable preview.
-          setIsMuted(true);
-          video.muted = true;
-          video.play().catch(e => console.log("Video play fallback failed", e));
-        });
-      }
+      safePlay(video);
     } else {
       video.pause();
     }
-  }, [isPlaying, activePreviewId, mediaItems]);
+  }, [isPlaying, activePreviewId, safePlay]);
 
   // Sync background audio with main playback
   useEffect(() => {
@@ -3762,9 +3789,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
           setTimeout(() => {
             if (videoRef.current) {
               console.log("📹 [PLAYBACK] Resuming playback on next clip");
-              videoRef.current.play().catch((err) => {
-                console.warn("📹 [PLAYBACK] Failed to resume playback after transition:", err);
-              });
+              safePlay(videoRef.current);
             }
           }, 50);
         }
@@ -3773,7 +3798,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
 
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [transitionOverlay, isPlaying, mediaItems, getClipGlobalStart, getEffectiveDurationForItem, getTotalEffectiveDuration]);
+  }, [transitionOverlay, isPlaying, mediaItems, getClipGlobalStart, getEffectiveDurationForItem, getTotalEffectiveDuration, safePlay]);
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
@@ -4852,7 +4877,13 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                             ref={videoRef}
                             key={`video-${activePreviewItem.id}`}
                             onTimeUpdate={handleTimeUpdate}
-                            onEnded={() => playNextMedia(activePreviewItem.id)}
+                             onEnded={() => {
+                              if (lastTriggeredEndRef.current !== activePreviewItem.id) {
+                                lastTriggeredEndRef.current = activePreviewItem.id;
+                                console.log("📹 [PLAYBACK] Clip reached end in onEnded:", activePreviewItem.id);
+                                playNextMedia(activePreviewItem.id);
+                              }
+                            }}
                             onLoadStart={() => {
                               console.log("📹 [PLAYBACK] onLoadStart");
                             }}
@@ -4878,19 +4909,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                                     pendingTransitionSeekRef.current = null;
                                   }
 
-                                  // Immediately try to play if isPlaying is true
-                                  if (isPlaying) {
-                                    setTimeout(() => {
-                                      if (videoElement) {
-                                        videoElement.play().catch(err => {
-                                          console.warn("📹 [PLAYBACK] Play attempt failed on load, trying muted fallback:", err);
-                                          setIsMuted(true);
-                                          videoElement.muted = true;
-                                          videoElement.play().catch(e => console.log("Video play fallback failed on load", e));
-                                        });
-                                      }
-                                    }, 10);
-                                  }
+                                  safePlay(videoElement);
                                 } else {
                                   videoRef.current.currentTime = 0;
                                 }
@@ -4899,30 +4918,12 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
                             onCanPlay={(e) => {
                               const videoElement = e.currentTarget;
                               console.log("📹 [PLAYBACK] onCanPlay fired, isPlaying:", isPlaying, "videoElement:", !!videoElement);
-                              if (isPlaying && videoElement) {
-                                setTimeout(() => {
-                                  if (videoElement) {
-                                    videoElement.play().catch(err => {
-                                      console.warn("📹 [PLAYBACK] Play attempt failed on canplay, trying muted fallback:", err);
-                                      setIsMuted(true);
-                                      videoElement.muted = true;
-                                      videoElement.play().catch(e => console.log("Video play fallback failed on canplay", e));
-                                    });
-                                  }
-                                }, 10);
-                              }
+                              safePlay(videoElement);
                             }}
                             onSeeked={(e) => {
                               const videoElement = e.currentTarget;
                               console.log("📹 [PLAYBACK] onSeeked fired, isPlaying:", isPlaying, "paused:", videoElement.paused);
-                              if (isPlaying && videoElement && videoElement.paused) {
-                                videoElement.play().catch(err => {
-                                  console.warn("📹 [PLAYBACK] Play attempt failed on seeked, trying muted fallback:", err);
-                                  setIsMuted(true);
-                                  videoElement.muted = true;
-                                  videoElement.play().catch(e => console.log("Video play fallback failed on seeked", e));
-                                });
-                              }
+                              safePlay(videoElement);
                             }}
                             onError={(e) => {
                               console.error("📹 [PLAYBACK] Video error:", e);
