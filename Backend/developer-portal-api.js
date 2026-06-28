@@ -180,10 +180,10 @@ const isTesterAccount = (authUser, profile) => {
 
 const getDeveloperCreditBalance = async (userId, profile) => {
   const { data: wallet } = await getSupabaseClient()
-    .from("credit_wallets")
+    .from("tester_credit_wallets")
     .select("balance")
     .eq("user_id", userId)
-    .eq("wallet_type", "developer_credits")
+    .eq("wallet_type", "tester_credits")
     .maybeSingle();
 
   return Number(wallet?.balance ?? profile?.developer_credits ?? 0);
@@ -1343,21 +1343,22 @@ router.get("/api/developer/credits/summary", verifyDeveloperAccess, async (req, 
 
     try {
       const { data: wallets, error: walletsError } = await getSupabaseClient()
-        .from('credit_wallets')
-        .select('balance');
+        .from('tester_credit_wallets')
+        .select('balance')
+        .eq('wallet_type', 'tester_credits');
 
       if (walletsError) {
         const msg = String(walletsError.message || '').toLowerCase();
         if (walletsError.code === '42P01' || msg.includes('does not exist') || msg.includes('could not find the table')) {
           schemaMissing = true;
         } else {
-          console.warn('Failed to query credit_wallets:', walletsError.message);
+          console.warn('Failed to query tester_credit_wallets:', walletsError.message);
         }
       } else {
         creditsLeft = (wallets || []).reduce((s, w) => s + (Number(w.balance) || 0), 0);
       }
     } catch (err) {
-      console.warn('Error querying credit_wallets:', err?.message || err);
+      console.warn('Error querying tester_credit_wallets:', err?.message || err);
       schemaMissing = true;
     }
 
@@ -1939,17 +1940,11 @@ router.post("/api/developer/testers", verifyDeveloperAccess, async (req, res) =>
       developerCredits: 0,
     });
 
-    await getSupabaseClient().from("credit_wallets").upsert(
+    await getSupabaseClient().from("tester_credit_wallets").upsert(
       [
         {
           user_id: testerId,
-          wallet_type: "user_credits",
-          balance: 0,
-          is_unlimited: false,
-        },
-        {
-          user_id: testerId,
-          wallet_type: "developer_credits",
+          wallet_type: "tester_credits",
           balance: 0,
           is_unlimited: false,
         },
@@ -2102,19 +2097,19 @@ router.post("/api/developer/testers/:testerId/credits/assign", verifyDeveloperAc
     
     // Ensure wallet exists before updating balance
     const { data: existingWallet } = await getSupabaseClient()
-      .from("credit_wallets")
+      .from("tester_credit_wallets")
       .select("id")
       .eq("user_id", testerId)
-      .eq("wallet_type", "developer_credits")
+      .eq("wallet_type", "tester_credits")
       .maybeSingle();
 
     if (!existingWallet) {
       // Initialize wallet if it doesn't exist
       const { error: initError } = await getSupabaseClient()
-        .from("credit_wallets")
+        .from("tester_credit_wallets")
         .insert({
           user_id: testerId,
-          wallet_type: "developer_credits",
+          wallet_type: "tester_credits",
           balance: 0,
           is_unlimited: false,
         });
@@ -2128,11 +2123,11 @@ router.post("/api/developer/testers/:testerId/credits/assign", verifyDeveloperAc
     const newBalance = (await getDeveloperCreditBalance(testerId, existingProfile)) + creditAmount;
 
     const { error: walletError } = await getSupabaseClient()
-      .from("credit_wallets")
+      .from("tester_credit_wallets")
       .upsert(
         {
           user_id: testerId,
-          wallet_type: "developer_credits",
+          wallet_type: "tester_credits",
           balance: newBalance,
           is_unlimited: false,
         },
