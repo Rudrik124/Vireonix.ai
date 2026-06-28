@@ -135,12 +135,12 @@ export function SecurityPortalDashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white flex">
+    <div className="min-h-[100dvh] bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white flex">
       {/* Sidebar */}
       <motion.div
         initial={false}
         animate={{ width: sidebarOpen ? 280 : 80 }}
-        className="sticky top-0 h-screen border-r border-slate-800 bg-slate-950/80 backdrop-blur-md overflow-hidden"
+        className="sticky top-0 h-[100dvh] border-r border-slate-800 bg-slate-950/80 backdrop-blur-md overflow-hidden"
       >
         <div className="p-4 border-b border-slate-800">
           <div className="flex items-center justify-between">

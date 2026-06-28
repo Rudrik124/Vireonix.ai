@@ -79,7 +79,7 @@ export function UserAuthPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#12314f_0%,#08111e_45%,#050914_100%)] text-white px-6 py-12">
+    <div className="min-h-[100dvh] bg-[radial-gradient(circle_at_top,#12314f_0%,#08111e_45%,#050914_100%)] text-white px-6 py-12">
       <div className="mx-auto max-w-5xl grid gap-6 lg:grid-cols-[1.2fr,0.9fr]">
         <section className="rounded-[2rem] border border-cyan-500/20 bg-white/5 p-10 backdrop-blur-2xl">
           <p className="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">User Access</p>

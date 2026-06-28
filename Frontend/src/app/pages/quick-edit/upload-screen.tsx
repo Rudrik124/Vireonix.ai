@@ -246,12 +246,12 @@ export function QuickEditUploadScreen() {
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
-      marginTop: '2vh',
-      marginBottom: '3vh',
+      marginTop: '1vh',
+      marginBottom: '2vh',
     },
 
     title: {
-      fontSize: 'clamp(2.5rem, 4vw, 4rem)',
+      fontSize: 'clamp(2rem, 3.5vw, 3.5rem)',
       fontWeight: '900',
       textAlign: 'center',
       marginBottom: '8px',
@@ -282,7 +282,7 @@ export function QuickEditUploadScreen() {
     uploadZone: {
       width: '100%',
       flex: 1,
-      minHeight: '250px',
+      minHeight: '200px',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
@@ -361,7 +361,7 @@ export function QuickEditUploadScreen() {
       border: `1px solid ${CONFIG.glassBorder}`,
       borderRadius: '10px',
       padding: '12px 16px',
-      marginTop: '16px',
+      marginTop: '12px',
       flexWrap: 'wrap',
       gap: '10px',
     },
@@ -405,7 +405,7 @@ export function QuickEditUploadScreen() {
     // CTA Button
     ctaBtn: {
       width: '100%',
-      height: '64px',
+      height: '56px',
       background: file ? CONFIG.gradient : 'rgba(255, 255, 255, 0.15)',
       color: '#FFFFFF',
       border: 'none',
@@ -433,7 +433,7 @@ export function QuickEditUploadScreen() {
       display: 'flex',
       justifyContent: 'center',
       gap: '24px',
-      marginTop: '12px',
+      marginTop: '8px',
       fontSize: '11px',
       color: CONFIG.textMuted2,
     },
@@ -509,7 +509,7 @@ export function QuickEditUploadScreen() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
             <div style={styles.logo} onClick={() => navigate(redirectTo || "/features")}>
               <BrandLogo size={32} />
-              <span style={{ marginLeft: '8px', background: CONFIG.gradient, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>VEYTRIX.AI</span>
+              <span style={{ marginLeft: '8px', color: '#FFFFFF' }}>VEYTRIX<span style={{ color: '#c084fc' }}>.AI</span></span>
             </div>
             <button style={styles.navBtn} onClick={() => navigate(redirectTo || "/features")}>
               <ArrowLeft size={16} />

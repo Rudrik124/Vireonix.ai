@@ -345,7 +345,7 @@ export function TesterBugReportsPage() {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-[#050816] font-sans selection:bg-cyan-500/30 selection:text-white text-slate-200 pb-16">
+    <div className="min-h-[100dvh] relative overflow-hidden bg-[#050816] font-sans selection:bg-cyan-500/30 selection:text-white text-slate-200 pb-16">
       {showSuccess && (
         <SuccessToast message="Bug report submitted" onDismiss={() => setShowSuccess(false)} />
       )}

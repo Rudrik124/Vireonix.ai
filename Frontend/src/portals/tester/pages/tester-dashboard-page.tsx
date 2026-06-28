@@ -53,7 +53,7 @@ export function TesterDashboardPage() {
   }, [mouseX, mouseY]);
 
   if (isLoading) {
-    return <div className="flex items-center justify-center min-h-screen bg-[#050816] text-cyan-400 font-bold">Loading Sandbox...</div>;
+    return <div className="flex items-center justify-center min-h-[100dvh] bg-[#050816] text-cyan-400 font-bold">Loading Sandbox...</div>;
   }
 
   if (!profile) {
@@ -108,7 +108,7 @@ export function TesterDashboardPage() {
   ];
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-[#050816] font-sans selection:bg-cyan-500/30 selection:text-white text-slate-200">
+    <div className="min-h-[100dvh] relative overflow-hidden bg-[#050816] font-sans selection:bg-cyan-500/30 selection:text-white text-slate-200">
       
       {/* Background Layers */}
       <div className="fixed inset-0 z-0 pointer-events-none">

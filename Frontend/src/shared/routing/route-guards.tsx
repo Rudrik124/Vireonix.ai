@@ -1,12 +1,13 @@
-import type { ReactNode } from "react";
-import { Navigate, useLocation } from "react-router";
+import { useEffect, type ReactNode } from "react";
+import { Navigate, useLocation, useBlocker } from "react-router";
 import { canAccessPortal } from "../auth/permissions";
 import type { AppRole, PortalId } from "../types/auth";
 import { useAuth } from "../../app/context/auth-context";
+import { getRoleRedirectUrl } from "../../lib/role-redirect";
 
 function FullScreenState({ title, body }: { title: string; body: string }) {
   return (
-    <div className="min-h-screen bg-[#07111f] text-white flex items-center justify-center px-6">
+    <div className="min-h-[100dvh] bg-[#07111f] text-white flex items-center justify-center px-6">
       <div className="max-w-xl rounded-3xl border border-cyan-500/20 bg-white/5 p-10 backdrop-blur-xl text-center">
         <p className="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">{title}</p>
         <p className="mt-4 text-base text-slate-300">{body}</p>
@@ -14,6 +15,11 @@ function FullScreenState({ title, body }: { title: string; body: string }) {
     </div>
   );
 }
+
+// Add a helper to force navigation outside React Router's standard loop for aggressive history traps
+const forceNavigation = (url: string) => {
+  window.location.replace(url);
+};
 
 interface PortalGateProps {
   portal: PortalId;
@@ -24,6 +30,19 @@ interface PortalGateProps {
 export function PortalGate({ portal, allowedRoles, children }: PortalGateProps) {
   const location = useLocation();
   const { isLoading, isLoggedIn, profile, hasRole } = useAuth();
+
+  // Disable back and forward buttons inside privileged portals
+  useEffect(() => {
+    if (isLoggedIn && !isLoading && portal !== "user") {
+      const handlePopState = (event: PopStateEvent) => {
+        // If they click back/forward, forcefully push them forward again to trap them
+        window.history.go(1);
+      };
+      
+      window.addEventListener("popstate", handlePopState);
+      return () => window.removeEventListener("popstate", handlePopState);
+    }
+  }, [isLoggedIn, isLoading, portal]);
 
   if (isLoading) {
     return <FullScreenState title="Loading Access" body="Checking your portal session and permissions." />;
@@ -42,6 +61,12 @@ export function PortalGate({ portal, allowedRoles, children }: PortalGateProps) 
   }
 
   if (!canAccessPortal(profile, portal)) {
+    // If they landed in the wrong portal (e.g. via fast back button clicks), bounce them to their correct portal
+    const correctPortalUrl = getRoleRedirectUrl(profile?.email, profile, null);
+    if (correctPortalUrl && correctPortalUrl !== location.pathname) {
+      return <Navigate to={correctPortalUrl} replace />;
+    }
+    
     return (
       <FullScreenState
         title="Access Denied"

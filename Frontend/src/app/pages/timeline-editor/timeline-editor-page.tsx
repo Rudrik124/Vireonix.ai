@@ -157,7 +157,7 @@ export function TimelineEditorPage() {
   // if (!isLoggedIn) {
   //   return (
   //     <>
-  //       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+  //       <div className="min-h-[100dvh] bg-slate-950 flex items-center justify-center">
   //         <div className="text-center">
   //           <BrandLogo />
   //           <p className="text-slate-400 mt-4">Please log in to use the timeline editor</p>
@@ -169,7 +169,7 @@ export function TimelineEditorPage() {
   // }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
+    <div className="min-h-[100dvh] bg-slate-950 text-slate-100">
       {/* Header */}
       <div className="border-b border-white/10 bg-[#0a0d1a]/80 backdrop-blur-xl sticky top-0 z-50">
         <div className="max-w-full px-6 py-4 flex items-center justify-between">

@@ -263,7 +263,7 @@ export function TesterAnalyticsPage() {
 
   if (authLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#050816] text-cyan-400 font-bold">
+      <div className="flex items-center justify-center min-h-[100dvh] bg-[#050816] text-cyan-400 font-bold">
         <Loader className="w-8 h-8 animate-spin mr-3" /> Loading Analytics Core...
       </div>
     );
@@ -294,7 +294,7 @@ export function TesterAnalyticsPage() {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-[#050816] font-sans selection:bg-cyan-500/30 selection:text-white text-slate-200 pb-16">
+    <div className="min-h-[100dvh] relative overflow-hidden bg-[#050816] font-sans selection:bg-cyan-500/30 selection:text-white text-slate-200 pb-16">
       
       {/* Background Layers */}
       <div className="fixed inset-0 z-0 pointer-events-none">

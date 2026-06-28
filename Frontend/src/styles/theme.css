@@ -1,7 +1,7 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --font-size: 16px;
+  --font-size: 14.4px;
   --background: #ffffff;
   --foreground: oklch(0.145 0 0);
   --card: #ffffff;
@@ -122,6 +122,30 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Scaled Text Sizes (-5% Net Reduction relative to 10% Layout Reduction) */
+  --text-xs: 0.791rem;
+  --text-sm: 0.924rem;
+  --text-base: 1.055rem;
+  --text-lg: 1.188rem;
+  --text-xl: 1.319rem;
+  --text-2xl: 1.583rem;
+  --text-3xl: 1.979rem;
+  --text-4xl: 2.375rem;
+  --text-5xl: 3.167rem;
+  --text-6xl: 3.958rem;
+
+  /* Scaled Line Heights */
+  --text-xs--line-height: 1.055rem;
+  --text-sm--line-height: 1.319rem;
+  --text-base--line-height: 1.583rem;
+  --text-lg--line-height: 1.847rem;
+  --text-xl--line-height: 1.847rem;
+  --text-2xl--line-height: 2.111rem;
+  --text-3xl--line-height: 2.375rem;
+  --text-4xl--line-height: 2.639rem;
+  --text-5xl--line-height: 3.167rem;
+  --text-6xl--line-height: 3.958rem;
 }
 
 @layer base {

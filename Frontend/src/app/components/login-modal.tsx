@@ -4,6 +4,8 @@ import { useNavigate } from "react-router";
 import { supabase, isSupabaseConfigured } from "../../lib/supabase";
 import { fetchAppProfile } from "../../services/auth-profile";
 import { recordLoginActivity } from "../../lib/auth-login-activity";
+import { getRoleRedirectUrl } from "../../lib/role-redirect";
+import { BrandLogo } from "./brand-logo";
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -420,32 +422,19 @@ export function LoginModal({ isOpen, onClose, customMessage, customTitle }: Logi
           const authRedirectUrl = localStorage.getItem("authRedirectUrl");
           
           if (authRedirectUrl) {
-            nextRoute = authRedirectUrl;
             localStorage.removeItem("authRedirectUrl");
-          } else if (data.session) {
+          }
+          
+          if (data.session) {
             const profile = await fetchAppProfile(data.session);
             await recordLoginActivity(data.session, profile);
             
             const userEmail = data.session.user.email?.toLowerCase() || "";
             
-            if (userEmail === "developer@veytrix.ai") {
-              nextRoute = "/developer/dashboard";
-            } else if (userEmail === "tester@veytrix.ai") {
-              nextRoute = "/tester/dashboard";
-            } else if (userEmail === "security@veytrix.ai") {
-              nextRoute = "/security/dashboard";
-            } else if (userEmail.endsWith("@gmail.com")) {
-              nextRoute = "/video-type";
-            } else {
-              // Fallback to role-based routing
-              if (profile.role === "admin" || profile.role === "super_admin") {
-                nextRoute = "/admin/dashboard";
-              } else if (profile.role === "developer") {
-                nextRoute = "/developer/dashboard";
-              } else if (profile.role === "tester") {
-                nextRoute = "/tester/dashboard";
-              }
-            }
+            // Use the centralized role redirect logic
+            nextRoute = getRoleRedirectUrl(userEmail, profile, authRedirectUrl || '/video-type');
+          } else if (authRedirectUrl) {
+            nextRoute = authRedirectUrl;
           }
           
           setTimeout(() => {
@@ -541,13 +530,11 @@ export function LoginModal({ isOpen, onClose, customMessage, customTitle }: Logi
             </div>
 
             {/* Glass Card Container */}
-            <div className="relative z-10 w-full max-w-[420px] bg-white/[0.05] backdrop-blur-[20px] border border-white/[0.1] rounded-[24px] p-8 sm:p-12 shadow-[0_25px_50px_rgba(0,0,0,0.25)]">
+            <div className="relative z-10 w-full max-w-[420px] bg-white/[0.05] backdrop-blur-[20px] border border-white/[0.1] rounded-[24px] p-6 sm:p-8 shadow-[0_25px_50px_rgba(0,0,0,0.25)]">
               
               {/* Logo & Welcome */}
-              <div className="text-center mb-8">
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-purple-400 to-blue-600 shadow-[0_0_20px_rgba(168,85,247,0.3)] mb-5">
-                  <span className="text-xl font-black text-white">V</span>
-                </div>
+              <div className="text-center mb-5">
+                <BrandLogo size={48} className="mb-3 mx-auto inline-flex" />
                 <h3 className="text-2xl font-bold text-white mb-2 tracking-tight">
                   {customTitle || "Enter your AI video studio."}
                 </h3>
@@ -557,7 +544,7 @@ export function LoginModal({ isOpen, onClose, customMessage, customTitle }: Logi
               </div>
 
               {/* Form Mode Toggle */}
-              <div className="flex bg-white/5 p-1 rounded-xl mb-6 border border-white/10">
+              <div className="flex bg-white/5 p-1 rounded-xl mb-4 border border-white/10">
                 <button
                   type="button"
                   onClick={() => { setMode("signin"); setMessage({text:"", type:""}); }}
@@ -578,7 +565,7 @@ export function LoginModal({ isOpen, onClose, customMessage, customTitle }: Logi
                 </button>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-3">
                 
                 {/* Name Field (Signup only) */}
                 <AnimatePresence>
@@ -598,7 +585,7 @@ export function LoginModal({ isOpen, onClose, customMessage, customTitle }: Logi
                           value={fullName}
                           onChange={(e) => setFullName(e.target.value)}
                           placeholder="Full name"
-                          className="w-full h-[52px] pl-[44px] pr-4 bg-white/[0.06] border border-white/10 rounded-xl text-white placeholder-slate-500 glass-input transition-all text-sm"
+                          className="w-full h-[46px] pl-[44px] pr-4 bg-white/[0.06] border border-white/10 rounded-xl text-white placeholder-slate-500 glass-input transition-all text-sm"
                         />
                       </div>
                     </motion.div>
@@ -616,7 +603,7 @@ export function LoginModal({ isOpen, onClose, customMessage, customTitle }: Logi
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Email"
-                    className="w-full h-[52px] pl-[44px] pr-4 bg-white/[0.06] border border-white/10 rounded-xl text-white placeholder-slate-500 glass-input transition-all text-sm"
+                    className="w-full h-[46px] pl-[44px] pr-4 bg-white/[0.06] border border-white/10 rounded-xl text-white placeholder-slate-500 glass-input transition-all text-sm"
                   />
                 </div>
 
@@ -630,7 +617,7 @@ export function LoginModal({ isOpen, onClose, customMessage, customTitle }: Logi
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Password"
-                    className="w-full h-[52px] pl-[44px] pr-12 bg-white/[0.06] border border-white/10 rounded-xl text-white placeholder-slate-500 glass-input transition-all text-sm"
+                    className="w-full h-[46px] pl-[44px] pr-12 bg-white/[0.06] border border-white/10 rounded-xl text-white placeholder-slate-500 glass-input transition-all text-sm"
                   />
                   <button
                     type="button"
@@ -679,7 +666,7 @@ export function LoginModal({ isOpen, onClose, customMessage, customTitle }: Logi
                 <button
                   type="submit"
                   disabled={isLoading || loginSuccess}
-                  className="relative w-full h-[52px] mt-6 rounded-xl font-bold text-white overflow-hidden group transition-all"
+                  className="relative w-full h-[46px] mt-4 rounded-xl font-bold text-white overflow-hidden group transition-all"
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-fuchsia-500 to-purple-500 transition-transform group-hover:scale-105" />
                   <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-gradient-to-r from-purple-500 to-fuchsia-600 transition-opacity duration-300" />
@@ -707,8 +694,8 @@ export function LoginModal({ isOpen, onClose, customMessage, customTitle }: Logi
                 </button>
 
                 {/* Social Login Section */}
-                <div className="mt-8">
-                  <div className="flex items-center gap-3 mb-6">
+                <div className="mt-5">
+                  <div className="flex items-center gap-3 mb-4">
                     <div className="h-px flex-1 bg-white/10" />
                     <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-500">Or continue with</span>
                     <div className="h-px flex-1 bg-white/10" />

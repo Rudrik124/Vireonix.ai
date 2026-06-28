@@ -66,7 +66,7 @@ function RouteErrorBoundary() {
   const error = useRouteError();
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-8">
+    <div className="min-h-[100dvh] bg-slate-950 text-slate-100 p-8">
       <div className="mx-auto max-w-3xl rounded-3xl border border-white/10 bg-slate-900/90 p-8 shadow-2xl shadow-purple-500/10">
         <h1 className="text-3xl font-black tracking-tight text-white">Something went wrong</h1>
         <p className="mt-3 text-sm leading-6 text-slate-400">We were unable to load this part of the editor. Please try refreshing or return to the quick edit home page.</p>

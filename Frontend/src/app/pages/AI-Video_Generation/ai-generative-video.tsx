@@ -330,7 +330,7 @@ export function AIGenerativeVideoPage() {
 
   return (
     <div
-      className="min-h-screen relative overflow-x-hidden font-sans selection:bg-purple-500/30 selection:text-white pb-20 flex flex-col text-slate-200"
+      className="min-h-[100dvh] relative overflow-x-hidden font-sans selection:bg-purple-500/30 selection:text-white pb-20 flex flex-col text-slate-200"
       style={{
         background: 'linear-gradient(135deg, #050812 0%, #0d1222 30%, #171d33 60%, #1f2540 85%, #0d1222 100%)',
         backgroundAttachment: 'fixed'

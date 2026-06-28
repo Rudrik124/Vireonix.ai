@@ -211,7 +211,7 @@ export function DeveloperTesterCreditsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-[#030712] font-sans">
+      <div className="flex flex-col items-center justify-center min-h-[100dvh] bg-[#030712] font-sans">
         <div className="w-16 h-16 rounded-full border-4 border-blue-500/20 border-t-blue-500 animate-spin mb-4 shadow-[0_0_20px_rgba(59,130,246,0.3)]" />
         <div className="text-white font-bold tracking-widest uppercase">Loading Tester Data...</div>
       </div>
@@ -222,7 +222,7 @@ export function DeveloperTesterCreditsPage() {
   const totalCreditsUsed = testers.reduce((sum, tester) => sum + tester.totalUsed, 0);
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-[#030712] font-sans selection:bg-blue-500/30 selection:text-white text-slate-200 pb-24">
+    <div className="min-h-[100dvh] relative overflow-hidden bg-[#030712] font-sans selection:bg-blue-500/30 selection:text-white text-slate-200 pb-24">
       
       {/* Background Layers */}
       <div className="fixed inset-0 z-0 pointer-events-none">

@@ -98,7 +98,7 @@ export default function LoginActivityPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 pb-24">
+    <div className="min-h-[100dvh] bg-slate-950 text-slate-100 pb-24">
       <div className="max-w-[1400px] mx-auto px-6 lg:px-10 py-10">
         <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>

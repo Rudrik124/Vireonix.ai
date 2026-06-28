@@ -222,7 +222,7 @@ export function DeveloperReportPage() {
   }, [reports, openFilter]);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
+    <div className="min-h-[100dvh] bg-slate-950 text-slate-100">
       <div className="max-w-[1600px] mx-auto p-6 space-y-6">
         <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <div className="space-y-3">

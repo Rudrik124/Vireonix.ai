@@ -207,7 +207,7 @@ export function DeveloperFeedbackPage() {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-[#030712] font-sans selection:bg-indigo-500/30 selection:text-white text-slate-200 pb-24">
+    <div className="min-h-[100dvh] relative overflow-hidden bg-[#030712] font-sans selection:bg-indigo-500/30 selection:text-white text-slate-200 pb-24">
       
       {/* Background Layers */}
       <div className="fixed inset-0 z-0 pointer-events-none">

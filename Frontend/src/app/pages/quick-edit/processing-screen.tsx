@@ -324,7 +324,7 @@ export function QuickEditProcessingScreen() {
 
   if (error) {
     return (
-      <div className="h-screen w-full flex items-center justify-center bg-[#0B1020] text-slate-200 p-8">
+      <div className="h-[100dvh] w-full flex items-center justify-center bg-[#0B1020] text-slate-200 p-8">
         <motion.div 
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -354,7 +354,7 @@ export function QuickEditProcessingScreen() {
 
   return (
     <div 
-      className="h-screen w-full flex flex-col overflow-hidden font-sans text-slate-200"
+      className="h-[100dvh] w-full flex flex-col overflow-hidden font-sans text-slate-200"
       style={{
         background: 'linear-gradient(135deg, #0B1020 0%, #1a1b2e 30%, #2d3142 60%, #3f4a67 85%, #1a1b2e 100%)',
       }}

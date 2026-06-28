@@ -101,7 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const logout = useCallback(async (redirectTo?: string) => {
+  const logout = useCallback(async (redirectTo: string = "/") => {
     clearStoredClientSession();
 
     try {
@@ -115,7 +115,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setProfile(null);
       setIsLoading(false);
       if (redirectTo) {
-        window.location.replace(redirectTo);
+        window.location.assign(redirectTo);
       }
     }
   }, [clearStoredClientSession]);
@@ -141,34 +141,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (typeof window === "undefined" || !session) {
+    if (typeof window === "undefined") {
       return;
     }
 
     const handleHistoryNavigation = async () => {
-      const pathname = window.location.pathname;
-      const previousPath = previousPathRef.current;
-      previousPathRef.current = pathname;
-
-      if (!previousPath || previousPath === pathname) {
-        return;
+      // On popstate, silently re-verify the session
+      if (supabase) {
+        await supabase.auth.getSession();
       }
+    };
 
-      const leavingProtectedArea = isProtectedPath(previousPath) && !isProtectedPath(pathname) && pathname !== "/auth/callback";
-      if (!leavingProtectedArea) {
-        return;
+    const handlePageShow = async (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        // Page was restored from BFCache, re-verify the session to prevent rendering stale authenticated UI
+        if (supabase) {
+          await supabase.auth.getSession();
+        }
       }
-
-      const loginRoute = getLoginRoute(pathname);
-      await logout(loginRoute);
     };
 
     window.addEventListener("popstate", handleHistoryNavigation);
+    window.addEventListener("pageshow", handlePageShow);
 
     return () => {
       window.removeEventListener("popstate", handleHistoryNavigation);
+      window.removeEventListener("pageshow", handlePageShow);
     };
-  }, [getLoginRoute, isProtectedPath, logout, session]);
+  }, []);
 
   const hasRole = (role: AppRole | AppRole[]) => {
     if (!profile) {

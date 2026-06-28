@@ -54,7 +54,7 @@ export function DeveloperWorkflowLabPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#264d39_0%,#0f172a_45%,#020617_100%)] text-white">
+    <div className="min-h-[100dvh] bg-[radial-gradient(circle_at_top,#264d39_0%,#0f172a_45%,#020617_100%)] text-white">
       <div className="mx-auto max-w-5xl px-6 py-12">
         <div className="rounded-[2rem] border border-emerald-400/20 bg-white/5 p-8 backdrop-blur-2xl">
           <p className="text-xs font-bold uppercase tracking-[0.35em] text-emerald-200">Workflow Lab</p>

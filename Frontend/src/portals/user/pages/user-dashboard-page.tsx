@@ -44,7 +44,7 @@ export function UserDashboardPage() {
   }, [profile]);
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#12314f_0%,#08111e_45%,#050914_100%)] text-white">
+    <div className="min-h-[100dvh] bg-[radial-gradient(circle_at_top,#12314f_0%,#08111e_45%,#050914_100%)] text-white">
       <header className="mx-auto max-w-7xl px-6 pt-8 flex justify-between items-center">
         <div className="text-xl font-black tracking-tight">VEYTRIX.AI</div>
         <Link 

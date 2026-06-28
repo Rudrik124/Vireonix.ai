@@ -143,7 +143,7 @@ export function VideoTypePage() {
   };
 
   return (
-    <div className="h-screen w-screen overflow-hidden flex flex-col relative bg-gradient-to-b from-[#130E24] to-[#0B0815] font-sans selection:bg-purple-500/30 selection:text-white">
+    <div className="h-[100dvh] w-full overflow-hidden flex flex-col relative bg-gradient-to-b from-[#130E24] to-[#0B0815] font-sans selection:bg-purple-500/30 selection:text-white">
       {/* Global CSS to strictly prevent scrolling and add custom animations */}
       <style>{`
         html, body { overflow: hidden !important; height: 100vh !important; margin: 0; padding: 0; }
@@ -280,7 +280,7 @@ export function VideoTypePage() {
       </header>
 
       {/* 3. MAIN HERO CONTENT (Center, ~75% Height - LAYER 1 & 3) */}
-      <main className="flex-1 flex flex-col items-center justify-center relative z-10 w-full max-w-7xl mx-auto px-6">
+      <main className="flex-1 flex flex-col items-center justify-start relative z-10 w-full max-w-7xl mx-auto px-6 overflow-y-auto overflow-x-hidden scrollbar-hide">
         
         {/* LAYER 2: Cinematic Glow Behind Heading */}
         <motion.div 
@@ -381,8 +381,8 @@ export function VideoTypePage() {
         </div>
 
 
-        {/* --- LAYER 1: CENTER CONTENT --- */}
-        <div className="text-center w-full max-w-4xl mx-auto flex flex-col items-center z-40">
+        {/* LAYER 1: Core Content */}
+        <div className="text-center w-full max-w-4xl mx-auto flex flex-col items-center z-40 my-auto py-8">
           
           {/* AI Modes Toggle */}
           <div className="flex flex-wrap justify-center gap-2 mb-4">

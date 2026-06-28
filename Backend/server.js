@@ -4908,6 +4908,20 @@ app.post(
         }
       }
 
+      // STEP 4.6: Adjust final video to the requested aspect ratio before burning captions
+      if (aspect && aspect !== "16:9" && aspect !== "none") {
+        try {
+          console.log(`📐 [API-MEDIA] Adjusting final output to requested frame: ${aspect}`);
+          const frameAdjustedPath = await adjustVideoToFrame(finalOutputPath, aspect);
+          if (frameAdjustedPath && frameAdjustedPath !== finalOutputPath) {
+            generatedTempFiles.push(finalOutputPath);
+            finalOutputPath = frameAdjustedPath;
+          }
+        } catch (frameErr) {
+          console.warn("⚠️ [API-MEDIA] Final frame adjustment failed, returning unadjusted output:", frameErr?.message || frameErr);
+        }
+      }
+
       // STEP 4.7: Burn captions into final video if present in editorSelections
       let resolvedCaptions = resolvedEditorSelections?.captions || parsedEditorSelections?.captions;
       let needsShift = Array.isArray(resolvedCaptions) && resolvedCaptions.length > 0;

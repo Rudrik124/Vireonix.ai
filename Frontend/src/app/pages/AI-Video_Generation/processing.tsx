@@ -51,7 +51,7 @@ export function ProcessingPage() {
 
   return (
     <div 
-      className="min-h-screen relative overflow-hidden font-sans selection:bg-purple-500/30 selection:text-white flex items-center justify-center pb-20"
+      className="min-h-[100dvh] relative overflow-hidden font-sans selection:bg-purple-500/30 selection:text-white flex items-center justify-center pb-20"
       style={{
         background: 'linear-gradient(135deg, #0B1020 0%, #1a1b2e 30%, #2d3142 60%, #3f4a67 85%, #1a1b2e 100%)',
         backgroundAttachment: 'fixed'

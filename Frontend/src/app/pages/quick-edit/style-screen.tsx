@@ -4561,7 +4561,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
 
   return (
     <div
-      className="h-screen w-full flex flex-col overflow-hidden font-sans selection:bg-purple-500/30 selection:text-white text-slate-200"
+      className="h-[100dvh] w-full flex flex-col overflow-hidden font-sans selection:bg-purple-500/30 selection:text-white text-slate-200"
       style={{
         background: 'linear-gradient(135deg, #0B1020 0%, #1a1b2e 30%, #2d3142 60%, #3f4a67 85%, #1a1b2e 100%)',
       }}

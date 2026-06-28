@@ -90,7 +90,7 @@ export function WalletPage() {
   const particles = Array.from({ length: 30 });
 
   return (
-    <div className="min-h-screen relative overflow-hidden font-sans bg-[#0A0A0A] text-white selection:bg-fuchsia-500/30">
+    <div className="min-h-[100dvh] relative overflow-hidden font-sans bg-[#0A0A0A] text-white selection:bg-fuchsia-500/30">
       {/* Background Effects */}
       <div className="fixed inset-0 pointer-events-none z-0">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPjxyZWN0IHdpZHRoPSI0IiBoZWlnaHQ9IjQiIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSIvPjwvc3ZnPg==')] opacity-20 mix-blend-overlay"></div>

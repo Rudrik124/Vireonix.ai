@@ -10,7 +10,7 @@ export function AcceptableUsePolicyPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white font-sans selection:bg-fuchsia-500/30">
+    <div className="min-h-[100dvh] bg-[#0A0A0A] text-white font-sans selection:bg-fuchsia-500/30">
       <header className="relative z-50 w-full py-4 border-b border-white/5 bg-white/5 backdrop-blur-md">
         <div className="max-w-4xl mx-auto px-6 flex items-center">
           <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors">

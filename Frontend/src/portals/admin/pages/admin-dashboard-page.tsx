@@ -6,7 +6,7 @@ export function AdminDashboardPage() {
   const navigate = useNavigate();
 
   if (isLoading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+    return <div className="flex items-center justify-center min-h-[100dvh]">Loading...</div>;
   }
 
   if (!profile) {
@@ -15,7 +15,7 @@ export function AdminDashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800">
+    <div className="min-h-[100dvh] bg-gradient-to-br from-slate-900 to-slate-800">
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-white mb-2">Admin Dashboard</h1>

@@ -79,7 +79,7 @@ export function TesterAuthPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#4a1b49_0%,#111827_40%,#030712_100%)] text-white px-6 py-12">
+    <div className="min-h-[100dvh] bg-[radial-gradient(circle_at_top,#4a1b49_0%,#111827_40%,#030712_100%)] text-white px-6 py-12">
       <div className="mx-auto max-w-5xl grid gap-6 lg:grid-cols-[1.15fr,0.85fr]">
         <section className="rounded-[2rem] border border-purple-400/20 bg-purple-400/5 p-10 backdrop-blur-2xl">
           <p className="text-xs font-bold uppercase tracking-[0.35em] text-purple-200">Tester Portal</p>

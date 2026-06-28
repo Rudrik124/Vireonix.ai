@@ -4,15 +4,17 @@ import { ConfigProvider, theme, Button, Modal, Row, Col, Card, Switch, Typograph
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircleOutlined, GithubOutlined, TwitterOutlined, RocketOutlined, SearchOutlined, CloudUploadOutlined, CloudDownloadOutlined, ThunderboltOutlined, PictureOutlined, CodeOutlined, PlayCircleOutlined, ScissorOutlined, MessageOutlined, AudioOutlined, BgColorsOutlined, MobileOutlined, SoundOutlined, BulbOutlined, FieldTimeOutlined, SafetyCertificateOutlined, CloudServerOutlined, VideoCameraOutlined, CopyOutlined, FileImageOutlined, EditOutlined, CloseOutlined, SlidersOutlined, DiscordOutlined, ArrowRightOutlined } from '@ant-design/icons';
 import { LoginModal } from '../components/login-modal';
+import { BrandLogo } from '../components/brand-logo';
 import { Sparkles, Play, Video, Image as ImageIcon, Wand2, Music, CheckCircle2, Menu, Loader2, Star, Zap, Clapperboard, Globe, ShieldCheck, User, ChevronRight, ChevronDown, LogOut, Wallet } from 'lucide-react';
 import { useAuth } from '../context/auth-context';
+import { getRoleRedirectUrl } from '../../lib/role-redirect';
 import { PrivacyPolicyContent, TermsOfServiceContent, RefundPolicyContent, AcceptableUsePolicyContent } from '../components/legal-policies-content';
 
 const { Title, Text } = Typography;
 
 const FAQAccordion = () => {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
-  
+
   const faqs = [
     { q: "What is VEYTRIX.AI?", a: "VEYTRIX.AI is an AI-powered cinematic video creation platform that enables creators, marketers, agencies, and businesses to generate professional-quality videos using advanced artificial intelligence." },
     { q: "Which AI tools are currently available?", a: "VEYTRIX.AI currently offers:\n• AI Video Generation\n• Reference Video Editing\n• Image to Video\n• AI Manual Edit Studio\n\nEach tool is optimized for professional creative workflows." },
@@ -30,7 +32,7 @@ const FAQAccordion = () => {
     <div className="max-w-3xl mx-auto space-y-4">
       {faqs.map((faq, index) => (
         <div key={index} className="rounded-2xl border border-white/5 bg-[#1A1528]/60 backdrop-blur-xl overflow-hidden transition-all duration-300 hover:border-white/10 hover:shadow-[0_10px_30px_rgba(168,85,247,0.15)] group">
-          <button 
+          <button
             className="w-full px-6 py-5 flex items-center justify-between text-left focus:outline-none"
             onClick={() => setOpenIndex(openIndex === index ? null : index)}
           >
@@ -88,7 +90,7 @@ export function LandingPage() {
     const handleScroll = () => {
       sessionStorage.setItem('landingScrollY', window.scrollY.toString());
     };
-    
+
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => {
       window.removeEventListener('scroll', handleScroll);
@@ -101,16 +103,31 @@ export function LandingPage() {
   const [activeWorkflowModal, setActiveWorkflowModal] = useState<number | null>(null);
   const [isAIToolsModalOpen, setIsAIToolsModalOpen] = useState(false);
 
-  const { session, isLoggedIn, logout, profile } = useAuth();
+  const { session, isLoggedIn, isLoading, logout, profile } = useAuth();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Redirect admin/security users to Security Portal
+  // Redirect authenticated privileged users strictly to their respective portals.
+  // Normal users are allowed to stay on the Landing page or navigate back and forth.
   useEffect(() => {
-    if (isLoggedIn && profile && (profile.role === "admin" || profile.role === "super_admin")) {
-      navigate("/security", { replace: true });
+    if (isLoggedIn && !isLoading && profile) {
+      const role = (profile.role || '').toLowerCase();
+      const access = Array.isArray(profile.portalAccess) ? profile.portalAccess.map((a: string) => a.toLowerCase()) : [];
+
+      const isPrivileged =
+        role === 'security' || access.includes('security') ||
+        role === 'developer' || access.includes('developer') ||
+        role === 'tester' || access.includes('tester') ||
+        role === 'admin' || role === 'super_admin';
+
+      if (isPrivileged) {
+        const redirectUrl = getRoleRedirectUrl(session?.user?.email, profile, null);
+        if (redirectUrl) {
+          navigate(redirectUrl, { replace: true });
+        }
+      }
     }
-  }, [isLoggedIn, profile, navigate]);
+  }, [isLoggedIn, isLoading, profile, session, navigate]);
 
   const userName = session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || "User";
 
@@ -157,9 +174,9 @@ export function LandingPage() {
 
   const handleStartFree = () => {
     if (isLoggedIn) {
-      navigate('/home');
+      navigate('/video-type');
     } else {
-      localStorage.setItem("authRedirectUrl", "/home");
+      localStorage.setItem("authRedirectUrl", "/video-type");
       setIsLoginOpen(true);
     }
   };
@@ -278,7 +295,7 @@ export function LandingPage() {
 
   return (
     <ConfigProvider theme={currentTheme}>
-      <div className={`min-h-screen transition-colors duration-500 font-sans ${isDarkMode ? 'bg-[#0a0a0a] text-white' : 'bg-white text-black'}`}>
+      <div className={`min-h-[100dvh] transition-colors duration-500 font-sans ${isDarkMode ? 'bg-[#0a0a0a] text-white' : 'bg-white text-black'}`}>
 
         {/* MOUSE FOLLOW LIGHT EFFECT */}
         <div
@@ -309,13 +326,11 @@ export function LandingPage() {
         </div>
 
         {/* HEADER */}
-        <header className="absolute top-0 left-0 right-0 z-50 w-full py-4 border-b border-white/5 bg-white/5 backdrop-blur-md">
+        <header className="absolute top-0 left-0 right-0 z-50 w-full py-4 bg-transparent">
           <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
             {/* Logo */}
             <div className="text-2xl font-black tracking-tighter cursor-pointer flex items-center gap-2 group">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-fuchsia-500 to-purple-600 flex items-center justify-center shadow-lg shadow-fuchsia-500/20 group-hover:scale-105 transition-transform">
-                <Play className="w-4 h-4 text-white ml-0.5" fill="currentColor" />
-              </div>
+              <BrandLogo size={32} className="group-hover:scale-105 transition-transform" />
               <span className="text-white drop-shadow-md">VEYTRIX<span className="text-fuchsia-400">.AI</span></span>
             </div>
 
@@ -380,8 +395,8 @@ export function LandingPage() {
         </header>
 
         {/* HERO SECTION */}
-        <section className="relative min-h-screen pt-32 pb-20 px-6 flex flex-col justify-center overflow-hidden z-10">
-          <div className="max-w-7xl mx-auto w-full grid lg:grid-cols-[60%_40%] gap-16 items-center">
+        <section className="relative min-h-[100dvh] pt-[clamp(4rem,8dvh,6rem)] pb-[clamp(1rem,3dvh,3rem)] px-6 flex flex-col justify-start overflow-hidden z-10">
+          <div className="max-w-7xl mx-auto w-full grid lg:grid-cols-[60%_40%] gap-8 items-center my-auto">
 
             {/* LEFT COLUMN: MAIN CONTENT */}
             <motion.div
@@ -507,7 +522,7 @@ export function LandingPage() {
             </motion.div>
 
             {/* RIGHT COLUMN: VISUAL AREA */}
-            <div className="relative w-full h-[500px] lg:h-[600px] hidden lg:block z-10 perspective-[1000px]">
+            <div className="relative w-full h-[clamp(400px,60dvh,600px)] hidden lg:block z-10 perspective-[1000px]">
 
               {/* Main Video Preview Window */}
               <motion.div
@@ -606,7 +621,7 @@ export function LandingPage() {
           </div>
 
           {/* Trust Stats Strip */}
-          <div className="max-w-7xl mx-auto w-full mt-24 z-20">
+          <div className="max-w-7xl mx-auto w-full mt-4 z-20">
             <div className="flex flex-wrap justify-center md:justify-between items-center gap-6 py-6 px-10 rounded-2xl bg-white/5 backdrop-blur-lg border border-white/5 shadow-2xl relative overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-fuchsia-500/10 to-transparent translate-x-[-100%] animate-[shimmer_3s_infinite]" />
 
@@ -626,7 +641,7 @@ export function LandingPage() {
         </section>
 
         {/* 2. SEE HOW IT WORKS (WORKFLOWS) */}
-        <section id="how-it-works" className={`py-24 px-6 md:py-32 relative z-10 ${isDarkMode ? 'bg-gradient-to-b from-[#130E24] to-[#0B0815]' : 'bg-gradient-to-b from-gray-50 to-white'}`}>
+        <section id="how-it-works" className={`py-24 px-6 md:py-32 relative z-10 ${isDarkMode ? 'bg-gradient-to-b from-[#0B0A10] to-[#0B0815]' : 'bg-gradient-to-b from-gray-50 to-white'}`}>
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-16 md:mb-24">
               <h2 className="text-4xl md:text-[clamp(2.5rem,5vw,3.5rem)] font-black mb-6 tracking-tight">See How VEYTRIX Works</h2>
@@ -640,8 +655,8 @@ export function LandingPage() {
                   whileHover={{ scale: 1.02 }}
                   onClick={() => setActiveWorkflowModal(workflow.id)}
                   className={`cursor-pointer p-8 md:p-10 rounded-[24px] border transition-all duration-300 ${isDarkMode
-                      ? `bg-[#130E24] border-fuchsia-500/20 hover:bg-[#1A1333] hover:${workflow.borderColor} hover:${workflow.glowColor}`
-                      : 'bg-white border-black/5 hover:bg-gray-50 hover:shadow-xl'
+                    ? `bg-[#130E24] border-fuchsia-500/20 hover:bg-[#1A1333] hover:${workflow.borderColor} hover:${workflow.glowColor}`
+                    : 'bg-white border-black/5 hover:bg-gray-50 hover:shadow-xl'
                     }`}
                 >
                   <div className="flex flex-col h-full">
@@ -792,8 +807,8 @@ export function LandingPage() {
                   key={i}
                   whileHover={{ scale: 1.03, y: -5 }}
                   className={`p-8 rounded-3xl border transition-all cursor-default ${isDarkMode
-                      ? 'bg-[#130E24] border-fuchsia-500/20 hover:bg-[#1A1333] hover:shadow-[0_8px_30px_rgb(168,85,247,0.15)]'
-                      : 'bg-white border-black/5 hover:shadow-[0_15px_40px_rgb(0,0,0,0.08)]'
+                    ? 'bg-[#130E24] border-fuchsia-500/20 hover:bg-[#1A1333] hover:shadow-[0_8px_30px_rgb(168,85,247,0.15)]'
+                    : 'bg-white border-black/5 hover:shadow-[0_15px_40px_rgb(0,0,0,0.08)]'
                     }`}
                 >
                   <div className={`w-16 h-16 rounded-2xl mb-6 flex items-center justify-center text-3xl text-white bg-gradient-to-br ${feature.color}`}>
@@ -887,18 +902,18 @@ export function LandingPage() {
           footer={null}
           width={1000}
           centered
-          styles={{ 
-            body: { 
-              backgroundColor: isDarkMode ? '#0B0815' : 'white', 
-              padding: '24px 20px', 
+          styles={{
+            body: {
+              backgroundColor: isDarkMode ? '#0B0815' : 'white',
+              padding: '24px 20px',
               overflow: 'hidden',
               borderRadius: '24px',
               border: '1px solid rgba(255,255,255,0.05)'
-            } 
+            }
           }}
         >
           <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-fuchsia-500/50 to-transparent"></div>
-          
+
           <div className="max-w-5xl mx-auto relative z-10">
             <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeInUp} className="text-center mb-6">
               <h2 className="text-3xl font-black mb-2 leading-tight text-white drop-shadow-lg">
@@ -911,26 +926,26 @@ export function LandingPage() {
 
             <Row gutter={[16, 16]} justify="center" className="mb-6">
               {[
-                { 
-                  title: 'AI Video Generation', 
+                {
+                  title: 'AI Video Generation',
                   desc: 'Generate stunning cinematic videos from simple text prompts using advanced AI models.',
                   features: ['Text to Video', 'Cinematic Camera Motion', 'AI Scene Creation', 'HD & 4K Ready', 'Fast Cloud Rendering'],
                   icon: <VideoCameraOutlined className="text-2xl text-fuchsia-400" />
                 },
-                { 
-                  title: 'Reference Video Editing', 
+                {
+                  title: 'Reference Video Editing',
                   desc: 'Upload a reference video and recreate its visual style, motion, composition, and atmosphere using AI.',
                   features: ['Style Transfer', 'Motion Reference', 'Cinematic Recreation', 'AI Guided Editing', 'Visual Consistency'],
                   icon: <CopyOutlined className="text-2xl text-purple-400" />
                 },
-                { 
-                  title: 'Image to Video', 
+                {
+                  title: 'Image to Video',
                   desc: 'Transform static images into dynamic videos with realistic movement and cinematic animation.',
                   features: ['Camera Zoom', 'Object Motion', 'AI Animation', 'Smooth Transitions', 'Social Media Ready'],
                   icon: <FileImageOutlined className="text-2xl text-fuchsia-400" />
                 },
-                { 
-                  title: 'AI Manual Edit', 
+                {
+                  title: 'AI Manual Edit',
                   desc: 'Professional editing studio with AI-assisted controls for creators.',
                   features: ['Premium Effects', 'Cinematic Filters', 'Advanced Transitions', 'Motion Tracking', 'Speed Control', 'AI Enhancement', 'Professional Timeline Editing'],
                   icon: <SlidersOutlined className="text-2xl text-purple-400" />
@@ -940,13 +955,13 @@ export function LandingPage() {
                   <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeInUp} className="h-full">
                     <div className="h-full rounded-[1.5rem] p-5 border border-white/5 bg-gradient-to-b from-white/[0.03] to-transparent backdrop-blur-lg hover:border-fuchsia-500/30 hover:bg-white/[0.05] transition-all duration-300 transform hover:-translate-y-[3px] hover:shadow-[0_15px_40px_rgba(168,85,247,0.15)] group relative overflow-hidden">
                       <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-fuchsia-500/20 to-transparent blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                      
+
                       <div className="bg-[#1A1528] w-10 h-10 rounded-lg flex items-center justify-center mb-3 shadow-lg border border-white/10 group-hover:border-fuchsia-500/50 transition-colors">
                         {tool.icon}
                       </div>
                       <h3 className="text-lg font-bold mb-1 text-white group-hover:text-fuchsia-300 transition-colors">{tool.title}</h3>
                       <p className="text-[13px] opacity-70 mb-3 leading-snug min-h-[36px]">{tool.desc}</p>
-                      
+
                       <div className="space-y-1.5">
                         {tool.features.map((feature, j) => (
                           <div key={j} className="flex items-center gap-2">
@@ -986,7 +1001,7 @@ export function LandingPage() {
             <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] mix-blend-overlay"></div>
             <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_20%,transparent_100%)]"></div>
           </div>
-          
+
           <div className="max-w-7xl mx-auto relative z-10">
             <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeInUp} className="text-center mb-20">
               <h2 className="text-[clamp(2rem,5vw,3.5rem)] font-black mb-4 leading-tight">
@@ -1000,18 +1015,18 @@ export function LandingPage() {
 
             <Row gutter={[32, 32]} justify="center" align="middle" className="items-stretch">
               {[
-                { 
-                  name: 'Plus', 
-                  price: '₹99', 
+                {
+                  name: 'Plus',
+                  price: '₹99',
                   period: '/month',
                   badge: 'Perfect for Beginners',
                   features: ['40 AI Credits + 5 Bonus Credits', 'AI Video Generation', 'Image to Video', 'AI Manual Edit', 'HD Export', 'Standard Render Queue', 'Commercial Usage'],
                   buttonText: 'Start with Plus',
                   featured: false
                 },
-                { 
-                  name: 'Pro', 
-                  price: '₹199', 
+                {
+                  name: 'Pro',
+                  price: '₹199',
                   period: '/month',
                   badge: 'Best for Creators',
                   topBadge: '🔥 MOST POPULAR',
@@ -1019,9 +1034,9 @@ export function LandingPage() {
                   buttonText: 'Go Pro',
                   featured: true
                 },
-                { 
-                  name: 'Elite', 
-                  price: '₹299', 
+                {
+                  name: 'Elite',
+                  price: '₹299',
                   period: '/month',
                   badge: 'For Professionals',
                   features: ['130 AI Credits + 15 Bonus Credits', 'Unlimited AI Creativity', 'AI Video Generation', 'Image to Video', 'AI Manual Edit', 'Fastest Rendering', '4K Export', 'Premium AI Models', 'Priority Support', 'Commercial License', 'Early Beta Features'],
@@ -1034,8 +1049,8 @@ export function LandingPage() {
                     <Card
                       variant={plan.featured ? "outlined" : "borderless"}
                       className={`h-full flex flex-col text-center rounded-[2rem] transition-all duration-300 transform hover:-translate-y-[10px] hover:scale-[1.03] ${plan.featured
-                          ? 'border-fuchsia-500 shadow-[0_20px_50px_rgba(168,85,247,0.3)] scale-100 md:scale-105 z-10 relative py-6 bg-[#1A1528]/80 backdrop-blur-xl hover:shadow-[0_25px_60px_rgba(168,85,247,0.4)] hover:border-fuchsia-400'
-                          : 'border-white/5 bg-white/5 backdrop-blur-lg shadow-xl hover:shadow-fuchsia-500/10 hover:border-white/10'
+                        ? 'border-fuchsia-500 shadow-[0_20px_50px_rgba(168,85,247,0.3)] scale-100 md:scale-105 z-10 relative py-6 bg-[#1A1528]/80 backdrop-blur-xl hover:shadow-[0_25px_60px_rgba(168,85,247,0.4)] hover:border-fuchsia-400'
+                        : 'border-white/5 bg-white/5 backdrop-blur-lg shadow-xl hover:shadow-fuchsia-500/10 hover:border-white/10'
                         }`}
                       styles={{ body: { display: 'flex', flexDirection: 'column', height: '100%', flexGrow: 1 } }}
                     >
@@ -1046,12 +1061,12 @@ export function LandingPage() {
                       )}
                       <Title level={3} className={`mt-4 mb-1 !font-black text-3xl ${plan.featured ? '!text-white' : ''}`}>{plan.name}</Title>
                       <div className={`text-sm font-bold tracking-wide uppercase ${plan.featured ? 'text-fuchsia-300' : 'text-fuchsia-400'} mb-4`}>{plan.badge}</div>
-                      
+
                       <div className="flex items-baseline justify-center gap-1 my-6">
                         <span className={`text-6xl font-black ${plan.featured ? 'text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-400 to-purple-400 drop-shadow-lg' : ''}`}>{plan.price}</span>
                         <span className="text-xl opacity-60 font-medium">{plan.period}</span>
                       </div>
-                      
+
                       <ul className="text-left space-y-4 mb-10 px-2 md:px-4 flex-grow">
                         {plan.features.map((f, j) => (
                           <li key={j} className="flex items-start gap-3 text-[15px] font-medium">
@@ -1060,17 +1075,16 @@ export function LandingPage() {
                           </li>
                         ))}
                       </ul>
-                      
+
                       <Button
                         type={plan.featured ? "primary" : "default"}
                         size="large"
                         block
                         shape="round"
-                        className={`h-14 mt-auto font-bold text-lg rounded-full transition-all duration-300 border-0 ${
-                          plan.featured 
-                            ? 'bg-gradient-to-r from-fuchsia-500 to-purple-500 hover:from-fuchsia-400 hover:to-purple-400 shadow-[0_10px_20px_rgba(168,85,247,0.3)] hover:shadow-[0_15px_30px_rgba(168,85,247,0.5)] text-white' 
+                        className={`h-14 mt-auto font-bold text-lg rounded-full transition-all duration-300 border-0 ${plan.featured
+                            ? 'bg-gradient-to-r from-fuchsia-500 to-purple-500 hover:from-fuchsia-400 hover:to-purple-400 shadow-[0_10px_20px_rgba(168,85,247,0.3)] hover:shadow-[0_15px_30px_rgba(168,85,247,0.5)] text-white'
                             : 'bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 hover:text-fuchsia-400 text-white'
-                        }`}
+                          }`}
                       >
                         {plan.buttonText}
                       </Button>
@@ -1103,7 +1117,7 @@ export function LandingPage() {
         <section id="faq" className={`py-32 px-6 relative overflow-hidden ${isDarkMode ? 'bg-[#0B0815]' : 'bg-white'}`}>
           <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-purple-500/50 to-transparent"></div>
           <div className="absolute right-0 top-1/4 w-[500px] h-[500px] bg-purple-600/5 blur-[120px] rounded-full pointer-events-none"></div>
-          
+
           <div className="max-w-7xl mx-auto relative z-10">
             <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeInUp} className="text-center mb-16">
               <h2 className="text-[clamp(2rem,5vw,3.5rem)] font-black mb-4 leading-tight text-white drop-shadow-lg">
@@ -1113,7 +1127,7 @@ export function LandingPage() {
                 Everything you need to know before creating with VEYTRIX.AI.
               </p>
             </motion.div>
-            
+
             <FAQAccordion />
           </div>
         </section>
@@ -1171,26 +1185,17 @@ export function LandingPage() {
                 <div>
                   <h4 className="font-bold mb-6 text-lg">AI Tools</h4>
                   <ul className="space-y-4 text-sm opacity-70">
-                    <li><a href="#" className="hover:text-fuchsia-500 transition-colors block">AI Video Generation</a></li>
-                    <li><a href="#" className="hover:text-fuchsia-500 transition-colors block">Reference Video Editing</a></li>
-                    <li><a href="#" className="hover:text-fuchsia-500 transition-colors block">Image to Video</a></li>
-                    <li><a href="#" className="hover:text-fuchsia-500 transition-colors block">AI Manual Edit</a></li>
+                    <li><button onClick={(e) => { e.preventDefault(); setActiveWorkflowModal(1); }} className="hover:text-fuchsia-500 transition-colors block text-left cursor-pointer bg-transparent border-none p-0 m-0 font-inherit text-inherit">AI Video Generation</button></li>
+                    <li><button onClick={(e) => { e.preventDefault(); setActiveWorkflowModal(2); }} className="hover:text-fuchsia-500 transition-colors block text-left cursor-pointer bg-transparent border-none p-0 m-0 font-inherit text-inherit">Reference Video Editing</button></li>
+                    <li><button onClick={(e) => { e.preventDefault(); setActiveWorkflowModal(3); }} className="hover:text-fuchsia-500 transition-colors block text-left cursor-pointer bg-transparent border-none p-0 m-0 font-inherit text-inherit">Image to Video</button></li>
+                    <li><button onClick={(e) => { e.preventDefault(); setActiveWorkflowModal(4); }} className="hover:text-fuchsia-500 transition-colors block text-left cursor-pointer bg-transparent border-none p-0 m-0 font-inherit text-inherit">AI Manual Edit</button></li>
                   </ul>
                 </div>
               </div>
 
               {/* Right Column (35%) */}
               <div className="md:col-span-4 flex flex-col md:items-end gap-6 text-left md:text-right">
-                <div className={`flex items-center justify-start md:justify-end gap-4 px-4 py-2 rounded-full w-fit ${isDarkMode ? 'bg-white/5' : 'bg-black/5'}`}>
-                  <Text className={`font-semibold text-xs uppercase tracking-widest ${isDarkMode ? 'text-white' : 'text-black'}`}>Theme</Text>
-                  <Switch
-                    checked={isDarkMode}
-                    onChange={setIsDarkMode}
-                    checkedChildren="Dark"
-                    unCheckedChildren="Light"
-                    className={isDarkMode ? 'bg-fuchsia-500' : ''}
-                  />
-                </div>
+
 
                 <Button onClick={handleStartFree} type="primary" shape="round" className="h-12 px-8 font-bold bg-fuchsia-600 hover:bg-fuchsia-500 shadow-[0_0_15px_rgba(147,51,234,0.2)] hover:shadow-[0_0_25px_rgba(147,51,234,0.4)] transition-all w-fit border-none">
                   Start Free Trial
@@ -1241,7 +1246,7 @@ export function LandingPage() {
           }}
           className={isDarkMode ? 'dark-modal' : ''}
         >
-          <button 
+          <button
             onClick={() => setActiveLegalModal(null)}
             className="absolute top-6 right-6 z-50 w-10 h-10 bg-black/10 dark:bg-white/10 rounded-full hover:bg-black/20 dark:hover:bg-white/20 transition-all text-gray-400 hover:text-white border-none cursor-pointer flex items-center justify-center"
           >
@@ -1259,73 +1264,73 @@ export function LandingPage() {
         <AnimatePresence>
           {activeWorkflowModal && (
             <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-              <motion.div 
-                initial={{ opacity: 0 }} 
-                animate={{ opacity: 1 }} 
-                exit={{ opacity: 0 }} 
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
                 className="absolute inset-0 bg-black/60 backdrop-blur-md"
                 onClick={() => setActiveWorkflowModal(null)}
               />
               <div className="relative z-10 w-full max-w-[850px] mx-auto">
-              <button 
-                onClick={() => setActiveWorkflowModal(null)}
-                className="absolute top-6 right-6 z-[60] w-10 h-10 bg-black/10 dark:bg-white/10 rounded-full hover:bg-black/20 dark:hover:bg-white/20 transition-all text-gray-400 hover:text-white border-none cursor-pointer flex items-center justify-center"
-              >
-                <CloseOutlined className="text-xl" />
-              </button>
-              {(() => {
-                const workflow = workflows.find(w => w.id === activeWorkflowModal);
-                if (!workflow) return null;
+                <button
+                  onClick={() => setActiveWorkflowModal(null)}
+                  className="absolute top-6 right-6 z-[60] w-10 h-10 bg-black/10 dark:bg-white/10 rounded-full hover:bg-black/20 dark:hover:bg-white/20 transition-all text-gray-400 hover:text-white border-none cursor-pointer flex items-center justify-center"
+                >
+                  <CloseOutlined className="text-xl" />
+                </button>
+                {(() => {
+                  const workflow = workflows.find(w => w.id === activeWorkflowModal);
+                  if (!workflow) return null;
 
-                return (
-                  <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.3 }} className="overflow-hidden rounded-[24px]">
-                    {/* Header Banner */}
-                    <div className={`p-10 relative overflow-hidden flex flex-col items-center text-center ${isDarkMode ? 'bg-[#1A1333]' : 'bg-gray-50'}`}>
-                      <div className={`absolute inset-0 bg-gradient-to-b ${workflow.color} opacity-10`} />
-                      <div className={`w-28 h-28 rounded-3xl flex items-center justify-center text-6xl text-white bg-gradient-to-br ${workflow.color} shadow-2xl mb-6 relative z-10`}>
-                        {workflow.icon}
-                      </div>
-                      <h2 className="text-3xl md:text-4xl font-black mb-4 relative z-10">{workflow.title}</h2>
-                      <p className="opacity-80 text-lg max-w-2xl mx-auto relative z-10 leading-relaxed">{workflow.description}</p>
-                    </div>
-
-                    {/* Content Area */}
-                    <div className={`p-10 ${isDarkMode ? 'bg-[#130E24]' : 'bg-white'}`}>
-                      <div className="grid md:grid-cols-2 gap-10 mb-10">
-                        <div>
-                          <h3 className="text-xl font-bold mb-4 flex items-center gap-2">Core Features</h3>
-                          <div className="space-y-4">
-                            {workflow.features.map((feature, idx) => (
-                              <div key={idx} className="flex items-start gap-3">
-                                <CheckCircleOutlined className={`mt-1 ${isDarkMode ? 'text-fuchsia-400' : 'text-fuchsia-600'}`} />
-                                <span className="font-medium opacity-80">{feature}</span>
-                              </div>
-                            ))}
-                          </div>
+                  return (
+                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.3 }} className="overflow-hidden rounded-[24px]">
+                      {/* Header Banner */}
+                      <div className={`p-10 relative overflow-hidden flex flex-col items-center text-center ${isDarkMode ? 'bg-[#1A1333]' : 'bg-gray-50'}`}>
+                        <div className={`absolute inset-0 bg-gradient-to-b ${workflow.color} opacity-10`} />
+                        <div className={`w-28 h-28 rounded-3xl flex items-center justify-center text-6xl text-white bg-gradient-to-br ${workflow.color} shadow-2xl mb-6 relative z-10`}>
+                          {workflow.icon}
                         </div>
-                        <div>
-                          <h3 className="text-xl font-bold mb-4 flex items-center gap-2">Live Preview</h3>
-                          {/* Mock Demo Player */}
-                          <div className={`w-full aspect-video rounded-2xl flex items-center justify-center relative overflow-hidden group cursor-pointer border ${isDarkMode ? 'bg-black border-white/10' : 'bg-gray-900 border-black/10'}`}>
-                            <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=1000&auto=format&fit=crop')] bg-cover bg-center opacity-40 group-hover:opacity-60 transition-opacity" />
-                            <div className={`w-16 h-16 rounded-full flex items-center justify-center bg-white/20 backdrop-blur-md border border-white/30 group-hover:scale-110 transition-transform relative z-10`}>
-                              <PlayCircleOutlined className="text-3xl text-white" />
-                            </div>
-                            <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center z-10 text-white/80 text-xs font-medium">
-                              <span>0:00 / 0:15</span>
-                              <div className="flex gap-2">
-                                <span className="px-2 py-1 bg-black/50 rounded backdrop-blur">4K</span>
-                                <span className="px-2 py-1 bg-black/50 rounded backdrop-blur">60fps</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
+                        <h2 className="text-3xl md:text-4xl font-black mb-4 relative z-10">{workflow.title}</h2>
+                        <p className="opacity-80 text-lg max-w-2xl mx-auto relative z-10 leading-relaxed">{workflow.description}</p>
                       </div>
 
-                      <div className="flex justify-center">
-                        <Button type="primary" size="large" shape="round" className="h-14 px-12 text-lg font-bold bg-fuchsia-500 hover:bg-fuchsia-600 shadow-[0_10px_30px_rgba(168,85,247,0.4)] border-0" onClick={() => { setActiveWorkflowModal(null); navigate('/video-type'); }}>
-                          Try {workflow.title} Free
-                        </Button>
+                      {/* Content Area */}
+                      <div className={`p-10 ${isDarkMode ? 'bg-[#130E24]' : 'bg-white'}`}>
+                        <div className="grid md:grid-cols-2 gap-10 mb-10">
+                          <div>
+                            <h3 className="text-xl font-bold mb-4 flex items-center gap-2">Core Features</h3>
+                            <div className="space-y-4">
+                              {workflow.features.map((feature, idx) => (
+                                <div key={idx} className="flex items-start gap-3">
+                                  <CheckCircleOutlined className={`mt-1 ${isDarkMode ? 'text-fuchsia-400' : 'text-fuchsia-600'}`} />
+                                  <span className="font-medium opacity-80">{feature}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                          <div>
+                            <h3 className="text-xl font-bold mb-4 flex items-center gap-2">Live Preview</h3>
+                            {/* Mock Demo Player */}
+                            <div className={`w-full aspect-video rounded-2xl flex items-center justify-center relative overflow-hidden group cursor-pointer border ${isDarkMode ? 'bg-black border-white/10' : 'bg-gray-900 border-black/10'}`}>
+                              <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=1000&auto=format&fit=crop')] bg-cover bg-center opacity-40 group-hover:opacity-60 transition-opacity" />
+                              <div className={`w-16 h-16 rounded-full flex items-center justify-center bg-white/20 backdrop-blur-md border border-white/30 group-hover:scale-110 transition-transform relative z-10`}>
+                                <PlayCircleOutlined className="text-3xl text-white" />
+                              </div>
+                              <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center z-10 text-white/80 text-xs font-medium">
+                                <span>0:00 / 0:15</span>
+                                <div className="flex gap-2">
+                                  <span className="px-2 py-1 bg-black/50 rounded backdrop-blur">4K</span>
+                                  <span className="px-2 py-1 bg-black/50 rounded backdrop-blur">60fps</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex justify-center">
+                          <Button type="primary" size="large" shape="round" className="h-14 px-12 text-lg font-bold bg-fuchsia-500 hover:bg-fuchsia-600 shadow-[0_10px_30px_rgba(168,85,247,0.4)] border-0" onClick={() => { setActiveWorkflowModal(null); navigate('/video-type'); }}>
+                            Try {workflow.title} Free
+                          </Button>
                         </div>
                       </div>
                     </motion.div>

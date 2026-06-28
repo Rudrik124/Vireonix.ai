@@ -102,7 +102,7 @@ export function TesterProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#050816] flex items-center justify-center">
+      <div className="min-h-[100dvh] bg-[#050816] flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
@@ -158,7 +158,7 @@ export function TesterProfilePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#050816] text-white relative overflow-hidden font-sans selection:bg-purple-500/30">
+    <div className="min-h-[100dvh] bg-[#050816] text-white relative overflow-hidden font-sans selection:bg-purple-500/30">
       {/* Background Elements */}
       <div className="fixed inset-0 pointer-events-none z-0">
         <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-purple-900/20 blur-[120px]" />
