@@ -6191,7 +6191,11 @@ if (fs.existsSync(distPath)) {
 
 // ✅ START SERVER
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, "0.0.0.0", () => {
+app.listen(PORT, "0.0.0.0", (err) => {
+  if (err) {
+    console.error("❌ Failed to start server:", err);
+    process.exit(1);
+  }
   console.log("SERVER LISTENING");
   console.log("SERVER RUNNING");
   console.log(`✅ Server running on port ${PORT}`);
