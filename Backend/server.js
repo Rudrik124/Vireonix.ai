@@ -38,11 +38,11 @@ const __dirname = path.dirname(__filename);
 
 const loadEnvFiles = () => {
   // Try current directory first
-  dotenv.config({ path: path.join(process.cwd(), ".env"), override: false });
+  dotenv.config({ path: path.join(process.cwd(), ".env"), override: true });
   dotenv.config({ path: path.join(process.cwd(), "src", ".env"), override: true });
   
   // Try relative to server.js directory (__dirname)
-  dotenv.config({ path: path.join(__dirname, ".env"), override: false });
+  dotenv.config({ path: path.join(__dirname, ".env"), override: true });
   dotenv.config({ path: path.join(__dirname, "..", ".env"), override: false });
   dotenv.config({ path: path.join(__dirname, "../src/.env"), override: true });
   dotenv.config({ path: path.join(__dirname, "../Frontend/src/.env"), override: true });
@@ -99,13 +99,15 @@ app.use(helmet({
 }));
 
 // CORS: only allow the configured frontend origin
-const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || process.env.VITE_FRONTEND_ORIGIN || 'http://localhost:5173';
+const FRONTEND_ORIGIN_ENV = process.env.FRONTEND_ORIGIN || process.env.VITE_FRONTEND_ORIGIN || 'http://localhost:5173';
+const allowedOrigins = FRONTEND_ORIGIN_ENV.split(',').map(o => o.trim().replace(/\/$/, ""));
+
 const corsOptions = {
   origin: function (origin, callback) {
     // Allow requests with no origin (mobile apps, curl, server-to-server)
     if (!origin) return callback(null, true);
-    if (!FRONTEND_ORIGIN) return callback(new Error('CORS configuration error: FRONTEND_ORIGIN not set'));
-    if (origin === FRONTEND_ORIGIN) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    console.warn(`Blocked by CORS: origin ${origin} is not in allowed origins [${allowedOrigins.join(', ')}]`);
     return callback(new Error('CORS policy: Origin not allowed'));
   },
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
