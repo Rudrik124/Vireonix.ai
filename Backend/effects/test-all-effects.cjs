@@ -208,7 +208,7 @@ async function testAll() {
       console.log(`- ${eff}: SKIPPED (no filters)`);
       continue;
     }
-    
+
     const outPath = `test-effect-${eff}.mp4`;
     if (fs.existsSync(outPath)) fs.unlinkSync(outPath);
 
