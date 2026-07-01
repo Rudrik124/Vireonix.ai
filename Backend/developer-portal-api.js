@@ -1,5 +1,5 @@
 import express from "express";
-import { logSecurityEvent, securityEventTemplates, extractRequestMetadata } from "./security-events-logger.js";
+import { logSecurityEvent, securityEventTemplates, extractRequestMetadata } from "./Security/logs_monitoring/security-events-logger.js";
 import { getSupabaseClient as getAuthSupabaseClient } from "./Security/auth/supabaseClient.js";
 import cloudflareConfigModule from "./Security/file_security/cloudflareConfig.js";
 

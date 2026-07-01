@@ -23,7 +23,7 @@ import { createVideoFromImages } from "./Direct-pic-to-video/server-video-from-i
 import { createCinematicVideo } from "./Ai generated video/server-cinematic-video.js";
 import developerPortalAPI from "./developer-portal-api.js";
 import { attachAuthMiddleware } from "./Security/api_security/authMiddleware.js";
-import { initSecurityEventsLogger, logSecurityEvent } from "./security-events-logger.js";
+import { initSecurityEventsLogger, logSecurityEvent } from "./Security/logs_monitoring/security-events-logger.js";
 import PromptSanitizer from "./Security/prompt_security/promptSanitizer.js";
 import Blacklist from "./Security/prompt_security/blacklist.js";
 import Moderation from "./Security/prompt_security/moderation.js";
