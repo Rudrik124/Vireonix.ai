@@ -1,8 +1,10 @@
-console.log("🔥 THIS IS MY SERVER FILE RUNNING");
-console.log("SERVER FILE LOADED");
-console.log("🔥 NEW SERVER CODE RUNNING");
-process.on("uncaughtException", console.error);
-process.on("unhandledRejection", console.error);
+import logger from "./utils/logger.js";
+
+logger.info("THIS IS MY SERVER FILE RUNNING");
+logger.info("SERVER FILE LOADED");
+logger.info("NEW SERVER CODE RUNNING");
+process.on("uncaughtException", (err) => logger.error("Uncaught Exception", { error: err.message }));
+process.on("unhandledRejection", (reason) => logger.error("Unhandled Rejection", { reason }));
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -30,7 +32,11 @@ import Moderation from "./Security/prompt_security/moderation.js";
 import { scanMiddleware as malwareScan } from './Security/file_security/malwareScanner.js';
 import { validateBody } from './Security/input_validation/validateZod.js';
 import { PromptSchema, SceneImagesSchema, ImagesArraySchema, CinematicSchema } from './Security/input_validation/schemas.js';
-
+import audioRoutes from './routes/audio.routes.js';
+import videoRoutes from './routes/video.routes.js';
+import imageRoutes from './routes/image.routes.js';
+import mediaRoutes from './routes/media.routes.js';
+import { securityHeaders } from './middleware/security.middleware.js';
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -80,23 +86,8 @@ fal.config({
 
 const app = express();
 
-// Security middleware order (Helmet -> CORS -> Rate limiter -> JSON/body parsers)
-app.use(helmet({
-  // Reduce information leakage and enable commonly recommended headers
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'"],
-      connectSrc: ["'self'", 'https:'],
-      imgSrc: ["'self'", 'data:', 'blob:'],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      frameAncestors: ["'none'"],
-    }
-  },
-  referrerPolicy: { policy: 'no-referrer' },
-  crossOriginEmbedderPolicy: true,
-  crossOriginOpenerPolicy: { policy: 'same-origin' }
-}));
+// Security middleware order (Native CSP -> CORS -> Rate limiter -> JSON/body parsers)
+app.use(securityHeaders);
 
 // CORS: only allow the configured frontend origin
 const FRONTEND_ORIGIN_ENV = process.env.FRONTEND_ORIGIN || process.env.VITE_FRONTEND_ORIGIN || 'http://localhost:5173';
@@ -141,6 +132,12 @@ app.use((err, req, res, next) => {
   return next(err);
 });
 
+// Register extracted API routes
+app.use("/api", audioRoutes);
+app.use("/api", videoRoutes);
+app.use("/", imageRoutes);
+app.use("/api", mediaRoutes);
+
 // ✅ SET FFMPEG
 if (ffmpegPath && fs.existsSync(ffmpegPath)) {
   ffmpeg.setFfmpegPath(ffmpegPath);
@@ -154,158 +151,17 @@ const upload = multer({ dest: os.tmpdir() });
 const tempWorkDir = path.join(os.tmpdir(), "aivideoeditor1-temp");
 fs.mkdirSync(tempWorkDir, { recursive: true });
 
-const makeTempFilePath = (suffix) => {
-  const safeSuffix = String(suffix || "temp.bin").replace(/[^a-zA-Z0-9._-]/g, "_");
-  const unique = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-  const filePath = path.join(tempWorkDir, `${unique}-${safeSuffix}`);
-
-  // Ensure the output parent directory exists for ffmpeg on Windows.
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  return filePath;
-};
-
-const downloadRemoteFile = async (remoteUrl, defaultSuffix = "remote.mp3") => {
-  const response = await fetch(remoteUrl);
-  if (!response.ok) {
-    throw new Error(`Failed to download remote audio: ${response.status} ${response.statusText}`);
-  }
-
-  const url = new URL(remoteUrl);
-  const ext = path.extname(url.pathname) || ".mp3";
-  const outputPath = makeTempFilePath(`downloaded-audio${ext}`);
-  const buffer = Buffer.from(await response.arrayBuffer());
-  await fs.promises.writeFile(outputPath, buffer);
-  return outputPath;
-};
-
-const buildSrt = (captions) => {
-  return captions
-    .map((caption, index) => {
-      const startHms = new Date(caption.startTime * 1000).toISOString().substr(11, 12).replace('.', ',');
-      const endHms = new Date(caption.endTime * 1000).toISOString().substr(11, 12).replace('.', ',');
-      return `${index + 1}\n${startHms} --> ${endHms}\n${caption.text.replace(/\r?\n/g, ' ')}\n`;
-    })
-    .join("\n");
-};
-
-const normalizeSubtitlePath = (filePath) => {
-  const absolutePath = path.resolve(filePath).replace(/\\/g, "/");
-  let normalized = absolutePath;
-  if (/^[a-zA-Z]:/.test(normalized)) {
-    normalized = normalized.charAt(0) + "\\:" + normalized.substring(2);
-  }
-  normalized = normalized.replace(/'/g, "\\'");
-  return `'${normalized}'`;
-};
-
-const makeLocalAssPath = () => {
-  const unique = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-  return path.join(process.cwd(), `temp-captions-${unique}.ass`);
-};
-
-const convertHexToAssColor = (hex) => {
-  if (!hex) return "&HFFFFFF";
-  let clean = String(hex).trim().replace("#", "");
-  if (clean.length === 3) {
-    clean = clean[0] + clean[0] + clean[1] + clean[1] + clean[2] + clean[2];
-  }
-  if (clean.length === 6) {
-    const rr = clean.substring(0, 2);
-    const gg = clean.substring(2, 4);
-    const bb = clean.substring(4, 6);
-    return `&H00${bb}${gg}${rr}`;
-  }
-  return "&HFFFFFF";
-};
-
-const convertHexToAssColorWithAlpha = (hex, alphaHex = "00") => {
-  if (!hex) return `&H${alphaHex}FFFFFF`;
-  let clean = String(hex).trim().replace("#", "");
-  if (clean.length === 3) {
-    clean = clean[0] + clean[0] + clean[1] + clean[1] + clean[2] + clean[2];
-  }
-  if (clean.length === 6) {
-    const rr = clean.substring(0, 2);
-    const gg = clean.substring(2, 4);
-    const bb = clean.substring(4, 6);
-    return `&H${alphaHex}${bb}${gg}${rr}`;
-  }
-  return `&H${alphaHex}FFFFFF`;
-};
-
-// Returns { width, height } of the video at videoPath using ffprobe.
-// Falls back to { width: 1280, height: 720 } on any error.
-const getVideoDimensions = (videoPath) =>
-  new Promise((resolve) => {
-    ffmpeg.ffprobe(videoPath, (err, metadata) => {
-      if (err || !metadata) {
-        console.warn("⚠️ [ASS] Could not probe video dimensions, using 1280x720 fallback:", err?.message);
-        return resolve({ width: 1280, height: 720 });
-      }
-      const vStream = (metadata.streams || []).find((s) => s.codec_type === "video");
-      if (!vStream || !vStream.width || !vStream.height) {
-        return resolve({ width: 1280, height: 720 });
-      }
-      resolve({ width: vStream.width, height: vStream.height });
-    });
-  });
-
-const buildAss = (captions, style = {}, videoWidth = 1280, videoHeight = 720) => {
-  const fontName = String(style.fontFamily || "Arial").split(",")[0].trim().replace(/['"]/g, "");
-  const fontSize = style.fontSize || 26;
-  const primaryColor = convertHexToAssColor(style.color || "#FFFFFF");
-  // Use fully-opaque background when bgEnabled — alpha 00 = fully opaque in ASS/libass
-  // When bgEnabled is false, use &H40000000 (semi-transparent black) so text shadow is visible
-  const backColor = style.bgEnabled 
-    ? convertHexToAssColorWithAlpha(style.bgColorHex || "#000000", "00") 
-    : "&H40000000";
-  const borderStyle = style.bgEnabled ? 3 : 1;
-  const bold = style.bold ? -1 : 0;
-  const italic = style.italic ? -1 : 0;
-  const outline = style.outline ? 2 : (style.bgEnabled ? 2 : 0);
-  const shadow = style.bgEnabled ? 0 : 1;
-  const alignment = style.alignment === "left" ? 4 : style.alignment === "right" ? 6 : 5;
-
-  // Use virtual canvas size of 360 height, scaling width based on video aspect ratio.
-  // This automatically scales font sizes, borders, shadows, and coordinates perfectly to the final video size.
-  const playResY = 360;
-  const playResX = Math.round(360 * (videoWidth / videoHeight));
-
-  const posX = style.posX != null ? Number(style.posX) : 50;
-  const posY = style.posY != null ? Number(style.posY) : 80;
-  const x = Math.round((posX / 100) * playResX);
-  const y = Math.round((posY / 100) * playResY);
-
-  const header = `[Script Info]
-ScriptType: v4.00+
-PlayResX: ${playResX}
-PlayResY: ${playResY}
-
-[V4+ Styles]
-Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: CaptionStyle,${fontName},${fontSize},${primaryColor},&H00FFFF00,&H00000000,${backColor},${bold},${italic},0,0,100,100,0,0,${borderStyle},${outline},${shadow},${alignment},10,10,10,1
-
-[Events]
-Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text`;
-
-  const dialogues = captions.map((caption) => {
-    const formatTime = (timeSecs) => {
-      const hrs = Math.floor(timeSecs / 3600);
-      const mins = Math.floor((timeSecs % 3600) / 60);
-      const secs = Math.floor(timeSecs % 60);
-      const centisecs = Math.floor((timeSecs % 1) * 100);
-      return `${hrs}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}.${centisecs.toString().padStart(2, "0")}`;
-    };
-
-    const start = formatTime(caption.startTime);
-    const end = formatTime(caption.endTime);
-    const text = caption.text.replace(/\r?\n/g, "\\N");
-
-    return `Dialogue: 0,${start},${end},CaptionStyle,,0,0,0,,{\\pos(${x},${y})}${text}`;
-  });
-
-  return [header, ...dialogues].join("\n");
-};
+import {
+  makeTempFilePath,
+  downloadRemoteFile,
+  buildSrt,
+  normalizeSubtitlePath,
+  makeLocalAssPath,
+  convertHexToAssColor,
+  convertHexToAssColorWithAlpha,
+  getVideoDimensions,
+  buildAss
+} from "./utils/ffmpegUtils.js";
 
 const performAutoTranscription = async (videoPath, targetLanguage = "en") => {
   let audioPath = null;
@@ -3660,133 +3516,7 @@ const buildEffectPromptSnippet = (effects) => {
   }
 };
 
-// ✅ IMAGE SEARCH ROUTE - Search Unsplash for images
-app.post("/search-image", async (req, res) => {
-  const { query } = req.body;
-
-  console.log(`\n📍 [/search-image] Endpoint called with query: "${query}"`);
-
-  try {
-    if (!query || !String(query).trim()) {
-      return res.status(400).json({ success: false, error: "Query is required" });
-    }
-
-    // Check if query contains complex keywords that would benefit from AI generation
-    const useAI = isComplexPrompt(query);
-    
-    console.log(`📍 [/search-image] isComplexPrompt result: ${useAI}`);
-    
-    if (useAI) {
-      console.log(`🤖 [Search] Complex prompt detected, attempting AI generation for: "${query}"`);
-      const aiImage = await generateAIImage(query);
-      
-      console.log(`🤖 [Search] generateAIImage returned: ${aiImage ? "✅ IMAGE" : "❌ NULL"}`);
-      
-      if (aiImage) {
-        return res.json({ 
-          success: true, 
-          image: aiImage, 
-          source: "stability-ai" 
-        });
-      }
-      
-      console.log(`⚠️  [Search] AI generation failed, falling back to Unsplash`);
-    }
-    
-    // Try multiple env variable names for the Unsplash API key
-    const unsplashAccessKey = process.env.UNSPLASH_API_KEY || process.env.UNSPLASH_ACCESS_KEY;
-    
-    if (!unsplashAccessKey) {
-      console.error("❌ [Unsplash] Missing UNSPLASH_API_KEY environment variable");
-      console.error("    Available env vars:", Object.keys(process.env).filter(k => k.includes('UNSPLASH')));
-      return res.status(500).json({ 
-        success: false, 
-        error: "Unsplash API key not configured. Please set UNSPLASH_API_KEY environment variable." 
-      });
-    }
-
-    console.log(`🔍 [Unsplash] Searching for: "${query}"`);
-
-    // Request multiple results to find a true landscape image
-    const searchResponse = await fetch(
-      `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=10&orientation=landscape&content_filter=high`,
-      {
-        method: "GET",
-        headers: {
-          "Authorization": `Client-ID ${unsplashAccessKey}`,
-          "Accept-Version": "v1"
-        }
-      }
-    );
-
-    if (!searchResponse.ok) {
-      const errorText = await searchResponse.text();
-      console.error(`❌ [Unsplash] API error: ${searchResponse.status}`, errorText);
-      throw new Error(`Unsplash API error: ${searchResponse.status}`);
-    }
-
-    const searchData = await searchResponse.json();
-    const results = searchData.results || [];
-
-    if (results.length === 0) {
-      console.warn(`⚠️  [Unsplash] No results found for query: "${query}"`);
-      return res.json({
-        success: true,
-        image: `https://picsum.photos/seed/${String(query).replace(/\s+/g, "-")}/1280/720`,
-        source: "fallback"
-      });
-    }
-
-    // Filter for true landscape images (width >= height)
-    let selectedImage = null;
-    for (const result of results) {
-      const width = result.width;
-      const height = result.height;
-      const imageUrl = result.urls?.regular;
-
-      if (!imageUrl) continue;
-
-      // Validate that image is truly landscape (width >= height)
-      if (width >= height) {
-        console.log(`✅ [Unsplash] Found landscape image (${width}x${height}): "${result.alt_description || query}"`);
-        selectedImage = imageUrl;
-        break;
-      } else {
-        console.log(`⏭️  [Unsplash] Skipping portrait image (${width}x${height}), trying next...`);
-      }
-    }
-
-    if (!selectedImage) {
-      console.warn(`⚠️  [Unsplash] No landscape image found for query: "${query}", using fallback`);
-      return res.json({
-        success: true,
-        image: `https://picsum.photos/seed/${String(query).replace(/\s+/g, "-")}/1280/720`,
-        source: "fallback"
-      });
-    }
-
-    // Append parameters to ensure correct aspect ratio (16:9) and size
-    const optimizedImageUrl = `${selectedImage}?w=1280&h=720&fit=crop`;
-
-    console.log(`📸 [Unsplash] Optimized URL: ${optimizedImageUrl}`);
-    res.json({ success: true, image: optimizedImageUrl, source: "unsplash" });
-
-  } catch (error) {
-    console.error(`❌ [Unsplash] Error:`, toErrorMessage(error));
-    
-    // Fallback to picsum only if Unsplash completely fails
-    const query = req.body.query || "technology";
-    const fallbackUrl = `https://picsum.photos/seed/${String(query).replace(/\s+/g, "-")}/1280/720`;
-    console.log(`⚠️  [Fallback] Using picsum: ${fallbackUrl}`);
-    
-    res.json({
-      success: true,
-      image: fallbackUrl,
-      source: "fallback"
-    });
-  }
-});
-
+// Image search endpoint now handled by imageRoutes
 // ✅ MAIN ROUTE - API Video Generation
 // Accepts JSON with: { prompt, duration, frame }
 app.post("/generate", validateBody(PromptSchema), async (req, res) => {
@@ -5041,319 +4771,7 @@ app.post(
 );
 
 // ✅ SCENE AND IMAGE GENERATION ENDPOINT
-// Takes { prompt } as input
-// Returns { scenes: [...], images: [...] }
-app.post("/api/scene-images", validateBody(SceneImagesSchema), async (req, res) => {
-  try {
-    const { prompt } = req.body;
-
-    if (!prompt || !String(prompt).trim()) {
-      return res.status(400).json({
-        success: false,
-        error: "Prompt is required",
-      });
-    }
-
-    const moderationCheck = await moderatePromptRequest({
-      prompt,
-      req,
-      source: "scene-images",
-    });
-
-    if (!moderationCheck.allowed) {
-      return res.status(moderationCheck.statusCode || 400).json({
-        success: false,
-        error: moderationCheck.reason,
-      });
-    }
-
-    const unsplashAccessKey = readEnv("UNSPLASH_ACCESS_KEY");
-
-    if (!unsplashAccessKey) {
-      return res.status(500).json({
-        success: false,
-        error: "UNSPLASH_ACCESS_KEY is not configured in environment variables. Please set it in .env file.",
-      });
-    }
-
-    console.log("📍 [SCENES] Generating scenes and images for prompt:", moderationCheck.sanitizedPrompt.substring(0, 50));
-
-    const result = await generateScenesWithImages(moderationCheck.sanitizedPrompt, unsplashAccessKey);
-
-    console.log("✅ [SCENES] Generated", result.scenes.length, "scenes and", result.images.length, "images");
-
-    res.json({
-      success: true,
-      scenes: result.scenes,
-      images: result.images,
-    });
-  } catch (error) {
-    const errorMessage = toErrorMessage(error, "Scene and image generation failed");
-    console.error("❌ [SCENES] Error:", errorMessage);
-
-    res.status(500).json({
-      success: false,
-      error: errorMessage,
-    });
-  }
-});
-
-// ✅ VIDEO CREATION FROM IMAGES ENDPOINT
-// Takes { images: [...], options: {...} } as input
-// Returns { success: true, video: "url_or_path" }
-app.post("/api/video-from-images", validateBody(ImagesArraySchema), async (req, res) => {
-  const { images, options = {}, userId = null } = req.body;
-
-  try {
-    if (!images || !Array.isArray(images) || images.length < 2) {
-      return res.status(400).json({
-        success: false,
-        error: "Minimum 2 image URLs required",
-      });
-    }
-
-    // Validate all URLs
-    const validImages = images.filter((url) => {
-      try {
-        new URL(url);
-        return true;
-      } catch {
-        return false;
-      }
-    });
-
-    if (validImages.length < 2) {
-      return res.status(400).json({
-        success: false,
-        error: "Minimum 2 valid image URLs required",
-      });
-    }
-
-    console.log("📍 [VIDEO-FROM-IMAGES] Creating video from", validImages.length, "images");
-
-    // Prepare output path
-    const fileName = `animated-video-${Date.now()}.mp4`;
-    const outputPath = makeTempFilePath("video.mp4");
-
-    // Merge user options with defaults
-    const videoOptions = {
-      width: 1280,
-      height: 720,
-      fps: 30,
-      imageDuration: 3,
-      transitionDuration: 0.8,
-      enableZoom: true,
-      enablePan: true,
-      scaleEnd: 1.15,
-      ...options,
-    };
-
-    // Create video
-    const videoPath = await createVideoFromImages(validImages, outputPath, videoOptions);
-
-    console.log("✅ [VIDEO-FROM-IMAGES] Video created successfully");
-
-    // Optional: Upload to Supabase
-    let publicUrl = videoPath;
-    let storage = null;
-
-    try {
-      console.log("📤 [VIDEO-FROM-IMAGES] Uploading to storage...");
-      const uploadResult = await uploadVideoUrlToSupabase(
-        videoPath,
-        fileName,
-        SUPABASE_BUCKETS.AI_GENERATED,
-      );
-      publicUrl = uploadResult.publicUrl;
-      storage = uploadResult.storagePath;
-      console.log("✅ [VIDEO-FROM-IMAGES] Storage upload complete");
-
-      // Clean up local file after upload
-      fs.unlink(videoPath, () => {});
-    } catch (storageError) {
-      console.warn("⚠️ [VIDEO-FROM-IMAGES] Storage upload skipped, using local path");
-    }
-
-    // Log usage if user_id provided
-    if (userId) {
-      try {
-        const duration = (videoOptions.imageDuration + videoOptions.transitionDuration) * validImages.length;
-        const creditsCharged = Math.ceil(duration * 0.1); // 0.1 credits per second as example
-        
-        await supabase.from("usage_logs").insert({
-          user_id: userId,
-          portal: "user",
-          usage_type: "production",
-          wallet_type: "user_credits",
-          feature_key: "video_from_images",
-          credits_requested: creditsCharged,
-          credits_charged: creditsCharged,
-          status: "completed",
-          metadata: {
-            imageCount: validImages.length,
-            videoDuration: duration,
-            fileName: fileName,
-          },
-        });
-        console.log("📊 [VIDEO-FROM-IMAGES] Usage logged for user:", userId);
-      } catch (logError) {
-        console.warn("⚠️ [VIDEO-FROM-IMAGES] Failed to log usage:", logError.message);
-      }
-    }
-
-    res.json({
-      success: true,
-      video: publicUrl,
-      storage,
-      framesRendered: Math.round(
-        (videoOptions.imageDuration + videoOptions.transitionDuration) *
-          validImages.length *
-          videoOptions.fps,
-      ),
-      duration: (videoOptions.imageDuration + videoOptions.transitionDuration) * validImages.length,
-    });
-  } catch (error) {
-    const errorMessage = toErrorMessage(error, "Video creation from images failed");
-    console.error("❌ [VIDEO-FROM-IMAGES] Error:", errorMessage);
-
-    res.status(500).json({
-      success: false,
-      error: errorMessage,
-    });
-  }
-});
-
-// ✅ CINEMATIC VIDEO CREATION ENDPOINT
-// Takes { images: [...], options: {...}, userId: "user-uuid" } as input with motion effects
-// Returns { success: true, video: "url_or_path" }
-app.post("/api/cinematic-video", validateBody(CinematicSchema), async (req, res) => {
-  const { images, options = {}, userId = null } = req.body;
-
-  try {
-    if (!images || !Array.isArray(images) || images.length < 2) {
-      return res.status(400).json({
-        success: false,
-        error: "Minimum 2 image URLs required",
-      });
-    }
-
-    // Validate all URLs
-    const validImages = images.filter((url) => {
-      try {
-        new URL(url);
-        return true;
-      } catch {
-        return false;
-      }
-    });
-
-    if (validImages.length < 2) {
-      return res.status(400).json({
-        success: false,
-        error: "Minimum 2 valid image URLs required",
-      });
-    }
-
-    console.log("📍 [CINEMATIC] Creating cinematic video from", validImages.length, "images with motion effects");
-
-    // Prepare output path
-    const fileName = `cinematic-video-${Date.now()}.mp4`;
-    const outputPath = makeTempFilePath("video.mp4");
-
-    // Merge user options with defaults
-    const videoOptions = {
-      width: 1280,
-      height: 720,
-      fps: 30,
-      imageDuration: 3.5,
-      transitionDuration: 1,
-      scaleStart: 1.0,
-      scaleEnd: 1.15,
-      enablePan: true,
-      enableFade: true,
-      ...options,
-    };
-
-    // Create cinematic video
-    const videoPath = await createCinematicVideo(validImages, outputPath, videoOptions);
-
-    console.log("✅ [CINEMATIC] Cinematic video created successfully");
-
-    // Optional: Upload to Supabase
-    let publicUrl = videoPath;
-    let storage = null;
-
-    try {
-      console.log("📤 [CINEMATIC] Uploading to storage...");
-      const uploadResult = await uploadVideoUrlToSupabase(
-        videoPath,
-        fileName,
-        SUPABASE_BUCKETS.AI_GENERATED,
-      );
-      publicUrl = uploadResult.publicUrl;
-      storage = uploadResult.storagePath;
-      console.log("✅ [CINEMATIC] Storage upload complete");
-
-      // Clean up local file after upload
-      fs.unlink(videoPath, () => {});
-    } catch (storageError) {
-      console.warn("⚠️ [CINEMATIC] Storage upload skipped, using local path");
-    }
-
-    // Log usage if user_id provided
-    if (userId) {
-      try {
-        const duration = (videoOptions.imageDuration + videoOptions.transitionDuration) * validImages.length;
-        const creditsCharged = Math.ceil(duration * 0.15); // 0.15 credits per second for cinematic (more expensive)
-        
-        await supabase.from("usage_logs").insert({
-          user_id: userId,
-          portal: "user",
-          usage_type: "production",
-          wallet_type: "user_credits",
-          feature_key: "cinematic_video",
-          credits_requested: creditsCharged,
-          credits_charged: creditsCharged,
-          status: "completed",
-          metadata: {
-            imageCount: validImages.length,
-            videoDuration: duration,
-            fileName: fileName,
-            motionEffects: {
-              zoom: `${videoOptions.scaleStart} → ${videoOptions.scaleEnd}`,
-              pan: videoOptions.enablePan,
-              fade: videoOptions.enableFade,
-            },
-          },
-        });
-        console.log("📊 [CINEMATIC] Usage logged for user:", userId);
-      } catch (logError) {
-        console.warn("⚠️ [CINEMATIC] Failed to log usage:", logError.message);
-      }
-    }
-
-    res.json({
-      success: true,
-      video: publicUrl,
-      storage,
-      motionEffects: {
-        zoom: `${videoOptions.scaleStart} → ${videoOptions.scaleEnd}`,
-        pan: videoOptions.enablePan ? "enabled" : "disabled",
-        fadeTransitions: videoOptions.enableFade ? "enabled" : "disabled",
-        fps: videoOptions.fps,
-      },
-      duration: (videoOptions.imageDuration + videoOptions.transitionDuration) * validImages.length,
-    });
-  } catch (error) {
-    const errorMessage = toErrorMessage(error, "Cinematic video creation failed");
-    console.error("❌ [CINEMATIC] Error:", errorMessage);
-
-    res.status(500).json({
-      success: false,
-      error: errorMessage,
-    });
-  }
-});
+// Video endpoints now handled by videoRoutes
 
 // ✅ AUDIO PROCESSING ENDPOINTS
 
@@ -6126,45 +5544,7 @@ app.post("/api/convert-audio", upload.single("audioFile"), malwareScan(), async 
 });
 
 // ✅ GET audio metadata
-app.post("/api/audio-metadata", upload.single("audioFile"), malwareScan(), async (req, res) => {
-  try {
-    const audioFile = req.file;
-
-    if (!audioFile) {
-      return res.status(400).json({
-        success: false,
-        error: "No audio file provided",
-      });
-    }
-
-    ffmpeg.ffprobe(audioFile.path, (err, metadata) => {
-      if (err) {
-        return res.status(400).json({
-          success: false,
-          error: "Failed to read audio metadata",
-        });
-      }
-
-      const audioStream = metadata.streams.find((s) => s.codec_type === "audio");
-      const format = metadata.format;
-
-      res.json({
-        success: true,
-        duration: Number(format.duration) || 0,
-        bitrate: audioStream?.bit_rate || 0,
-        sampleRate: audioStream?.sample_rate || 0,
-        channels: audioStream?.channels || 0,
-        codec: audioStream?.codec_name || "unknown",
-      });
-    });
-  } catch (error) {
-    console.error("❌ [AUDIO] Metadata error:", error);
-    res.status(500).json({
-      success: false,
-      error: toErrorMessage(error, "Failed to get audio metadata"),
-    });
-  }
-});
+// Audio routes handled by audioRoutes in the main imports
 
 // ✅ DEVELOPER PORTAL API
 app.use(developerPortalAPI);

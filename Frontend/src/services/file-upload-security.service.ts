@@ -26,7 +26,7 @@ export interface FileUploadSecurityEvent {
     scan_time_ms?: number;
     malware_signature?: string;
     corruption_reason?: string;
-    [key: string]: any;
+    [key: string]: unknown;
   } | null;
   status: string;
   response_code: number | null;
@@ -249,7 +249,7 @@ export async function fetchRejectionBreakdown(
     const reasonMap = new Map<string, number>();
     let total = 0;
 
-    events.forEach((event: any) => {
+    events.forEach((event: Partial<FileUploadSecurityEvent>) => {
       if (
         event.action !== 'UPLOAD_SUCCESS' &&
         event.action !== 'UPLOAD_REJECTED'
@@ -310,7 +310,7 @@ export async function fetchFileTypeDistribution(
     const typeMap = new Map<string, number>();
     let total = 0;
 
-    events.forEach((event: any) => {
+    events.forEach((event: Partial<FileUploadSecurityEvent>) => {
       const fileType = categorizeFileType(event.metadata?.mime_type);
       typeMap.set(fileType, (typeMap.get(fileType) || 0) + 1);
       total++;
@@ -363,7 +363,7 @@ export async function fetchUploadTrends(days: number = 7): Promise<{
     }
 
     // Count events by date
-    events.forEach((event: any) => {
+    events.forEach((event: Partial<FileUploadSecurityEvent>) => {
       const dateStr = event.created_at.split('T')[0];
       const entry = trendMap.get(dateStr) || { successful: 0, failed: 0, rejected: 0 };
 
@@ -464,7 +464,7 @@ export async function fetchAverageFileSizes(): Promise<{
     const events = data || [];
     const typeMap = new Map<string, { total: number; count: number }>();
 
-    events.forEach((event: any) => {
+    events.forEach((event: Partial<FileUploadSecurityEvent>) => {
       const fileType = categorizeFileType(event.metadata?.mime_type);
       const fileSize = event.metadata?.file_size || 0;
       const existing = typeMap.get(fileType) || { total: 0, count: 0 };

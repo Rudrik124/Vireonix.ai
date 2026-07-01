@@ -1,79 +1,24 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { ConfigProvider, theme, Button, Modal, Row, Col, Card, Switch, Typography, Progress } from 'antd';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircleOutlined, GithubOutlined, TwitterOutlined, RocketOutlined, SearchOutlined, CloudUploadOutlined, CloudDownloadOutlined, ThunderboltOutlined, PictureOutlined, CodeOutlined, PlayCircleOutlined, ScissorOutlined, MessageOutlined, AudioOutlined, BgColorsOutlined, MobileOutlined, SoundOutlined, BulbOutlined, FieldTimeOutlined, SafetyCertificateOutlined, CloudServerOutlined, VideoCameraOutlined, CopyOutlined, FileImageOutlined, EditOutlined, CloseOutlined, SlidersOutlined, DiscordOutlined, ArrowRightOutlined } from '@ant-design/icons';
-import { LoginModal } from '../components/login-modal';
+const LoginModal = lazy(() => import('../components/login-modal').then(m => ({ default: m.LoginModal })));
 import { BrandLogo } from '../components/brand-logo';
 import { Sparkles, Play, Video, Image as ImageIcon, Wand2, Music, CheckCircle2, Menu, Loader2, Star, Zap, Clapperboard, Globe, ShieldCheck, User, ChevronRight, ChevronDown, LogOut, Wallet } from 'lucide-react';
 import { useAuth } from '../context/auth-context';
 import { getRoleRedirectUrl } from '../../lib/role-redirect';
-import { PrivacyPolicyContent, TermsOfServiceContent, RefundPolicyContent, AcceptableUsePolicyContent } from '../components/legal-policies-content';
+const PrivacyPolicyContent = lazy(() => import('../components/legal-policies-content').then(m => ({ default: m.PrivacyPolicyContent })));
+const TermsOfServiceContent = lazy(() => import('../components/legal-policies-content').then(m => ({ default: m.TermsOfServiceContent })));
+const RefundPolicyContent = lazy(() => import('../components/legal-policies-content').then(m => ({ default: m.RefundPolicyContent })));
+const AcceptableUsePolicyContent = lazy(() => import('../components/legal-policies-content').then(m => ({ default: m.AcceptableUsePolicyContent })));
 
 const { Title, Text } = Typography;
 
-const FAQAccordion = () => {
-  const [openIndex, setOpenIndex] = useState<number | null>(0);
+import { FAQAccordion } from '../../components/faq-accordion';
+import { useSEO } from '../../hooks/use-seo';
 
-  const faqs = [
-    { q: "What is VEYTRIX.AI?", a: "VEYTRIX.AI is an AI-powered cinematic video creation platform that enables creators, marketers, agencies, and businesses to generate professional-quality videos using advanced artificial intelligence." },
-    { q: "Which AI tools are currently available?", a: "VEYTRIX.AI currently offers:\n• AI Video Generation\n• Reference Video Editing\n• Image to Video\n• AI Manual Edit Studio\n\nEach tool is optimized for professional creative workflows." },
-    { q: "Do I need editing experience?", a: "No.\n\nVEYTRIX.AI is built for everyone. Beginners can generate videos with simple prompts, while professionals can access advanced editing controls for precise creative output." },
-    { q: "How does the credit system work?", a: "Every AI generation or editing operation consumes credits depending on rendering complexity and duration.\n\nCredits are included with subscription plans, and additional credit packs can be purchased anytime." },
-    { q: "Can I use generated videos commercially?", a: "Yes.\n\nVideos created using VEYTRIX.AI may be used for commercial purposes according to your active subscription plan and licensing terms." },
-    { q: "What export quality is supported?", a: "Depending on your subscription plan, exports are available in:\n• HD\n• Full HD\n• 4K\n\nwith optimized AI rendering." },
-    { q: "How long does generation take?", a: "Most projects are completed within 30 seconds to 3 minutes depending on complexity, duration, and server load." },
-    { q: "Is my uploaded content secure?", a: "Yes.\n\nAll uploaded files and generated projects are processed securely using encrypted cloud infrastructure and protected storage systems." },
-    { q: "Which devices are supported?", a: "VEYTRIX.AI works directly inside modern web browsers on Windows, macOS, Linux, and tablets without requiring installation." },
-    { q: "Will more AI tools be added?", a: "Absolutely.\n\nVEYTRIX.AI is continuously evolving with new AI models, cinematic effects, editing capabilities, and creative workflows to provide a world-class AI video production platform." }
-  ];
-
-  return (
-    <div className="max-w-3xl mx-auto space-y-4">
-      {faqs.map((faq, index) => (
-        <div key={index} className="rounded-2xl border border-white/5 bg-[#1A1528]/60 backdrop-blur-xl overflow-hidden transition-all duration-300 hover:border-white/10 hover:shadow-[0_10px_30px_rgba(168,85,247,0.15)] group">
-          <button
-            className="w-full px-6 py-5 flex items-center justify-between text-left focus:outline-none"
-            onClick={() => setOpenIndex(openIndex === index ? null : index)}
-          >
-            <span className="font-bold text-lg text-white group-hover:text-fuchsia-300 transition-colors">{faq.q}</span>
-            <ChevronDown className={`w-5 h-5 text-fuchsia-400 transition-transform duration-300 ${openIndex === index ? 'rotate-180' : ''}`} />
-          </button>
-          <AnimatePresence>
-            {openIndex === index && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.3, ease: "easeInOut" }}
-              >
-                <div className="px-6 pb-6 pt-2 text-gray-300 text-[15px] leading-relaxed whitespace-pre-wrap opacity-90 border-t border-white/5">
-                  {faq.a}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      ))}
-    </div>
-  );
-};
-
-// Custom SEO hook for manipulating the document head
-function useSEO(title: string, description: string) {
-  useEffect(() => {
-    document.title = title;
-    let metaDesc = document.querySelector('meta[name="description"]');
-    if (metaDesc) {
-      metaDesc.setAttribute('content', description);
-    } else {
-      const meta = document.createElement('meta');
-      meta.name = 'description';
-      meta.content = description;
-      document.head.appendChild(meta);
-    }
-  }, [title, description]);
-}
+import { PricingSection } from '../../components/landing/pricing-section';
 
 export function LandingPage() {
   const navigate = useNavigate();
@@ -121,7 +66,7 @@ export function LandingPage() {
         role === 'admin' || role === 'super_admin';
 
       if (isPrivileged) {
-        const redirectUrl = getRoleRedirectUrl(session?.user?.email, profile, null);
+        const redirectUrl = getRoleRedirectUrl(session?.user?.email, profile, undefined);
         if (redirectUrl) {
           navigate(redirectUrl, { replace: true });
         }
@@ -991,127 +936,7 @@ export function LandingPage() {
           </div>
         </Modal>
 
-        {/* 5. PRICING */}
-        <section id="pricing" className={`py-32 px-6 relative overflow-hidden ${isDarkMode ? 'bg-gradient-to-b from-[#130E24] to-[#0B0815]' : 'bg-gradient-to-b from-gray-50 to-white'}`}>
-          {/* Background Enhancements */}
-          <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-fuchsia-600/10 blur-[120px] rounded-full" />
-            <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-purple-600/10 blur-[100px] rounded-full animate-pulse" />
-            <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-fuchsia-500/10 blur-[120px] rounded-full animate-pulse" style={{ animationDelay: '2s' }} />
-            <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] mix-blend-overlay"></div>
-            <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_20%,transparent_100%)]"></div>
-          </div>
-
-          <div className="max-w-7xl mx-auto relative z-10">
-            <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeInUp} className="text-center mb-20">
-              <h2 className="text-[clamp(2rem,5vw,3.5rem)] font-black mb-4 leading-tight">
-                Build Without Limits.<br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-400 to-purple-400">Create. Edit. Export.</span>
-              </h2>
-              <p className="text-xl opacity-70 max-w-3xl mx-auto leading-relaxed">
-                Choose a plan that matches your creative journey. Whether you're just exploring AI or producing content professionally, VEYTRIX.AI scales with you.
-              </p>
-            </motion.div>
-
-            <Row gutter={[32, 32]} justify="center" align="middle" className="items-stretch">
-              {[
-                {
-                  name: 'Plus',
-                  price: '₹99',
-                  period: '/month',
-                  badge: 'Perfect for Beginners',
-                  features: ['40 AI Credits + 5 Bonus Credits', 'AI Video Generation', 'Image to Video', 'AI Manual Edit', 'HD Export', 'Standard Render Queue', 'Commercial Usage'],
-                  buttonText: 'Start with Plus',
-                  featured: false
-                },
-                {
-                  name: 'Pro',
-                  price: '₹199',
-                  period: '/month',
-                  badge: 'Best for Creators',
-                  topBadge: '🔥 MOST POPULAR',
-                  features: ['80 AI Credits + 10 Bonus Credits', 'AI Video Generation', 'Image to Video', 'AI Manual Edit', 'Faster AI Rendering', 'Priority Queue', 'Full HD Export', 'Commercial Usage', 'Early Access Features'],
-                  buttonText: 'Go Pro',
-                  featured: true
-                },
-                {
-                  name: 'Elite',
-                  price: '₹299',
-                  period: '/month',
-                  badge: 'For Professionals',
-                  features: ['130 AI Credits + 15 Bonus Credits', 'Unlimited AI Creativity', 'AI Video Generation', 'Image to Video', 'AI Manual Edit', 'Fastest Rendering', '4K Export', 'Premium AI Models', 'Priority Support', 'Commercial License', 'Early Beta Features'],
-                  buttonText: 'Choose Elite',
-                  featured: false
-                }
-              ].map((plan, i) => (
-                <Col xs={24} md={8} key={i} className="flex">
-                  <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeInUp} className="w-full">
-                    <Card
-                      variant={plan.featured ? "outlined" : "borderless"}
-                      className={`h-full flex flex-col text-center rounded-[2rem] transition-all duration-300 transform hover:-translate-y-[10px] hover:scale-[1.03] ${plan.featured
-                        ? 'border-fuchsia-500 shadow-[0_20px_50px_rgba(168,85,247,0.3)] scale-100 md:scale-105 z-10 relative py-6 bg-[#1A1528]/80 backdrop-blur-xl hover:shadow-[0_25px_60px_rgba(168,85,247,0.4)] hover:border-fuchsia-400'
-                        : 'border-white/5 bg-white/5 backdrop-blur-lg shadow-xl hover:shadow-fuchsia-500/10 hover:border-white/10'
-                        }`}
-                      styles={{ body: { display: 'flex', flexDirection: 'column', height: '100%', flexGrow: 1 } }}
-                    >
-                      {plan.topBadge && (
-                        <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-fuchsia-500 to-purple-500 text-white px-6 py-1.5 rounded-full text-xs font-bold tracking-widest uppercase shadow-[0_0_15px_rgba(168,85,247,0.5)]">
-                          {plan.topBadge}
-                        </div>
-                      )}
-                      <Title level={3} className={`mt-4 mb-1 !font-black text-3xl ${plan.featured ? '!text-white' : ''}`}>{plan.name}</Title>
-                      <div className={`text-sm font-bold tracking-wide uppercase ${plan.featured ? 'text-fuchsia-300' : 'text-fuchsia-400'} mb-4`}>{plan.badge}</div>
-
-                      <div className="flex items-baseline justify-center gap-1 my-6">
-                        <span className={`text-6xl font-black ${plan.featured ? 'text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-400 to-purple-400 drop-shadow-lg' : ''}`}>{plan.price}</span>
-                        <span className="text-xl opacity-60 font-medium">{plan.period}</span>
-                      </div>
-
-                      <ul className="text-left space-y-4 mb-10 px-2 md:px-4 flex-grow">
-                        {plan.features.map((f, j) => (
-                          <li key={j} className="flex items-start gap-3 text-[15px] font-medium">
-                            <CheckCircleOutlined className={`text-lg shrink-0 mt-0.5 ${plan.featured ? 'text-fuchsia-400 drop-shadow-[0_0_8px_rgba(168,85,247,0.6)]' : 'text-fuchsia-500/70'}`} />
-                            <span className={plan.featured ? 'opacity-100 text-white' : 'opacity-80'}>{f}</span>
-                          </li>
-                        ))}
-                      </ul>
-
-                      <Button
-                        type={plan.featured ? "primary" : "default"}
-                        size="large"
-                        block
-                        shape="round"
-                        className={`h-14 mt-auto font-bold text-lg rounded-full transition-all duration-300 border-0 ${plan.featured
-                            ? 'bg-gradient-to-r from-fuchsia-500 to-purple-500 hover:from-fuchsia-400 hover:to-purple-400 shadow-[0_10px_20px_rgba(168,85,247,0.3)] hover:shadow-[0_15px_30px_rgba(168,85,247,0.5)] text-white'
-                            : 'bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 hover:text-fuchsia-400 text-white'
-                          }`}
-                      >
-                        {plan.buttonText}
-                      </Button>
-                    </Card>
-                  </motion.div>
-                </Col>
-              ))}
-            </Row>
-
-            <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeInUp} className="text-center mt-24">
-              <div className="inline-block p-[1px] rounded-3xl bg-gradient-to-r from-fuchsia-500/20 via-purple-500/20 to-fuchsia-500/20 relative group">
-                <div className="absolute inset-0 bg-gradient-to-r from-fuchsia-500/20 via-purple-500/20 to-fuchsia-500/20 blur-xl opacity-50 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl" />
-                <div className="relative bg-[#130E24] rounded-3xl py-10 px-12 border border-white/5 shadow-2xl backdrop-blur-sm">
-                  <h3 className="text-2xl font-black mb-3 flex items-center justify-center gap-3">
-                    <Sparkles className="w-6 h-6 text-fuchsia-400" /> ✨ Need more credits?
-                  </h3>
-                  <p className="text-lg opacity-80 mb-4 max-w-2xl mx-auto">
-                    Purchase additional AI Credit Packs anytime without changing your subscription.
-                  </p>
-                  <p className="text-sm opacity-50 max-w-xl mx-auto">
-                    Unused subscription credits expire at the end of the billing cycle. Bonus credits are consumed first.
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        </section>
+        <PricingSection isDarkMode={isDarkMode} fadeInUp={fadeInUp} />
 
         {/* 5.5 FAQ */}
         <section id="faq" className={`py-32 px-6 relative overflow-hidden ${isDarkMode ? 'bg-[#0B0815]' : 'bg-white'}`}>
@@ -1253,10 +1078,12 @@ export function LandingPage() {
             <CloseOutlined className="text-xl" />
           </button>
           <div className="text-white max-h-[70vh] overflow-y-auto pr-4 custom-scrollbar">
-            {activeLegalModal === 'privacy' && <PrivacyPolicyContent />}
-            {activeLegalModal === 'terms' && <TermsOfServiceContent />}
-            {activeLegalModal === 'refund' && <RefundPolicyContent />}
-            {activeLegalModal === 'acceptable' && <AcceptableUsePolicyContent />}
+            <Suspense fallback={<div className="flex justify-center p-12"><Loader2 className="w-8 h-8 animate-spin text-fuchsia-500" /></div>}>
+              {activeLegalModal === 'privacy' && <PrivacyPolicyContent />}
+              {activeLegalModal === 'terms' && <TermsOfServiceContent />}
+              {activeLegalModal === 'refund' && <RefundPolicyContent />}
+              {activeLegalModal === 'acceptable' && <AcceptableUsePolicyContent />}
+            </Suspense>
           </div>
         </Modal>
 
@@ -1342,7 +1169,9 @@ export function LandingPage() {
         </AnimatePresence>
 
         {/* LOGIN MODAL */}
-        <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
+        <Suspense fallback={null}>
+          <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
+        </Suspense>
       </div>
     </ConfigProvider>
   );

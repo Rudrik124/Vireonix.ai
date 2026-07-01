@@ -22,7 +22,7 @@ export interface PromptSecurityEvent {
     detection_type?: string;
     violation_reason?: string;
     moderation_tags?: string[];
-    [key: string]: any;
+    [key: string]: unknown;
   } | null;
   status: string;
   response_code: number | null;
@@ -229,7 +229,7 @@ export async function fetchModerationBreakdown(
     const typeMap = new Map<string, number>();
     let total = 0;
 
-    events.forEach((event: any) => {
+    events.forEach((event: { action: string }) => {
       if (event.action !== 'PROMPT_SUBMITTED' && event.action !== 'PROMPT_BLOCKED') {
         typeMap.set(
           event.action.replace(/_/g, ' '),
@@ -286,7 +286,7 @@ export async function fetchPromptSecurityTrends(days: number = 7): Promise<{
     }
 
     // Count events by date
-    events.forEach((event: any) => {
+    events.forEach((event: { action: string; created_at: string }) => {
       const dateStr = event.created_at.split('T')[0];
       const entry = trendMap.get(dateStr) || { submitted: 0, blocked: 0, flagged: 0 };
 
@@ -340,7 +340,7 @@ export async function fetchSeverityDistribution(
     const severityMap = new Map<string, number>();
     let total = 0;
 
-    events.forEach((event: any) => {
+    events.forEach((event: { severity: string }) => {
       severityMap.set(
         event.severity,
         (severityMap.get(event.severity) || 0) + 1
@@ -425,7 +425,7 @@ export async function fetchHighConfidenceDetections(
     if (error) throw error;
 
     const detections = (data || [])
-      .filter((e: any) => (e.metadata?.confidence_score || 0) >= threshold)
+      .filter((e: Partial<PromptSecurityEvent>) => (e.metadata?.confidence_score || 0) >= threshold)
       .slice(0, limit) as PromptSecurityEvent[];
 
     return { detections, error: null };

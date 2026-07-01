@@ -22,7 +22,7 @@ export interface AuthenticationEvent {
     operating_system?: string;
     provider?: string;
     risk_score?: number;
-    [key: string]: any;
+    [key: string]: unknown;
   } | null;
   status: string;
   response_code: number | null;
@@ -235,7 +235,7 @@ export async function fetchIPTracking(
       }
     >();
 
-    (data || []).forEach((event: any) => {
+    (data || []).forEach((event: AuthSecurityEvent) => {
       if (!event.ip_address) return;
 
       const existing = ipMap.get(event.ip_address) || {
@@ -292,7 +292,7 @@ export async function fetchDeviceInformation(): Promise<{
     const deviceMap = new Map<string, number>();
     let total = 0;
 
-    (data || []).forEach((event: any) => {
+    (data || []).forEach((event: AuthSecurityEvent) => {
       const device = event.metadata?.device_type || 'Unknown';
       deviceMap.set(device, (deviceMap.get(device) || 0) + 1);
       total++;
@@ -336,7 +336,7 @@ export async function fetchBrowserInformation(): Promise<{
     const browserMap = new Map<string, number>();
     let total = 0;
 
-    (data || []).forEach((event: any) => {
+    (data || []).forEach((event: AuthSecurityEvent) => {
       const browser = event.metadata?.browser || 'Unknown';
       browserMap.set(browser, (browserMap.get(browser) || 0) + 1);
       total++;
