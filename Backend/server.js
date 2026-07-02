@@ -1024,13 +1024,13 @@ const uploadToSupabase = async (filePath, fileName, bucketName = supabaseBucket)
   return { publicUrl: playbackUrl, storagePath };
 };
 
-const uploadReferenceMediaToSupabase = async (sourcePath, originalName) => {
+const uploadReferenceMediaToSupabase = async (sourcePath, originalName, bucketName = SUPABASE_BUCKETS.REFERENCE_VIDEO) => {
   const fileBuffer = fs.readFileSync(sourcePath);
   const safeName = String(originalName || "reference.bin").replace(/[^a-zA-Z0-9._-]/g, "_");
   const storagePath = `reference/${Date.now()}-${safeName}`;
 
   const { error } = await supabase.storage
-    .from(SUPABASE_BUCKETS.REFERENCE_VIDEO)
+    .from(bucketName)
     .upload(storagePath, fileBuffer, {
       contentType: "video/mp4",
       upsert: true,
@@ -1040,7 +1040,7 @@ const uploadReferenceMediaToSupabase = async (sourcePath, originalName) => {
     throw error;
   }
 
-  const { data } = supabase.storage.from(SUPABASE_BUCKETS.REFERENCE_VIDEO).getPublicUrl(storagePath);
+  const { data } = supabase.storage.from(bucketName).getPublicUrl(storagePath);
   return {
     publicUrl: ensurePlayableVideoUrl(data?.publicUrl, "Reference media public URL"),
     storagePath,
@@ -3960,6 +3960,8 @@ app.post(
         ? SUPABASE_BUCKETS.QUICK_EDITS
         : !videoFile && imageFiles.length > 0
         ? SUPABASE_BUCKETS.IMAGE_TO_VIDEO
+        : videoFile
+        ? SUPABASE_BUCKETS.REFERENCE_VIDEO
         : SUPABASE_BUCKETS.AI_GENERATED;
 
       console.log("📝 [API-MEDIA] Config:", {
@@ -4027,7 +4029,7 @@ app.post(
         await Promise.allSettled(
           referenceVideoFiles.map(async (file) => {
             try {
-              const uploadedRef = await uploadReferenceMediaToSupabase(file.path, file.originalname);
+              const uploadedRef = await uploadReferenceMediaToSupabase(file.path, file.originalname, outputBucket);
               console.log("📚 [API-MEDIA] Reference video stored:", uploadedRef.storagePath);
             } catch (refErr) {
               console.warn("⚠️ [API-MEDIA] Reference video upload failed:", file.originalname, refErr?.message || refErr);
