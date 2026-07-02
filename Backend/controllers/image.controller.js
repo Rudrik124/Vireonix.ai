@@ -1,5 +1,3 @@
-import { generateAIImage } from "../Ai generated video/server-cinematic-video.js";
-import { isComplexPrompt } from "../utils/helpers.js"; // Assuming this exists or needs to be extracted
 import fetch from "node-fetch";
 
 const toErrorMessage = (value, fallback = "Unexpected error") => {
