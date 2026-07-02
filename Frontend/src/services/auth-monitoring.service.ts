@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { supabase } from '../../../Backend/supabase';
 
 export type AuthEventType = 'LOGIN_SUCCESS' | 'LOGIN_FAILURE' | 'PASSWORD_RESET' | 'OAUTH_LOGIN' | 'SUSPICIOUS_LOGIN' | 'LOGOUT';
 
@@ -366,7 +366,7 @@ export function subscribeToAuthenticationEvents(
 ): () => void {
   if (!supabase) {
     console.warn('Supabase not configured');
-    return () => {};
+    return () => { };
   }
 
   const channel = supabase.channel('auth_monitoring');

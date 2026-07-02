@@ -2,10 +2,10 @@ import { useAuth } from "../../../app/context/auth-context";
 import { useNavigate } from "react-router";
 import { useEffect, useState, useMemo } from "react";
 import { motion, useMotionValue, useSpring, useTransform, animate } from "framer-motion";
-import { 
-  AlertCircle, 
-  Plus, 
-  Filter, 
+import {
+  AlertCircle,
+  Plus,
+  Filter,
   ChevronDown,
   ArrowLeft,
   Bug,
@@ -18,7 +18,7 @@ import {
   TestTube2,
   AlertTriangle
 } from "lucide-react";
-import { supabase } from "../../../lib/supabase";
+import { supabase } from "../../../../../Backend/supabase";
 import { fetchTesterBugReports, submitTesterBugReport, submitTesterUpdateAction } from "../../../services/developer-portal-api.service";
 import { SuccessToast } from "../../../app/components/success-toast";
 import { useRealtime } from "../../../hooks/useRealtime";
@@ -100,7 +100,7 @@ export function TesterBugReportsPage() {
   const springConfig = { damping: 25, stiffness: 100 };
   const smoothMouseX = useSpring(mouseX, springConfig);
   const smoothMouseY = useSpring(mouseY, springConfig);
-  
+
   const glowX = useTransform(smoothMouseX, [-1, 1], [-50, 50]);
   const glowY = useTransform(smoothMouseY, [-1, 1], [-50, 50]);
 
@@ -163,14 +163,14 @@ export function TesterBugReportsPage() {
     bugReportsSchemaMissing
       ? []
       : [
-          {
-            table: "bug_reports",
-            event: "*",
-            callback: () => {
-              fetchBugReports();
-            },
+        {
+          table: "bug_reports",
+          event: "*",
+          callback: () => {
+            fetchBugReports();
           },
-        ]
+        },
+      ]
   );
 
   const fetchBugReports = async () => {
@@ -349,20 +349,20 @@ export function TesterBugReportsPage() {
       {showSuccess && (
         <SuccessToast message="Bug report submitted" onDismiss={() => setShowSuccess(false)} />
       )}
-      
+
       {/* Background Layers */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <div className="absolute inset-0 opacity-[0.03] mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
-        
+
         {/* Animated Mesh Gradient */}
         <div className="absolute inset-0 overflow-hidden">
-          <motion.div 
+          <motion.div
             animate={{ rotate: 360, scale: [1, 1.1, 1] }} transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
-            className="absolute -top-[20%] -left-[10%] w-[70vw] h-[70vh] bg-[radial-gradient(circle_at_center,rgba(168,85,247,0.12),transparent_50%)]" 
+            className="absolute -top-[20%] -left-[10%] w-[70vw] h-[70vh] bg-[radial-gradient(circle_at_center,rgba(168,85,247,0.12),transparent_50%)]"
           />
-          <motion.div 
+          <motion.div
             animate={{ rotate: -360, scale: [1, 1.2, 1] }} transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
-            className="absolute -bottom-[20%] -right-[10%] w-[80vw] h-[80vh] bg-[radial-gradient(circle_at_center,rgba(6,182,212,0.1),transparent_50%)]" 
+            className="absolute -bottom-[20%] -right-[10%] w-[80vw] h-[80vh] bg-[radial-gradient(circle_at_center,rgba(6,182,212,0.1),transparent_50%)]"
           />
         </div>
 
@@ -372,7 +372,7 @@ export function TesterBugReportsPage() {
         <div className="absolute bottom-[10%] right-[10%] w-[30%] h-[30%] bg-cyan-600/10 rounded-full blur-[100px] mix-blend-screen" />
 
         {/* Mouse Follow Ambient Glow */}
-        <motion.div 
+        <motion.div
           style={{ x: glowX, y: glowY, background: 'radial-gradient(circle, rgba(6,182,212,0.5) 0%, rgba(124,58,237,0.5) 100%)' }}
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full blur-[80px] opacity-15 pointer-events-none"
         />
@@ -414,7 +414,7 @@ export function TesterBugReportsPage() {
       </div>
 
       <div className="relative z-10 container mx-auto px-6 py-8">
-        
+
         {/* Top Action Buttons */}
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-10 flex justify-between items-center">
           <button
@@ -423,7 +423,7 @@ export function TesterBugReportsPage() {
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform text-cyan-400" /> Back
           </button>
-          
+
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -485,7 +485,7 @@ export function TesterBugReportsPage() {
 
         {/* Bug Status Banner */}
         <div className="w-full flex items-center justify-center mb-12">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
             className="flex items-center gap-4 text-xs font-mono font-bold tracking-widest text-slate-400 border border-white/5 bg-[rgba(18,22,40,0.65)] backdrop-blur-md px-6 py-2.5 rounded-full shadow-[0_0_30px_rgba(139,92,246,0.1)]"
           >
@@ -509,7 +509,7 @@ export function TesterBugReportsPage() {
         )}
 
         {/* Premium Analytics Cards */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12"
         >
@@ -641,112 +641,112 @@ export function TesterBugReportsPage() {
         )}
 
         {activeTab === 'report' && (<>
-        <div className="mb-8 flex flex-wrap gap-4 items-center bg-[rgba(18,22,40,0.65)] backdrop-blur-[24px] p-4 rounded-[20px] border border-white/10 shadow-[0_0_30px_rgba(139,92,246,0.1)] glow-button">
-          <div className="flex items-center gap-2 px-2">
-            <Filter className="w-5 h-5 text-cyan-400" />
-            <span className="text-white font-bold tracking-widest text-sm uppercase">Filters</span>
-          </div>
-          
-          <div className="relative">
-            <select
-              value={filter}
-              onChange={(e) => setFilter(e.target.value as any)}
-              className="pl-4 pr-10 py-2.5 rounded-xl text-white font-semibold bg-white/5 border border-white/10 hover:border-cyan-500/50 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/50 transition-all outline-none appearance-none cursor-pointer"
-            >
-              <option value="all" className="bg-[#0B1020]">All Status</option>
-              <option value="open" className="bg-[#0B1020]">Open</option>
-              <option value="in-review" className="bg-[#0B1020]">In Review</option>
-              <option value="fixed" className="bg-[#0B1020]">Fixed</option>
-            </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50 pointer-events-none" />
+          <div className="mb-8 flex flex-wrap gap-4 items-center bg-[rgba(18,22,40,0.65)] backdrop-blur-[24px] p-4 rounded-[20px] border border-white/10 shadow-[0_0_30px_rgba(139,92,246,0.1)] glow-button">
+            <div className="flex items-center gap-2 px-2">
+              <Filter className="w-5 h-5 text-cyan-400" />
+              <span className="text-white font-bold tracking-widest text-sm uppercase">Filters</span>
+            </div>
+
+            <div className="relative">
+              <select
+                value={filter}
+                onChange={(e) => setFilter(e.target.value as any)}
+                className="pl-4 pr-10 py-2.5 rounded-xl text-white font-semibold bg-white/5 border border-white/10 hover:border-cyan-500/50 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/50 transition-all outline-none appearance-none cursor-pointer"
+              >
+                <option value="all" className="bg-[#0B1020]">All Status</option>
+                <option value="open" className="bg-[#0B1020]">Open</option>
+                <option value="in-review" className="bg-[#0B1020]">In Review</option>
+                <option value="fixed" className="bg-[#0B1020]">Fixed</option>
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50 pointer-events-none" />
+            </div>
+
+            <div className="relative">
+              <select
+                value={severityFilter}
+                onChange={(e) => setSeverityFilter(e.target.value as any)}
+                className="pl-4 pr-10 py-2.5 rounded-xl text-white font-semibold bg-white/5 border border-white/10 hover:border-purple-500/50 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-all outline-none appearance-none cursor-pointer"
+              >
+                <option value="all" className="bg-[#0B1020]">All Severity</option>
+                <option value="critical" className="bg-[#0B1020]">Critical</option>
+                <option value="high" className="bg-[#0B1020]">High</option>
+                <option value="medium" className="bg-[#0B1020]">Medium</option>
+                <option value="low" className="bg-[#0B1020]">Low</option>
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50 pointer-events-none" />
+            </div>
           </div>
 
-          <div className="relative">
-            <select
-              value={severityFilter}
-              onChange={(e) => setSeverityFilter(e.target.value as any)}
-              className="pl-4 pr-10 py-2.5 rounded-xl text-white font-semibold bg-white/5 border border-white/10 hover:border-purple-500/50 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-all outline-none appearance-none cursor-pointer"
-            >
-              <option value="all" className="bg-[#0B1020]">All Severity</option>
-              <option value="critical" className="bg-[#0B1020]">Critical</option>
-              <option value="high" className="bg-[#0B1020]">High</option>
-              <option value="medium" className="bg-[#0B1020]">Medium</option>
-              <option value="low" className="bg-[#0B1020]">Low</option>
-            </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50 pointer-events-none" />
-          </div>
-        </div>
-
-        {/* Bug Reports List */}
-        <div className="space-y-4">
-          {filteredBugs.length === 0 ? (
-            <motion.div 
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-              className="relative p-[1px] rounded-[24px] overflow-hidden"
-            >
-              <div className="absolute inset-0 bg-white/5 backdrop-blur-[24px] rounded-[23px] border border-white/10 flex flex-col items-center justify-center py-20" style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
-                <motion.div animate={{ y: [0, -10, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}>
-                  <Bug className="w-16 h-16 text-slate-500/50 mb-4" />
-                </motion.div>
-                <h3 className="text-2xl font-black text-white mb-2 tracking-tight">No bug reports found.</h3>
-                <p className="text-slate-400 font-medium text-center">Your selected filters returned no results.</p>
-              </div>
-            </motion.div>
-          ) : (
-            <motion.div variants={listVariants} initial="hidden" animate="show" className="space-y-4">
-              {filteredBugs.map((bug) => (
-                <motion.div
-                  key={bug.id}
-                  variants={itemVariants}
-                  whileHover={{ y: -4, scale: 1.01 }}
-                  className="bg-[rgba(18,22,40,0.65)] backdrop-blur-[24px] p-6 rounded-[20px] border border-white/10 hover:border-cyan-500/50 transition-all cursor-pointer shadow-[0_0_20px_rgba(0,0,0,0.2)] hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] group"
-                >
-                  <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-4">
-                    <div>
-                      <div className="flex flex-wrap items-center gap-3 mb-3">
-                        <span className="text-slate-500 font-mono text-xs bg-black/30 px-2 py-1 rounded">ID: {bug.id.split('-')[0]}</span>
-                        <span className={`px-3 py-1 rounded-full text-xs font-bold border backdrop-blur-sm ${severityColors[bug.severity]}`}>
-                          {bug.severity.charAt(0).toUpperCase() + bug.severity.slice(1)}
-                        </span>
-                        <span className={`px-3 py-1 rounded-full text-xs font-bold border backdrop-blur-sm ${statusColors[bug.status]}`}>
-                          {bug.status === "in-review" ? "In Review" : bug.status.charAt(0).toUpperCase() + bug.status.slice(1)}
-                        </span>
+          {/* Bug Reports List */}
+          <div className="space-y-4">
+            {filteredBugs.length === 0 ? (
+              <motion.div
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                className="relative p-[1px] rounded-[24px] overflow-hidden"
+              >
+                <div className="absolute inset-0 bg-white/5 backdrop-blur-[24px] rounded-[23px] border border-white/10 flex flex-col items-center justify-center py-20" style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
+                  <motion.div animate={{ y: [0, -10, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}>
+                    <Bug className="w-16 h-16 text-slate-500/50 mb-4" />
+                  </motion.div>
+                  <h3 className="text-2xl font-black text-white mb-2 tracking-tight">No bug reports found.</h3>
+                  <p className="text-slate-400 font-medium text-center">Your selected filters returned no results.</p>
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div variants={listVariants} initial="hidden" animate="show" className="space-y-4">
+                {filteredBugs.map((bug) => (
+                  <motion.div
+                    key={bug.id}
+                    variants={itemVariants}
+                    whileHover={{ y: -4, scale: 1.01 }}
+                    className="bg-[rgba(18,22,40,0.65)] backdrop-blur-[24px] p-6 rounded-[20px] border border-white/10 hover:border-cyan-500/50 transition-all cursor-pointer shadow-[0_0_20px_rgba(0,0,0,0.2)] hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] group"
+                  >
+                    <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-4">
+                      <div>
+                        <div className="flex flex-wrap items-center gap-3 mb-3">
+                          <span className="text-slate-500 font-mono text-xs bg-black/30 px-2 py-1 rounded">ID: {bug.id.split('-')[0]}</span>
+                          <span className={`px-3 py-1 rounded-full text-xs font-bold border backdrop-blur-sm ${severityColors[bug.severity]}`}>
+                            {bug.severity.charAt(0).toUpperCase() + bug.severity.slice(1)}
+                          </span>
+                          <span className={`px-3 py-1 rounded-full text-xs font-bold border backdrop-blur-sm ${statusColors[bug.status]}`}>
+                            {bug.status === "in-review" ? "In Review" : bug.status.charAt(0).toUpperCase() + bug.status.slice(1)}
+                          </span>
+                        </div>
+                        <h3 className="text-xl font-bold text-white group-hover:text-cyan-300 transition-colors">{bug.title}</h3>
                       </div>
-                      <h3 className="text-xl font-bold text-white group-hover:text-cyan-300 transition-colors">{bug.title}</h3>
+                      <ChevronDown className="w-5 h-5 text-slate-500 group-hover:text-cyan-400 transition-colors shrink-0" />
                     </div>
-                    <ChevronDown className="w-5 h-5 text-slate-500 group-hover:text-cyan-400 transition-colors shrink-0" />
-                  </div>
 
-                  <p className="text-slate-400 mb-6 line-clamp-2 leading-relaxed text-sm">{bug.description}</p>
+                    <p className="text-slate-400 mb-6 line-clamp-2 leading-relaxed text-sm">{bug.description}</p>
 
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 rounded-xl bg-black/20 border border-white/5 text-xs text-slate-300">
-                    <div>
-                      <span className="text-slate-500 font-bold uppercase tracking-wider block mb-1">Component</span> 
-                      {bug.component}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 rounded-xl bg-black/20 border border-white/5 text-xs text-slate-300">
+                      <div>
+                        <span className="text-slate-500 font-bold uppercase tracking-wider block mb-1">Component</span>
+                        {bug.component}
+                      </div>
+                      <div>
+                        <span className="text-slate-500 font-bold uppercase tracking-wider block mb-1">OS</span>
+                        {bug.os}
+                      </div>
+                      <div>
+                        <span className="text-slate-500 font-bold uppercase tracking-wider block mb-1">Browser</span>
+                        {bug.browser}
+                      </div>
+                      <div>
+                        <span className="text-slate-500 font-bold uppercase tracking-wider block mb-1">Device</span>
+                        {bug.device}
+                      </div>
                     </div>
-                    <div>
-                      <span className="text-slate-500 font-bold uppercase tracking-wider block mb-1">OS</span> 
-                      {bug.os}
-                    </div>
-                    <div>
-                      <span className="text-slate-500 font-bold uppercase tracking-wider block mb-1">Browser</span> 
-                      {bug.browser}
-                    </div>
-                    <div>
-                      <span className="text-slate-500 font-bold uppercase tracking-wider block mb-1">Device</span> 
-                      {bug.device}
-                    </div>
-                  </div>
 
-                  <div className="mt-4 flex justify-between items-center text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                    <span>Attachments: {bug.attachment_count}</span>
-                    <span>Updated: {new Date(bug.updated_at).toLocaleDateString()}</span>
-                  </div>
-                </motion.div>
-              ))}
-            </motion.div>
-          )}
-        </div>
+                    <div className="mt-4 flex justify-between items-center text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                      <span>Attachments: {bug.attachment_count}</span>
+                      <span>Updated: {new Date(bug.updated_at).toLocaleDateString()}</span>
+                    </div>
+                  </motion.div>
+                ))}
+              </motion.div>
+            )}
+          </div>
         </>)}
 
         {activeTab === 'updates' && (
@@ -785,7 +785,7 @@ export function TesterBugReportsPage() {
                             <p className="text-white font-semibold mb-3 leading-relaxed">{bug.notes}</p>
                             <p className="text-[10px] uppercase tracking-[0.35em] text-slate-500 mb-1">Related Bug</p>
                             <p className="text-sm font-medium text-slate-100 mb-3">{bug.title}</p>
-                            
+
                             {updateActions[bug.id] === null || updateActions[bug.id] === undefined ? (
                               <div className="flex items-center gap-3 mb-3">
                                 <button

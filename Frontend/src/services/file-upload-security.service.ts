@@ -1,11 +1,11 @@
-import { supabase } from '../lib/supabase';
+import { supabase } from '../../../Backend/supabase';
 
-export type FileUploadAction = 
-  | 'UPLOAD_SUCCESS' 
-  | 'UPLOAD_REJECTED' 
-  | 'WRONG_MIME_TYPE' 
+export type FileUploadAction =
+  | 'UPLOAD_SUCCESS'
+  | 'UPLOAD_REJECTED'
+  | 'WRONG_MIME_TYPE'
   | 'FILE_TOO_LARGE'
-  | 'MALWARE_DETECTED' 
+  | 'MALWARE_DETECTED'
   | 'CORRUPTED_FILE';
 
 export interface FileUploadSecurityEvent {
@@ -115,8 +115,8 @@ export async function fetchFileUploadMetrics(
     const corruptedFiles = events.filter((e) => e.action === 'CORRUPTED_FILE').length;
 
     const totalUploads = events.length;
-    const successRate = totalUploads > 0 
-      ? (successEvents.length / totalUploads) * 100 
+    const successRate = totalUploads > 0
+      ? (successEvents.length / totalUploads) * 100
       : 0;
 
     return {
@@ -420,7 +420,7 @@ export function subscribeToFileUploadSecurityEvents(
 ): () => void {
   if (!supabase) {
     console.warn('Supabase not configured');
-    return () => {};
+    return () => { };
   }
 
   const channel = supabase.channel('file_upload_security_monitoring');

@@ -1,5 +1,5 @@
 import type { Session } from "@supabase/supabase-js";
-import { supabase } from "../lib/supabase";
+import { supabase } from "../../../Backend/supabase";
 import { getPortalAccessForRole, getRolePermissions } from "../shared/auth/permissions";
 import type { AppProfile, AppRole } from "../shared/types/auth";
 
@@ -90,7 +90,7 @@ export async function fetchAppProfile(session: Session): Promise<AppProfile> {
   }
 
   const userEmail = session.user.email?.toLowerCase();
-  
+
   if (userEmail === "admin@veytrix.ai" || userEmail === "security@veytrix.ai") {
     const fallback = buildFallbackProfile(session);
     return {

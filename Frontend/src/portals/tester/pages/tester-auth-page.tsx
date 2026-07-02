@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router";
-import { supabase, isSupabaseConfigured } from "../../../lib/supabase";
+import { supabase, isSupabaseConfigured } from "../../../../../Backend/supabase";
 import { fetchAppProfile } from "../../../services/auth-profile";
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -107,7 +107,7 @@ export function TesterAuthPage() {
             />
 
             {error && <p className="rounded-2xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">{error}</p>}
-            
+
             <p className="rounded-2xl border border-purple-400/20 bg-purple-400/5 px-4 py-3 text-xs leading-6 text-purple-100/90">
               This portal is restricted to accounts with <code>tester</code> privileges.
             </p>

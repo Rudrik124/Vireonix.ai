@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import { supabase } from "../../lib/supabase";
+import { supabase } from "../../../../Backend/supabase";
 import { canAccessPortal } from "../../shared/auth/permissions";
 import type { AuthContextType, AppProfile, AppRole } from "../../shared/types/auth";
 import { fetchAppProfile } from "../../services/auth-profile";

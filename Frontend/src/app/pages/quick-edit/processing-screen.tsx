@@ -49,17 +49,19 @@ export function QuickEditProcessingScreen() {
     if (processingStarted.current || isCanceled) return;
     processingStarted.current = true;
 
-    // Fake progress for visual smoothness
     const timer = setInterval(() => {
       setProgress(prev => {
-        if (prev >= 98) return 98;
-        return prev + 1;
+        const remaining = 100 - prev;
+        let step = remaining * 0.035; // easing step
+        if (step < 0.05) step = 0.05; // minimum increment
+        const next = prev + step;
+        return next > 99.9 ? 99.9 : next;
       });
-    }, 120);
+    }, 150);
 
     const stepTimer = setInterval(() => {
       setCurrentStep(prev => (prev < steps.length - 1 ? prev + 1 : prev));
-    }, 2500);
+    }, 3000);
 
     const runProcessing = async () => {
       try {
@@ -322,6 +324,32 @@ export function QuickEditProcessingScreen() {
     setRetryToken((prev) => prev + 1);
   };
 
+  const [premiumMessageIndex, setPremiumMessageIndex] = useState(0);
+  const premiumMessages = [
+    "Finalizing your edit...",
+    "Polishing visual quality...",
+    "Optimizing the final output...",
+    "Applying finishing touches...",
+    "Almost ready..."
+  ];
+
+  useEffect(() => {
+    // Only cycle messages when we are at the last step and waiting for completion
+    if (currentStep === steps.length - 1 && progress < 100) {
+      const msgTimer = setInterval(() => {
+        setPremiumMessageIndex(prev => (prev + 1) % premiumMessages.length);
+      }, 3500);
+      return () => clearInterval(msgTimer);
+    }
+  }, [currentStep, progress]);
+
+  // Derive the description text based on state
+  const getDescriptionText = () => {
+    if (progress === 100) return "Assets have been synthesized and are ready for delivery.";
+    if (currentStep === steps.length - 1) return premiumMessages[premiumMessageIndex];
+    return "AI is currently analyzing your footage for silences, face-tracks, and optimal subtitle placement.";
+  };
+
   if (error) {
     return (
       <div className="h-[100dvh] w-full flex items-center justify-center bg-[#0B1020] text-slate-200 p-8">
@@ -408,19 +436,30 @@ export function QuickEditProcessingScreen() {
 
                 <div className="space-y-4">
                   <h2 className="text-2xl font-black text-white uppercase tracking-widest">
-                    {progress === 100 ? "Optimization Complete" : "Initializing Quick-Edit"}
+                    {progress === 100 ? "Optimization Complete" : "Processing Quick-Edit"}
                   </h2>
-                  <p className="text-sm text-[#94a3b8] font-medium max-w-md italic tracking-tight">
-                    {progress === 100 
-                      ? "Assets have been synthesized and are ready for delivery."
-                      : "AI is currently analyzing your footage for silences, face-tracks, and optimal subtitle placement."}
-                  </p>
+                  <div className="h-10 flex items-center justify-center overflow-hidden">
+                    <AnimatePresence mode="wait">
+                      <motion.p 
+                        key={getDescriptionText()}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ duration: 0.4 }}
+                        className="text-sm text-[#94a3b8] font-medium max-w-md italic tracking-tight"
+                      >
+                        {getDescriptionText()}
+                      </motion.p>
+                    </AnimatePresence>
+                  </div>
                 </div>
 
                 <div className="w-full max-w-md space-y-2">
                    <div className="flex justify-between text-[10px] font-black uppercase text-slate-500">
                       <span>{progress === 100 ? "Pipeline Finalized" : "AI Progress"}</span>
-                      <span className="text-purple-400">{progress}%</span>
+                      <span className="text-purple-400">
+                        {progress === 100 ? 100 : progress.toFixed(1)}%
+                      </span>
                    </div>
                    <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
                       <motion.div 

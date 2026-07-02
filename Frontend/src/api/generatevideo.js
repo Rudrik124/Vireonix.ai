@@ -1,6 +1,6 @@
 import { buildApiUrl } from "../lib/api";
 import { buildVideoApiError, parseVideoApiResponse } from "../lib/video-response";
-import { supabase } from "../lib/supabase";
+import { supabase } from "../../../Backend/supabase";
 
 export const generateVideo = async ({
   prompt,

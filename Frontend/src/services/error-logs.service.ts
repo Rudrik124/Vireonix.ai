@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { supabase } from '../../../Backend/supabase';
 
 export type ErrorStatus = 'open' | 'resolved';
 export type ErrorSeverity = 'critical' | 'high' | 'medium' | 'low';

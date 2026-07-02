@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router";
-import { supabase, isSupabaseConfigured } from "../../lib/supabase";
+import { supabase, isSupabaseConfigured } from "../../../../Backend/supabase";
 import { fetchAppProfile } from "../../services/auth-profile";
 import { recordLoginActivity } from "../../lib/auth-login-activity";
 import { getRoleRedirectUrl } from "../../lib/role-redirect";
@@ -106,7 +106,7 @@ const LeftVisuals = () => {
 
   return (
     <div className="relative w-full h-full p-8 xl:p-12 flex flex-col justify-center">
-      
+
       {/* Background Typography */}
       <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center gap-10 opacity-5 blur-xl select-none z-0">
         <span className="text-[120px] font-black text-white leading-none">CREATE</span>
@@ -119,7 +119,7 @@ const LeftVisuals = () => {
       {/* Particles & Stars */}
       <div className="absolute inset-0 pointer-events-none z-0">
         {[...Array(30)].map((_, i) => (
-          <div 
+          <div
             key={i}
             className="absolute bg-white rounded-full opacity-20"
             style={{
@@ -135,7 +135,7 @@ const LeftVisuals = () => {
       </div>
 
       <div className="relative z-10 w-full max-w-2xl mx-auto flex flex-col h-full justify-between">
-        
+
         {/* Top Hero Section */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} className="mt-12">
           {/* Typing Prompt */}
@@ -154,7 +154,7 @@ const LeftVisuals = () => {
         {/* Middle Status Cards */}
         <div className="relative h-[300px] w-full my-8" style={{ perspective: '1000px' }}>
           {/* Card 1 */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8, delay: 0.2 }}
             className="absolute top-0 left-0 bg-white/[0.03] backdrop-blur-[20px] border border-white/[0.08] rounded-[24px] p-5 w-64 shadow-[0_0_40px_rgba(168,85,247,0.15)] login-float"
             style={{ animationDelay: '0s' }}
@@ -174,7 +174,7 @@ const LeftVisuals = () => {
           </motion.div>
 
           {/* Card 2 */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.4 }}
             className="absolute top-1/4 right-0 bg-white/[0.03] backdrop-blur-[20px] border border-white/[0.08] rounded-[24px] p-5 w-60 shadow-[0_0_40px_rgba(168,85,247,0.15)] login-float"
             style={{ animationDelay: '1s' }}
@@ -195,7 +195,7 @@ const LeftVisuals = () => {
           </motion.div>
 
           {/* Card 3 */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.6 }}
             className="absolute top-[80%] left-[30%] bg-white/[0.03] backdrop-blur-[20px] border border-white/[0.08] rounded-[24px] py-5 pr-5 pl-8 w-72 shadow-[0_0_40px_rgba(168,85,247,0.15)] login-float"
             style={{ animationDelay: '2s' }}
@@ -259,8 +259,8 @@ const LeftVisuals = () => {
             { text: "🔒 Secure Storage", top: '45%', left: '-10%', delay: '0.5s' },
             { text: "🚀 Commercial License", top: '95%', left: '75%', delay: '1.3s' },
           ].map((badge, i) => (
-            <div 
-              key={i} 
+            <div
+              key={i}
               className="absolute login-float bg-white/[0.03] backdrop-blur-[20px] border border-white/[0.08] text-[9px] uppercase font-bold tracking-wider text-white px-3 py-1.5 rounded-full shadow-[0_0_15px_rgba(255,255,255,0.05)]"
               style={{ top: badge.top, left: badge.left, animationDelay: badge.delay }}
             >
@@ -417,26 +417,26 @@ export function LoginModal({ isOpen, onClose, customMessage, customTitle }: Logi
         } else {
           setLoginSuccess(true);
           localStorage.setItem("justLoggedIn", "true");
-          
+
           let nextRoute = '/video-type';
           const authRedirectUrl = localStorage.getItem("authRedirectUrl");
-          
+
           if (authRedirectUrl) {
             localStorage.removeItem("authRedirectUrl");
           }
-          
+
           if (data.session) {
             const profile = await fetchAppProfile(data.session);
             await recordLoginActivity(data.session, profile);
-            
+
             const userEmail = data.session.user.email?.toLowerCase() || "";
-            
+
             // Use the centralized role redirect logic
             nextRoute = getRoleRedirectUrl(userEmail, profile, authRedirectUrl || '/video-type');
           } else if (authRedirectUrl) {
             nextRoute = authRedirectUrl;
           }
-          
+
           setTimeout(() => {
             handleClose();
             navigate(nextRoute);
@@ -480,23 +480,23 @@ export function LoginModal({ isOpen, onClose, customMessage, customTitle }: Logi
           <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 bg-[#0B0A10]">
             {/* Grid Glow */}
             <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:60px_60px] [perspective:1000px] [transform-style:preserve-3d]">
-               <div className="absolute inset-0 bg-gradient-to-t from-[#0B0A10] via-transparent to-[#0B0A10]" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0B0A10] via-transparent to-[#0B0A10]" />
             </div>
-            
+
             {/* Gradient Blobs */}
-            <motion.div 
+            <motion.div
               animate={{ x: [0, 100, 0], y: [0, -50, 0], scale: [1, 1.2, 1] }}
               transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
               className="absolute top-0 right-1/4 w-[800px] h-[800px] bg-fuchsia-600/10 rounded-full blur-[120px]"
             />
-            <motion.div 
+            <motion.div
               animate={{ x: [0, -100, 0], y: [0, 50, 0], scale: [1, 1.1, 1] }}
               transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
               className="absolute bottom-0 left-1/4 w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-[100px]"
             />
           </div>
 
-          
+
           {/* Close button */}
           <button
             onClick={handleClose}
@@ -509,29 +509,29 @@ export function LoginModal({ isOpen, onClose, customMessage, customTitle }: Logi
           {/* LEFT PANEL - AI VISUALS */}
           <div className="relative hidden lg:flex flex-col items-center justify-center overflow-hidden border-r border-white/5 bg-transparent z-10">
 
-            
+
             <LeftVisuals />
           </div>
 
           {/* RIGHT PANEL - LOGIN FORM */}
           <div className="relative flex flex-col items-center justify-center p-6 sm:p-12 h-full overflow-y-auto bg-transparent z-10">
-            
+
 
 
             {/* Floating Status Pills in Background (Hidden on Mobile) */}
-            <div className="absolute top-10 left-10 hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md text-[10px] font-medium text-white/60 login-float" style={{animationDelay: '0.5s'}}>
+            <div className="absolute top-10 left-10 hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md text-[10px] font-medium text-white/60 login-float" style={{ animationDelay: '0.5s' }}>
               <span className="text-fuchsia-400">⚡</span> AI Engine Online
             </div>
-            <div className="absolute bottom-10 right-10 hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md text-[10px] font-medium text-white/60 login-float" style={{animationDelay: '1.2s'}}>
+            <div className="absolute bottom-10 right-10 hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md text-[10px] font-medium text-white/60 login-float" style={{ animationDelay: '1.2s' }}>
               <span className="text-emerald-400">☁</span> Secure Cloud Access
             </div>
-            <div className="absolute bottom-20 left-10 hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md text-[10px] font-medium text-white/60 login-float" style={{animationDelay: '2.5s'}}>
+            <div className="absolute bottom-20 left-10 hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md text-[10px] font-medium text-white/60 login-float" style={{ animationDelay: '2.5s' }}>
               <span className="text-fuchsia-400">🎬</span> Rendering Enabled
             </div>
 
             {/* Glass Card Container */}
             <div className="relative z-10 w-full max-w-[420px] bg-white/[0.05] backdrop-blur-[20px] border border-white/[0.1] rounded-[24px] p-6 sm:p-8 shadow-[0_25px_50px_rgba(0,0,0,0.25)]">
-              
+
               {/* Logo & Welcome */}
               <div className="text-center mb-5">
                 <BrandLogo size={48} className="mb-3 mx-auto inline-flex" />
@@ -547,26 +547,24 @@ export function LoginModal({ isOpen, onClose, customMessage, customTitle }: Logi
               <div className="flex bg-white/5 p-1 rounded-xl mb-4 border border-white/10">
                 <button
                   type="button"
-                  onClick={() => { setMode("signin"); setMessage({text:"", type:""}); }}
-                  className={`flex-1 text-sm font-semibold py-2.5 rounded-lg transition-all ${
-                    mode === "signin" ? "bg-white/10 text-white shadow-sm border border-white/10" : "text-slate-400 hover:text-white"
-                  }`}
+                  onClick={() => { setMode("signin"); setMessage({ text: "", type: "" }); }}
+                  className={`flex-1 text-sm font-semibold py-2.5 rounded-lg transition-all ${mode === "signin" ? "bg-white/10 text-white shadow-sm border border-white/10" : "text-slate-400 hover:text-white"
+                    }`}
                 >
                   Sign In
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setMode("signup"); setMessage({text:"", type:""}); }}
-                  className={`flex-1 text-sm font-semibold py-2.5 rounded-lg transition-all ${
-                    mode === "signup" ? "bg-white/10 text-white shadow-sm border border-white/10" : "text-slate-400 hover:text-white"
-                  }`}
+                  onClick={() => { setMode("signup"); setMessage({ text: "", type: "" }); }}
+                  className={`flex-1 text-sm font-semibold py-2.5 rounded-lg transition-all ${mode === "signup" ? "bg-white/10 text-white shadow-sm border border-white/10" : "text-slate-400 hover:text-white"
+                    }`}
                 >
                   Sign Up
                 </button>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-3">
-                
+
                 {/* Name Field (Signup only) */}
                 <AnimatePresence>
                   {mode === "signup" && (
@@ -652,11 +650,10 @@ export function LoginModal({ isOpen, onClose, customMessage, customTitle }: Logi
                   <motion.div
                     initial={{ opacity: 0, y: -5 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className={`text-[11px] font-medium px-4 py-3 rounded-xl border ${
-                      message.type === "error" 
-                        ? "bg-red-500/10 border-red-500/20 text-red-400" 
+                    className={`text-[11px] font-medium px-4 py-3 rounded-xl border ${message.type === "error"
+                        ? "bg-red-500/10 border-red-500/20 text-red-400"
                         : "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
-                    }`}
+                      }`}
                   >
                     {message.text}
                   </motion.div>
@@ -671,11 +668,11 @@ export function LoginModal({ isOpen, onClose, customMessage, customTitle }: Logi
                   <div className="absolute inset-0 bg-gradient-to-r from-fuchsia-500 to-purple-500 transition-transform group-hover:scale-105" />
                   <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-gradient-to-r from-purple-500 to-fuchsia-600 transition-opacity duration-300" />
                   <div className="absolute inset-0 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)] rounded-xl" />
-                  
+
                   {/* Shimmer Effect */}
                   <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/30 to-transparent group-hover:animate-[shimmer_1.5s_infinite]" />
                   <style>{`@keyframes shimmer { 100% { transform: translateX(100%); } }`}</style>
-                  
+
                   <div className="relative flex items-center justify-center gap-2 h-full w-full">
                     {loginSuccess ? (
                       <>
@@ -711,13 +708,13 @@ export function LoginModal({ isOpen, onClose, customMessage, customTitle }: Logi
                       title="Google"
                     >
                       <svg viewBox="0 0 24 24" className="w-[18px] h-[18px] group-hover:scale-110 transition-transform">
-                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/>
-                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" />
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
                       </svg>
                     </button>
-                    
+
                     {/* GitHub */}
                     <button
                       type="button"
@@ -730,7 +727,7 @@ export function LoginModal({ isOpen, onClose, customMessage, customTitle }: Logi
                         <path d="M12 .5C5.37.5 0 5.78 0 12.31c0 5.21 3.43 9.64 8.21 11.21.6.11.82-.26.82-.57v-2.01c-3.34.72-4.04-1.61-4.04-1.61-.55-1.37-1.33-1.74-1.33-1.74-1.09-.74.08-.73.08-.73 1.2.09 1.84 1.24 1.84 1.24 1.07 1.83 2.81 1.3 3.5 1 .1-.78.42-1.3.76-1.6-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.13-.3-.54-1.52.12-3.18 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 6.02 0c2.3-1.55 3.3-1.23 3.3-1.23.66 1.66.24 2.88.12 3.18.77.84 1.24 1.91 1.24 3.22 0 4.61-2.81 5.63-5.48 5.92.43.37.81 1.1.81 2.22v3.29c0 .31.21.69.82.57C20.57 21.95 24 17.52 24 12.31 24 5.78 18.63.5 12 .5z" />
                       </svg>
                     </button>
-                    
+
                     {/* Discord */}
                     <button
                       type="button"

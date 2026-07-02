@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase } from '../../../Backend/supabase';
 
 export type ErrorSeverity = 'critical' | 'high' | 'medium' | 'low';
 

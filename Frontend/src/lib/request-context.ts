@@ -1,6 +1,10 @@
-import { supabase } from "./supabase";
+// @ts-ignore
+import { supabase } from "../../../Backend/supabase";
 
-export const buildPortalRequestHeaders = async (usageContext, extraHeaders = {}) => {
+export const buildPortalRequestHeaders = async (
+  usageContext?: { portal?: string; usageType?: string; skipCreditCheck?: boolean },
+  extraHeaders: Record<string, string> = {}
+) => {
   const { data: sessionData } = await supabase?.auth.getSession();
   const accessToken = sessionData?.session?.access_token;
 

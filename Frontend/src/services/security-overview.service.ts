@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { supabase } from '../../../Backend/supabase';
 
 export interface SecurityOverviewMetrics {
   totalUsers: number;
@@ -99,7 +99,7 @@ export async function fetchSecurityOverviewMetrics(): Promise<SecurityOverviewMe
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to fetch metrics';
     console.error('Error fetching security overview metrics:', error);
-    
+
     return {
       totalUsers: 0,
       activeUsersToday: 0,
@@ -126,7 +126,7 @@ export function subscribeToSecurityOverviewUpdates(
 ): () => void {
   if (!supabase) {
     console.warn('Supabase not configured');
-    return () => {};
+    return () => { };
   }
 
   const channels: any[] = [];

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router";
-import { supabase, isSupabaseConfigured } from "../../../lib/supabase";
+import { supabase, isSupabaseConfigured } from "../../../../../Backend/supabase";
 import { fetchAppProfile } from "../../../services/auth-profile";
 import { detectDeviceInfo, recordLoginActivity } from "../../../lib/auth-login-activity";
 import { getRoleRedirectUrl } from "../../../lib/role-redirect";
@@ -38,14 +38,14 @@ export function AuthCallbackPage() {
         if (authRedirectUrl) {
           localStorage.removeItem("authRedirectUrl");
         }
-        
+
         let fallbackUrl = authRedirectUrl || "/video-type";
-        
+
         // Handle specific portal intent for admin since admin is a special case
         if (portalIntent === "admin" && (profile.role === "admin" || profile.role === "super_admin" || profile.portalAccess?.includes("admin"))) {
           fallbackUrl = "/admin/dashboard";
         }
-        
+
         const nextRoute = getRoleRedirectUrl(userEmail, profile, fallbackUrl);
         navigate(nextRoute, { replace: true });
         return;

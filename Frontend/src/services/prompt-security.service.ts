@@ -1,11 +1,11 @@
-import { supabase } from '../lib/supabase';
+import { supabase } from '../../../Backend/supabase';
 
-export type PromptSecurityAction = 
-  | 'PROMPT_SUBMITTED' 
-  | 'PROMPT_BLOCKED' 
-  | 'NSFW_DETECTION' 
+export type PromptSecurityAction =
+  | 'PROMPT_SUBMITTED'
+  | 'PROMPT_BLOCKED'
+  | 'NSFW_DETECTION'
   | 'VIOLENCE_DETECTION'
-  | 'PROMPT_INJECTION' 
+  | 'PROMPT_INJECTION'
   | 'COPYRIGHT_ABUSE';
 
 export interface PromptSecurityEvent {
@@ -379,7 +379,7 @@ export function subscribeToPromptSecurityEvents(
 ): () => void {
   if (!supabase) {
     console.warn('Supabase not configured');
-    return () => {};
+    return () => { };
   }
 
   const channel = supabase.channel('prompt_security_monitoring');

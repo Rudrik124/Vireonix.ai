@@ -1,11 +1,11 @@
-import { supabase } from '../lib/supabase';
+import { supabase } from '../../../Backend/supabase';
 import { formatDateRange } from '../lib/api';
 
-export type AdminActionType = 
-  | 'ADMIN_LOGIN' 
-  | 'USER_BAN' 
-  | 'USER_DELETE' 
-  | 'ROLE_CHANGE' 
+export type AdminActionType =
+  | 'ADMIN_LOGIN'
+  | 'USER_BAN'
+  | 'USER_DELETE'
+  | 'ROLE_CHANGE'
   | 'SETTINGS_CHANGE';
 
 export interface AdminActivity {

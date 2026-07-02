@@ -1,11 +1,11 @@
-import { supabase } from '../lib/supabase';
+import { supabase } from '../../../Backend/supabase';
 import { formatDateRange } from '../lib/api';
 
-export type AlertType = 
-  | 'MALWARE_UPLOAD' 
-  | 'PROMPT_INJECTION' 
-  | 'EXCESSIVE_VIDEO_GENERATION' 
-  | 'ADMIN_LOGIN_NEW_DEVICE' 
+export type AlertType =
+  | 'MALWARE_UPLOAD'
+  | 'PROMPT_INJECTION'
+  | 'EXCESSIVE_VIDEO_GENERATION'
+  | 'ADMIN_LOGIN_NEW_DEVICE'
   | 'API_ABUSE';
 
 export type AlertSeverity = 'INFO' | 'WARNING' | 'CRITICAL';
@@ -339,7 +339,7 @@ export function subscribeToSecurityAlerts(
     };
   } catch (error) {
     console.error('Error subscribing to alerts:', error);
-    return () => {};
+    return () => { };
   }
 }
 

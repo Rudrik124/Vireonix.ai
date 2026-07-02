@@ -25,7 +25,7 @@ import {
   Cog
 } from "lucide-react";
 import { useAuth } from "../../../app/context/auth-context";
-import { supabase } from "../../../lib/supabase";
+import { supabase } from "../../../../../Backend/supabase";
 import { SecurityOverviewDashboard } from "../components/security-overview-dashboard";
 
 type SecurityEventCategory = 'AUTH' | 'PROMPT' | 'FILE_UPLOAD' | 'RATE_LIMIT' | 'API' | 'ADMIN' | 'AI_COST' | 'SECURITY_ALERT';
@@ -95,7 +95,7 @@ const CATEGORY_COLORS: Record<SecurityEventCategory, string> = {
 export function DeveloperSecurityEventsPage() {
   const navigate = useNavigate();
   const { profile } = useAuth();
-  
+
   const [events, setEvents] = useState<SecurityEvent[]>([]);
   const [summary, setSummary] = useState<SecurityEventsSummary>({
     total: 0,
@@ -120,7 +120,7 @@ export function DeveloperSecurityEventsPage() {
         // Calculate date range
         const now = new Date();
         let startDate = new Date();
-        
+
         if (timeRange === '1h') startDate.setHours(now.getHours() - 1);
         else if (timeRange === '24h') startDate.setDate(now.getDate() - 1);
         else if (timeRange === '7d') startDate.setDate(now.getDate() - 7);
@@ -195,7 +195,7 @@ export function DeveloperSecurityEventsPage() {
     try {
       const { error } = await supabase
         .from('security_events')
-        .update({ 
+        .update({
           status: 'acknowledged',
           acknowledged_at: new Date().toISOString()
         })
@@ -203,8 +203,8 @@ export function DeveloperSecurityEventsPage() {
 
       if (error) throw error;
 
-      setEvents(events.map(e => 
-        e.id === eventId 
+      setEvents(events.map(e =>
+        e.id === eventId
           ? { ...e, status: 'acknowledged', acknowledged_at: new Date().toISOString() }
           : e
       ));
@@ -225,7 +225,7 @@ export function DeveloperSecurityEventsPage() {
     try {
       const { error } = await supabase
         .from('security_events')
-        .update({ 
+        .update({
           status: 'resolved',
           resolved_at: new Date().toISOString(),
           resolved_by: profile?.id,
@@ -235,15 +235,15 @@ export function DeveloperSecurityEventsPage() {
 
       if (error) throw error;
 
-      setEvents(events.map(e => 
-        e.id === eventId 
-          ? { 
-              ...e, 
-              status: 'resolved', 
-              resolved_at: new Date().toISOString(),
-              resolved_by: profile?.id,
-              notes
-            }
+      setEvents(events.map(e =>
+        e.id === eventId
+          ? {
+            ...e,
+            status: 'resolved',
+            resolved_at: new Date().toISOString(),
+            resolved_by: profile?.id,
+            notes
+          }
           : e
       ));
 

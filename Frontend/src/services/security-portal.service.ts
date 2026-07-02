@@ -1,6 +1,6 @@
-import { supabase } from "../lib/supabase";
+import { supabase } from "../../../Backend/supabase";
 
-export type SecurityPortalEventType = 
+export type SecurityPortalEventType =
   | "SECURITY_PORTAL_LOGIN"
   | "SECURITY_PORTAL_ACCESS"
   | "SECURITY_PORTAL_ACTION"

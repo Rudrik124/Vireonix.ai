@@ -86,15 +86,15 @@ const legacyUserRoutes = [
   {
     path: "/",
     async lazy() {
-      const { LandingPage } = await import("./main/landing-page");
-      return { Component: LandingPage };
+      const { VideoTypePage } = await import("./main/home-page");
+      return { Component: VideoTypePage };
     }
   },
   {
-    path: "/video-type",
+    path: "/landing",
     async lazy() {
-      const { VideoTypePage } = await import("./main/home-page");
-      return { Component: VideoTypePage };
+      const { LandingPage } = await import("./main/landing-page");
+      return { Component: LandingPage };
     }
   },
   {
@@ -121,8 +121,8 @@ const legacyUserRoutes = [
   {
     path: "/home",
     async lazy() {
-      const { HomePage } = await import("./main/home-page");
-      return { Component: HomePage };
+      const { VideoTypePage } = await import("./main/home-page");
+      return { Component: VideoTypePage };
     }
   },
   {

@@ -1,4 +1,4 @@
-import { supabase } from "../lib/supabase";
+import { supabase } from "../../../Backend/supabase";
 import { canBypassCreditChecks } from "../shared/auth/permissions";
 import type { AppProfile, CreditWalletType, PortalId, UsageType } from "../shared/types/auth";
 

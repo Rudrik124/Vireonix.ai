@@ -1,11 +1,11 @@
 import { useNavigate } from "react-router";
 import { useEffect, useState, useMemo } from "react";
 import { motion, useMotionValue, useSpring, useTransform, animate, AnimatePresence } from "framer-motion";
-import { 
-  ChevronLeft, 
-  AlertCircle, 
-  CheckCircle, 
-  Trash2, 
+import {
+  ChevronLeft,
+  AlertCircle,
+  CheckCircle,
+  Trash2,
   RotateCcw,
   ShieldAlert,
   Activity,
@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../../app/context/auth-context";
 import { useErrorLogsData } from "../../../hooks/useDashboardData";
-import { supabase } from "../../../lib/supabase";
+import { supabase } from "../../../../../Backend/supabase";
 
 type ErrorSeverity = 'critical' | 'high' | 'medium' | 'low';
 type ErrorStatus = 'open' | 'resolved';
@@ -118,7 +118,7 @@ export function DeveloperErrorLogsPage() {
   const springConfig = { damping: 25, stiffness: 100 };
   const smoothMouseX = useSpring(mouseX, springConfig);
   const smoothMouseY = useSpring(mouseY, springConfig);
-  
+
   const glowX = useTransform(smoothMouseX, [-1, 1], [-50, 50]);
   const glowY = useTransform(smoothMouseY, [-1, 1], [-50, 50]);
 
@@ -319,7 +319,7 @@ export function DeveloperErrorLogsPage() {
 
   const openIssuesCount = errorLogs.filter(e => e.status === 'open').length;
   const criticalCount = errorLogs.filter(e => e.severity === 'critical' && e.status === 'open').length;
-  
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const resolvedTodayCount = errorLogs.filter(e => e.status === 'resolved' && e.resolved_at && new Date(e.resolved_at) >= today).length;
@@ -448,12 +448,11 @@ export function DeveloperErrorLogsPage() {
                 <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 flex items-center gap-2"><Bug className="w-3 h-3" /> Bug Report</p>
                 <p className="text-2xl font-black text-white">{selectedBug.title}</p>
               </div>
-              <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-full font-bold text-xs uppercase tracking-widest border shadow-[0_0_15px_rgba(0,0,0,0.2)] ${
-                selectedBug.status === 'open' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
-                selectedBug.status === 'in-review' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
-                selectedBug.status === 'fixed' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
-                'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-              }`}>
+              <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-full font-bold text-xs uppercase tracking-widest border shadow-[0_0_15px_rgba(0,0,0,0.2)] ${selectedBug.status === 'open' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
+                  selectedBug.status === 'in-review' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
+                    selectedBug.status === 'fixed' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
+                      'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                }`}>
                 {selectedBug.status === 'in-review' ? 'In Review' : selectedBug.status}
               </span>
             </div>
@@ -515,11 +514,10 @@ export function DeveloperErrorLogsPage() {
                       key={status}
                       onClick={() => handleBugStatusUpdate(selectedBug.id, status)}
                       disabled={isUpdating}
-                      className={`px-5 py-2.5 rounded-full font-bold uppercase tracking-widest text-[10px] transition-all disabled:opacity-50 hover:-translate-y-0.5 ${
-                        isActive 
-                          ? `bg-${color}-500/20 text-${color}-400 border border-${color}-500/50 shadow-[0_0_15px_rgba(0,0,0,0.2)]` 
+                      className={`px-5 py-2.5 rounded-full font-bold uppercase tracking-widest text-[10px] transition-all disabled:opacity-50 hover:-translate-y-0.5 ${isActive
+                          ? `bg-${color}-500/20 text-${color}-400 border border-${color}-500/50 shadow-[0_0_15px_rgba(0,0,0,0.2)]`
                           : `bg-white/5 border border-white/10 text-slate-400 hover:border-${color}-500/30 hover:text-${color}-300`
-                      }`}
+                        }`}
                     >
                       {status === 'in-review' ? 'In Review' : status}
                     </button>
@@ -540,7 +538,7 @@ export function DeveloperErrorLogsPage() {
 
     return (
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        
+
         {/* Left Column: Filters */}
         <div className="lg:col-span-3 space-y-6">
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="bg-[rgba(8,12,24,0.68)] backdrop-blur-[24px] border border-white/[0.06] rounded-[24px] shadow-[0_12px_40px_rgba(0,0,0,0.35)] p-6 relative overflow-hidden group/filter">
@@ -549,7 +547,7 @@ export function DeveloperErrorLogsPage() {
               <h2 className="text-lg font-black text-white mb-6 flex items-center gap-2">
                 <Filter className="w-5 h-5 text-indigo-400" /> Smart Filters
               </h2>
-              
+
               <div className="space-y-6">
                 {/* Search */}
                 <div>
@@ -576,9 +574,8 @@ export function DeveloperErrorLogsPage() {
                           <button
                             key={range}
                             onClick={() => setTimeRange(range)}
-                            className={`px-4 py-2.5 rounded-xl font-bold uppercase tracking-widest text-[10px] transition-all text-left ${
-                              active ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/30' : 'bg-white/5 border border-white/5 text-slate-400 hover:bg-white/10'
-                            }`}
+                            className={`px-4 py-2.5 rounded-xl font-bold uppercase tracking-widest text-[10px] transition-all text-left ${active ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/30' : 'bg-white/5 border border-white/5 text-slate-400 hover:bg-white/10'
+                              }`}
                           >
                             {range === 'today' ? 'Today' : range === 'last7days' ? 'Last 7 days' : 'All Time'}
                           </button>
@@ -606,9 +603,8 @@ export function DeveloperErrorLogsPage() {
                               setBugSeverityFilter(active ? bugSeverityFilter.filter(s => s !== sev) : [...bugSeverityFilter, sev]);
                             }
                           }}
-                          className={`px-3 py-1.5 rounded-lg font-bold uppercase tracking-widest text-[9px] transition-all border ${
-                            active ? `bg-${color}-500/20 text-${color}-400 border-${color}-500/40 shadow-[0_0_10px_rgba(0,0,0,0.2)]` : 'bg-white/5 border-white/5 text-slate-500 hover:bg-white/10 hover:text-slate-300'
-                          }`}
+                          className={`px-3 py-1.5 rounded-lg font-bold uppercase tracking-widest text-[9px] transition-all border ${active ? `bg-${color}-500/20 text-${color}-400 border-${color}-500/40 shadow-[0_0_10px_rgba(0,0,0,0.2)]` : 'bg-white/5 border-white/5 text-slate-500 hover:bg-white/10 hover:text-slate-300'
+                            }`}
                         >
                           {sev}
                         </button>
@@ -639,9 +635,8 @@ export function DeveloperErrorLogsPage() {
                               setBugStatusFilter(active ? bugStatusFilter.filter(s => s !== stat) : [...bugStatusFilter, stat]);
                             }
                           }}
-                          className={`px-4 py-2.5 rounded-xl font-bold uppercase tracking-widest text-[10px] transition-all text-left flex items-center justify-between border ${
-                            active ? `bg-${color}-500/10 text-${color}-400 border-${color}-500/30` : 'bg-white/5 border-white/5 text-slate-400 hover:bg-white/10'
-                          }`}
+                          className={`px-4 py-2.5 rounded-xl font-bold uppercase tracking-widest text-[10px] transition-all text-left flex items-center justify-between border ${active ? `bg-${color}-500/10 text-${color}-400 border-${color}-500/30` : 'bg-white/5 border-white/5 text-slate-400 hover:bg-white/10'
+                            }`}
                         >
                           {stat === 'in-review' ? 'In Review' : stat}
                           {active && <div className={`w-1.5 h-1.5 rounded-full bg-${color}-400 shadow-[0_0_5px_currentColor]`} />}
@@ -676,7 +671,7 @@ export function DeveloperErrorLogsPage() {
         <div className="lg:col-span-9">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-[rgba(8,12,24,0.68)] backdrop-blur-[24px] border border-blue-500/20 rounded-[24px] shadow-[0_12px_40px_rgba(59,130,246,0.15)] overflow-hidden relative group/table h-[800px] flex flex-col">
             <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-indigo-500/5 opacity-50" />
-            
+
             <div className="relative z-10 flex-1 overflow-auto custom-scrollbar">
               {loading ? (
                 <div className="flex flex-col items-center justify-center h-full">
@@ -712,7 +707,7 @@ export function DeveloperErrorLogsPage() {
 
                       const sevColors: any = { critical: 'rose', high: 'orange', medium: 'amber', low: 'cyan' };
                       const statColors: any = { open: 'rose', resolved: 'emerald', 'in-review': 'amber', fixed: 'blue', verified: 'emerald' };
-                      
+
                       const sevColor = sevColors[item.severity] || 'slate';
                       const statColor = statColors[item.status] || 'slate';
 
@@ -720,7 +715,7 @@ export function DeveloperErrorLogsPage() {
                         <tr key={item.id} className="group hover:bg-white/[0.02] transition-colors relative">
                           {/* Hover left border highlight */}
                           <td className="absolute left-0 top-0 bottom-0 w-0.5 bg-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-                          
+
                           <td className="px-6 py-4 w-1/3">
                             <div className="bg-black/40 border border-white/5 rounded-lg px-3 py-2 w-fit max-w-full overflow-hidden group-hover:border-indigo-500/20 transition-colors">
                               <p className={`text-xs font-mono truncate text-slate-300 group-hover:text-white transition-colors`} title={title}>
@@ -773,25 +768,25 @@ export function DeveloperErrorLogsPage() {
 
   return (
     <div className="min-h-[100dvh] relative overflow-hidden bg-[#030712] font-sans selection:bg-indigo-500/30 selection:text-white text-slate-200 pb-24">
-      
+
       {/* Background Layers */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <div className="absolute inset-0 opacity-[0.02] mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
-        
+
         {/* Animated Mesh Gradient */}
         <div className="absolute inset-0 overflow-hidden">
-          <motion.div 
+          <motion.div
             animate={{ rotate: 360, scale: [1, 1.05, 1] }} transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
-            className="absolute -top-[30%] -right-[10%] w-[80vw] h-[80vh] bg-[radial-gradient(circle_at_top_right,rgba(99,102,241,0.15),transparent_35%)]" 
+            className="absolute -top-[30%] -right-[10%] w-[80vw] h-[80vh] bg-[radial-gradient(circle_at_top_right,rgba(99,102,241,0.15),transparent_35%)]"
           />
-          <motion.div 
+          <motion.div
             animate={{ rotate: -360, scale: [1, 1.1, 1] }} transition={{ duration: 50, repeat: Infinity, ease: "linear" }}
-            className="absolute -bottom-[20%] -left-[10%] w-[70vw] h-[70vh] bg-[radial-gradient(circle_at_bottom_left,rgba(59,130,246,0.12),transparent_45%)]" 
+            className="absolute -bottom-[20%] -left-[10%] w-[70vw] h-[70vh] bg-[radial-gradient(circle_at_bottom_left,rgba(59,130,246,0.12),transparent_45%)]"
           />
         </div>
 
         {/* Mouse Follow Ambient Glow */}
-        <motion.div 
+        <motion.div
           style={{ x: glowX, y: glowY, background: 'radial-gradient(circle, rgba(99,102,241,0.15) 0%, rgba(59,130,246,0.05) 100%)' }}
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full blur-[120px] opacity-20 pointer-events-none"
         />
@@ -809,7 +804,7 @@ export function DeveloperErrorLogsPage() {
       </div>
 
       <div className="relative z-10 max-w-[1500px] mx-auto px-6 lg:px-12 py-10">
-        
+
         {/* Top Right System Status */}
         <div className="absolute top-10 right-12 hidden lg:flex items-center gap-3">
           {['Live', 'Monitoring', 'Synced', 'Protected'].map((status, i) => {
@@ -835,10 +830,10 @@ export function DeveloperErrorLogsPage() {
               <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform text-indigo-400" /> Back to Dashboard
             </button>
           </motion.div>
-          
+
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col md:flex-row md:items-end justify-between gap-6 relative">
             <div className="absolute top-1/2 left-0 -translate-y-1/2 w-96 h-48 bg-indigo-500/10 blur-[100px] pointer-events-none -z-10" />
-            
+
             <div>
               <h1 className="text-4xl md:text-5xl font-black text-white mb-3 tracking-tight flex items-center gap-4">
                 <ShieldAlert className="w-10 h-10 text-indigo-400 drop-shadow-[0_0_15px_rgba(99,102,241,0.5)]" /> Issues & Reports
@@ -883,9 +878,8 @@ export function DeveloperErrorLogsPage() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as 'errors' | 'bugs')}
-                className={`relative px-8 py-3 rounded-full text-sm font-bold uppercase tracking-widest transition-colors flex items-center gap-2 z-10 ${
-                  activeTab === tab.id ? "text-white" : "text-slate-400 hover:text-white"
-                }`}
+                className={`relative px-8 py-3 rounded-full text-sm font-bold uppercase tracking-widest transition-colors flex items-center gap-2 z-10 ${activeTab === tab.id ? "text-white" : "text-slate-400 hover:text-white"
+                  }`}
               >
                 {activeTab === tab.id && (
                   <motion.div
@@ -910,7 +904,7 @@ export function DeveloperErrorLogsPage() {
 
         {/* Floating AI Orb */}
         <div className="absolute -bottom-10 -right-10 w-48 h-48 rounded-full bg-gradient-to-br from-blue-500/20 to-indigo-500/20 blur-[30px] pointer-events-none hidden xl:block z-50" />
-        <motion.div 
+        <motion.div
           className="fixed bottom-10 right-10 w-24 h-24 rounded-full bg-gradient-to-br from-[#0A0F1C] to-indigo-900/50 border border-indigo-500/30 flex items-center justify-center shadow-[0_0_50px_rgba(99,102,241,0.3)] group cursor-pointer hidden xl:flex z-50"
           animate={{ y: [0, -10, 0], rotate: [0, 5, -5, 0] }}
           transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}

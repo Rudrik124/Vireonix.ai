@@ -1,4 +1,4 @@
-import { supabase } from "../lib/supabase";
+import { supabase } from "../../../Backend/supabase";
 
 export type ThreatType = "FAILED_LOGIN" | "BLOCKED_REQUEST" | "SECURITY_EVENT";
 export type ThreatSeverity = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";

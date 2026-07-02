@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { supabase } from '../../../Backend/supabase';
 import { formatDateRange } from '../lib/api';
 
 export interface AICostMetrics {
