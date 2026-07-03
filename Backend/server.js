@@ -1715,6 +1715,7 @@ const applyEditorAdjustments = async (inputPath, editorSelections) => {
     audioFilters: safeAudioFilters,
   });
 
+  console.log("ENTER FFmpeg: applyEditorAdjustments");
   await new Promise((resolve, reject) => {
     let command = ffmpeg().input(inputPath);
 
@@ -1745,10 +1746,12 @@ const applyEditorAdjustments = async (inputPath, editorSelections) => {
       .output(outputPath)
       .on("end", () => {
         console.log("✅ [API-MEDIA] Editor adjustments rendering complete");
+        console.log("EXIT FFmpeg: applyEditorAdjustments");
         resolve();
       })
       .on("error", (err) => {
         console.error("❌ [API-MEDIA] Editor adjustments rendering failed:", err);
+        console.log("EXIT FFmpeg: applyEditorAdjustments (ERROR)");
         reject(err);
       })
       .run();
@@ -3748,6 +3751,7 @@ app.post(
     { name: "audio", maxCount: 1 },
   ]),
   async (req, res) => {
+    console.log("ENTER Route: /api/generate-from-media");
     try {
       const {
         prompt,
@@ -4614,7 +4618,21 @@ app.post(
       }
 
       // STEP 4.05: Apply editor controls (trim/speed/rotate/volume) before effects.
-      const adjustedPath = await applyEditorAdjustments(finalOutputPath, resolvedEditorSelections);
+      console.log("ENTER Manual Edit");
+      let adjustedPath = finalOutputPath;
+      try {
+        adjustedPath = await applyEditorAdjustments(finalOutputPath, resolvedEditorSelections);
+      } catch (manualEditErr) {
+        console.error("❌ [API-MEDIA] Manual Edit step failed:", manualEditErr.message);
+        return res.status(500).json({
+          success: false,
+          stage: "Manual Edit",
+          error: manualEditErr.message,
+          stack: manualEditErr.stack
+        });
+      }
+      console.log("EXIT Manual Edit");
+
       if (adjustedPath !== finalOutputPath) {
         generatedTempFiles.push(finalOutputPath);
         finalOutputPath = adjustedPath;
@@ -4775,6 +4793,7 @@ app.post(
       }
 
       // STEP 5: Upload final video to Supabase storage
+      console.log("ENTER Upload");
       console.log("📤 [API-MEDIA] Uploading final video to storage...");
       try {
         const stats = fs.statSync(finalOutputPath);
@@ -4791,6 +4810,7 @@ app.post(
         });
       }
       const { publicUrl, storagePath } = await uploadToSupabase(finalOutputPath, fileName, outputBucket);
+      console.log("EXIT Upload");
       console.log("✅ [API-MEDIA] Storage upload complete");
 
       // STEP 6: Clean up temporary files (best-effort)
@@ -4806,6 +4826,9 @@ app.post(
         fs.unlink(p, () => {});
       });
 
+      console.log("ENTER Response");
+      console.log("EXIT Success");
+
       return res.json({
         success: true,
         video: publicUrl,
@@ -4816,7 +4839,12 @@ app.post(
     } catch (error) {
       const message = error?.message || "Media-based video generation failed.";
       console.error("❌ [API-MEDIA] Error:", message);
-      return res.status(500).json({ success: false, error: message });
+      return res.status(500).json({ 
+        success: false, 
+        stage: "Global Catch",
+        error: message,
+        stack: error?.stack
+      });
     }
   }
 );
