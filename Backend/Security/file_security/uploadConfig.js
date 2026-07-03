@@ -129,7 +129,10 @@ class UploadConfig {
    * @returns {object} - Multer middleware
    */
   getMulterInstance(options = {}) {
-    const storage = options.useMemory 
+    // Force disk storage to prevent memory crashes on 512MB RAM instances
+    // Only allow memory storage for tiny non-video files if strictly necessary
+    const isVideoOrAudio = options.category === 'video' || options.category === 'audio';
+    const storage = (options.useMemory && !isVideoOrAudio)
       ? this.getMemoryStorageConfig() 
       : this.getStorageConfig();
 

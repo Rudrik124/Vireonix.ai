@@ -7,9 +7,33 @@ process.on("uncaughtException", (err) => logger.error("Uncaught Exception", { er
 process.on("unhandledRejection", (reason) => logger.error("Unhandled Rejection", { reason }));
 import express from "express";
 import cors from "cors";
+import path from "path";
+import multer from "multer";
+
+class MutexQueue {
+  constructor(concurrency = 1) {
+    this.concurrency = concurrency;
+    this.running = 0;
+    this.queue = [];
+  }
+  async run(task) {
+    if (this.running >= this.concurrency) {
+      await new Promise(resolve => this.queue.push(resolve));
+    }
+    this.running++;
+    try {
+      return await task();
+    } finally {
+      this.running--;
+      if (this.queue.length > 0) {
+        this.queue.shift()();
+      }
+    }
+  }
+}
+const ffmpegQueue = new MutexQueue(1);
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
-import multer from "multer";
 import ffmpeg from "fluent-ffmpeg";
 import ffmpegPath from "ffmpeg-static";
 import ffprobePath from "ffprobe-static";
@@ -709,7 +733,7 @@ const processVideoRange = (input, output, start = 0, duration = null) => {
     command
       .outputOptions([
         "-c:v libx264",
-        "-preset ultrafast",
+        "-preset ultrafast", "-threads 1",
         "-crf 22"
       ])
       .output(output)
@@ -881,7 +905,7 @@ const createVideoFromImage = (imagePath, outputPath, duration = 10, frame = "16:
       .setDuration(duration)
       .outputOptions([
         "-c:v libx264",
-        "-preset ultrafast",
+        "-preset ultrafast", "-threads 1",
         "-crf 22",
         `-t ${duration}`,
         "-pix_fmt yuv420p",
@@ -1026,13 +1050,13 @@ const uploadToSupabase = async (filePath, fileName, bucketName = supabaseBucket)
 };
 
 const uploadReferenceMediaToSupabase = async (sourcePath, originalName, bucketName = SUPABASE_BUCKETS.REFERENCE_VIDEO) => {
-  const fileBuffer = fs.readFileSync(sourcePath);
+  const fileStream = fs.createReadStream(sourcePath);
   const safeName = String(originalName || "reference.bin").replace(/[^a-zA-Z0-9._-]/g, "_");
   const storagePath = `reference/${Date.now()}-${safeName}`;
 
   const { error } = await supabase.storage
     .from(bucketName)
-    .upload(storagePath, fileBuffer, {
+    .upload(storagePath, fileStream, {
       contentType: "video/mp4",
       upsert: true,
     });
@@ -1055,41 +1079,24 @@ const uploadMediaToGeminiFile = async (filePath, displayName, mimeType) => {
     throw new Error("GEMINI_API_KEY is not set");
   }
 
-  const boundary = `Boundary${Date.now()}`;
-  const metadata = JSON.stringify({
-    file: {
-      displayName: displayName || "upload",
-    },
+  const FormData = (await import('form-data')).default;
+  const form = new FormData();
+  
+  form.append('metadata', JSON.stringify({
+    file: { displayName: displayName || "upload" }
+  }), { contentType: 'application/json; charset=utf-8' });
+  
+  form.append('file', fs.createReadStream(filePath), {
+    contentType: mimeType || 'application/octet-stream'
   });
-
-  const fileBuffer = fs.readFileSync(filePath);
-
-  const bodyParts = [];
-  bodyParts.push(
-    Buffer.from(
-      `--${boundary}\r\nContent-Type: application/json; charset=utf-8\r\n\r\n${metadata}\r\n`,
-      "utf8",
-    ),
-  );
-  bodyParts.push(
-    Buffer.from(
-      `--${boundary}\r\nContent-Type: ${mimeType || "application/octet-stream"}\r\n\r\n`,
-      "utf8",
-    ),
-  );
-  bodyParts.push(fileBuffer);
-  bodyParts.push(Buffer.from(`\r\n--${boundary}--\r\n`, "utf8"));
-
-  const body = Buffer.concat(bodyParts);
 
   const response = await fetch("https://generativelanguage.googleapis.com/upload/v1beta/files", {
     method: "POST",
     headers: {
       "x-goog-api-key": geminiApiKey,
-      "X-Goog-Upload-Protocol": "multipart",
-      "Content-Type": `multipart/related; boundary=${boundary}`,
+      ...form.getHeaders()
     },
-    body,
+    body: form,
   });
 
   const text = await response.text();
@@ -2006,7 +2013,7 @@ const applyEffectsToVideo = async (inputPath, effects, durationSeconds = 10) => 
   await new Promise((resolve, reject) => {
     let command = ffmpeg().input(inputPath);
 
-    const outputOptions = ["-c:v libx264", "-preset ultrafast", "-crf 22", "-pix_fmt yuv420p", "-movflags +faststart"];
+    const outputOptions = ["-c:v libx264", "-preset ultrafast", "-threads 1", "-crf 22", "-pix_fmt yuv420p", "-movflags +faststart"];
     if (hasAudio) {
       outputOptions.push("-c:a aac");
     } else {
@@ -2379,7 +2386,7 @@ const mergeSegmentsWithTransitions = async (segmentPaths, transitions, outputPat
     console.log("📝 [API-MEDIA] Single segment - direct encoding");
     return new Promise((resolve, reject) => {
       ffmpeg(segmentPaths[0])
-        .outputOptions(["-c:v libx264", "-pix_fmt yuv420p", "-preset fast", "-crf 23", "-c:a aac", "-movflags +faststart"])
+        .outputOptions(["-c:v libx264", "-pix_fmt yuv420p", "-preset fast", "-threads 1", "-crf 23", "-c:a aac", "-movflags +faststart"])
         .output(outputPath)
         .on("end", () => {
           console.log("✅ [API-MEDIA] Single segment encoded");
@@ -2466,7 +2473,7 @@ const mergeSegmentsWithTransitions = async (segmentPaths, transitions, outputPat
           "-map", "[a]",
           "-c:v", "libx264",
           "-pix_fmt", "yuv420p",
-          "-preset", "fast",
+          "-preset", "fast", "-threads", "1",
           "-crf", "23",
           "-c:a", "aac",
           "-movflags", "+faststart",
@@ -2566,7 +2573,7 @@ const mergeSegmentsWithTransitions = async (segmentPaths, transitions, outputPat
         "-map", currentALabel,
         "-c:v", "libx264",
         "-pix_fmt", "yuv420p",
-        "-preset", "fast",
+        "-preset", "fast", "-threads", "1",
         "-crf", "23",
         "-c:a", "aac",
         "-movflags", "+faststart",
@@ -2771,7 +2778,8 @@ const generateAIImage = async (prompt, variant = "") => {
 
     // Convert base64 to buffer
     const imageBuffer = Buffer.from(data.image, "base64");
-    
+    data.image = null; // Free up base64 string memory
+
     // Generate unique filename
     const timestamp = Date.now();
     const sanitizedPrompt = String(prompt).replace(/[^a-zA-Z0-9_-]/g, "_").substring(0, 30);
@@ -3604,7 +3612,7 @@ app.post("/generate", validateBody(PromptSchema), async (req, res) => {
           localPath = await downloadRemoteFile(videoUrl, "downloaded-ai-video.mp4");
           
           console.log("🎛️ [API] Applying effect to video...");
-          effectedPath = await applyEffectsToVideo(localPath, effects, seconds);
+          effectedPath = await ffmpegQueue.run(() => applyEffectsToVideo(localPath, effects, seconds));
           
           const uploadResult = await uploadToSupabase(
             effectedPath,
@@ -4723,7 +4731,7 @@ app.post(
           await new Promise((resolve, reject) => {
             ffmpeg(finalOutputPath)
               .videoFilters([`subtitles=${subtitleSource}`])
-              .outputOptions(["-c:v libx264", "-crf 23", "-preset veryfast"])
+              .outputOptions(["-c:v libx264", "-crf 23", "-preset veryfast", "-threads 1"])
               .outputOptions(["-c:a copy"])
               .output(captionedOutputPath)
               .on("end", resolve)
@@ -4988,7 +4996,7 @@ app.post("/api/burn-captions", upload.none(), async (req, res) => {
     await new Promise((resolve, reject) => {
       ffmpeg(videoPath)
         .videoFilters([`subtitles=${subtitleSource}`])
-        .outputOptions(["-c:v libx264", "-crf 23", "-preset veryfast"])
+        .outputOptions(["-c:v libx264", "-crf 23", "-preset veryfast", "-threads 1"])
         .outputOptions(["-c:a copy"])
         .output(outputPath)
         .on("end", resolve)

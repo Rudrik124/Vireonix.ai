@@ -52,8 +52,9 @@ export const applyAspectRatio = (inputPath, outputPath, aspectRatio = "16:9") =>
     ffmpeg(inputPath)
       .outputOptions([
         "-c:v libx264",
-        "-preset fast",
-        "-crf 22",
+        "-preset ultrafast",
+        "-crf 28",
+        "-threads 1",
         "-c:a copy",
         // Force the aspect ratio by scaling and cropping to fit precisely
         `-vf scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height}`
