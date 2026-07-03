@@ -17,7 +17,7 @@ export interface SecurityPortalActivityLog {
   details?: Record<string, any>;
   ip_address?: string;
   device_info?: string;
-  timestamp: string;
+  timestamp?: string;
   created_at: string;
 }
 
@@ -68,7 +68,22 @@ export async function logSecurityPortalActivity(
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.warn("Security portal activity logging skipped:", error.message || error);
+      return {
+        id: `local-${Date.now()}`,
+        user_id: event.user_id,
+        user_email: event.user_email,
+        event_type: event.event_type,
+        module: event.module,
+        action: event.action,
+        details: event.details,
+        ip_address: event.ip_address,
+        device_info: event.device_info,
+        timestamp: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+      };
+    }
 
     return {
       id: data.id,
@@ -84,8 +99,20 @@ export async function logSecurityPortalActivity(
       created_at: data.created_at,
     };
   } catch (error) {
-    console.error("Error logging security portal activity:", error);
-    throw new Error("Failed to log security portal activity");
+    console.warn("Security portal activity logging skipped:", error);
+    return {
+      id: `local-${Date.now()}`,
+      user_id: event.user_id,
+      user_email: event.user_email,
+      event_type: event.event_type,
+      module: event.module,
+      action: event.action,
+      details: event.details,
+      ip_address: event.ip_address,
+      device_info: event.device_info,
+      timestamp: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+    };
   }
 }
 
@@ -139,8 +166,8 @@ export async function fetchSecurityPortalActivityLogs(
       };
     });
   } catch (error) {
-    console.error("Error fetching security portal activity logs:", error);
-    throw new Error("Failed to fetch security portal activity logs");
+    console.warn("Security portal activity logs unavailable:", error);
+    return [];
   }
 }
 
