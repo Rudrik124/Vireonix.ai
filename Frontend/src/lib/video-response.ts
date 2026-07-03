@@ -58,7 +58,7 @@ export const buildVideoApiError = ({
     return "";
   }
 
-  const fallbackSnippet = rawBody ? rawBody.slice(0, 220) : "No response details.";
+  const fallbackSnippet = rawBody ? rawBody.slice(0, 1000) : "The backend response body was completely empty.";
   const shapeHint =
     response.ok && data?.success === true && !video
       ? " Server returned success but no playable video URL."
@@ -66,6 +66,6 @@ export const buildVideoApiError = ({
 
   return (
     message ||
-    `Video generation failed (status ${response.status}). ${fallbackSnippet}${shapeHint}`
+    `Video generation failed (status ${response.status}). Raw Response: ${fallbackSnippet}${shapeHint}`
   );
 };

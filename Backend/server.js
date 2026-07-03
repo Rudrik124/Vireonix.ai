@@ -3752,6 +3752,9 @@ app.post(
   ]),
   async (req, res) => {
     console.log("ENTER Route: /api/generate-from-media");
+    res.setHeader("Content-Type", "application/json");
+    const keepAliveInterval = setInterval(() => { res.write(" "); }, 15000);
+    const endResponse = (payload) => { clearInterval(keepAliveInterval); res.write(JSON.stringify(payload)); res.end(); };
     try {
       const {
         prompt,
@@ -3975,12 +3978,12 @@ app.post(
 
       if (!prompt || !String(prompt).trim()) {
         console.error("❌ [API-MEDIA] Missing prompt");
-        return res.status(400).json({ success: false, error: "Prompt is required" });
+        return endResponse({ success: false, error: "Prompt is required" });
       }
 
       if (!mediaFiles.length) {
         console.error("❌ [API-MEDIA] No media files uploaded");
-        return res.status(400).json({ success: false, error: "At least one image or video file is required" });
+        return endResponse({ success: false, error: "At least one image or video file is required" });
       }
 
       let seconds = Math.max(3, Math.min(180, Number(duration) || 10));
@@ -4053,7 +4056,7 @@ app.post(
 
       if (!videoFile && !imageFiles.length) {
         console.error("❌ [API-MEDIA] Unsupported media types");
-        return res.status(400).json({ success: false, error: "Upload at least one image or video file" });
+        return endResponse({ success: false, error: "Upload at least one image or video file" });
       }
 
       // Store uploaded reference videos in dedicated reference bucket.
@@ -4592,7 +4595,7 @@ app.post(
             fs.unlink(p, () => {});
           });
 
-          return res.json({
+          return endResponse({
             success: true,
             video: uploadResult.publicUrl,
             storage: uploadResult.storagePath,
@@ -4603,7 +4606,7 @@ app.post(
             "❌ [API-MEDIA] Veo generation failed:",
             veoError?.message || veoError,
           );
-          return res.status(500).json({
+          return endResponse({
             success: false,
             error: "AI Video Generation failed: " + (veoError?.message || String(veoError)),
             stage: "AI Video Generation",
@@ -4624,7 +4627,7 @@ app.post(
         adjustedPath = await applyEditorAdjustments(finalOutputPath, resolvedEditorSelections);
       } catch (manualEditErr) {
         console.error("❌ [API-MEDIA] Manual Edit step failed:", manualEditErr.message);
-        return res.status(500).json({
+        return endResponse({
           success: false,
           stage: "Manual Edit",
           error: manualEditErr.message,
@@ -4802,7 +4805,7 @@ app.post(
         }
       } catch (fileErr) {
         console.error("❌ [API-MEDIA] Output file is missing or empty:", fileErr.message);
-        return res.status(500).json({
+        return endResponse({
           success: false,
           error: "Video generation produced an invalid (0-byte) or missing file.",
           stage: "Video Export",
@@ -4829,7 +4832,7 @@ app.post(
       console.log("ENTER Response");
       console.log("EXIT Success");
 
-      return res.json({
+      return endResponse({
         success: true,
         video: publicUrl,
         storage: storagePath,
@@ -4839,7 +4842,7 @@ app.post(
     } catch (error) {
       const message = error?.message || "Media-based video generation failed.";
       console.error("❌ [API-MEDIA] Error:", message);
-      return res.status(500).json({ 
+      return endResponse({ 
         success: false, 
         stage: "Global Catch",
         error: message,
