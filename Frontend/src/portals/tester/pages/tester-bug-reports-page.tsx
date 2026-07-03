@@ -18,7 +18,7 @@ import {
   TestTube2,
   AlertTriangle
 } from "lucide-react";
-import { supabase } from "../../../../../Backend/supabase";
+import { supabase } from "@/lib/supabase";
 import { fetchTesterBugReports, submitTesterBugReport, submitTesterUpdateAction } from "../../../services/developer-portal-api.service";
 import { SuccessToast } from "../../../app/components/success-toast";
 import { useRealtime } from "../../../hooks/useRealtime";

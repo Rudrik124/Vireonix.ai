@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../../app/context/auth-context";
 import { useErrorLogsData } from "../../../hooks/useDashboardData";
-import { supabase } from "../../../../../Backend/supabase";
+import { supabase } from "@/lib/supabase";
 
 type ErrorSeverity = 'critical' | 'high' | 'medium' | 'low';
 type ErrorStatus = 'open' | 'resolved';

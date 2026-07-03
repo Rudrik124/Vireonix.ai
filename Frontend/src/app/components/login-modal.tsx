@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router";
-import { supabase, isSupabaseConfigured } from "../../../../Backend/supabase";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { fetchAppProfile } from "../../services/auth-profile";
 import { recordLoginActivity } from "../../lib/auth-login-activity";
 import { getRoleRedirectUrl } from "../../lib/role-redirect";

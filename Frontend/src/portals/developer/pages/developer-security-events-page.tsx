@@ -25,7 +25,7 @@ import {
   Cog
 } from "lucide-react";
 import { useAuth } from "../../../app/context/auth-context";
-import { supabase } from "../../../../../Backend/supabase";
+import { supabase } from "@/lib/supabase";
 import { SecurityOverviewDashboard } from "../components/security-overview-dashboard";
 
 type SecurityEventCategory = 'AUTH' | 'PROMPT' | 'FILE_UPLOAD' | 'RATE_LIMIT' | 'API' | 'ADMIN' | 'AI_COST' | 'SECURITY_ALERT';

@@ -1,5 +1,5 @@
 import type { Session } from "@supabase/supabase-js";
-import { supabase } from "../../../Backend/supabase";
+import { supabase } from "@/lib/supabase";
 import { getPortalAccessForRole, getRolePermissions } from "../shared/auth/permissions";
 import type { AppProfile, AppRole } from "../shared/types/auth";
 

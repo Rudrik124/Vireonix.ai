@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router";
-import { supabase, isSupabaseConfigured } from "../../../../../Backend/supabase";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { fetchAppProfile } from "../../../services/auth-profile";
 
 export function UserAuthPage() {

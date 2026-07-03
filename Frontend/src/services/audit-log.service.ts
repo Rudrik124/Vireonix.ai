@@ -1,4 +1,4 @@
-import { supabase } from "../../../Backend/supabase";
+import { supabase } from "@/lib/supabase";
 
 export type AuditEventType = "LOGIN" | "LOGOUT" | "UPLOAD" | "PROMPT_SUBMISSION" | "VIDEO_GENERATION" | "ADMIN_ACTION";
 export type AuditSeverity = "INFO" | "WARNING" | "CRITICAL";

@@ -1,4 +1,4 @@
-import { supabase } from '../../../Backend/supabase';
+import { supabase } from "@/lib/supabase";
 
 export interface SecurityOverviewMetrics {
   totalUsers: number;

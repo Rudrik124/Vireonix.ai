@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useRef } from 'react';
-import { supabase } from '../../../Backend/supabase';
+import { supabase } from "@/lib/supabase";
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
 interface RealtimeSubscription {

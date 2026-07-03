@@ -1,4 +1,4 @@
-import { supabase } from '../../../Backend/supabase';
+import { supabase } from "@/lib/supabase";
 import { buildApiUrl } from '../lib/api';
 
 /**

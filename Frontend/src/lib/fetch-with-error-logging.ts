@@ -1,6 +1,6 @@
 import { logApiError } from '../lib/error-logger';
 import { useAuth } from '../app/context/auth-context';
-import { supabase } from '../../../Backend/supabase';
+import { supabase } from "@/lib/supabase";
 
 function parseStoredToken(rawValue: string | null) {
   if (!rawValue) {

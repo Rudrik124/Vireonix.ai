@@ -1,4 +1,4 @@
-import { supabase } from "../../../Backend/supabase";
+import { supabase } from "@/lib/supabase";
 
 export const buildPortalRequestHeaders = async (
   usageContext?: { portal?: string; usageType?: string; skipCreditCheck?: boolean },

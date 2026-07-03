@@ -1,4 +1,4 @@
-import { supabase } from '../../../Backend/supabase';
+import { supabase } from "@/lib/supabase";
 
 /**
  * Analytics Service - Reusable tracking for all user actions

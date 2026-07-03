@@ -1,4 +1,4 @@
-import { supabase } from '../../../Backend/supabase';
+import { supabase } from "@/lib/supabase";
 
 export type AuthEventType = 'LOGIN_SUCCESS' | 'LOGIN_FAILURE' | 'PASSWORD_RESET' | 'OAUTH_LOGIN' | 'SUSPICIOUS_LOGIN' | 'LOGOUT';
 
