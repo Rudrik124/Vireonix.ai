@@ -1118,6 +1118,34 @@ const uploadMediaToGeminiFile = async (filePath, displayName, mimeType) => {
   };
 };
 
+// Recursive helper to extract any video-related URI from Gemini operation response
+const extractVideoUriRecursive = (obj) => {
+  if (!obj || typeof obj !== "object") return null;
+  if (Array.isArray(obj)) {
+    for (const item of obj) {
+      const found = extractVideoUriRecursive(item);
+      if (found) return found;
+    }
+    return null;
+  }
+  // If it's an object, check known keys
+  if (obj.downloadUri) return { downloadUri: obj.downloadUri, uri: obj.uri || obj.name };
+  if (obj.download_uri) return { downloadUri: obj.download_uri, uri: obj.uri || obj.name };
+  if (obj.video && typeof obj.video === "object") {
+    const found = extractVideoUriRecursive(obj.video);
+    if (found) return found;
+  }
+  if (obj.uri) return { uri: obj.uri };
+  if (obj.name && obj.name.includes("files/")) return { uri: obj.name };
+  
+  // Recurse into all properties
+  for (const key of Object.keys(obj)) {
+    const found = extractVideoUriRecursive(obj[key]);
+    if (found) return found;
+  }
+  return null;
+};
+
 // ✅ Download a Gemini File given its downloadUri into a Buffer
 const downloadGeminiFileToBuffer = async (downloadUri) => {
   if (!geminiApiKey) {
@@ -1258,9 +1286,10 @@ const generateVeoVideoFromImages = async (
     );
 
     const initialText = await initialResponse.text();
+    console.log("📡 [Veo] predictLongRunning Response Headers:", Object.fromEntries(initialResponse.headers.entries()));
     if (!initialResponse.ok) {
       console.error("❌ [Veo] predictLongRunning failed:", initialResponse.status, initialText);
-      throw new Error("Veo video generation request failed");
+      throw new Error(`Veo video generation request failed: ${initialResponse.status} ${initialText.slice(0,200)}`);
     }
 
     let initialJson;
@@ -1315,26 +1344,18 @@ const generateVeoVideoFromImages = async (
       }
 
       const response = opJson.response || {};
-      const generatedList =
-        response.generated_videos || response.generatedVideos || [];
-
-      let videoFile = null;
-      if (Array.isArray(generatedList) && generatedList.length > 0) {
-        videoFile = generatedList[0].video || generatedList[0];
-      } else if (response.video) {
-        videoFile = response.video;
-      }
-
-      if (!videoFile) {
-        console.error("❌ [Veo] No video in operation response:", response);
+      const videoInfo = extractVideoUriRecursive(response);
+      
+      if (!videoInfo) {
+        console.error("❌ [Veo] No video found in operation response:", JSON.stringify(opJson, null, 2));
         throw new Error("Veo did not return a generated video");
       }
 
-      // Prefer the provided downloadUri, fall back to files.get if needed.
-      let downloadUri = videoFile.downloadUri || videoFile.download_uri || "";
-      let fileUri = videoFile.uri || videoFile.name || "";
+      let downloadUri = videoInfo.downloadUri || "";
+      let fileUri = videoInfo.uri || "";
 
       if (!downloadUri && fileUri) {
+        console.log(`🔗 [Veo] Resolving download URL for file: ${fileUri}`);
         const fileMetaResp = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/${encodeURIComponent(
             fileUri,
@@ -4575,9 +4596,15 @@ app.post(
           });
         } catch (veoError) {
           console.error(
-            "❌ [API-MEDIA] Veo generation failed, falling back to ffmpeg output:",
+            "❌ [API-MEDIA] Veo generation failed:",
             veoError?.message || veoError,
           );
+          return res.status(500).json({
+            success: false,
+            error: "AI Video Generation failed: " + (veoError?.message || String(veoError)),
+            stage: "AI Video Generation",
+            reason: veoError?.message || String(veoError),
+          });
         }
       }
 
@@ -4749,6 +4776,20 @@ app.post(
 
       // STEP 5: Upload final video to Supabase storage
       console.log("📤 [API-MEDIA] Uploading final video to storage...");
+      try {
+        const stats = fs.statSync(finalOutputPath);
+        if (stats.size === 0) {
+          throw new Error("Generated video file is 0 bytes");
+        }
+      } catch (fileErr) {
+        console.error("❌ [API-MEDIA] Output file is missing or empty:", fileErr.message);
+        return res.status(500).json({
+          success: false,
+          error: "Video generation produced an invalid (0-byte) or missing file.",
+          stage: "Video Export",
+          reason: fileErr.message,
+        });
+      }
       const { publicUrl, storagePath } = await uploadToSupabase(finalOutputPath, fileName, outputBucket);
       console.log("✅ [API-MEDIA] Storage upload complete");
 
