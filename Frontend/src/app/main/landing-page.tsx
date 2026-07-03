@@ -110,18 +110,18 @@ export function LandingPage() {
 
   const handleStartCreating = () => {
     if (isLoggedIn) {
-      navigate('/video-type');
+      navigate('/home');
     } else {
-      localStorage.setItem("authRedirectUrl", "/video-type");
+      localStorage.setItem("authRedirectUrl", "/home");
       setIsLoginOpen(true);
     }
   };
 
   const handleStartFree = () => {
     if (isLoggedIn) {
-      navigate('/video-type');
+      navigate('/home');
     } else {
-      localStorage.setItem("authRedirectUrl", "/video-type");
+      localStorage.setItem("authRedirectUrl", "/home");
       setIsLoginOpen(true);
     }
   };
@@ -1155,7 +1155,7 @@ export function LandingPage() {
                         </div>
 
                         <div className="flex justify-center">
-                          <Button type="primary" size="large" shape="round" className="h-14 px-12 text-lg font-bold bg-fuchsia-500 hover:bg-fuchsia-600 shadow-[0_10px_30px_rgba(168,85,247,0.4)] border-0" onClick={() => { setActiveWorkflowModal(null); navigate('/video-type'); }}>
+                          <Button type="primary" size="large" shape="round" className="h-14 px-12 text-lg font-bold bg-fuchsia-500 hover:bg-fuchsia-600 shadow-[0_10px_30px_rgba(168,85,247,0.4)] border-0" onClick={() => { setActiveWorkflowModal(null); navigate('/home'); }}>
                             Try {workflow.title} Free
                           </Button>
                         </div>

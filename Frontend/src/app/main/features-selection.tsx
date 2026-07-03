@@ -173,7 +173,7 @@ export function FeaturesSelectionPage() {
     await new Promise(resolve => setTimeout(resolve, 800)); // allow animation to play
     await logout();
     setIsProcessing(false);
-    navigate("/video-type", { replace: true });
+    navigate("/home", { replace: true });
   };
 
   const handlePortalClick = (route: string, id: string) => {
@@ -220,7 +220,7 @@ export function FeaturesSelectionPage() {
             </span>
           </div>
           <div className="h-4 w-[1px] bg-white/10" />
-          <button onClick={() => navigate("/video-type")} className="text-xs font-semibold text-white/60 hover:text-white flex items-center gap-1">
+          <button onClick={() => navigate("/home")} className="text-xs font-semibold text-white/60 hover:text-white flex items-center gap-1">
             <ArrowLeft className="w-3 h-3" /> Back
           </button>
         </div>

@@ -418,7 +418,7 @@ export function LoginModal({ isOpen, onClose, customMessage, customTitle }: Logi
           setLoginSuccess(true);
           localStorage.setItem("justLoggedIn", "true");
 
-          let nextRoute = '/video-type';
+          let nextRoute = '/home';
           const authRedirectUrl = localStorage.getItem("authRedirectUrl");
 
           if (authRedirectUrl) {
@@ -432,7 +432,7 @@ export function LoginModal({ isOpen, onClose, customMessage, customTitle }: Logi
             const userEmail = data.session.user.email?.toLowerCase() || "";
 
             // Use the centralized role redirect logic
-            nextRoute = getRoleRedirectUrl(userEmail, profile, authRedirectUrl || '/video-type');
+            nextRoute = getRoleRedirectUrl(userEmail, profile, authRedirectUrl || '/home');
           } else if (authRedirectUrl) {
             nextRoute = authRedirectUrl;
           }

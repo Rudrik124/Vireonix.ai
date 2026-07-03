@@ -1,4 +1,3 @@
-// @ts-ignore
 import { supabase } from "../../../Backend/supabase";
 
 export const buildPortalRequestHeaders = async (

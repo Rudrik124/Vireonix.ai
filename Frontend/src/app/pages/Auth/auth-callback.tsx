@@ -39,7 +39,7 @@ export function AuthCallbackPage() {
           localStorage.removeItem("authRedirectUrl");
         }
 
-        let fallbackUrl = authRedirectUrl || "/video-type";
+        let fallbackUrl = authRedirectUrl || "/home";
 
         // Handle specific portal intent for admin since admin is a special case
         if (portalIntent === "admin" && (profile.role === "admin" || profile.role === "super_admin" || profile.portalAccess?.includes("admin"))) {

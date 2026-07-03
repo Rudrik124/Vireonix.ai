@@ -12,6 +12,7 @@ import rateLimit from "express-rate-limit";
 import multer from "multer";
 import ffmpeg from "fluent-ffmpeg";
 import ffmpegPath from "ffmpeg-static";
+import ffprobePath from "ffprobe-static";
 import { createClient } from "@supabase/supabase-js";
 import { fal } from "@fal-ai/client";
 import fs from "fs";

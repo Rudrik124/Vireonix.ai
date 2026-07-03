@@ -44,5 +44,5 @@ export function getRoleRedirectUrl(
   }
 
   // Final Default for normal users if no fallback
-  return '/video-type';
+  return '/home';
 }

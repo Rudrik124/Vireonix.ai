@@ -1,11 +1,15 @@
 import ffmpeg from "fluent-ffmpeg";
 import ffmpegPath from "ffmpeg-static";
+import ffprobePath from "ffprobe-static";
 import fs from "fs";
 import path from "path";
 
-// Ensure ffmpeg path is set
+// Ensure ffmpeg and ffprobe paths are set
 if (ffmpegPath && fs.existsSync(ffmpegPath)) {
   ffmpeg.setFfmpegPath(ffmpegPath);
+}
+if (ffprobePath && fs.existsSync(ffprobePath.path)) {
+  ffmpeg.setFfprobePath(ffprobePath.path);
 }
 
 /**
