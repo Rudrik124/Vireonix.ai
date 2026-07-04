@@ -16,7 +16,7 @@ export const generateVideo = async ({
   const { data: sessionData } = await supabase?.auth.getSession();
   const accessToken = sessionData?.session?.access_token;
 
-  const response = await fetch(buildApiUrl("/api/generate"), {
+  const response = await fetch(buildApiUrl("/generate"), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
