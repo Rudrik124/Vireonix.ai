@@ -7,7 +7,6 @@ export function DeveloperWorkflowLabPage() {
   const { profile } = useAuth();
   const [prompt, setPrompt] = useState("Internal test prompt for workflow validation.");
   const [usageType, setUsageType] = useState<"test" | "production">("test");
-  const [skipCreditCheck, setSkipCreditCheck] = useState(true);
   const [status, setStatus] = useState("");
   const [responseText, setResponseText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -16,8 +15,6 @@ export function DeveloperWorkflowLabPage() {
     const usageContext = buildUsageContext(profile, {
       usageType,
       portal: "internal",
-      skipCreditCheck,
-      walletType: usageType === "test" ? "developer_credits" : "user_credits",
     });
 
     setIsLoading(true);
@@ -28,13 +25,9 @@ export function DeveloperWorkflowLabPage() {
       await logUsageEvent({
         profile,
         featureKey: "developer.workflow-lab",
-        creditsRequested: 0,
         status: "started",
         usageType: usageContext.usageType,
         portal: usageContext.portal,
-        metadata: {
-          skipCreditCheck: usageContext.skipCreditCheck,
-        },
       });
 
       const result = await generateVideo({
@@ -75,15 +68,6 @@ export function DeveloperWorkflowLabPage() {
                 <option value="production">production</option>
               </select>
             </label>
-
-            <label className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-              <span className="text-sm text-slate-300">Bypass credit checks</span>
-              <input
-                type="checkbox"
-                checked={skipCreditCheck}
-                onChange={(event) => setSkipCreditCheck(event.target.checked)}
-              />
-            </label>
           </div>
 
           <textarea
@@ -105,8 +89,6 @@ export function DeveloperWorkflowLabPage() {
             <pre className="mt-3 overflow-auto text-xs text-slate-300">{JSON.stringify(buildUsageContext(profile, {
               usageType,
               portal: "internal",
-              skipCreditCheck,
-              walletType: usageType === "test" ? "developer_credits" : "user_credits",
             }), null, 2)}</pre>
           </div>
 

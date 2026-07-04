@@ -9,7 +9,7 @@ export function buildPortalAwarePath(path: string, search = "") {
 
 export function usePortalTestingContext() {
   const location = useLocation();
-  const { profile, isInternalUser } = useAuth();
+  const { profile } = useAuth();
 
   return useMemo(() => {
     const params = new URLSearchParams(location.search);
@@ -22,7 +22,6 @@ export function usePortalTestingContext() {
 
     const usageType = requestedTestMode ? "test" : "production";
     const portal = requestedTestMode ? "internal" : "user";
-    const skipCreditCheck = requestedTestMode && isInternalUser;
 
     return {
       isDeveloperTestMode: requestedTestMode,
@@ -30,9 +29,8 @@ export function usePortalTestingContext() {
       usageContext: buildUsageContext(profile, {
         usageType,
         portal,
-        skipCreditCheck,
-        walletType: usageType === "test" ? "developer_credits" : "user_credits",
       }),
     };
-  }, [isInternalUser, location.pathname, location.search, profile]);
+  }, [location.pathname, location.search, profile]);
 }
+

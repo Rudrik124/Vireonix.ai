@@ -65,7 +65,7 @@ export function AdminDashboardPage() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-slate-400 text-sm">Role</p>
-              <p className="text-white font-semibold capitalize">{profile.role}</p>
+              <p className="text-white font-semibold capitalize">Admin</p>
             </div>
             <div>
               <p className="text-slate-400 text-sm">Email</p>

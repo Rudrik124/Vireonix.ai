@@ -1,19 +1,15 @@
 import React, { useEffect } from "react";
-import { Navigate, useLocation } from "react-router";
+import { Navigate } from "react-router";
 import { useAuth } from "../../app/context/auth-context";
-import { getRoleRedirectUrl } from "../../lib/role-redirect";
 
 interface SecurityPortalGateProps {
   children: React.ReactNode;
-  requiredRoles?: string[];
 }
 
 export function SecurityPortalGate({
   children,
-  requiredRoles = ["SECURITY_ADMIN", "SECURITY_ANALYST", "SECURITY_VIEWER", "admin", "ADMIN", "super_admin", "security", "SECURITY"],
 }: SecurityPortalGateProps) {
-  const location = useLocation();
-  const { profile, isLoading, isLoggedIn } = useAuth();
+  const { isLoading, isLoggedIn } = useAuth();
 
   // Disable back and forward buttons inside privileged portals
   useEffect(() => {
@@ -41,21 +37,6 @@ export function SecurityPortalGate({
     return <Navigate to="/" replace />;
   }
 
-  // Check if user has required role
-  const role = (profile?.role || '').toLowerCase();
-  const hasAccess = profile && (
-    requiredRoles.map(r => r.toLowerCase()).includes(role) || 
-    (profile.portalAccess && profile.portalAccess.map((a: string) => a.toLowerCase()).includes('security'))
-  );
-
-  if (!hasAccess) {
-    // If they landed in the wrong portal, bounce them to their correct portal
-    const correctPortalUrl = getRoleRedirectUrl(profile?.email, profile, null);
-    if (correctPortalUrl && correctPortalUrl !== location.pathname) {
-      return <Navigate to={correctPortalUrl} replace />;
-    }
-    return <Navigate to="/" replace />;
-  }
-
   return <>{children}</>;
 }
+

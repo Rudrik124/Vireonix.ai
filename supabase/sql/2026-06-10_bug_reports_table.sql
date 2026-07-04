@@ -46,22 +46,22 @@ alter table public.bug_reports enable row level security;
 create policy "tester_insert_bug_reports" on public.bug_reports for insert
   with check (
     auth.uid() = submitted_by
-    and public.current_app_role() = 'tester'
+    and public.is_internal_user()
   );
 
 -- Testers can view all bug reports (for context)
 create policy "tester_view_bug_reports" on public.bug_reports for select
-  using (public.current_app_role() = 'tester');
+  using (public.is_internal_user());
 
 -- Developers can view all bug reports
 create policy "developer_view_bug_reports" on public.bug_reports for select
-  using (public.current_app_role() in ('developer', 'admin', 'super_admin'));
+  using (public.is_internal_user());
 
 -- Developers can update bug reports
 create policy "developer_update_bug_reports" on public.bug_reports for update
-  using (public.current_app_role() in ('developer', 'admin', 'super_admin'))
-  with check (public.current_app_role() in ('developer', 'admin', 'super_admin'));
+  using (public.is_internal_user())
+  with check (public.is_internal_user());
 
 -- Admins can delete
 create policy "admin_delete_bug_reports" on public.bug_reports for delete
-  using (public.current_app_role() in ('admin', 'super_admin'));
+  using (public.is_internal_user());

@@ -56,14 +56,14 @@ export function LandingPage() {
   // Normal users are allowed to stay on the Landing page or navigate back and forth.
   useEffect(() => {
     if (isLoggedIn && !isLoading && profile) {
-      const role = (profile.role || '').toLowerCase();
-      const access = Array.isArray(profile.portalAccess) ? profile.portalAccess.map((a: string) => a.toLowerCase()) : [];
-
+      const email = (session?.user?.email || '').toLowerCase();
+      
       const isPrivileged =
-        role === 'security' || access.includes('security') ||
-        role === 'developer' || access.includes('developer') ||
-        role === 'tester' || access.includes('tester') ||
-        role === 'admin' || role === 'super_admin';
+        email === 'security@veytrix.ai' ||
+        email === 'developer@veytrix.ai' ||
+        email === 'tester@veytrix.ai' || 
+        email === 'tester@veeytrix.ai' ||
+        email === 'admin@veytrix.ai';
 
       if (isPrivileged) {
         const redirectUrl = getRoleRedirectUrl(session?.user?.email, profile, undefined);

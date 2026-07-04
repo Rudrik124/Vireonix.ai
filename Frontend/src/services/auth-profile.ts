@@ -1,20 +1,11 @@
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
-import { getPortalAccessForRole, getRolePermissions } from "../shared/auth/permissions";
-import type { AppProfile, AppRole } from "../shared/types/auth";
+import type { AppProfile } from "../shared/types/auth";
 
 type SupabaseProfileRow = {
   id?: string;
   email?: string | null;
   full_name?: string | null;
-  role?: AppRole | null;
-  portal_access?: string[] | null;
-  permissions?: string[] | null;
-  bypass_credit_checks?: boolean | null;
-  testing_mode_enabled?: boolean | null;
-  user_credits?: number | null;
-  developer_credits?: number | null;
-  subscription_status?: string | null;
 };
 
 export function buildFallbackProfile(session: Session): AppProfile {
@@ -24,42 +15,16 @@ export function buildFallbackProfile(session: Session): AppProfile {
     id: session.user.id,
     email: session.user.email || "",
     fullName,
-    role: "user",
-    portalAccess: ["user"],
-    permissions: getRolePermissions("user"),
-    bypassCreditChecks: false,
-    testingModeEnabled: false,
-    subscriptionStatus: "free",
-    credits: {
-      userCredits: 0,
-      developerCredits: 0,
-    },
   };
 }
 
 function normalizeProfile(row: SupabaseProfileRow, session: Session): AppProfile {
   const fallback = buildFallbackProfile(session);
-  const role = row.role || fallback.role;
-  const portalAccess = Array.isArray(row.portal_access) && row.portal_access.length > 0
-    ? (row.portal_access.filter(Boolean) as AppProfile["portalAccess"])
-    : getPortalAccessForRole(role);
 
   return {
     id: row.id || fallback.id,
     email: row.email || fallback.email,
     fullName: row.full_name || fallback.fullName,
-    role,
-    portalAccess,
-    permissions: Array.isArray(row.permissions) && row.permissions.length > 0
-      ? row.permissions
-      : getRolePermissions(role),
-    bypassCreditChecks: Boolean(row.bypass_credit_checks),
-    testingModeEnabled: Boolean(row.testing_mode_enabled),
-    subscriptionStatus: row.subscription_status || fallback.subscriptionStatus,
-    credits: {
-      userCredits: Number(row.user_credits ?? 0),
-      developerCredits: Number(row.developer_credits ?? 0),
-    },
   };
 }
 
@@ -70,7 +35,7 @@ async function selectProfile(tableName: string, session: Session) {
 
   const query = await supabase
     .from(tableName)
-    .select("id,email,full_name,role,portal_access,permissions,bypass_credit_checks,testing_mode_enabled,user_credits,developer_credits,subscription_status")
+    .select("id,email,full_name")
     .eq("id", session.user.id)
     .maybeSingle();
 
@@ -90,36 +55,6 @@ export async function fetchAppProfile(session: Session): Promise<AppProfile> {
   }
 
   const userEmail = session.user.email?.toLowerCase();
-
-  if (userEmail === "admin@veytrix.ai" || userEmail === "security@veytrix.ai") {
-    const fallback = buildFallbackProfile(session);
-    return {
-      ...fallback,
-      role: "admin",
-      portalAccess: ["developer", "admin", "tester", "user"],
-      permissions: getRolePermissions("admin"),
-    };
-  }
-
-  if (userEmail === "developer@veytrix.ai") {
-    const fallback = buildFallbackProfile(session);
-    return {
-      ...fallback,
-      role: "developer",
-      portalAccess: ["developer", "tester", "user"],
-      permissions: getRolePermissions("developer"),
-    };
-  }
-
-  if (userEmail === "tester@veeytrix.ai" || userEmail === "tester@veytrix.ai") {
-    const fallback = buildFallbackProfile(session);
-    return {
-      ...fallback,
-      role: "tester",
-      portalAccess: ["tester", "user"],
-      permissions: getRolePermissions("tester"),
-    };
-  }
 
   try {
     // Add a timeout to prevent hanging

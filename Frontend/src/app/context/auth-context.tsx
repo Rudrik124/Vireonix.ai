@@ -1,7 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { supabase } from "@/lib/supabase";
-import { canAccessPortal } from "../../shared/auth/permissions";
-import type { AuthContextType, AppProfile, AppRole } from "../../shared/types/auth";
+import type { AuthContextType, AppProfile } from "../../shared/types/auth";
 import { fetchAppProfile } from "../../services/auth-profile";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -170,21 +169,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const hasRole = (role: AppRole | AppRole[]) => {
-    if (!profile) {
-      return false;
-    }
-
-    return Array.isArray(role) ? role.includes(profile.role) : profile.role === role;
-  };
-
-  const hasPermission = (permission: string) => {
-    return profile?.permissions.includes(permission) ?? false;
-  };
-
-  const isInternalUser = profile && (profile.role === "admin" || profile.role === "developer" || profile.role === "super_admin");
+  const isInternalUser = false; // Legacy roles removed
   const portalIntent = typeof window !== "undefined" ? localStorage.getItem("portalIntent") : null;
-  const activePortal = (portalIntent === "developer" || portalIntent === "admin") && isInternalUser ? "developer" : "user";
+  const activePortal = (portalIntent === "developer" || portalIntent === "admin") ? "developer" : "user";
 
   return (
     <AuthContext.Provider
@@ -197,8 +184,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         activePortal,
         logout,
         refreshProfile,
-        hasRole,
-        hasPermission,
       }}
     >
       {children}

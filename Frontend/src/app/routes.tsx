@@ -285,7 +285,7 @@ export const router = createBrowserRouter([
       {
         path: "/developer/dashboard",
         element: (
-          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+          <PortalGate portal="developer">
             <DeveloperDashboardPage />
           </PortalGate>
         ),
@@ -293,7 +293,7 @@ export const router = createBrowserRouter([
       {
         path: "/developer/users",
         element: (
-          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+          <PortalGate portal="developer">
             <DeveloperUsersPage />
           </PortalGate>
         ),
@@ -301,7 +301,7 @@ export const router = createBrowserRouter([
       {
         path: "/developer/credits",
         element: (
-          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+          <PortalGate portal="developer">
             <DeveloperCreditsPage />
           </PortalGate>
         ),
@@ -309,7 +309,7 @@ export const router = createBrowserRouter([
       {
         path: "/developer/costs",
         element: (
-          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+          <PortalGate portal="developer">
             <DeveloperCostsPage />
           </PortalGate>
         ),
@@ -317,7 +317,7 @@ export const router = createBrowserRouter([
       {
         path: "/developer/revenue-profit",
         element: (
-          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+          <PortalGate portal="developer">
             <DeveloperRevenueProfit />
           </PortalGate>
         ),
@@ -325,7 +325,7 @@ export const router = createBrowserRouter([
       {
         path: "/developer/profit-distribution",
         element: (
-          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+          <PortalGate portal="developer">
             <DeveloperProfitDistribution />
           </PortalGate>
         ),
@@ -333,7 +333,7 @@ export const router = createBrowserRouter([
       {
         path: "/developer/tester-credits",
         element: (
-          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+          <PortalGate portal="developer">
             <DeveloperTesterCreditsPage />
           </PortalGate>
         ),
@@ -342,7 +342,7 @@ export const router = createBrowserRouter([
       {
         path: "/developer/error-logs",
         element: (
-          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+          <PortalGate portal="developer">
             <DeveloperErrorLogsPage />
           </PortalGate>
         ),
@@ -350,7 +350,7 @@ export const router = createBrowserRouter([
       {
         path: "/developer/security-events",
         element: (
-          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+          <PortalGate portal="developer">
             <DeveloperSecurityEventsPage />
           </PortalGate>
         ),
@@ -358,7 +358,7 @@ export const router = createBrowserRouter([
       {
         path: "/developer/authentication-monitoring",
         element: (
-          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+          <PortalGate portal="developer">
             <DeveloperAuthenticationMonitoringPage />
           </PortalGate>
         ),
@@ -366,7 +366,7 @@ export const router = createBrowserRouter([
       {
         path: "/developer/prompt-security-monitoring",
         element: (
-          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+          <PortalGate portal="developer">
             <DeveloperPromptSecurityMonitoringPage />
           </PortalGate>
         ),
@@ -374,7 +374,7 @@ export const router = createBrowserRouter([
       {
         path: "/developer/file-upload-security-monitoring",
         element: (
-          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+          <PortalGate portal="developer">
             <DeveloperFileUploadSecurityMonitoringPage />
           </PortalGate>
         ),
@@ -382,7 +382,7 @@ export const router = createBrowserRouter([
       {
         path: "/developer/rate-limit-monitoring",
         element: (
-          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+          <PortalGate portal="developer">
             <DeveloperRateLimitMonitoringPage />
           </PortalGate>
         ),
@@ -390,7 +390,7 @@ export const router = createBrowserRouter([
       {
         path: "/developer/ai-cost-monitoring",
         element: (
-          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+          <PortalGate portal="developer">
             <DeveloperAICostMonitoringPage />
           </PortalGate>
         ),
@@ -398,7 +398,7 @@ export const router = createBrowserRouter([
       {
         path: "/developer/api-security-monitoring",
         element: (
-          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+          <PortalGate portal="developer">
             <DeveloperAPISecurityMonitoringPage />
           </PortalGate>
         ),
@@ -406,7 +406,7 @@ export const router = createBrowserRouter([
       {
         path: "/developer/user-risk-scoring",
         element: (
-          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+          <PortalGate portal="developer">
             <DeveloperUserRiskScoringPage />
           </PortalGate>
         ),
@@ -414,7 +414,7 @@ export const router = createBrowserRouter([
       {
         path: "/developer/security-alerts",
         element: (
-          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+          <PortalGate portal="developer">
             <DeveloperSecurityAlertsPage />
           </PortalGate>
         ),
@@ -422,7 +422,7 @@ export const router = createBrowserRouter([
       {
         path: "/developer/admin-activity",
         element: (
-          <PortalGate portal="developer" allowedRoles={["super_admin", "admin"]}>
+          <PortalGate portal="developer">
             <DeveloperAdminActivityMonitoringPage />
           </PortalGate>
         ),
@@ -430,7 +430,7 @@ export const router = createBrowserRouter([
       {
         path: "/developer/audit-log",
         element: (
-          <PortalGate portal="developer" allowedRoles={["super_admin", "admin"]}>
+          <PortalGate portal="developer">
             <DeveloperAuditLogPage />
           </PortalGate>
         ),
@@ -438,7 +438,7 @@ export const router = createBrowserRouter([
       {
         path: "/developer/threat-visualization",
         element: (
-          <PortalGate portal="developer" allowedRoles={["super_admin", "admin"]}>
+          <PortalGate portal="developer">
             <DeveloperThreatVisualizationPage />
           </PortalGate>
         ),
@@ -446,7 +446,7 @@ export const router = createBrowserRouter([
       {
         path: "/developer/analytics",
         element: (
-          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+          <PortalGate portal="developer">
             <DeveloperAnalyticsPage />
           </PortalGate>
         ),
@@ -454,7 +454,7 @@ export const router = createBrowserRouter([
       {
         path: "/developer/reports",
         element: (
-          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+          <PortalGate portal="developer">
             <DeveloperReportPage />
           </PortalGate>
         ),
@@ -462,7 +462,7 @@ export const router = createBrowserRouter([
       {
         path: "/developer/feedback",
         element: (
-          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+          <PortalGate portal="developer">
             <DeveloperFeedbackPage />
           </PortalGate>
         ),
@@ -470,7 +470,7 @@ export const router = createBrowserRouter([
       {
         path: "/developer/settings",
         element: (
-          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+          <PortalGate portal="developer">
             <DeveloperSettingsPage />
           </PortalGate>
         ),
@@ -478,7 +478,7 @@ export const router = createBrowserRouter([
       {
         path: "/developer/workflows",
         element: (
-          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+          <PortalGate portal="developer">
             <DeveloperWorkflowLabPage />
           </PortalGate>
         ),
@@ -486,7 +486,7 @@ export const router = createBrowserRouter([
       {
         path: "/developer/logs",
         element: (
-          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+          <PortalGate portal="developer">
             <DeveloperLogsPage />
           </PortalGate>
         ),
@@ -494,7 +494,7 @@ export const router = createBrowserRouter([
       {
         path: "/developer/operations",
         element: (
-          <PortalGate portal="developer" allowedRoles={["super_admin", "admin"]}>
+          <PortalGate portal="developer">
             <DeveloperOperationsPage />
           </PortalGate>
         ),
@@ -502,7 +502,7 @@ export const router = createBrowserRouter([
       {
         path: "/developer/login-activity",
         element: (
-          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer"]}>
+          <PortalGate portal="developer">
             <React.Suspense fallback={<div>Loading...</div>}>
               <LoginActivityPage />
             </React.Suspense>
@@ -512,7 +512,7 @@ export const router = createBrowserRouter([
       {
         path: "/developer/analytics",
         element: (
-          <PortalGate portal="developer" allowedRoles={["super_admin", "admin"]}>
+          <PortalGate portal="developer">
             <DeveloperAnalyticsPage />
           </PortalGate>
         ),
@@ -521,7 +521,7 @@ export const router = createBrowserRouter([
       {
         path: "/internal",
         element: (
-          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer", "tester"]}>
+          <PortalGate portal="developer">
             <DeveloperDashboardPage />
           </PortalGate>
         ),
@@ -529,7 +529,7 @@ export const router = createBrowserRouter([
       {
         path: "/internal/workflows",
         element: (
-          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer", "tester"]}>
+          <PortalGate portal="developer">
             <DeveloperWorkflowLabPage />
           </PortalGate>
         ),
@@ -537,7 +537,7 @@ export const router = createBrowserRouter([
       {
         path: "/internal/logs",
         element: (
-          <PortalGate portal="developer" allowedRoles={["super_admin", "admin", "developer", "tester"]}>
+          <PortalGate portal="developer">
             <DeveloperLogsPage />
           </PortalGate>
         ),
@@ -545,7 +545,7 @@ export const router = createBrowserRouter([
       {
         path: "/internal/operations",
         element: (
-          <PortalGate portal="developer" allowedRoles={["super_admin", "admin"]}>
+          <PortalGate portal="developer">
             <DeveloperOperationsPage />
           </PortalGate>
         ),
@@ -554,7 +554,7 @@ export const router = createBrowserRouter([
       {
         path: "/admin/dashboard",
         element: (
-          <PortalGate portal="admin" allowedRoles={["super_admin", "admin"]}>
+          <PortalGate portal="admin">
             <AdminDashboardPage />
           </PortalGate>
         ),
@@ -562,7 +562,7 @@ export const router = createBrowserRouter([
       {
         path: "/admin/testing-credentials",
         element: (
-          <PortalGate portal="admin" allowedRoles={["super_admin", "admin"]}>
+          <PortalGate portal="admin">
             <TestingCredentialsPage />
           </PortalGate>
         ),
@@ -571,7 +571,7 @@ export const router = createBrowserRouter([
       {
         path: "/tester/dashboard",
         element: (
-          <PortalGate portal="tester" allowedRoles={["super_admin", "admin", "developer", "tester"]}>
+          <PortalGate portal="tester">
             <TesterDashboardPage />
           </PortalGate>
         ),
@@ -579,7 +579,7 @@ export const router = createBrowserRouter([
       {
         path: "/tester/test-environment",
         element: (
-          <PortalGate portal="tester" allowedRoles={["super_admin", "admin", "developer", "tester"]}>
+          <PortalGate portal="tester">
             <TesterTestEnvironmentPage />
           </PortalGate>
         ),
@@ -587,7 +587,7 @@ export const router = createBrowserRouter([
       {
         path: "/tester/bug-reports",
         element: (
-          <PortalGate portal="tester" allowedRoles={["super_admin", "admin", "developer", "tester"]}>
+          <PortalGate portal="tester">
             <TesterBugReportsPage />
           </PortalGate>
         ),
@@ -595,7 +595,7 @@ export const router = createBrowserRouter([
       {
         path: "/tester/test-cases",
         element: (
-          <PortalGate portal="tester" allowedRoles={["super_admin", "admin", "developer", "tester"]}>
+          <PortalGate portal="tester">
             <TesterTestCasesPage />
           </PortalGate>
         ),
@@ -603,7 +603,7 @@ export const router = createBrowserRouter([
       {
         path: "/tester/credits",
         element: (
-          <PortalGate portal="tester" allowedRoles={["super_admin", "admin", "developer", "tester"]}>
+          <PortalGate portal="tester">
             <TesterCreditsPage />
           </PortalGate>
         ),
@@ -612,7 +612,7 @@ export const router = createBrowserRouter([
       {
         path: "/tester/profile",
         element: (
-          <PortalGate portal="tester" allowedRoles={["super_admin", "admin", "developer", "tester"]}>
+          <PortalGate portal="tester">
             <TesterProfilePage />
           </PortalGate>
         ),
@@ -621,7 +621,7 @@ export const router = createBrowserRouter([
       {
         path: "/tester/analytics",
         element: (
-          <PortalGate portal="tester" allowedRoles={["super_admin", "admin", "developer", "tester"]}>
+          <PortalGate portal="tester">
             <TesterAnalyticsPage />
           </PortalGate>
         ),
@@ -629,7 +629,7 @@ export const router = createBrowserRouter([
       {
         path: "/tester/feedback",
         element: (
-          <PortalGate portal="tester" allowedRoles={["super_admin", "admin", "developer", "tester"]}>
+          <PortalGate portal="tester">
             <TesterFeedbackPage />
           </PortalGate>
         ),

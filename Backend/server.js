@@ -528,29 +528,17 @@ const getBearerToken = (req) => {
 const getRequestActor = async (req) => {
   const token = getBearerToken(req);
   if (!token) {
-    return { user: null, role: "user", bypassCreditChecks: false };
+    return { user: null };
   }
 
   const { data: userData, error: userError } = await supabase.auth.getUser(token);
   if (userError || !userData?.user) {
     console.warn("⚠️ [Auth] Unable to resolve request user:", userError?.message || "unknown auth error");
-    return { user: null, role: "user", bypassCreditChecks: false };
-  }
-
-  const { data: profileData, error: profileError } = await supabase
-    .from("app_profiles")
-    .select("role,bypass_credit_checks")
-    .eq("id", userData.user.id)
-    .maybeSingle();
-
-  if (profileError) {
-    console.warn("⚠️ [Auth] Unable to resolve app profile:", profileError.message);
+    return { user: null };
   }
 
   return {
     user: userData.user,
-    role: profileData?.role || "user",
-    bypassCreditChecks: Boolean(profileData?.bypass_credit_checks),
   };
 };
 
@@ -560,19 +548,13 @@ const normalizeUsageContext = (req, actor) => {
 
   const requestedPortal = String(req.headers["x-portal"] || bodyContext.portal || "user").toLowerCase();
   const requestedUsageType = String(req.headers["x-usage-type"] || bodyContext.usageType || "production").toLowerCase();
-  const requestedSkip = req.headers["x-skip-credit-check"] === "true" || bodyContext.skipCreditCheck === true;
-  const internalAccess = INTERNAL_ROLES.has(actor.role);
 
-  const portal = internalAccess && requestedPortal === "internal" ? "internal" : "user";
-  const usageType = internalAccess && requestedUsageType === "test" ? "test" : "production";
-  const walletType = usageType === "test" ? "developer_credits" : "user_credits";
+  const portal = requestedPortal;
+  const usageType = requestedUsageType;
 
   return {
     portal,
     usageType,
-    walletType,
-    skipCreditCheck: actor.bypassCreditChecks || (internalAccess && requestedSkip),
-    actorRole: actor.role,
   };
 };
 
@@ -583,13 +565,10 @@ const createUsageLog = async ({ req, actor, featureKey, creditsRequested = 0, me
     .from("usage_logs")
     .insert({
       user_id: actor.user?.id || null,
-      actor_role: usageContext.actorRole,
       portal: usageContext.portal,
       usage_type: usageContext.usageType,
-      wallet_type: usageContext.walletType,
       feature_key: featureKey,
       credits_requested: creditsRequested,
-      credit_check_bypassed: usageContext.skipCreditCheck,
       status: "started",
       metadata,
     })

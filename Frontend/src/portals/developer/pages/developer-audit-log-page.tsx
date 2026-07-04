@@ -8,13 +8,7 @@ export function DeveloperAuditLogPage() {
   const navigate = useNavigate();
   const { profile } = useAuth();
 
-  // Redirect if not authorized
-  if (!profile || !["admin", "super_admin"].includes(profile.role)) {
-    navigate("/");
-    return null;
-  }
-
-  return (
+return (
     <div className="min-h-[100dvh] bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white">
       {/* Header */}
       <div className="sticky top-0 z-50 backdrop-blur-sm bg-slate-950/80 border-b border-slate-800">

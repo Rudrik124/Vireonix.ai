@@ -1,9 +1,7 @@
 import { useEffect, type ReactNode } from "react";
-import { Navigate, useLocation, useBlocker } from "react-router";
-import { canAccessPortal } from "../auth/permissions";
-import type { AppRole, PortalId } from "../types/auth";
+import { Navigate, useLocation } from "react-router";
+import type { PortalId } from "../types/auth";
 import { useAuth } from "../../app/context/auth-context";
-import { getRoleRedirectUrl } from "../../lib/role-redirect";
 
 function FullScreenState({ title, body }: { title: string; body: string }) {
   return (
@@ -16,20 +14,14 @@ function FullScreenState({ title, body }: { title: string; body: string }) {
   );
 }
 
-// Add a helper to force navigation outside React Router's standard loop for aggressive history traps
-const forceNavigation = (url: string) => {
-  window.location.replace(url);
-};
-
 interface PortalGateProps {
   portal: PortalId;
-  allowedRoles?: AppRole[];
   children: ReactNode;
 }
 
-export function PortalGate({ portal, allowedRoles, children }: PortalGateProps) {
+export function PortalGate({ portal, children }: PortalGateProps) {
   const location = useLocation();
-  const { isLoading, isLoggedIn, profile, hasRole } = useAuth();
+  const { isLoading, isLoggedIn } = useAuth();
 
   // Disable back and forward buttons inside privileged portals
   useEffect(() => {
@@ -58,25 +50,6 @@ export function PortalGate({ portal, allowedRoles, children }: PortalGateProps) 
     };
     const loginRoute = loginRoutes[portal] || "/user/auth";
     return <Navigate to={loginRoute} replace state={{ from: location.pathname }} />;
-  }
-
-  if (!canAccessPortal(profile, portal)) {
-    // If they landed in the wrong portal (e.g. via fast back button clicks), bounce them to their correct portal
-    const correctPortalUrl = getRoleRedirectUrl(profile?.email, profile, null);
-    if (correctPortalUrl && correctPortalUrl !== location.pathname) {
-      return <Navigate to={correctPortalUrl} replace />;
-    }
-    
-    return (
-      <FullScreenState
-        title="Access Denied"
-        body={`Your account does not have access to the ${portal} portal.`}
-      />
-    );
-  }
-
-  if (allowedRoles && !hasRole(allowedRoles)) {
-    return <FullScreenState title="Permission Required" body="Your account is signed in, but this screen requires a higher role." />;
   }
 
   return <>{children}</>;

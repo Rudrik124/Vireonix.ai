@@ -1,22 +1,12 @@
 create extension if not exists pgcrypto;
 
-create type public.app_role as enum ('super_admin', 'admin', 'developer', 'tester', 'user');
 create type public.portal_id as enum ('user', 'internal');
 create type public.usage_type as enum ('production', 'test');
-create type public.credit_wallet_type as enum ('user_credits', 'developer_credits');
 
 create table if not exists public.app_profiles (
   id uuid primary key references auth.users (id) on delete cascade,
   email text not null,
   full_name text,
-  role public.app_role not null default 'user',
-  portal_access public.portal_id[] not null default array['user']::public.portal_id[],
-  permissions text[] not null default array[]::text[],
-  bypass_credit_checks boolean not null default false,
-  testing_mode_enabled boolean not null default false,
-  user_credits integer not null default 0,
-  developer_credits integer not null default 0,
-  subscription_status text not null default 'free',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -34,24 +24,20 @@ create table if not exists public.subscriptions (
 create table if not exists public.credit_wallets (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.app_profiles (id) on delete cascade,
-  wallet_type public.credit_wallet_type not null,
   balance integer not null default 0,
   is_unlimited boolean not null default false,
   updated_at timestamptz not null default now(),
-  unique (user_id, wallet_type)
+  unique (user_id)
 );
 
 create table if not exists public.usage_logs (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references public.app_profiles (id) on delete set null,
-  actor_role public.app_role not null default 'user',
   portal public.portal_id not null,
   usage_type public.usage_type not null,
-  wallet_type public.credit_wallet_type not null,
   feature_key text not null,
   credits_requested integer not null default 0,
   credits_charged integer not null default 0,
-  credit_check_bypassed boolean not null default false,
   status text not null default 'started',
   metadata jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now()
@@ -125,35 +111,16 @@ before update on public.app_profiles
 for each row
 execute function public.set_updated_at();
 
-create or replace function public.current_app_role()
-returns public.app_role
-language sql
-stable
-as $$
-  select coalesce(
-    (select role from public.app_profiles where id = auth.uid()),
-    'user'::public.app_role
-  );
-$$;
-
 create or replace function public.is_internal_user()
 returns boolean
 language sql
 stable
 as $$
-  select public.current_app_role() in ('super_admin', 'admin', 'developer', 'tester');
-$$;
-
-create or replace function public.has_portal_access(target_portal public.portal_id)
-returns boolean
-language sql
-stable
-as $$
-  select exists (
+  select exists(
     select 1
     from public.app_profiles
     where id = auth.uid()
-      and target_portal = any(portal_access)
+      and email in ('admin@veytrix.ai', 'security@veytrix.ai', 'developer@veytrix.ai', 'tester@veytrix.ai', 'tester@veeytrix.ai')
   );
 $$;
 

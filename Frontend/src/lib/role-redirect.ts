@@ -1,6 +1,5 @@
 /**
  * Centralized helper for role-based redirects after authentication.
- * Privileged accounts (Security, Developer, Tester) always route to their respective dashboards.
  * Normal users route to a fallback URL (e.g., authRedirectUrl) or a default home route.
  */
 export function getRoleRedirectUrl(
@@ -9,31 +8,27 @@ export function getRoleRedirectUrl(
   fallbackUrl: string = '/home'
 ): string {
   const email = (userEmail || '').toLowerCase();
-  const role = (profile?.role || '').toLowerCase();
-  const access = Array.isArray(profile?.portalAccess) ? profile.portalAccess.map((a: string) => a.toLowerCase()) : [];
 
   // Priority 1: Security
-  if (email === 'security@veytrix.ai' || role === 'security' || access.includes('security')) {
+  if (email === 'security@veytrix.ai') {
     return '/security';
   }
 
   // Priority 2: Developer
-  if (email === 'developer@veytrix.ai' || role === 'developer' || access.includes('developer')) {
+  if (email === 'developer@veytrix.ai') {
     return '/developer/dashboard';
   }
 
   // Priority 3: Tester
   if (
     email === 'tester@veytrix.ai' ||
-    email === 'tester@veeytrix.ai' ||
-    role === 'tester' ||
-    access.includes('tester')
+    email === 'tester@veeytrix.ai'
   ) {
     return '/tester/dashboard';
   }
 
   // Admin fallback
-  if (email === 'admin@veytrix.ai' || role === 'admin' || role === 'super_admin' || access.includes('admin')) {
+  if (email === 'admin@veytrix.ai') {
     return '/admin/dashboard';
   }
 
@@ -46,3 +41,4 @@ export function getRoleRedirectUrl(
   // Final Default for normal users if no fallback
   return '/home';
 }
+

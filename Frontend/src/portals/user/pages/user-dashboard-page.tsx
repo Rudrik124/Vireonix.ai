@@ -1,8 +1,6 @@
 import { Link } from "react-router";
 import { CreditCard, History, ImagePlus, Settings, Sparkles, Wand2, Wallet } from "lucide-react";
-import { useEffect, useState } from "react";
 import { useAuth } from "../../../app/context/auth-context";
-import { fetchCreditOverview } from "../../../services/usage.service";
 
 const quickActions = [
   {
@@ -26,23 +24,6 @@ const quickActions = [
 ];
 
 export function UserDashboardPage() {
-  const { profile } = useAuth();
-  const [credits, setCredits] = useState(profile?.credits || { userCredits: 0, developerCredits: 0 });
-
-  useEffect(() => {
-    let mounted = true;
-
-    fetchCreditOverview(profile).then((nextCredits) => {
-      if (mounted && nextCredits) {
-        setCredits(nextCredits);
-      }
-    });
-
-    return () => {
-      mounted = false;
-    };
-  }, [profile]);
-
   return (
     <div className="min-h-[100dvh] bg-[radial-gradient(circle_at_top,#12314f_0%,#08111e_45%,#050914_100%)] text-white">
       <header className="mx-auto max-w-7xl px-6 pt-8 flex justify-between items-center">
@@ -60,19 +41,14 @@ export function UserDashboardPage() {
             <p className="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">User Portal</p>
             <h1 className="mt-4 text-4xl font-black tracking-tight">Production workspace for customer-facing AI workflows.</h1>
             <p className="mt-4 max-w-2xl text-slate-300">
-              Credits, subscriptions, output history, and tool access are isolated from the internal testing environment.
+              Output history and tool access are isolated from the internal testing environment.
             </p>
 
-            <div className="mt-8 grid gap-4 md:grid-cols-3">
-              <div className="rounded-3xl border border-white/10 bg-black/20 p-5">
-                <CreditCard className="h-5 w-5 text-cyan-300" />
-                <p className="mt-4 text-sm text-slate-400">User credits</p>
-                <p className="mt-1 text-3xl font-black">{credits.userCredits}</p>
-              </div>
+            <div className="mt-8 grid gap-4 md:grid-cols-2">
               <div className="rounded-3xl border border-white/10 bg-black/20 p-5">
                 <History className="h-5 w-5 text-cyan-300" />
                 <p className="mt-4 text-sm text-slate-400">Subscription</p>
-                <p className="mt-1 text-2xl font-black capitalize">{profile?.subscriptionStatus || "free"}</p>
+                <p className="mt-1 text-2xl font-black capitalize">Standard</p>
               </div>
               <div className="rounded-3xl border border-white/10 bg-black/20 p-5">
                 <Settings className="h-5 w-5 text-cyan-300" />
@@ -86,7 +62,7 @@ export function UserDashboardPage() {
             <p className="text-xs font-bold uppercase tracking-[0.3em] text-amber-200">Security Boundary</p>
             <p className="mt-4 text-lg font-semibold">Internal metrics and test credits stay outside this portal.</p>
             <p className="mt-3 text-sm leading-6 text-slate-300">
-              User traffic is billed against `user_credits` and logged as `usage_type = production`. Internal routes require separate role checks and never leak admin-only analytics.
+              User traffic is logged as `usage_type = production`. Internal routes require separate role checks and never leak admin-only analytics.
             </p>
             <Link
               to="/features"
