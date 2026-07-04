@@ -426,15 +426,22 @@ const fetchCloudflarePortalOverview = async () => {
  * Returns dashboard statistics
  */
 router.get("/api/developer/dashboard/stats", verifyDeveloperAccess, async (req, res) => {
+  console.log("Dashboard request received");
+  console.log("Authenticated user:", req.user);
+  
   try {
+    const supabaseClient = getSupabaseClient();
+    console.log("Database connection: Supabase client initialized");
+    console.log("Executing dashboard queries...");
+    
     // Get total users from auth
     let totalUsers = 0;
     try {
-      const authResult = await getSupabaseClient().auth.admin.listUsers({ perPage: 1 });
+      const authResult = await supabaseClient.auth.admin.listUsers({ perPage: 1 });
       totalUsers = authResult.data?.total || 0;
     } catch (err) {
       console.warn("Failed to get auth users count, falling back to app_profiles:", err.message);
-      const { count } = await getSupabaseClient()
+      const { count } = await supabaseClient
         .from("app_profiles")
         .select("*", { count: "exact", head: true });
       totalUsers = count || 0;
@@ -442,85 +449,96 @@ router.get("/api/developer/dashboard/stats", verifyDeveloperAccess, async (req, 
 
     // Get active users (distinct users with activity in last 7 days)
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-    const { data: activeUserLogs } = await getSupabaseClient()
+    const { data: activeUserLogs, error: activeErr } = await supabaseClient
       .from("usage_logs")
       .select("user_id")
       .gt("created_at", sevenDaysAgo)
-      .neq("user_id", null);
+      .not("user_id", "is", null);
+    if (activeErr) throw activeErr;
 
     const activeUsers = new Set((activeUserLogs || []).map(log => log.user_id)).size;
 
     // Get new users (registered in last 7 days)
     const sevenDaysAgoDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-    const { count: newUsers } = await getSupabaseClient()
+    const { count: newUsers, error: newUsersErr } = await supabaseClient
       .from("app_profiles")
       .select("*", { count: "exact", head: true })
       .gt("created_at", sevenDaysAgoDate);
+    if (newUsersErr) throw newUsersErr;
 
     // Get total credits consumed (sum of all usage logs)
-    const { data: creditData } = await getSupabaseClient()
+    const { data: creditData, error: creditErr } = await supabaseClient
       .from("usage_logs")
       .select("credits_charged");
+    if (creditErr) throw creditErr;
 
     const creditsConsumed = (creditData || []).reduce((sum, log) => sum + (log.credits_charged || 0), 0);
 
     // Get AI requests count (distinct usage logs)
-    const { data: aiRequestsData } = await getSupabaseClient()
+    const { data: aiRequestsData, error: aiReqErr } = await supabaseClient
       .from("usage_logs")
       .select("id")
       .eq("usage_type", "production");
+    if (aiReqErr) throw aiReqErr;
 
     const aiRequests = (aiRequestsData || []).length;
 
-      // Plan-type counts (FREE / PRO / PRO_MAX)
-      let freeUsers = 0;
-      let proUsers = 0;
-      let proMaxUsers = 0;
-      let planSchemaMissing = false;
+    // Plan-type counts (FREE / PRO / PRO_MAX)
+    let freeUsers = 0;
+    let proUsers = 0;
+    let proMaxUsers = 0;
+    let planSchemaMissing = false;
 
-      try {
-        const { data: plans, error: plansError } = await getSupabaseClient()
-          .from('app_profiles')
-          .select('id, plan_type');
+    try {
+      const { data: plans, error: plansError } = await supabaseClient
+        .from('app_profiles')
+        .select('id, plan_type');
 
-        if (plansError) {
-          const msg = String(plansError.message || '').toLowerCase();
-          if (plansError.code === '42703' || msg.includes('column') || msg.includes('does not exist')) {
-            planSchemaMissing = true;
-          } else {
-            console.warn('Failed to fetch plan_type from app_profiles:', plansError.message);
-          }
+      if (plansError) {
+        const msg = String(plansError.message || '').toLowerCase();
+        if (plansError.code === '42703' || msg.includes('column') || msg.includes('does not exist')) {
+          planSchemaMissing = true;
         } else {
-          (plans || []).forEach((p) => {
-            const pt = (p.plan_type || 'FREE').toString().toUpperCase();
-            if (pt === 'PRO') proUsers++;
-            else if (pt === 'PRO_MAX' || pt === 'PROMAX') proMaxUsers++;
-            else freeUsers++;
-          });
+          throw plansError;
         }
-      } catch (err) {
-        console.warn('Error while computing plan counts:', err?.message || err);
-        planSchemaMissing = true;
+      } else {
+        (plans || []).forEach((p) => {
+          const pt = (p.plan_type || 'FREE').toString().toUpperCase();
+          if (pt === 'PRO') proUsers++;
+          else if (pt === 'PRO_MAX' || pt === 'PROMAX') proMaxUsers++;
+          else freeUsers++;
+        });
       }
+    } catch (err) {
+      console.warn('Error while computing plan counts:', err?.message || err);
+      planSchemaMissing = true;
+    }
 
     const planSchemaSql = "ALTER TABLE app_profiles ADD COLUMN plan_type TEXT DEFAULT 'FREE';";
 
-    res.json({
+    const responseData = {
       totalUsers: totalUsers || 0,
       activeUsers: activeUsers || 0,
       newUsers: newUsers || 0,
       creditsConsumed: creditsConsumed || 0,
       aiRequests: aiRequests || 0,
-        freeUsers,
-        proUsers,
-        proMaxUsers,
-        planSchemaMissing,
-        planSchemaSql: planSchemaMissing ? planSchemaSql : null,
+      freeUsers,
+      proUsers,
+      proMaxUsers,
+      planSchemaMissing,
+      planSchemaSql: planSchemaMissing ? planSchemaSql : null,
       revenue: (creditsConsumed || 0) * 0.001, // Example: $0.001 per credit
+    };
+
+    console.log("Dashboard response prepared successfully");
+    res.json(responseData);
+  } catch (err) {
+    console.error("Dashboard stats error:", err);
+    return res.status(500).json({
+      message: err.message || "Unknown error",
+      stack: err.stack,
+      route: "/api/developer/dashboard/stats"
     });
-  } catch (error) {
-    console.error("Dashboard stats error:", error);
-    res.status(500).json({ error: "Failed to fetch dashboard stats" });
   }
 });
 

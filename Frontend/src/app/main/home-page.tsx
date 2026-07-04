@@ -163,7 +163,7 @@ export function VideoTypePage() {
       
       {/* 1. BACKGROUND ELEMENTS (LAYER 0) */}
       <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-        <div className="absolute inset-0 opacity-[0.02] bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
+        <div className="absolute inset-0 opacity-[0.02] bg-[url('/noise.svg')]" />
         
         {/* Glowing Blobs with Parallax */}
         <motion.div 

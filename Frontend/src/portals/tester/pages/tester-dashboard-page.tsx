@@ -112,7 +112,7 @@ export function TesterDashboardPage() {
       
       {/* Background Layers */}
       <div className="fixed inset-0 z-0 pointer-events-none">
-        <div className="absolute inset-0 opacity-[0.02] mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
+        <div className="absolute inset-0 opacity-[0.02] mix-blend-overlay bg-[url('/noise.svg')]" />
         
         {/* Radial Glows */}
         <div className="absolute top-0 left-0 w-[50vw] h-[50vh] bg-[radial-gradient(circle_at_20%_20%,rgba(168,85,247,0.25),transparent_40%)]" />

@@ -17,6 +17,7 @@ import {
 import { useAuth } from "../../../app/context/auth-context";
 import { logSecurityPortalActivity } from "../../../services/security-portal.service";
 import { fetchCloudflarePortalOverview } from "../../../services/developer-portal-api.service";
+import { supabase } from "../../../lib/supabase";
 
 function MetricCard({
   label,
@@ -92,25 +93,49 @@ export function SecurityOverviewPage() {
   useEffect(() => {
     let isActive = true;
 
-    fetchCloudflarePortalOverview()
-      .then((data) => {
-        if (!isActive) return;
-        setStats((prev) => ({
-          ...prev,
-          totalEvents: data?.summary?.requests ?? prev.totalEvents,
-          criticalAlerts: data?.security?.criticalAlerts ?? prev.criticalAlerts,
-          failedLogins: data?.security?.failedLogins ?? prev.failedLogins,
-          blockedRequests: data?.security?.blockedRequests ?? prev.blockedRequests,
-          systemHealth: data?.security?.systemHealth ?? prev.systemHealth,
-          activeThreats: data?.security?.activeThreats ?? prev.activeThreats,
-        }));
-      })
-      .catch((error) => {
-        console.error("Failed to load Cloudflare security overview:", error);
-      });
+    const loadData = () => {
+      fetchCloudflarePortalOverview()
+        .then((data) => {
+          if (!isActive) return;
+          setStats((prev) => ({
+            ...prev,
+            totalEvents: data?.summary?.requests ?? prev.totalEvents,
+            criticalAlerts: data?.security?.criticalAlerts ?? prev.criticalAlerts,
+            failedLogins: data?.security?.failedLogins ?? prev.failedLogins,
+            blockedRequests: data?.security?.blockedRequests ?? prev.blockedRequests,
+            systemHealth: data?.security?.systemHealth ?? prev.systemHealth,
+            activeThreats: data?.security?.activeThreats ?? prev.activeThreats,
+          }));
+        })
+        .catch((error) => {
+          console.error("Failed to load Cloudflare security overview:", error);
+        });
+    };
+
+    // Initial load
+    loadData();
+
+    // Setup Supabase Realtime Subscription for audit_logs table to trigger re-fetch
+    let subscription: any = null;
+    if (supabase) {
+      subscription = supabase
+        .channel('security-overview-updates')
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'audit_logs' },
+          () => {
+            // Re-fetch data when a new audit log (event) is inserted
+            loadData();
+          }
+        )
+        .subscribe();
+    }
 
     return () => {
       isActive = false;
+      if (subscription) {
+        supabase.removeChannel(subscription);
+      }
     };
   }, []);
 

@@ -298,7 +298,7 @@ export function TesterAnalyticsPage() {
       
       {/* Background Layers */}
       <div className="fixed inset-0 z-0 pointer-events-none">
-        <div className="absolute inset-0 opacity-[0.04] mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
+        <div className="absolute inset-0 opacity-[0.04] mix-blend-overlay bg-[url('/noise.svg')]" />
         
         {/* Animated Mesh Gradient */}
         <div className="absolute inset-0 overflow-hidden">
