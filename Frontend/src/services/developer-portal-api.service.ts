@@ -63,7 +63,8 @@ async function callDeveloperAPI(endpoint: string, options?: RequestInit) {
     console.warn('Unable to read auth token from storage/supabase', e);
   }
 
-  const response = await fetch(buildApiUrl(`/api/developer${endpoint}`), {
+  const urlToFetch = buildApiUrl(`/api/developer${endpoint}`);
+  const response = await fetch(urlToFetch, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -73,8 +74,8 @@ async function callDeveloperAPI(endpoint: string, options?: RequestInit) {
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'API Error' }));
-    throw new Error(error.error || `API Error: ${response.status}`);
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || `API Error: ${response.status} ${response.statusText} when fetching ${urlToFetch}`);
   }
 
   return response.json();

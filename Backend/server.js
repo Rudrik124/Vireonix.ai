@@ -5638,6 +5638,17 @@ if (fs.existsSync(distPath)) {
   console.log("⚠️ dist directory not found. Static files not served.");
 }
 
+// 404 Catch-all to log unmatched API requests
+app.use((req, res, next) => {
+  console.warn(`[404 NOT FOUND] No route matched for: ${req.method} ${req.originalUrl}`);
+  res.status(404).json({
+    error: "Route not found",
+    path: req.originalUrl,
+    method: req.method,
+    message: "The requested API endpoint does not exist on this server."
+  });
+});
+
 // ✅ START SERVER
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, "0.0.0.0", (err) => {
