@@ -161,6 +161,7 @@ app.use("/api", audioRoutes);
 app.use("/api", videoRoutes);
 app.use("/", imageRoutes);
 app.use("/api", mediaRoutes);
+app.use(developerPortalAPI);
 
 // ✅ SET FFMPEG
 if (ffmpegPath && fs.existsSync(ffmpegPath)) {
