@@ -7,7 +7,7 @@ function MainApp() {
   // Initialize error logging
   useErrorLogging();
 
-  return <RouterProvider router={router} />;
+  return <RouterProvider router={router} fallbackElement={<div className="h-screen w-full bg-[#0a0a0a] flex items-center justify-center text-white">Loading...</div>} />;
 }
 
 export default function App() {
