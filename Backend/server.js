@@ -109,6 +109,7 @@ fal.config({
 });
 
 const app = express();
+app.set('trust proxy', 1);
 
 // Security middleware order (Native CSP -> CORS -> Rate limiter -> JSON/body parsers)
 app.use(securityHeaders);
@@ -122,6 +123,10 @@ const corsOptions = {
     // Allow requests with no origin (mobile apps, curl, server-to-server)
     if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) return callback(null, true);
+    
+    // Auto-allow Render frontend domains
+    if (origin.endsWith('.onrender.com')) return callback(null, true);
+
     console.warn(`Blocked by CORS: origin ${origin} is not in allowed origins [${allowedOrigins.join(', ')}]`);
     return callback(new Error('CORS policy: Origin not allowed'));
   },
