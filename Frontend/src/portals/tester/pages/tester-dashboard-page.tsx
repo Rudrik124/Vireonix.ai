@@ -314,7 +314,7 @@ export function TesterDashboardPage() {
               <div>
                 <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-2 flex items-center gap-1.5"><Sparkles className="w-3 h-3" /> Credits</p>
                 <p className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-400 to-purple-400 drop-shadow-[0_0_15px_rgba(168,85,247,0.4)]">
-                  {profile.credits.developerCredits.toLocaleString()}
+                  {profile?.credits?.developerCredits?.toLocaleString() || 0}
                 </p>
               </div>
               <div>

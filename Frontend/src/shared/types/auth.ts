@@ -14,6 +14,7 @@ export interface AppProfile {
   fullName: string;
   name?: string;
   timezone?: string;
+  role?: string;
 }
 
 export interface TestingCredentials {

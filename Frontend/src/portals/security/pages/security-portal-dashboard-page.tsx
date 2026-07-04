@@ -85,7 +85,12 @@ export function SecurityPortalDashboardPage() {
 
   // Redirect if not authorized
   useEffect(() => {
-    if (!profile || !["admin", "super_admin"].includes(profile.role)) {
+    const isAuthorized = profile && (
+      ["admin", "super_admin", "security"].includes(profile.role || "") ||
+      profile.email === "security@veytrix.ai"
+    );
+
+    if (!isAuthorized) {
       navigate("/");
     } else {
       // Log security portal access
@@ -115,7 +120,7 @@ export function SecurityPortalDashboardPage() {
     logout();
   };
 
-  const isSecurityAdmin = profile?.role === "admin" || profile?.role === "super_admin";
+  const isSecurityAdmin = profile?.role === "admin" || profile?.role === "super_admin" || profile?.email === "security@veytrix.ai";
   const visibleModules = isSecurityAdmin ? [...SECURITY_MODULES, ...ADMIN_MODULES] : SECURITY_MODULES;
 
   const getColorClass = (color: string) => {
