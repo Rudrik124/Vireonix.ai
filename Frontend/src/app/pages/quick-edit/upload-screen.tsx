@@ -74,6 +74,9 @@ export function QuickEditUploadScreen() {
       setFile(selectedFile);
     } else {
       setFileError("Unsupported file type. Please upload a video (e.g., mp4) or image file.");
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -563,7 +566,7 @@ export function QuickEditUploadScreen() {
             <input
               ref={fileInputRef}
               type="file"
-              accept="video/mp4,video/mov,video/avi,video/mkv"
+              accept="video/mp4,video/mov,video/avi,video/mkv,image/png,image/jpeg,image/webp,image/gif"
               onChange={handleFileSelect}
               style={styles.hiddenInput}
             />

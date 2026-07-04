@@ -118,14 +118,24 @@ export function ImagesToVideoUploadScreen() {
   const handleFileDrop = (e: React.DragEvent) => {
     e.preventDefault();
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      setReferenceImage(e.dataTransfer.files[0]);
+      const droppedFile = e.dataTransfer.files[0];
+      if (droppedFile.type.startsWith('image/')) {
+        setReferenceImage(droppedFile);
+      } else {
+        alert('Unsupported file type. Please upload an image file.');
+      }
     }
   };
 
   const handleAudioDrop = (e: React.DragEvent) => {
     e.preventDefault();
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      setOptionalAudio(e.dataTransfer.files[0]);
+      const droppedFile = e.dataTransfer.files[0];
+      if (droppedFile.type.startsWith('audio/')) {
+        setOptionalAudio(droppedFile);
+      } else {
+        alert('Unsupported file type. Please upload an audio file.');
+      }
     }
   };
 
@@ -272,7 +282,17 @@ export function ImagesToVideoUploadScreen() {
                   </div>
                 </div>
               )}
-              <input type="file" ref={fileInputRef} className="hidden" accept="image/png,image/jpeg,image/webp" onChange={(e) => { if (e.target.files?.length) setReferenceImage(e.target.files[0]); }} />
+              <input type="file" ref={fileInputRef} className="hidden" accept="image/png,image/jpeg,image/webp" onChange={(e) => { 
+                if (e.target.files?.length) {
+                  const droppedFile = e.target.files[0];
+                  if (droppedFile.type.startsWith('image/')) {
+                    setReferenceImage(droppedFile);
+                  } else {
+                    alert('Unsupported file type. Please upload an image file.');
+                    if (fileInputRef.current) fileInputRef.current.value = '';
+                  }
+                } 
+              }} />
             </div>
 
             {/* Optional Audio */}
@@ -313,7 +333,17 @@ export function ImagesToVideoUploadScreen() {
                   <input type="range" min="0" max="100" value={audioVolume} onChange={e => setAudioVolume(Number(e.target.value))} className="w-full accent-fuchsia-500 h-1.5 bg-white/10 rounded-full appearance-none" />
                 </div>
               )}
-              <input type="file" ref={audioInputRef} className="hidden" accept="audio/mp3,audio/wav" onChange={(e) => { if (e.target.files?.length) setOptionalAudio(e.target.files[0]); }} />
+              <input type="file" ref={audioInputRef} className="hidden" accept="audio/mp3,audio/wav" onChange={(e) => { 
+                if (e.target.files?.length) {
+                  const droppedFile = e.target.files[0];
+                  if (droppedFile.type.startsWith('audio/')) {
+                    setOptionalAudio(droppedFile);
+                  } else {
+                    alert('Unsupported file type. Please upload an audio file.');
+                    if (audioInputRef.current) audioInputRef.current.value = '';
+                  }
+                } 
+              }} />
             </div>
 
             {/* Style Selection */}
