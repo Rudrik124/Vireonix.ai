@@ -5,6 +5,7 @@ import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { fetchAppProfile } from "../../services/auth-profile";
 import { recordLoginActivity } from "../../lib/auth-login-activity";
 import { getRoleRedirectUrl } from "../../lib/role-redirect";
+import { signInWithGoogle } from "@/lib/auth-helpers";
 import { BrandLogo } from "./brand-logo";
 
 interface LoginModalProps {
@@ -332,11 +333,7 @@ export function LoginModal({ isOpen, onClose, customMessage, customTitle }: Logi
     if (!ensureSupabaseConfigured()) return;
     try {
       setIsLoading(true);
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: { redirectTo: `${window.location.origin}/auth/callback` },
-      });
-      if (error) showMessage(error.message, "error");
+      await signInWithGoogle(`${window.location.origin}/auth/callback`);
     } catch (err: any) {
       showMessage(err?.message || "Google sign-in failed.", "error");
     } finally {
