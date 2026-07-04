@@ -38,6 +38,7 @@ export function QuickEditUploadScreen() {
   const [file, setFile] = useState<File | null>(null);
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [fileError, setFileError] = useState<string | null>(null);
   const [mousePos, setMousePos] = useState({ x: 50, y: 50 });
   
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -67,18 +68,29 @@ export function QuickEditUploadScreen() {
     setDragOver(false);
   }, []);
 
+  const validateAndSetFile = (selectedFile: File) => {
+    setFileError(null);
+    if (selectedFile.type.startsWith('video/') || selectedFile.type.startsWith('image/')) {
+      setFile(selectedFile);
+    } else {
+      setFileError("Unsupported file type. Please upload a video (e.g., mp4) or image file.");
+    }
+  };
+
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(false);
     const droppedFile = e.dataTransfer.files?.[0];
-    if (droppedFile && droppedFile.type.startsWith('video/')) {
-      setFile(droppedFile);
+    if (droppedFile) {
+      validateAndSetFile(droppedFile);
     }
   }, []);
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
-    if (selectedFile) setFile(selectedFile);
+    if (selectedFile) {
+      validateAndSetFile(selectedFile);
+    }
   }, []);
 
   const handleAudioSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -582,7 +594,7 @@ export function QuickEditUploadScreen() {
                   <FileVideo size={16} />
                   {file.name.length > 40 ? file.name.substring(0, 37) + '...' : file.name}
                   <button
-                    onClick={(e) => { e.stopPropagation(); setFile(null); }}
+                    onClick={(e) => { e.stopPropagation(); setFile(null); setFileError(null); }}
                     style={{background: 'none', border: 'none', color: CONFIG.textMuted, cursor: 'pointer', padding: '0', display: 'flex', alignItems: 'center'}}
                   >
                     <X size={16} />
@@ -591,6 +603,27 @@ export function QuickEditUploadScreen() {
               </>
             )}
           </div>
+
+          {fileError && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              style={{
+                marginTop: '16px',
+                padding: '12px 16px',
+                background: 'rgba(239, 68, 68, 0.1)',
+                border: '1px solid rgba(239, 68, 68, 0.2)',
+                borderRadius: '8px',
+                color: '#f87171',
+                fontSize: '14px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+            >
+              {fileError}
+            </motion.div>
+          )}
 
           {/* Requirements Row */}
           <div style={styles.reqRow}>

@@ -275,27 +275,7 @@ export function SecurityAlertsDashboard() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-white mb-2">Security Alerts Center</h1>
-          <div className="flex items-center gap-2">
-            <motion.div
-              animate={{
-                opacity: isConnected ? [1, 0.6, 1] : 0.3,
-              }}
-              transition={{ duration: 2, repeat: Infinity }}
-              className="flex items-center gap-2 text-sm"
-            >
-              {isConnected ? (
-                <>
-                  <Wifi className="w-4 h-4 text-green-400" />
-                  <span className="text-green-400">Real-time monitoring active</span>
-                </>
-              ) : (
-                <>
-                  <WifiOff className="w-4 h-4 text-slate-400" />
-                  <span className="text-slate-400">Connecting...</span>
-                </>
-              )}
-            </motion.div>
-          </div>
+          <div className="flex items-center gap-2"></div>
         </div>
 
         <motion.button
@@ -707,3 +687,4 @@ export function SecurityAlertsDashboard() {
     </div>
   );
 }
+
