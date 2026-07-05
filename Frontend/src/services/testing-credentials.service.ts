@@ -59,7 +59,7 @@ export async function getTestingCredentials(
       return [];
     }
 
-    return data.map((cred) => ({
+    return data.map((cred: any) => ({
       id: cred.id,
       email: cred.email,
       password: cred.password,

@@ -97,22 +97,22 @@ export async function fetchFileUploadMetrics(
     const events = data || [];
 
     // Count successful uploads by type
-    const successEvents = events.filter((e) => e.action === 'UPLOAD_SUCCESS');
+    const successEvents = events.filter((e: any) => e.action === 'UPLOAD_SUCCESS');
     const imagesUploaded = successEvents.filter(
-      (e) => categorizeFileType(e.metadata?.mime_type) === 'image'
+      (e: any) => categorizeFileType(e.metadata?.mime_type) === 'image'
     ).length;
     const videosUploaded = successEvents.filter(
-      (e) => categorizeFileType(e.metadata?.mime_type) === 'video'
+      (e: any) => categorizeFileType(e.metadata?.mime_type) === 'video'
     ).length;
     const audioUploaded = successEvents.filter(
-      (e) => categorizeFileType(e.metadata?.mime_type) === 'audio'
+      (e: any) => categorizeFileType(e.metadata?.mime_type) === 'audio'
     ).length;
 
-    const rejectedFiles = events.filter((e) => e.action === 'UPLOAD_REJECTED').length;
-    const malwareDetected = events.filter((e) => e.action === 'MALWARE_DETECTED').length;
-    const wrongMimeType = events.filter((e) => e.action === 'WRONG_MIME_TYPE').length;
-    const fileTooLarge = events.filter((e) => e.action === 'FILE_TOO_LARGE').length;
-    const corruptedFiles = events.filter((e) => e.action === 'CORRUPTED_FILE').length;
+    const rejectedFiles = events.filter((e: any) => e.action === 'UPLOAD_REJECTED').length;
+    const malwareDetected = events.filter((e: any) => e.action === 'MALWARE_DETECTED').length;
+    const wrongMimeType = events.filter((e: any) => e.action === 'WRONG_MIME_TYPE').length;
+    const fileTooLarge = events.filter((e: any) => e.action === 'FILE_TOO_LARGE').length;
+    const corruptedFiles = events.filter((e: any) => e.action === 'CORRUPTED_FILE').length;
 
     const totalUploads = events.length;
     const successRate = totalUploads > 0
@@ -367,8 +367,8 @@ export async function fetchUploadTrends(days: number = 7): Promise<{
       const dateStr = event.created_at.split('T')[0];
       const entry = trendMap.get(dateStr) || { successful: 0, failed: 0, rejected: 0 };
 
-      if (event.action === 'UPLOAD_SUCCESS') entry.successful++;
-      else if (event.action === 'UPLOAD_REJECTED') entry.rejected++;
+      if (event?.action === 'UPLOAD_SUCCESS') entry.successful++;
+      else if (event?.action === 'UPLOAD_REJECTED') entry.rejected++;
       else entry.failed++;
 
       trendMap.set(dateStr, entry);
@@ -433,7 +433,7 @@ export function subscribeToFileUploadSecurityEvents(
       table: 'security_events',
       filter: `category=eq.FILE_UPLOAD`,
     },
-    (payload) => {
+    (payload: any) => {
       callback(payload.new as FileUploadSecurityEvent);
     }
   );

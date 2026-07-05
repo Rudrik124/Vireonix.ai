@@ -77,7 +77,7 @@ export async function fetchPromptSecurityMetrics(
 
     if (error) throw error;
 
-    const events = data || [];
+    const events = (data || []) as PromptSecurityEvent[];
 
     const totalPrompts = events.filter(
       (e) => e.action === 'PROMPT_SUBMITTED'
@@ -371,36 +371,24 @@ export async function fetchSeverityDistribution(
   }
 }
 
+import { socketService } from '../lib/socket';
+
 /**
  * Subscribe to real-time prompt security events
  */
 export function subscribeToPromptSecurityEvents(
   callback: (event: PromptSecurityEvent) => void
 ): () => void {
-  if (!supabase) {
-    console.warn('Supabase not configured');
-    return () => { };
-  }
+  const socket = socketService.connect();
 
-  const channel = supabase.channel('prompt_security_monitoring');
+  const handleEvent = (payload: any) => {
+    callback(payload as PromptSecurityEvent);
+  };
 
-  channel.on(
-    'postgres_changes',
-    {
-      event: 'INSERT',
-      schema: 'public',
-      table: 'security_events',
-      filter: `category=eq.PROMPT`,
-    },
-    (payload) => {
-      callback(payload.new as PromptSecurityEvent);
-    }
-  );
-
-  channel.subscribe();
+  socket.on('prompt-security-updates', handleEvent);
 
   return () => {
-    supabase.removeChannel(channel);
+    socket.off('prompt-security-updates', handleEvent);
   };
 }
 

@@ -79,12 +79,12 @@ export async function calculateUserRiskScores(
       last_incident: string;
     }>();
 
-    (events || []).forEach((event) => {
+    (events || []).forEach((event: any) => {
       if (!event.user_id) return;
 
       const existing = userRiskMap.get(event.user_id) || {
         total_score: 0,
-        events: [],
+        events: [] as any[],
         critical_count: 0,
         warning_count: 0,
         last_incident: event.created_at,
@@ -251,7 +251,7 @@ export async function fetchUserRiskTrends(days: number = 7): Promise<{
     // Group by date and calculate daily risk distribution
     const dateMap = new Map<string, Map<string, number>>();
 
-    (events || []).forEach((event) => {
+    (events || []).forEach((event: any) => {
       if (!event.user_id) return;
 
       const date = new Date(event.created_at).toLocaleDateString('en-US', {

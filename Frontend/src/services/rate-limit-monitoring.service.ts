@@ -95,7 +95,7 @@ export async function fetchRateLimitMetrics(
       .gte('created_at', start)
       .lte('created_at', end);
 
-    const uniqueUsers = new Set(limitUsers?.map((u) => u.user_id).filter(Boolean) || []).size;
+    const uniqueUsers = new Set(limitUsers?.map((u: any) => u.user_id).filter(Boolean) || []).size;
 
     // High usage accounts (suspicious usage)
     const { count: highUsageCount } = await supabase
@@ -180,7 +180,7 @@ export async function fetchTopOffenders(limit: number = 10): Promise<{ offenders
     // Group and count violations
     const offenderMap = new Map<string, TopOffender>();
 
-    (data || []).forEach((event) => {
+    (data || []).forEach((event: any) => {
       const key = `${event.user_id || 'anonymous'}_${event.ip_address || 'unknown'}`;
       const existing = offenderMap.get(key);
 
@@ -232,7 +232,7 @@ export async function fetchRateLimitTrends(days: number = 7): Promise<{ trends: 
     // Group by date
     const trendMap = new Map<string, { limited: number; blocked: number; abused: number }>();
 
-    (data || []).forEach((event) => {
+    (data || []).forEach((event: any) => {
       const date = new Date(event.created_at).toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
@@ -272,7 +272,7 @@ export async function fetchEndpointMetrics(): Promise<{ endpoints: Array<{ endpo
 
     const endpointMap = new Map<string, { count: number; scores: number[] }>();
 
-    (data || []).forEach((event) => {
+    (data || []).forEach((event: any) => {
       const endpoint = (event.metadata as any)?.endpoint || 'unknown';
       const abuseScore = (event.metadata as any)?.abuse_score || 0;
 
@@ -310,7 +310,7 @@ export function subscribeToRateLimitEvents(callback: (event: RateLimitEvent) => 
         table: 'security_events',
         filter: `category=eq.RATE_LIMIT`,
       },
-      (payload) => {
+      (payload: any) => {
         callback(payload.new as RateLimitEvent);
       }
     )

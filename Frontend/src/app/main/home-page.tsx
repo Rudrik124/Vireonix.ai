@@ -29,6 +29,7 @@ import { LoginModal } from "../components/login-modal";
 import { useAuth } from "../context/auth-context";
 import { SuccessToast } from "../components/success-toast";
 import { BrandLogo } from "../components/brand-logo";
+import { UserProfileSidebar } from "../components/user-profile-sidebar";
 
 const particles = Array.from({ length: 30 }); 
 const AI_MODES = ["Cinematic", "Anime", "Realistic", "Commercial", "Viral Reel"];
@@ -161,7 +162,63 @@ export function VideoTypePage() {
         }
       `}</style>
       
-      {/* 1. BACKGROUND ELEMENTS (LAYER 0) */}
+      {/* 2. NAVBAR (Fixed Top, ~10% Height - LAYER 4) */}
+      <header className="h-[10%] min-h-[60px] w-full px-6 flex items-center justify-between z-50 border-b border-white/5 bg-[#130E24]/50 backdrop-blur-md">
+        <div className="flex items-center gap-2 cursor-pointer group" onClick={() => window.location.reload()}>
+          <BrandLogo size={32} className="group-hover:scale-105 transition-transform" />
+          <span className="text-xl font-black tracking-tight text-white drop-shadow-md">
+            VEYTRIX<span className="text-purple-400">.AI</span>
+          </span>
+        </div>
+        
+
+
+        <div className="flex items-center gap-4">
+          <button className="md:hidden text-white/70 hover:text-white" onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}>
+            <Menu className="w-5 h-5" />
+          </button>
+          
+          <div className="hidden md:flex items-center gap-3">
+            {isLoggedIn ? (
+              <div className="flex items-center gap-3 relative">
+                <button 
+                  onClick={() => navigate("/wallet")} 
+                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition-all text-sm font-bold text-fuchsia-400 hover:text-fuchsia-300"
+                >
+                  <Wallet className="w-4 h-4" /> Wallet
+                </button>
+              </div>
+            ) : (
+              <>
+                <button onClick={() => setIsLoginOpen(true)} className="text-sm font-bold text-gray-300 hover:text-white transition-colors">
+                  Login
+                </button>
+                <button onClick={() => setIsLoginOpen(true)} className="px-5 py-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 text-sm font-bold text-white transition-all hover:shadow-[0_0_15px_rgba(168, 85, 247,0.3)]">
+                  Start Free
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+
+      </header>
+
+      <div className="flex-1 flex overflow-hidden w-full">
+        {/* Permanent Sidebar (Desktop) */}
+        {isLoggedIn && (
+          <div className="hidden lg:block w-[260px] xl:w-[320px] h-full overflow-y-auto border-r border-white/5 bg-[#130E24]/50 backdrop-blur-md shrink-0 z-40">
+            <UserProfileSidebar
+              isOpen={true}
+              onClose={() => {}}
+              userName={userName}
+              onLogout={() => void logout()}
+              variant="permanent"
+            />
+          </div>
+        )}
+
+        <div className="flex-1 h-full overflow-y-auto relative flex flex-col">
+          {/* 1. BACKGROUND ELEMENTS (LAYER 0) */}
       <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
         <div className="absolute inset-0 opacity-[0.02] bg-[url('/noise.svg')]" />
         
@@ -204,80 +261,6 @@ export function VideoTypePage() {
           ))}
         </motion.div>
       </div>
-
-      {/* 2. NAVBAR (Fixed Top, ~10% Height - LAYER 4) */}
-      <header className="h-[10%] min-h-[60px] w-full px-6 flex items-center justify-between z-50 border-b border-white/5 bg-[#130E24]/50 backdrop-blur-md">
-        <div className="flex items-center gap-2 cursor-pointer group" onClick={() => window.location.reload()}>
-          <BrandLogo size={32} className="group-hover:scale-105 transition-transform" />
-          <span className="text-xl font-black tracking-tight text-white drop-shadow-md">
-            VEYTRIX<span className="text-purple-400">.AI</span>
-          </span>
-        </div>
-        
-
-
-        <div className="flex items-center gap-4">
-          <button className="md:hidden text-white/70 hover:text-white" onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}>
-            <Menu className="w-5 h-5" />
-          </button>
-          
-          <div className="hidden md:flex items-center gap-3">
-            {isLoggedIn ? (
-              <div className="flex items-center gap-3 relative">
-                <button 
-                  onClick={() => navigate("/wallet")} 
-                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition-all text-sm font-bold text-fuchsia-400 hover:text-fuchsia-300"
-                >
-                  <Wallet className="w-4 h-4" /> Wallet
-                </button>
-                <div className="relative">
-                  <button
-                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                    className="flex items-center gap-2 bg-white/5 hover:bg-white/10 px-4 py-2 rounded-full border border-white/10 transition-all text-sm font-bold text-white group"
-                  >
-                    <User className="w-4 h-4 text-purple-400" />
-                    {userName}
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <>
-                <button onClick={() => setIsLoginOpen(true)} className="text-sm font-bold text-gray-300 hover:text-white transition-colors">
-                  Login
-                </button>
-                <button onClick={() => setIsLoginOpen(true)} className="px-5 py-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 text-sm font-bold text-white transition-all hover:shadow-[0_0_15px_rgba(168, 85, 247,0.3)]">
-                  Start Free
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* User Menu Dropdown */}
-        <AnimatePresence>
-          {isUserMenuOpen && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 10 }}
-              className="absolute right-6 top-[calc(100%+0.5rem)] w-48 bg-[#0B1020]/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden"
-            >
-              <div className="p-1">
-                {!isLoggedIn && (
-                  <button onClick={() => { setIsLoginOpen(true); setIsUserMenuOpen(false); }} className="w-full text-left px-4 py-3 rounded-lg text-white hover:bg-white/10 text-sm font-bold">
-                    Login
-                  </button>
-                )}
-                {isLoggedIn && (
-                  <button onClick={() => void handleLogout()} className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-400 hover:bg-red-500/10 text-sm font-bold uppercase tracking-widest">
-                    <LogOut className="w-4 h-4" /> Logout
-                  </button>
-                )}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </header>
 
       {/* 3. MAIN HERO CONTENT (Center, ~75% Height - LAYER 1 & 3) */}
       <main className="flex-1 flex flex-col items-center justify-start relative z-10 w-full max-w-7xl mx-auto px-6 overflow-y-auto overflow-x-hidden scrollbar-hide">
@@ -539,7 +522,18 @@ export function VideoTypePage() {
         </div>
       </div>
       
+              </div>
+      </div>
+      
       <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
+      
+      {/* User Profile Sidebar (Moved outside header to avoid transform constraints) */}
+      <UserProfileSidebar
+        isOpen={isUserMenuOpen}
+        onClose={() => setIsUserMenuOpen(false)}
+        userName={userName}
+        onLogout={() => void handleLogout()}
+      />
       
       <AnimatePresence>
         {showLoginSuccess && (

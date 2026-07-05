@@ -2,10 +2,10 @@ import { useState, useEffect, lazy, Suspense } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { ConfigProvider, theme, Button, Modal, Row, Col, Card, Switch, Typography, Progress } from 'antd';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircleOutlined, GithubOutlined, TwitterOutlined, RocketOutlined, SearchOutlined, CloudUploadOutlined, CloudDownloadOutlined, ThunderboltOutlined, PictureOutlined, CodeOutlined, PlayCircleOutlined, ScissorOutlined, MessageOutlined, AudioOutlined, BgColorsOutlined, MobileOutlined, SoundOutlined, BulbOutlined, FieldTimeOutlined, SafetyCertificateOutlined, CloudServerOutlined, VideoCameraOutlined, CopyOutlined, FileImageOutlined, EditOutlined, CloseOutlined, SlidersOutlined, DiscordOutlined, ArrowRightOutlined } from '@ant-design/icons';
+import { CheckCircleOutlined, GithubOutlined, TwitterOutlined, RocketOutlined, SearchOutlined, CloudUploadOutlined, CloudDownloadOutlined, ThunderboltOutlined, PictureOutlined, CodeOutlined, PlayCircleOutlined, ScissorOutlined, MessageOutlined, AudioOutlined, BgColorsOutlined, MobileOutlined, SoundOutlined, BulbOutlined, FieldTimeOutlined, SafetyCertificateOutlined, CloudServerOutlined, VideoCameraOutlined, CopyOutlined, FileImageOutlined, EditOutlined, CloseOutlined, SlidersOutlined, DiscordOutlined, ArrowRightOutlined, InstagramOutlined, LinkedinOutlined, FacebookOutlined } from '@ant-design/icons';
 const LoginModal = lazy(() => import('../components/login-modal').then(m => ({ default: m.LoginModal })));
 import { BrandLogo } from '../components/brand-logo';
-import { Sparkles, Play, Video, Image as ImageIcon, Wand2, Music, CheckCircle2, Menu, Loader2, Star, Zap, Clapperboard, Globe, ShieldCheck, User, ChevronRight, ChevronDown, LogOut, Wallet } from 'lucide-react';
+import { Sparkles, Play, Video, Image as ImageIcon, Wand2, Music, CheckCircle2, Menu, Loader2, Star, Zap, Clapperboard, Globe, ShieldCheck, User, ChevronRight, ChevronDown, LogOut, Wallet, Mail, LifeBuoy, UserCircle, CreditCard, Lightbulb, Bug, Briefcase, Clock, X } from 'lucide-react';
 import { useAuth } from '../context/auth-context';
 import { getRoleRedirectUrl } from '../../lib/role-redirect';
 const PrivacyPolicyContent = lazy(() => import('../components/legal-policies-content').then(m => ({ default: m.PrivacyPolicyContent })));
@@ -19,6 +19,213 @@ import { FAQAccordion } from '../../components/faq-accordion';
 import { useSEO } from '../../hooks/use-seo';
 
 import { PricingSection } from '../../components/landing/pricing-section';
+
+// --- INLINED CONTACT MODAL COMPONENT ---
+interface ContactModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+function ContactModal({ isOpen, onClose }: ContactModalProps) {
+  if (!isOpen) return null;
+
+  const handleOverlayClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
+  const handleEmailClick = () => {
+    const subject = encodeURIComponent("VEYTRIX.AI Support Request");
+    const body = encodeURIComponent("Hello VEYTRIX.AI Team,\n\nI would like assistance regarding:\n\nThank you.");
+    window.location.href = `mailto:official@mavrostech.in?subject=${subject}&body=${body}`;
+  };
+
+  const helpTopics = [
+    {
+      icon: LifeBuoy,
+      title: "Technical Support",
+      description: "Having issues with AI generation, uploads, rendering, or exports? Our support team is ready to help."
+    },
+    {
+      icon: UserCircle,
+      title: "Account Assistance",
+      description: "Need help with login, profile, password recovery, verification, or account management."
+    },
+    {
+      icon: CreditCard,
+      title: "Billing & Subscription",
+      description: "Questions regarding plans, payments, refunds, credits, invoices, or wallet balance."
+    },
+    {
+      icon: Lightbulb,
+      title: "Feature Requests",
+      description: "Have an idea that could improve VEYTRIX.AI? We'd love to hear your suggestions."
+    },
+    {
+      icon: Bug,
+      title: "Report a Bug",
+      description: "Found a bug or unexpected behavior? Send us the details and screenshots so we can investigate."
+    },
+    {
+      icon: Briefcase,
+      title: "Business & Partnerships",
+      description: "For collaborations, enterprise plans, API integrations, or partnership opportunities."
+    }
+  ];
+
+  const responseTimes = [
+    { label: "General inquiries", time: "Within 24 hours" },
+    { label: "Technical issues", time: "Usually within 24–48 hours" },
+    { label: "Billing questions", time: "Within 1 business day" },
+    { label: "Critical platform issues", time: "High priority" }
+  ];
+
+  const checklist = [
+    "Check the Help Center",
+    "Review the FAQ",
+    "Ensure you're using the latest browser version",
+    "Include screenshots when reporting issues",
+    "Provide as much detail as possible to help us assist you faster"
+  ];
+
+  return (
+    <AnimatePresence mode="wait">
+      {isOpen && (
+        <div 
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6"
+          style={{ backgroundColor: "rgba(5, 5, 15, 0.55)", backdropFilter: "blur(12px)" }}
+          onClick={handleOverlayClick}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.28, ease: "easeOut" }}
+            className="relative w-full max-w-4xl max-h-[90vh] bg-[#0a0a10]/80 backdrop-blur-2xl border border-white/[0.08] rounded-[28px] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5),0_0_40px_rgba(168,85,247,0.1)] flex flex-col overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex-shrink-0 flex justify-between items-start p-8 pb-6 border-b border-white/5">
+              <div className="flex gap-5 items-start">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-fuchsia-500/20 to-purple-600/20 border border-fuchsia-500/30 flex items-center justify-center flex-shrink-0">
+                  <LifeBuoy className="w-7 h-7 text-fuchsia-400" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-white mb-2 tracking-tight">Contact Us</h2>
+                  <p className="text-slate-400 text-sm max-w-lg leading-relaxed">
+                    Need assistance? We're here to help. Reach out to our team for technical support, account issues, billing inquiries, feature suggestions, or business partnerships.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={onClose}
+                className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/50 hover:text-white transition-colors flex-shrink-0"
+                aria-label="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
+              
+              <section>
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4 flex items-center gap-2">
+                  <LifeBuoy className="w-4 h-4 text-purple-400" /> How can we help?
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {helpTopics.map((topic, i) => (
+                    <div key={i} className="p-4 bg-white/[0.02] border border-white/5 rounded-2xl hover:bg-white/[0.04] hover:border-purple-500/30 transition-all duration-300 group">
+                      <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center mb-3 group-hover:bg-purple-500/20 transition-colors">
+                        <topic.icon className="w-5 h-5 text-slate-300 group-hover:text-purple-400" />
+                      </div>
+                      <h4 className="text-white font-semibold mb-1">{topic.title}</h4>
+                      <p className="text-xs text-slate-400 leading-relaxed">{topic.description}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-8">
+                  <section>
+                    <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4 flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-purple-400" /> Support Response Time
+                    </h3>
+                    <div className="p-5 bg-white/[0.02] border border-white/5 rounded-2xl">
+                      <ul className="space-y-3">
+                        {responseTimes.map((item, i) => (
+                          <li key={i} className="flex justify-between items-center text-sm">
+                            <span className="text-slate-400">{item.label}:</span>
+                            <span className="text-white font-medium">{item.time}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </section>
+
+                  <section>
+                    <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4 flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-purple-400" /> Before Contacting Us
+                    </h3>
+                    <div className="p-5 bg-white/[0.02] border border-white/5 rounded-2xl">
+                      <ul className="space-y-3">
+                        {checklist.map((item, i) => (
+                          <li key={i} className="flex items-start gap-3 text-sm text-slate-300">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </section>
+                </div>
+
+                <div className="space-y-8 h-full">
+                  <section className="h-full flex flex-col min-h-[300px]">
+                    <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4 flex items-center gap-2">
+                      <Mail className="w-4 h-4 text-purple-400" /> Email Support
+                    </h3>
+                    <div className="p-6 bg-gradient-to-br from-purple-900/20 to-fuchsia-900/10 border border-purple-500/20 rounded-2xl flex-1 flex flex-col justify-center items-center text-center relative overflow-hidden group">
+                      <div className="absolute inset-0 bg-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                      
+                      <div className="w-16 h-16 rounded-full bg-purple-500/20 flex items-center justify-center mb-6 border border-purple-500/30">
+                        <Mail className="w-8 h-8 text-purple-400" />
+                      </div>
+                      
+                      <p className="text-sm text-slate-300 mb-6 max-w-sm">
+                        For all questions, technical support, feature requests, bug reports, or business inquiries, contact us directly.
+                      </p>
+                      
+                      <button
+                        onClick={handleEmailClick}
+                        className="w-full sm:w-auto px-8 py-4 bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 hover:border-purple-500/50 rounded-xl text-white font-semibold tracking-wide flex items-center justify-center gap-3 transition-all hover:scale-105"
+                      >
+                        <Mail className="w-5 h-5 text-purple-400" />
+                        official@mavrostech.in
+                      </button>
+                    </div>
+                  </section>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Footer */}
+            <div className="flex-shrink-0 p-5 border-t border-white/5 bg-white/[0.02] text-center">
+              <p className="text-xs text-slate-500 font-medium">
+                We appreciate your feedback and are committed to making VEYTRIX.AI better every day.
+              </p>
+            </div>
+
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+}
+// ----------------------------------------
 
 export function LandingPage() {
   const navigate = useNavigate();
@@ -47,6 +254,7 @@ export function LandingPage() {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [activeWorkflowModal, setActiveWorkflowModal] = useState<number | null>(null);
   const [isAIToolsModalOpen, setIsAIToolsModalOpen] = useState(false);
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
 
   const { session, isLoggedIn, isLoading, logout, profile } = useAuth();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -841,100 +1049,114 @@ export function LandingPage() {
         </section>
 
         {/* 4.5 AI TOOLS MODAL */}
-        <Modal
-          open={isAIToolsModalOpen}
-          onCancel={() => setIsAIToolsModalOpen(false)}
-          footer={null}
-          width={1000}
-          centered
-          styles={{
-            body: {
-              backgroundColor: isDarkMode ? '#0B0815' : 'white',
-              padding: '24px 20px',
-              overflow: 'hidden',
-              borderRadius: '24px',
-              border: '1px solid rgba(255,255,255,0.05)'
-            }
-          }}
-        >
-          <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-fuchsia-500/50 to-transparent"></div>
+        {/* 4.5 AI TOOLS MODAL */}
+        <AnimatePresence mode="wait">
+          {isAIToolsModalOpen && (
+            <div 
+              className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6"
+              style={{ backgroundColor: "rgba(5, 5, 15, 0.55)", backdropFilter: "blur(12px)" }}
+              onClick={() => setIsAIToolsModalOpen(false)}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.28, ease: "easeOut" }}
+                className="relative w-full max-w-5xl max-h-[90vh] bg-[#0a0a10]/80 backdrop-blur-2xl border border-white/[0.08] rounded-[28px] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5),0_0_40px_rgba(168,85,247,0.1)] flex flex-col overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex-shrink-0 flex justify-end p-6 border-b border-white/5">
+                  <button
+                    onClick={() => setIsAIToolsModalOpen(false)}
+                    className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/50 hover:text-white transition-colors flex-shrink-0"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                
+                <div className="flex-1 overflow-y-auto p-6 sm:p-10 custom-scrollbar relative">
+                  <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-fuchsia-500/50 to-transparent"></div>
 
-          <div className="max-w-5xl mx-auto relative z-10">
-            <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeInUp} className="text-center mb-6">
-              <h2 className="text-3xl font-black mb-2 leading-tight text-white drop-shadow-lg">
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-400 to-purple-400">AI Tools</span>
-              </h2>
-              <p className="text-[15px] opacity-70 max-w-2xl mx-auto leading-relaxed">
-                Powerful AI-powered creative tools built to generate, edit, and enhance cinematic videos in seconds.
-              </p>
-            </motion.div>
+                  <div className="max-w-5xl mx-auto relative z-10">
+                    <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeInUp} className="text-center mb-10">
+                      <h2 className="text-3xl font-black mb-3 leading-tight text-white drop-shadow-lg">
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-400 to-purple-400">AI Tools</span>
+                      </h2>
+                      <p className="text-[15px] opacity-70 max-w-2xl mx-auto leading-relaxed text-white">
+                        Powerful AI-powered creative tools built to generate, edit, and enhance cinematic videos in seconds.
+                      </p>
+                    </motion.div>
 
-            <Row gutter={[16, 16]} justify="center" className="mb-6">
-              {[
-                {
-                  title: 'AI Video Generation',
-                  desc: 'Generate stunning cinematic videos from simple text prompts using advanced AI models.',
-                  features: ['Text to Video', 'Cinematic Camera Motion', 'AI Scene Creation', 'HD & 4K Ready', 'Fast Cloud Rendering'],
-                  icon: <VideoCameraOutlined className="text-2xl text-fuchsia-400" />
-                },
-                {
-                  title: 'Reference Video Editing',
-                  desc: 'Upload a reference video and recreate its visual style, motion, composition, and atmosphere using AI.',
-                  features: ['Style Transfer', 'Motion Reference', 'Cinematic Recreation', 'AI Guided Editing', 'Visual Consistency'],
-                  icon: <CopyOutlined className="text-2xl text-purple-400" />
-                },
-                {
-                  title: 'Image to Video',
-                  desc: 'Transform static images into dynamic videos with realistic movement and cinematic animation.',
-                  features: ['Camera Zoom', 'Object Motion', 'AI Animation', 'Smooth Transitions', 'Social Media Ready'],
-                  icon: <FileImageOutlined className="text-2xl text-fuchsia-400" />
-                },
-                {
-                  title: 'AI Manual Edit',
-                  desc: 'Professional editing studio with AI-assisted controls for creators.',
-                  features: ['Premium Effects', 'Cinematic Filters', 'Advanced Transitions', 'Motion Tracking', 'Speed Control', 'AI Enhancement', 'Professional Timeline Editing'],
-                  icon: <SlidersOutlined className="text-2xl text-purple-400" />
-                }
-              ].map((tool, i) => (
-                <Col xs={24} md={12} key={i}>
-                  <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeInUp} className="h-full">
-                    <div className="h-full rounded-[1.5rem] p-5 border border-white/5 bg-gradient-to-b from-white/[0.03] to-transparent backdrop-blur-lg hover:border-fuchsia-500/30 hover:bg-white/[0.05] transition-all duration-300 transform hover:-translate-y-[3px] hover:shadow-[0_15px_40px_rgba(168,85,247,0.15)] group relative overflow-hidden">
-                      <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-fuchsia-500/20 to-transparent blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    <Row gutter={[20, 20]} justify="center" className="mb-10">
+                      {[
+                        {
+                          title: 'AI Video Generation',
+                          desc: 'Generate stunning cinematic videos from simple text prompts using advanced AI models.',
+                          features: ['Text to Video', 'Cinematic Camera Motion', 'AI Scene Creation', 'HD & 4K Ready', 'Fast Cloud Rendering'],
+                          icon: <VideoCameraOutlined className="text-2xl text-fuchsia-400" />
+                        },
+                        {
+                          title: 'Reference Video Editing',
+                          desc: 'Upload a reference video and recreate its visual style, motion, composition, and atmosphere using AI.',
+                          features: ['Style Transfer', 'Motion Reference', 'Cinematic Recreation', 'AI Guided Editing', 'Visual Consistency'],
+                          icon: <CopyOutlined className="text-2xl text-purple-400" />
+                        },
+                        {
+                          title: 'Image to Video',
+                          desc: 'Transform static images into dynamic videos with realistic movement and cinematic animation.',
+                          features: ['Camera Zoom', 'Object Motion', 'AI Animation', 'Smooth Transitions', 'Social Media Ready'],
+                          icon: <FileImageOutlined className="text-2xl text-fuchsia-400" />
+                        },
+                        {
+                          title: 'AI Manual Edit',
+                          desc: 'Professional editing studio with AI-assisted controls for creators.',
+                          features: ['Premium Effects', 'Cinematic Filters', 'Advanced Transitions', 'Motion Tracking', 'Speed Control', 'AI Enhancement', 'Professional Timeline Editing'],
+                          icon: <SlidersOutlined className="text-2xl text-purple-400" />
+                        }
+                      ].map((tool, i) => (
+                        <Col xs={24} md={12} key={i}>
+                          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeInUp} className="h-full">
+                            <div className="h-full rounded-[1.5rem] p-6 border border-white/5 bg-gradient-to-b from-white/[0.03] to-transparent backdrop-blur-lg hover:border-fuchsia-500/30 hover:bg-white/[0.05] transition-all duration-300 transform hover:-translate-y-[3px] hover:shadow-[0_15px_40px_rgba(168,85,247,0.15)] group relative overflow-hidden">
+                              <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-fuchsia-500/20 to-transparent blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
 
-                      <div className="bg-[#1A1528] w-10 h-10 rounded-lg flex items-center justify-center mb-3 shadow-lg border border-white/10 group-hover:border-fuchsia-500/50 transition-colors">
-                        {tool.icon}
-                      </div>
-                      <h3 className="text-lg font-bold mb-1 text-white group-hover:text-fuchsia-300 transition-colors">{tool.title}</h3>
-                      <p className="text-[13px] opacity-70 mb-3 leading-snug min-h-[36px]">{tool.desc}</p>
+                              <div className="bg-[#1A1528] w-12 h-12 rounded-xl flex items-center justify-center mb-4 shadow-lg border border-white/10 group-hover:border-fuchsia-500/50 transition-colors">
+                                {tool.icon}
+                              </div>
+                              <h3 className="text-xl font-bold mb-2 text-white group-hover:text-fuchsia-300 transition-colors">{tool.title}</h3>
+                              <p className="text-[14px] text-slate-400 mb-4 leading-snug min-h-[40px]">{tool.desc}</p>
 
-                      <div className="space-y-1.5">
-                        {tool.features.map((feature, j) => (
-                          <div key={j} className="flex items-center gap-2">
-                            <div className="w-1.5 h-1.5 rounded-full bg-fuchsia-500/80 shrink-0"></div>
-                            <span className="text-xs font-medium opacity-90">{feature}</span>
+                              <div className="space-y-2">
+                                {tool.features.map((feature, j) => (
+                                  <div key={j} className="flex items-center gap-3">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-fuchsia-500/80 shrink-0"></div>
+                                    <span className="text-xs font-medium text-slate-300 opacity-90">{feature}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </motion.div>
+                        </Col>
+                      ))}
+                    </Row>
+
+                    <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeInUp} className="max-w-4xl mx-auto rounded-[1.5rem] border border-white/10 bg-[#1A1528]/80 backdrop-blur-xl p-6 shadow-2xl relative overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-r from-fuchsia-600/10 to-purple-600/10 pointer-events-none" />
+                      <h3 className="text-lg font-black text-center mb-5 relative z-10 text-white drop-shadow-md">Why choose VEYTRIX.AI?</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 relative z-10">
+                        {['AI-powered rendering', 'Cinematic quality output', 'Lightning fast generation', 'Cloud processing', 'Commercial usage', 'Premium editing suite', '4K export support', 'Secure encrypted storage', 'Modern creator workflow'].map((benefit, idx) => (
+                          <div key={idx} className="flex items-center gap-3">
+                            <CheckCircleOutlined className="text-fuchsia-400 text-sm" />
+                            <span className="font-medium text-xs text-slate-300 opacity-90">{benefit}</span>
                           </div>
                         ))}
                       </div>
-                    </div>
-                  </motion.div>
-                </Col>
-              ))}
-            </Row>
-
-            <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeInUp} className="max-w-4xl mx-auto rounded-[1.5rem] border border-white/10 bg-[#1A1528]/80 backdrop-blur-xl p-5 shadow-2xl relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-r from-fuchsia-600/10 to-purple-600/10 pointer-events-none" />
-              <h3 className="text-lg font-black text-center mb-4 relative z-10 text-white drop-shadow-md">Why choose VEYTRIX.AI?</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 relative z-10">
-                {['AI-powered rendering', 'Cinematic quality output', 'Lightning fast generation', 'Cloud processing', 'Commercial usage', 'Premium editing suite', '4K export support', 'Secure encrypted storage', 'Modern creator workflow'].map((benefit, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
-                    <CheckCircleOutlined className="text-fuchsia-400 text-sm" />
-                    <span className="font-medium text-xs opacity-90">{benefit}</span>
+                    </motion.div>
                   </div>
-                ))}
-              </div>
-            </motion.div>
-          </div>
-        </Modal>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
 
         <PricingSection isDarkMode={isDarkMode} fadeInUp={fadeInUp} />
 
@@ -989,8 +1211,9 @@ export function LandingPage() {
                   The all-in-one AI platform for video generation, image animation, reference editing, and manual video enhancement.
                 </p>
                 <div className="mt-auto pt-4 opacity-50 text-xs">
-                  <p>© 2024 VEYTRIX. All rights reserved.</p>
+                  <p>© 2026 VEYTRIX. All rights reserved.</p>
                   <p className="mt-1 opacity-60">Built for creators, agencies, and brands.</p>
+                  <p className="mt-2 text-[13px] text-fuchsia-400 font-bold opacity-100">Associated under Mavros Tech Private Limited.</p>
                 </div>
               </div>
 
@@ -1004,7 +1227,7 @@ export function LandingPage() {
                     <li><a href="#how-it-works" className="hover:text-fuchsia-500 transition-colors block">Workflow</a></li>
                     <li><button onClick={(e) => { e.preventDefault(); setIsAIToolsModalOpen(true); }} className="hover:text-fuchsia-500 transition-colors block text-left w-full cursor-pointer bg-transparent border-none p-0 m-0 font-inherit text-inherit">AI Tools</button></li>
                     <li><a href="#faq" className="hover:text-fuchsia-500 transition-colors block">FAQ</a></li>
-                    <li><a href="#" className="hover:text-fuchsia-500 transition-colors block">Contact</a></li>
+                    <li><a href="#" onClick={(e) => { e.preventDefault(); setIsContactModalOpen(true); }} className="hover:text-fuchsia-500 transition-colors block">Contact</a></li>
                   </ul>
                 </div>
                 <div>
@@ -1026,10 +1249,15 @@ export function LandingPage() {
                   Start Free Trial
                 </Button>
 
-                <div className="flex items-center justify-start md:justify-end gap-5 text-2xl opacity-60 mt-2">
-                  <a href="#" className="hover:text-fuchsia-500 hover:opacity-100 hover:scale-110 hover:shadow-[0_0_10px_rgba(147,51,234,0.5)] rounded-full transition-all"><GithubOutlined /></a>
-                  <a href="#" className="hover:text-fuchsia-500 hover:opacity-100 hover:scale-110 hover:shadow-[0_0_10px_rgba(147,51,234,0.5)] rounded-full transition-all"><TwitterOutlined /></a>
-                  <a href="#" className="hover:text-fuchsia-500 hover:opacity-100 hover:scale-110 hover:shadow-[0_0_10px_rgba(147,51,234,0.5)] rounded-full transition-all"><DiscordOutlined /></a>
+                <div className="mt-2 text-right">
+                  <p className="text-xs opacity-50 uppercase tracking-widest font-bold mb-1">Email Support</p>
+                  <a href="mailto:official@mavrostech.in" className="text-sm font-semibold text-fuchsia-400 hover:text-fuchsia-300 transition-colors">official@mavrostech.in</a>
+                </div>
+
+                <div className="flex items-center justify-start md:justify-end gap-5 text-2xl opacity-60 mt-1">
+                  <a href="https://www.instagram.com/reel/DaOuV_kJo2m/?igsh=amhjdXlhbG40MTBh" target="_blank" rel="noopener noreferrer" className="hover:text-fuchsia-500 hover:opacity-100 hover:scale-110 hover:shadow-[0_0_10px_rgba(147,51,234,0.5)] rounded-full transition-all"><InstagramOutlined /></a>
+                  <a href="https://www.linkedin.com/company/mavros-tech/" target="_blank" rel="noopener noreferrer" className="hover:text-fuchsia-500 hover:opacity-100 hover:scale-110 hover:shadow-[0_0_10px_rgba(147,51,234,0.5)] rounded-full transition-all"><LinkedinOutlined /></a>
+                  <a href="#" className="hover:text-fuchsia-500 hover:opacity-100 hover:scale-110 hover:shadow-[0_0_10px_rgba(147,51,234,0.5)] rounded-full transition-all"><FacebookOutlined /></a>
                 </div>
 
                 <div className="flex flex-wrap justify-start md:justify-end items-center gap-x-4 gap-y-2 text-[10px] opacity-40 mt-4 font-bold uppercase tracking-wider">
@@ -1051,41 +1279,47 @@ export function LandingPage() {
               <span className="hidden sm:inline">•</span>
               <a href="#" onClick={(e) => { e.preventDefault(); setActiveLegalModal('acceptable'); }} className="hover:text-fuchsia-500 transition-colors cursor-pointer">Acceptable Use Policy</a>
               <span className="hidden sm:inline">•</span>
-              <a href="#" className="hover:text-fuchsia-500 transition-colors">Contact Us</a>
+              <a href="#" onClick={(e) => { e.preventDefault(); setIsContactModalOpen(true); }} className="hover:text-fuchsia-500 transition-colors">Contact Us</a>
             </div>
           </div>
         </footer>
 
         {/* LEGAL MODALS */}
-        <Modal
-          title={null}
-          open={!!activeLegalModal}
-          onCancel={() => setActiveLegalModal(null)}
-          footer={null}
-          width={800}
-          centered
-          closeIcon={false}
-          styles={{
-            body: { padding: '40px', position: 'relative' },
-            mask: { backdropFilter: 'blur(12px)', backgroundColor: 'rgba(0,0,0,0.6)' }
-          }}
-          className={isDarkMode ? 'dark-modal' : ''}
-        >
-          <button
-            onClick={() => setActiveLegalModal(null)}
-            className="absolute top-6 right-6 z-50 w-10 h-10 bg-black/10 dark:bg-white/10 rounded-full hover:bg-black/20 dark:hover:bg-white/20 transition-all text-gray-400 hover:text-white border-none cursor-pointer flex items-center justify-center"
-          >
-            <CloseOutlined className="text-xl" />
-          </button>
-          <div className="text-white max-h-[70vh] overflow-y-auto pr-4 custom-scrollbar">
-            <Suspense fallback={<div className="flex justify-center p-12"><Loader2 className="w-8 h-8 animate-spin text-fuchsia-500" /></div>}>
-              {activeLegalModal === 'privacy' && <PrivacyPolicyContent />}
-              {activeLegalModal === 'terms' && <TermsOfServiceContent />}
-              {activeLegalModal === 'refund' && <RefundPolicyContent />}
-              {activeLegalModal === 'acceptable' && <AcceptableUsePolicyContent />}
-            </Suspense>
-          </div>
-        </Modal>
+        <AnimatePresence mode="wait">
+          {!!activeLegalModal && (
+            <div 
+              className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6"
+              style={{ backgroundColor: "rgba(5, 5, 15, 0.55)", backdropFilter: "blur(12px)" }}
+              onClick={() => setActiveLegalModal(null)}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.28, ease: "easeOut" }}
+                className="relative w-full max-w-4xl max-h-[90vh] bg-[#0a0a10]/80 backdrop-blur-2xl border border-white/[0.08] rounded-[28px] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5),0_0_40px_rgba(168,85,247,0.1)] flex flex-col overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex-shrink-0 flex justify-end p-6 border-b border-white/5">
+                  <button
+                    onClick={() => setActiveLegalModal(null)}
+                    className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/50 hover:text-white transition-colors flex-shrink-0"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="flex-1 overflow-y-auto p-8 custom-scrollbar text-white">
+                  <Suspense fallback={<div className="flex justify-center p-12"><Loader2 className="w-8 h-8 animate-spin text-fuchsia-500" /></div>}>
+                    {activeLegalModal === 'privacy' && <PrivacyPolicyContent />}
+                    {activeLegalModal === 'terms' && <TermsOfServiceContent />}
+                    {activeLegalModal === 'refund' && <RefundPolicyContent />}
+                    {activeLegalModal === 'acceptable' && <AcceptableUsePolicyContent />}
+                  </Suspense>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
 
         {/* WORKFLOW PREMIUM MODALS */}
         <AnimatePresence>
@@ -1172,6 +1406,8 @@ export function LandingPage() {
         <Suspense fallback={null}>
           <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
         </Suspense>
+
+        <ContactModal isOpen={isContactModalOpen} onClose={() => setIsContactModalOpen(false)} />
       </div>
     </ConfigProvider>
   );

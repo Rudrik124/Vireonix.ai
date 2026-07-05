@@ -381,7 +381,7 @@ export function subscribeToThreatUpdates(
         schema: "public",
         table: "security_events",
       },
-      (payload) => {
+      (payload: any) => {
         const event = payload.new as any;
         const metadata = typeof event.metadata === "string" ? JSON.parse(event.metadata) : event.metadata;
         const geoData = extractCountryFromIP(metadata);

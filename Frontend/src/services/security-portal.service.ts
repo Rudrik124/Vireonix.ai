@@ -283,7 +283,7 @@ export function subscribeToSecurityPortalActivity(
         table: "security_events",
         filter: "category=eq.SECURITY_PORTAL",
       },
-      (payload) => {
+      (payload: any) => {
         const event = payload.new as any;
         const metadata = typeof event.metadata === "string" ? JSON.parse(event.metadata) : event.metadata;
 

@@ -258,7 +258,7 @@ export async function getDashboardStats() {
       .select('credits_charged');
 
     const creditsConsumed = (creditData || []).reduce(
-      (sum, log) => sum + (log.credits_charged || 0),
+      (sum: any, log: any) => sum + (log.credits_charged || 0),
       0
     );
 
@@ -332,7 +332,7 @@ export async function getAnalytics(timeRange: '7d' | '30d' | '90d' = '7d') {
       .gt('created_at', startDateIso);
 
     const userCounts: Record<string, number> = {};
-    (allUsers || []).forEach((log) => {
+    (allUsers || []).forEach((log: any) => {
       userCounts[log.user_id] = (userCounts[log.user_id] || 0) + 1;
     });
 
@@ -349,7 +349,7 @@ export async function getAnalytics(timeRange: '7d' | '30d' | '90d' = '7d') {
 
     // Aggregate by feature
     const featureStats: Record<string, { count: number; creditsUsed: number }> = {};
-    (featureUsage || []).forEach((log) => {
+    (featureUsage || []).forEach((log: any) => {
       if (!featureStats[log.feature_key]) {
         featureStats[log.feature_key] = { count: 0, creditsUsed: 0 };
       }
@@ -391,7 +391,7 @@ export async function getUserList(page: number = 1, limit: number = 20) {
       .range(offset, offset + limit - 1);
 
     return {
-      users: (users || []).map((u) => ({
+      users: (users || []).map((u: any) => ({
         id: u.id,
         email: u.email,
         name: u.full_name || 'N/A',
@@ -481,7 +481,7 @@ export async function getFeedback(limit: number = 50) {
         .order('created_at', { ascending: false })
         .limit(limit);
 
-      return (logs || []).map((log) => ({
+      return (logs || []).map((log: any) => ({
         id: log.id,
         title: log.metadata?.title || 'Feedback',
         description: log.metadata?.description || '',

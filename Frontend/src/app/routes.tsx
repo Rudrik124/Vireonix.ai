@@ -272,6 +272,142 @@ export const router = createBrowserRouter([
           </PortalGate>
         ),
       },
+      {
+        path: "/profile",
+        element: (
+          <PortalGate portal="user">
+            <Outlet />
+          </PortalGate>
+        ),
+        children: [
+          {
+            index: true,
+            async lazy() {
+              const { ProfilePage } = await import("./components/profile");
+              return { Component: ProfilePage };
+            }
+          }
+        ]
+      },
+      {
+        path: "/history",
+        element: (
+          <PortalGate portal="user">
+            <Outlet />
+          </PortalGate>
+        ),
+        children: [
+          {
+            index: true,
+            async lazy() {
+              const { HistoryPage } = await import("./components/history");
+              return { Component: HistoryPage };
+            }
+          }
+        ]
+      },
+      {
+        path: "/help-center",
+        element: (
+          <PortalGate portal="user">
+            <Outlet />
+          </PortalGate>
+        ),
+        children: [
+          {
+            index: true,
+            async lazy() {
+              const { HelpCenterPage } = await import("./components/help-center");
+              return { Component: HelpCenterPage };
+            }
+          }
+        ]
+      },
+      {
+        path: "/report-bug",
+        element: (
+          <PortalGate portal="user">
+            <Outlet />
+          </PortalGate>
+        ),
+        children: [
+          {
+            index: true,
+            async lazy() {
+              const { ReportBugPage } = await import("./components/report-bug");
+              return { Component: ReportBugPage };
+            }
+          }
+        ]
+      },
+      {
+        path: "/security",
+        element: (
+          <PortalGate portal="user">
+            <Outlet />
+          </PortalGate>
+        ),
+        children: [
+          {
+            index: true,
+            async lazy() {
+              const { SecurityPage } = await import("./components/security");
+              return { Component: SecurityPage };
+            }
+          }
+        ]
+      },
+      {
+        path: "/notifications",
+        element: (
+          <PortalGate portal="user">
+            <Outlet />
+          </PortalGate>
+        ),
+        children: [
+          {
+            index: true,
+            async lazy() {
+              const { NotificationsPage } = await import("./components/notifications");
+              return { Component: NotificationsPage };
+            }
+          }
+        ]
+      },
+      {
+        path: "/downloads",
+        element: (
+          <PortalGate portal="user">
+            <Outlet />
+          </PortalGate>
+        ),
+        children: [
+          {
+            index: true,
+            async lazy() {
+              const { DownloadsPage } = await import("./components/downloads");
+              return { Component: DownloadsPage };
+            }
+          }
+        ]
+      },
+      {
+        path: "/uploads",
+        element: (
+          <PortalGate portal="user">
+            <Outlet />
+          </PortalGate>
+        ),
+        children: [
+          {
+            index: true,
+            async lazy() {
+              const { UploadsPage } = await import("./components/uploads");
+              return { Component: UploadsPage };
+            }
+          }
+        ]
+      },
       // Legacy routes for backward compatibility
       {
         path: "/app",

@@ -217,7 +217,7 @@ export async function fetchEndpointMetrics(
       threatScores: number[];
     }>();
 
-    (data || []).forEach((event) => {
+    (data || []).forEach((event: any) => {
       const endpoint = (event.metadata as any)?.endpoint || 'unknown';
       const method = (event.metadata as any)?.method || 'GET';
       const responseTime = (event.metadata as any)?.response_time_ms || 0;
@@ -228,8 +228,8 @@ export async function fetchEndpointMetrics(
         totalRequests: 0,
         blockedRequests: 0,
         errors: 0,
-        responseTimes: [],
-        threatScores: [],
+        responseTimes: [] as number[],
+        threatScores: [] as number[],
       };
 
       existing.totalRequests += 1;
@@ -283,7 +283,7 @@ export async function fetchMostAttackedEndpoints(
       severity: string;
     }>();
 
-    (data || []).forEach((event) => {
+    (data || []).forEach((event: any) => {
       const key = `${event.ip_address || 'anonymous'}_${(event.metadata as any)?.endpoint || 'unknown'}`;
       const existing = patternMap.get(key) || {
         attack_count: 0,
@@ -337,7 +337,7 @@ export async function fetchAPIActivityTrends(days: number = 7): Promise<{
 
     const trendMap = new Map<string, { requests: number; blocked: number; errors: number; bots: number }>();
 
-    (data || []).forEach((event) => {
+    (data || []).forEach((event: any) => {
       const date = new Date(event.created_at).toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
@@ -376,7 +376,7 @@ export function subscribeToAPISecurityEvents(callback: (event: APISecurityEvent)
         table: 'security_events',
         filter: `category=eq.API`,
       },
-      (payload) => {
+      (payload: any) => {
         callback(payload.new as APISecurityEvent);
       }
     )

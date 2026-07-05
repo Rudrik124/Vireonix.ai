@@ -61,24 +61,26 @@ export async function fetchSecurityOverviewMetrics(): Promise<SecurityOverviewMe
 
     if (securityError) throw securityError;
 
+    const events = (securityEvents || []) as Array<{ action: string; severity: string }>;
+
     // Calculate metrics from security events
-    const filesUploadedToday = securityEvents?.filter(
+    const filesUploadedToday = events.filter(
       (e) => e.action === 'UPLOAD_SUCCESS'
     ).length || 0;
 
-    const blockedPromptsToday = securityEvents?.filter(
+    const blockedPromptsToday = events.filter(
       (e) => e.action === 'PROMPT_BLOCKED'
     ).length || 0;
 
-    const blockedUploadsToday = securityEvents?.filter(
+    const blockedUploadsToday = events.filter(
       (e) => e.action === 'UPLOAD_REJECTED'
     ).length || 0;
 
-    const failedLoginsToday = securityEvents?.filter(
+    const failedLoginsToday = events.filter(
       (e) => e.action === 'LOGIN_FAILURE'
     ).length || 0;
 
-    const securityAlertsTodayCount = securityEvents?.filter(
+    const securityAlertsTodayCount = events.filter(
       (e) => e.severity === 'CRITICAL'
     ).length || 0;
 
@@ -117,6 +119,8 @@ export async function fetchSecurityOverviewMetrics(): Promise<SecurityOverviewMe
   }
 }
 
+import { socketService } from '../lib/socket';
+
 /**
  * Set up real-time listeners for security overview metrics
  * Calls the callback whenever security_events or login_activity changes
@@ -124,87 +128,31 @@ export async function fetchSecurityOverviewMetrics(): Promise<SecurityOverviewMe
 export function subscribeToSecurityOverviewUpdates(
   callback: (metrics: Partial<SecurityOverviewMetrics>) => void
 ): () => void {
-  if (!supabase) {
-    console.warn('Supabase not configured');
-    return () => { };
-  }
+  const socket = socketService.connect();
 
-  const channels: any[] = [];
-
-  // Subscribe to security_events changes
-  const securityChannel = supabase.channel('security_overview_events');
-  securityChannel.on(
-    'postgres_changes',
-    {
-      event: 'INSERT',
-      schema: 'public',
-      table: 'security_events',
-    },
-    (payload) => {
-      // Trigger a refresh by fetching updated metrics
-      fetchSecurityOverviewMetrics().then((metrics) => {
-        callback({
-          blockedPromptsToday: metrics.blockedPromptsToday,
-          blockedUploadsToday: metrics.blockedUploadsToday,
-          failedLoginsToday: metrics.failedLoginsToday,
-          securityAlertsTodayCount: metrics.securityAlertsTodayCount,
-          filesUploadedToday: metrics.filesUploadedToday,
-        });
+  const handleUpdate = () => {
+    // Trigger a refresh by fetching updated metrics
+    fetchSecurityOverviewMetrics().then((metrics) => {
+      callback({
+        blockedPromptsToday: metrics.blockedPromptsToday,
+        blockedUploadsToday: metrics.blockedUploadsToday,
+        failedLoginsToday: metrics.failedLoginsToday,
+        securityAlertsTodayCount: metrics.securityAlertsTodayCount,
+        filesUploadedToday: metrics.filesUploadedToday,
+        activeUsersToday: metrics.activeUsersToday,
+        videosGeneratedToday: metrics.videosGeneratedToday,
       });
-    }
-  );
+    });
+  };
 
-  securityChannel.subscribe();
-  channels.push(securityChannel);
-
-  // Subscribe to login_activity changes
-  const loginChannel = supabase.channel('security_overview_logins');
-  loginChannel.on(
-    'postgres_changes',
-    {
-      event: 'INSERT',
-      schema: 'public',
-      table: 'login_activity',
-    },
-    (payload) => {
-      // Trigger a refresh
-      fetchSecurityOverviewMetrics().then((metrics) => {
-        callback({
-          activeUsersToday: metrics.activeUsersToday,
-        });
-      });
-    }
-  );
-
-  loginChannel.subscribe();
-  channels.push(loginChannel);
-
-  // Subscribe to usage_logs changes for videos
-  const usageChannel = supabase.channel('security_overview_usage');
-  usageChannel.on(
-    'postgres_changes',
-    {
-      event: 'INSERT',
-      schema: 'public',
-      table: 'usage_logs',
-    },
-    (payload) => {
-      // Trigger a refresh
-      fetchSecurityOverviewMetrics().then((metrics) => {
-        callback({
-          videosGeneratedToday: metrics.videosGeneratedToday,
-        });
-      });
-    }
-  );
-
-  usageChannel.subscribe();
-  channels.push(usageChannel);
+  socket.on('security_overview_events', handleUpdate);
+  socket.on('security_overview_logins', handleUpdate);
+  socket.on('security_overview_usage', handleUpdate);
 
   // Return cleanup function
   return () => {
-    channels.forEach((channel) => {
-      supabase.removeChannel(channel);
-    });
+    socket.off('security_overview_events', handleUpdate);
+    socket.off('security_overview_logins', handleUpdate);
+    socket.off('security_overview_usage', handleUpdate);
   };
 }

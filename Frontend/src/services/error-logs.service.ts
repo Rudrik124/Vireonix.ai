@@ -114,7 +114,7 @@ export async function fetchErrorsByModule(): Promise<Record<string, number>> {
     }
 
     const grouped: Record<string, number> = {};
-    (data || []).forEach((log) => {
+    (data || []).forEach((log: any) => {
       grouped[log.module] = (grouped[log.module] || 0) + 1;
     });
 
@@ -168,12 +168,12 @@ export async function fetchErrorSummary(): Promise<{
     const logs = data || [];
     return {
       total: logs.length,
-      openCount: logs.filter((l) => l.status === 'open').length,
-      resolvedCount: logs.filter((l) => l.status === 'resolved').length,
-      criticalCount: logs.filter((l) => l.severity === 'critical').length,
-      highCount: logs.filter((l) => l.severity === 'high').length,
-      mediumCount: logs.filter((l) => l.severity === 'medium').length,
-      lowCount: logs.filter((l) => l.severity === 'low').length,
+      openCount: logs.filter((l: any) => l.status === 'open').length,
+      resolvedCount: logs.filter((l: any) => l.status === 'resolved').length,
+      criticalCount: logs.filter((l: any) => l.severity === 'critical').length,
+      highCount: logs.filter((l: any) => l.severity === 'high').length,
+      mediumCount: logs.filter((l: any) => l.severity === 'medium').length,
+      lowCount: logs.filter((l: any) => l.severity === 'low').length,
     };
   } catch (err) {
     console.error('Exception fetching error summary:', err);

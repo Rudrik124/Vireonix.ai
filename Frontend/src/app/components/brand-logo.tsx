@@ -43,17 +43,9 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({ className, size = 56 }) =>
   }, []);
 
   return (
-    <motion.img 
+    <img 
       src={logoSrc} 
       alt="Veytrix.Ai Logo"
-      animate={{
-        y: [0, -5, 0],
-      }}
-      transition={{
-        duration: 4,
-        repeat: Infinity,
-        ease: "easeInOut"
-      }}
       style={{ 
         width: size, 
         height: size,

@@ -158,7 +158,7 @@ export async function fetchAuditLogStats(): Promise<AuditLogStats[]> {
     if (error) throw error;
 
     const logs = data || [];
-    const stats: Record<AuditEventType, { count: number; severity: AuditSeverity; lastEvent?: string }> = {
+    const stats: Record<string, { count: number; severity: AuditSeverity; lastEvent?: string }> = {
       LOGIN: { count: 0, severity: "INFO" },
       LOGOUT: { count: 0, severity: "INFO" },
       UPLOAD: { count: 0, severity: "INFO" },
@@ -316,7 +316,7 @@ export async function exportAuditLogsToCSV(
     // Combine headers and rows
     const csvContent = [
       headers.map((h) => `"${h}"`).join(","),
-      ...rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")),
+      ...rows.map((row: any) => row.map((cell: any) => `"${String(cell).replace(/"/g, '""')}"`).join(",")),
     ].join("\n");
 
     return csvContent;
@@ -440,7 +440,7 @@ export function subscribeToAuditLogs(
         schema: "public",
         table: "audit_logs",
       },
-      (payload) => {
+      (payload: any) => {
         callback(payload.new as AuditLogEvent);
       }
     )

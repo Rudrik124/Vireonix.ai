@@ -154,7 +154,7 @@ export async function fetchAuthMonitoringStats(
 
     if (error) throw error;
 
-    const events = data || [];
+    const events = (data || []) as AuthenticationEvent[];
 
     // Calculate statistics
     const stats: AuthMonitoringStats = {
@@ -235,7 +235,7 @@ export async function fetchIPTracking(
       }
     >();
 
-    (data || []).forEach((event: AuthSecurityEvent) => {
+    (data || []).forEach((event: AuthenticationEvent) => {
       if (!event.ip_address) return;
 
       const existing = ipMap.get(event.ip_address) || {
@@ -292,7 +292,7 @@ export async function fetchDeviceInformation(): Promise<{
     const deviceMap = new Map<string, number>();
     let total = 0;
 
-    (data || []).forEach((event: AuthSecurityEvent) => {
+    (data || []).forEach((event: AuthenticationEvent) => {
       const device = event.metadata?.device_type || 'Unknown';
       deviceMap.set(device, (deviceMap.get(device) || 0) + 1);
       total++;
@@ -336,7 +336,7 @@ export async function fetchBrowserInformation(): Promise<{
     const browserMap = new Map<string, number>();
     let total = 0;
 
-    (data || []).forEach((event: AuthSecurityEvent) => {
+    (data || []).forEach((event: AuthenticationEvent) => {
       const browser = event.metadata?.browser || 'Unknown';
       browserMap.set(browser, (browserMap.get(browser) || 0) + 1);
       total++;
@@ -358,36 +358,24 @@ export async function fetchBrowserInformation(): Promise<{
   }
 }
 
+import { socketService } from '../lib/socket';
+
 /**
  * Subscribe to real-time authentication event updates
  */
 export function subscribeToAuthenticationEvents(
   callback: (event: AuthenticationEvent) => void
 ): () => void {
-  if (!supabase) {
-    console.warn('Supabase not configured');
-    return () => { };
-  }
+  const socket = socketService.connect();
 
-  const channel = supabase.channel('auth_monitoring');
+  const handleEvent = (payload: any) => {
+    callback(payload as AuthenticationEvent);
+  };
 
-  channel.on(
-    'postgres_changes',
-    {
-      event: 'INSERT',
-      schema: 'public',
-      table: 'security_events',
-      filter: `category=eq.AUTH`,
-    },
-    (payload) => {
-      callback(payload.new as AuthenticationEvent);
-    }
-  );
-
-  channel.subscribe();
+  socket.on('auth-events', handleEvent);
 
   return () => {
-    supabase.removeChannel(channel);
+    socket.off('auth-events', handleEvent);
   };
 }
 
@@ -418,21 +406,21 @@ export async function detectSuspiciousLogins(userId: string): Promise<{
     const events = recentEvents || [];
 
     // Check for multiple failed logins
-    const failedCount = events.filter((e) => e.action === 'LOGIN_FAILURE').length;
+    const failedCount = events.filter((e: any) => e.action === 'LOGIN_FAILURE').length;
     if (failedCount >= 3) {
       riskScore += 30;
       reasons.push(`${failedCount} failed login attempts`);
     }
 
     // Check for rapid location changes (different IPs in short time)
-    const uniqueIPs = new Set(events.map((e) => e.ip_address));
+    const uniqueIPs = new Set(events.map((e: any) => e.ip_address));
     if (uniqueIPs.size >= 2 && events.length >= 2) {
       riskScore += 25;
       reasons.push('Login from multiple IP addresses');
     }
 
     // Check for suspicious devices
-    const suspiciousDevices = events.filter((e) => e.metadata?.risk_score && e.metadata.risk_score > 50);
+    const suspiciousDevices = events.filter((e: any) => e.metadata?.risk_score && e.metadata.risk_score > 50);
     if (suspiciousDevices.length > 0) {
       riskScore += 20;
       reasons.push(`${suspiciousDevices.length} logins from suspicious devices`);
@@ -440,7 +428,7 @@ export async function detectSuspiciousLogins(userId: string): Promise<{
 
     // Check for unusual browser/OS combination
     const oddCombos = events.filter(
-      (e) => e.metadata?.browser === 'Unknown' || e.metadata?.operating_system === 'Unknown'
+      (e: any) => e.metadata?.browser === 'Unknown' || e.metadata?.operating_system === 'Unknown'
     );
     if (oddCombos.length >= 2) {
       riskScore += 15;

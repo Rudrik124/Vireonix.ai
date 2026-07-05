@@ -91,7 +91,7 @@ export async function fetchAICostMetrics(
       .gte('created_at', todayStart)
       .lt('created_at', todayEnd);
 
-    const estimatedCostToday = (todayData || []).reduce((sum, event) => {
+    const estimatedCostToday = (todayData || []).reduce((sum: any, event: any) => {
       return sum + ((event.metadata as any)?.cost || 0);
     }, 0);
 
@@ -111,7 +111,7 @@ export async function fetchAICostMetrics(
       .gte('created_at', start)
       .lte('created_at', end);
 
-    const totalCost = (periodData || []).reduce((sum, event) => {
+    const totalCost = (periodData || []).reduce((sum: any, event: any) => {
       return sum + ((event.metadata as any)?.cost || 0);
     }, 0);
 
@@ -123,7 +123,7 @@ export async function fetchAICostMetrics(
       .gte('created_at', start)
       .lte('created_at', end);
 
-    const uniqueUsers = new Set((usersData || []).map((u) => u.user_id).filter(Boolean)).size;
+    const uniqueUsers = new Set((usersData || []).map((u: any) => u.user_id).filter(Boolean)).size;
     const costPerUser = uniqueUsers > 0 ? totalCost / uniqueUsers : 0;
 
     // Get features count
@@ -135,7 +135,7 @@ export async function fetchAICostMetrics(
       .lte('created_at', end);
 
     const featureSet = new Set(
-      (featuresData || []).map((f) => (f.metadata as any)?.feature || 'unknown').filter(Boolean)
+      (featuresData || []).map((f: any) => (f.metadata as any)?.feature || 'unknown').filter(Boolean)
     );
     const costPerFeature = featureSet.size > 0 ? totalCost / featureSet.size : 0;
 
@@ -223,7 +223,7 @@ export async function fetchFeatureCostBreakdown(
 
     const featureMap = new Map<string, { count: number; costs: number[] }>();
 
-    (data || []).forEach((event) => {
+    (data || []).forEach((event: any) => {
       const feature = event.action || 'unknown';
       const cost = (event.metadata as any)?.cost || 0;
 
@@ -270,7 +270,7 @@ export async function fetchCostTrends(
 
     const trendMap = new Map<string, { requests: number; costs: number[] }>();
 
-    (data || []).forEach((event) => {
+    (data || []).forEach((event: any) => {
       let dateKey: string;
 
       if (period === 'daily') {
@@ -326,7 +326,7 @@ export function subscribeToAICostEvents(callback: (event: AICostEvent) => void):
         table: 'security_events',
         filter: `category=eq.AI_COST`,
       },
-      (payload) => {
+      (payload: any) => {
         callback(payload.new as AICostEvent);
       }
     )
