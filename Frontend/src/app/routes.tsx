@@ -30,9 +30,7 @@ import { DeveloperCostsPage } from "../portals/developer/pages/developer-costs-p
 import { DeveloperLogsPage } from "../portals/developer/pages/developer-logs-page";
 import { DeveloperOperationsPage } from "../portals/developer/pages/developer-operations-page";
 import { DeveloperWorkflowLabPage } from "../portals/developer/pages/developer-workflow-lab-page";
-// Admin Portal
-import { AdminDashboardPage } from "../portals/admin/pages/admin-dashboard-page";
-import { TestingCredentialsPage } from "../portals/admin/pages/testing-credentials-page";
+
 // Tester Portal
 import { TesterDashboardPage } from "../portals/tester/pages/tester-dashboard-page";
 import { TesterTestEnvironmentPage } from "../portals/tester/pages/tester-test-environment-page";
@@ -42,8 +40,10 @@ import { TesterCreditsPage } from "../portals/tester/pages/tester-credits-page";
 import { TesterProfilePage } from "../portals/tester/pages/tester-profile-page";
 import { TesterAnalyticsPage } from "../portals/tester/pages/tester-analytics-page";
 import { TesterFeedbackPage } from "../portals/tester/pages/tester-feedback-page";
+
 // User Portal
 import { UserDashboardPage } from "../portals/user/pages/user-dashboard-page";
+
 // Security Portal
 import { SecurityPortalGate } from "../shared/routing/security-portal-gate";
 import { SecurityPortalDashboardPage } from "../portals/security/pages/security-portal-dashboard-page";

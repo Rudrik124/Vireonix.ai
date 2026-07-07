@@ -47,12 +47,17 @@ const getInternalFallbackProfile = (user) => {
     return { id: user.id, email: user.email, role: "admin" };
   }
 
-  if (email === "developer@veytrix.ai") {
+  if (email === "developer@veytrix.ai" || email === "official@mavrostech.in") {
     return { id: user.id, email: user.email, role: "developer" };
   }
 
   if (email === "tester@veeytrix.ai" || email === "tester@veytrix.ai") {
     return { id: user.id, email: user.email, role: "tester" };
+  }
+
+  // Fallback for local development or if user is somehow authenticated but missing a profile
+  if (process.env.NODE_ENV !== "production") {
+    return { id: user.id, email: user.email, role: "developer" };
   }
 
   return null;
@@ -428,12 +433,12 @@ const fetchCloudflarePortalOverview = async () => {
 router.get("/api/developer/dashboard/stats", verifyDeveloperAccess, async (req, res) => {
   console.log("Dashboard request received");
   console.log("Authenticated user:", req.user);
-  
+
   try {
     const supabaseClient = getSupabaseClient();
     console.log("Database connection: Supabase client initialized");
     console.log("Executing dashboard queries...");
-    
+
     // Get total users from auth
     let totalUsers = 0;
     try {
@@ -826,7 +831,7 @@ router.post("/api/developer/users/:userId/credits/add", verifyDeveloperAccess, a
     res.json({ success: true, newBalance });
   } catch (error) {
     console.error("Add credits error:", error);
-    
+
     // Log security event for failed admin action
     await logSecurityEvent({
       userId: req.user.id,
@@ -995,312 +1000,312 @@ router.get("/api/developer/credits/stats", verifyDeveloperAccess, async (req, re
   }
 });
 
-    // ============ LOGIN ACTIVITY ============
+// ============ LOGIN ACTIVITY ============
 
-    /**
-     * POST /api/developer/login-activity/record
-     * Records a login or logout event. Any authenticated user can record their own activity.
-     * Expects { user_id, user_name, user_role, session_id, event: 'login'|'logout', device_name, browser, operating_system, ip_address }
-     */
-    router.post(
-      "/api/developer/login-activity/record",
-      async (req, res) => {
-        try {
-          const token = getBearerToken(req);
-          if (!token) {
-            return res.status(401).json({ error: "Unauthorized" });
-          }
-
-          const { data: { user }, error: userError } = await getSupabaseClient().auth.getUser(token);
-          if (userError || !user) {
-            return res.status(401).json({ error: "Unauthorized" });
-          }
-
-          const payload = req.body || {};
-          const event = payload.event || "login";
-          const sessionId = payload.session_id || payload.sessionId || payload.session || null;
-
-          if (!payload.user_id) return res.status(400).json({ error: "Missing user_id" });
-
-          if (event === "login") {
-            // If IP isn't provided, attempt to extract from request headers
-            const ip = payload.ip_address || req.headers["x-forwarded-for"] || req.ip || req.socket?.remoteAddress || null;
-            const activityRow = {
-              user_id: payload.user_id,
-              user_name: payload.user_name || user?.user_metadata?.full_name || user?.email,
-              user_email: payload.user_email || user?.email || null,
-              user_role: payload.user_role || "user",
-              session_id: sessionId,
-              login_time: new Date().toISOString(),
-              device_name: payload.device_name,
-              browser: payload.browser,
-              operating_system: payload.operating_system,
-              ip_address: ip,
-              status: "active",
-              metadata: payload.metadata || {},
-            };
-
-            let insertResult = await getSupabaseClient().from("login_activity").insert(activityRow);
-            if (insertResult.error) {
-              const message = String(insertResult.error.message || "").toLowerCase();
-              const isMissingColumnError = insertResult.error.code === "42703" || message.includes("column") && message.includes("not found");
-
-              if (isMissingColumnError) {
-                const { error: retryError } = await getSupabaseClient().from("login_activity").insert({
-                  ...activityRow,
-                  user_email: undefined,
-                });
-                if (retryError) throw retryError;
-              } else {
-                throw insertResult.error;
-              }
-            }
-
-            return res.json({ success: true });
-          }
-
-          if (event === "logout") {
-            // find active session by session_id or user_id
-            const match = sessionId ? { session_id: sessionId } : { user_id: payload.user_id, status: "active" };
-            const logoutTime = new Date().toISOString();
-
-            const { data: activeSessions, error: findErr } = await getSupabaseClient()
-              .from("login_activity")
-              .select("id, login_time")
-              .match(match);
-
-            if (findErr) throw findErr;
-
-            const updates = (activeSessions || []).map((s) => ({
-              id: s.id,
-              logout_time: logoutTime,
-              session_duration: Math.max(0, Math.floor((new Date(logoutTime) - new Date(s.login_time)) / 1000)),
-              status: "logged_out",
-              updated_at: new Date().toISOString(),
-            }));
-
-            for (const u of updates) {
-              const { error: updErr } = await getSupabaseClient().from("login_activity").update(u).eq("id", u.id);
-              if (updErr) console.warn("Failed to update logout for session", u.id, updErr.message);
-            }
-
-            return res.json({ success: true, updated: updates.length });
-          }
-
-          return res.status(400).json({ error: "Unknown event type" });
-        } catch (error) {
-          console.error("Record login activity error:", error);
-          res.status(500).json({ error: "Failed to record login activity" });
-        }
+/**
+ * POST /api/developer/login-activity/record
+ * Records a login or logout event. Any authenticated user can record their own activity.
+ * Expects { user_id, user_name, user_role, session_id, event: 'login'|'logout', device_name, browser, operating_system, ip_address }
+ */
+router.post(
+  "/api/developer/login-activity/record",
+  async (req, res) => {
+    try {
+      const token = getBearerToken(req);
+      if (!token) {
+        return res.status(401).json({ error: "Unauthorized" });
       }
-    );
 
-    /**
-     * GET /api/developer/login-activity/active
-     * Returns active sessions. Query params: page, limit
-     */
-    router.get("/api/developer/login-activity/active", verifyDeveloperAccess, async (req, res) => {
-      try {
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 50;
-        const offset = (page - 1) * limit;
+      const { data: { user }, error: userError } = await getSupabaseClient().auth.getUser(token);
+      if (userError || !user) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
 
-        const { data, error } = await getSupabaseClient()
+      const payload = req.body || {};
+      const event = payload.event || "login";
+      const sessionId = payload.session_id || payload.sessionId || payload.session || null;
+
+      if (!payload.user_id) return res.status(400).json({ error: "Missing user_id" });
+
+      if (event === "login") {
+        // If IP isn't provided, attempt to extract from request headers
+        const ip = payload.ip_address || req.headers["x-forwarded-for"] || req.ip || req.socket?.remoteAddress || null;
+        const activityRow = {
+          user_id: payload.user_id,
+          user_name: payload.user_name || user?.user_metadata?.full_name || user?.email,
+          user_email: payload.user_email || user?.email || null,
+          user_role: payload.user_role || "user",
+          session_id: sessionId,
+          login_time: new Date().toISOString(),
+          device_name: payload.device_name,
+          browser: payload.browser,
+          operating_system: payload.operating_system,
+          ip_address: ip,
+          status: "active",
+          metadata: payload.metadata || {},
+        };
+
+        let insertResult = await getSupabaseClient().from("login_activity").insert(activityRow);
+        if (insertResult.error) {
+          const message = String(insertResult.error.message || "").toLowerCase();
+          const isMissingColumnError = insertResult.error.code === "42703" || message.includes("column") && message.includes("not found");
+
+          if (isMissingColumnError) {
+            const { error: retryError } = await getSupabaseClient().from("login_activity").insert({
+              ...activityRow,
+              user_email: undefined,
+            });
+            if (retryError) throw retryError;
+          } else {
+            throw insertResult.error;
+          }
+        }
+
+        return res.json({ success: true });
+      }
+
+      if (event === "logout") {
+        // find active session by session_id or user_id
+        const match = sessionId ? { session_id: sessionId } : { user_id: payload.user_id, status: "active" };
+        const logoutTime = new Date().toISOString();
+
+        const { data: activeSessions, error: findErr } = await getSupabaseClient()
           .from("login_activity")
-          .select("*")
-          .eq("status", "active")
-          .order("login_time", { ascending: false })
-          .range(offset, offset + limit - 1);
+          .select("id, login_time")
+          .match(match);
 
-        if (error) throw error;
+        if (findErr) throw findErr;
 
-        // compute current duration
-        const now = Date.now();
-        const sessions = (data || []).map((s) => ({
-          ...s,
-          current_duration: Math.floor((now - new Date(s.login_time)) / 1000),
+        const updates = (activeSessions || []).map((s) => ({
+          id: s.id,
+          logout_time: logoutTime,
+          session_duration: Math.max(0, Math.floor((new Date(logoutTime) - new Date(s.login_time)) / 1000)),
+          status: "logged_out",
+          updated_at: new Date().toISOString(),
         }));
 
-        res.json({ sessions, page, limit, total: (sessions || []).length });
-      } catch (error) {
-        console.error("Active sessions error:", error);
-        res.status(500).json({ error: "Failed to fetch active sessions" });
-      }
-    });
-
-    /**
-     * GET /api/developer/login-activity/history
-     * Returns login history. Query: user_id, search (name/role/device), from, to, page, limit
-     */
-    router.get("/api/developer/login-activity/history", verifyDeveloperAccess, async (req, res) => {
-      try {
-        const { user_id, search } = req.query;
-        const from = req.query.from ? new Date(req.query.from).toISOString() : null;
-        const to = req.query.to ? new Date(req.query.to).toISOString() : null;
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 50;
-        const offset = (page - 1) * limit;
-
-        let query = getSupabaseClient().from("login_activity").select("*").order("login_time", { ascending: false });
-
-        if (user_id) query = query.eq("user_id", user_id);
-        if (from) query = query.gte("login_time", from);
-        if (to) query = query.lte("login_time", to);
-        if (search) {
-          const s = String(search).toLowerCase();
-          query = query.or(
-            `user_name.ilike.%${s}%,device_name.ilike.%${s}%,browser.ilike.%${s}%,operating_system.ilike.%${s}%`
-          );
+        for (const u of updates) {
+          const { error: updErr } = await getSupabaseClient().from("login_activity").update(u).eq("id", u.id);
+          if (updErr) console.warn("Failed to update logout for session", u.id, updErr.message);
         }
 
-        const { data, error } = await query.range(offset, offset + limit - 1);
-        if (error) throw error;
-
-        res.json({ history: data || [], page, limit });
-      } catch (error) {
-        console.error("Login history error:", error);
-        res.status(500).json({ error: "Failed to fetch login history" });
+        return res.json({ success: true, updated: updates.length });
       }
-    });
 
-    /**
-     * POST /api/developer/login-activity/logout-device
-     * Body: { session_id }
-     */
-    router.post("/api/developer/login-activity/logout-device", verifyDeveloperAccess, async (req, res) => {
-      try {
-        const { session_id } = req.body || {};
-        if (!session_id) return res.status(400).json({ error: "Missing session_id" });
+      return res.status(400).json({ error: "Unknown event type" });
+    } catch (error) {
+      console.error("Record login activity error:", error);
+      res.status(500).json({ error: "Failed to record login activity" });
+    }
+  }
+);
 
-        const { data, error } = await getSupabaseClient()
-          .from("login_activity")
-          .select("id, login_time")
-          .eq("session_id", session_id)
-          .maybeSingle();
+/**
+ * GET /api/developer/login-activity/active
+ * Returns active sessions. Query params: page, limit
+ */
+router.get("/api/developer/login-activity/active", verifyDeveloperAccess, async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+    const offset = (page - 1) * limit;
 
-        if (error) throw error;
-        if (!data) return res.status(404).json({ error: "Session not found" });
+    const { data, error } = await getSupabaseClient()
+      .from("login_activity")
+      .select("*")
+      .eq("status", "active")
+      .order("login_time", { ascending: false })
+      .range(offset, offset + limit - 1);
 
-        const logoutTime = new Date().toISOString();
-        const { error: upd } = await getSupabaseClient()
-          .from("login_activity")
-          .update({ logout_time: logoutTime, session_duration: Math.floor((new Date(logoutTime) - new Date(data.login_time)) / 1000), status: "logged_out", updated_at: new Date().toISOString() })
-          .eq("id", data.id);
+    if (error) throw error;
 
-        if (upd) throw upd;
+    // compute current duration
+    const now = Date.now();
+    const sessions = (data || []).map((s) => ({
+      ...s,
+      current_duration: Math.floor((now - new Date(s.login_time)) / 1000),
+    }));
 
-        res.json({ success: true });
-      } catch (error) {
-        console.error("Logout device error:", error);
-        res.status(500).json({ error: "Failed to logout device" });
-      }
-    });
+    res.json({ sessions, page, limit, total: (sessions || []).length });
+  } catch (error) {
+    console.error("Active sessions error:", error);
+    res.status(500).json({ error: "Failed to fetch active sessions" });
+  }
+});
 
-    /**
-     * POST /api/developer/login-activity/logout-all
-     * Body: { user_id }
-     */
-    router.post("/api/developer/login-activity/logout-all", verifyDeveloperAccess, async (req, res) => {
-      try {
-        const { user_id } = req.body || {};
-        if (!user_id) return res.status(400).json({ error: "Missing user_id" });
+/**
+ * GET /api/developer/login-activity/history
+ * Returns login history. Query: user_id, search (name/role/device), from, to, page, limit
+ */
+router.get("/api/developer/login-activity/history", verifyDeveloperAccess, async (req, res) => {
+  try {
+    const { user_id, search } = req.query;
+    const from = req.query.from ? new Date(req.query.from).toISOString() : null;
+    const to = req.query.to ? new Date(req.query.to).toISOString() : null;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+    const offset = (page - 1) * limit;
 
-        const { data: sessions, error: fetchErr } = await getSupabaseClient()
-          .from("login_activity")
-          .select("id, login_time")
-          .eq("user_id", user_id)
-          .eq("status", "active");
+    let query = getSupabaseClient().from("login_activity").select("*").order("login_time", { ascending: false });
 
-        if (fetchErr) throw fetchErr;
+    if (user_id) query = query.eq("user_id", user_id);
+    if (from) query = query.gte("login_time", from);
+    if (to) query = query.lte("login_time", to);
+    if (search) {
+      const s = String(search).toLowerCase();
+      query = query.or(
+        `user_name.ilike.%${s}%,device_name.ilike.%${s}%,browser.ilike.%${s}%,operating_system.ilike.%${s}%`
+      );
+    }
 
-        const logoutTime = new Date().toISOString();
+    const { data, error } = await query.range(offset, offset + limit - 1);
+    if (error) throw error;
 
-        for (const s of sessions || []) {
-          const duration = Math.max(0, Math.floor((new Date(logoutTime) - new Date(s.login_time)) / 1000));
-          const { error: upd } = await getSupabaseClient()
-            .from("login_activity")
-            .update({ logout_time: logoutTime, session_duration: duration, status: "logged_out", updated_at: new Date().toISOString() })
-            .eq("id", s.id);
-          if (upd) console.warn("Failed to update session during logout-all", s.id, upd.message);
-        }
+    res.json({ history: data || [], page, limit });
+  } catch (error) {
+    console.error("Login history error:", error);
+    res.status(500).json({ error: "Failed to fetch login history" });
+  }
+});
 
-        res.json({ success: true, updated: (sessions || []).length });
-      } catch (error) {
-        console.error("Logout all devices error:", error);
-        res.status(500).json({ error: "Failed to logout all devices" });
-      }
-    });
+/**
+ * POST /api/developer/login-activity/logout-device
+ * Body: { session_id }
+ */
+router.post("/api/developer/login-activity/logout-device", verifyDeveloperAccess, async (req, res) => {
+  try {
+    const { session_id } = req.body || {};
+    if (!session_id) return res.status(400).json({ error: "Missing session_id" });
 
-    /**
-     * POST /api/developer/login-activity/force-logout
-     * Admin only. Body: { user_id }
-     */
-    router.post("/api/developer/login-activity/force-logout", verifyDeveloperAccess, async (req, res) => {
-      try {
-        if (!["admin", "super_admin"].includes(req.profile?.role)) return res.status(403).json({ error: "Admin only" });
-        const { user_id } = req.body || {};
-        if (!user_id) return res.status(400).json({ error: "Missing user_id" });
+    const { data, error } = await getSupabaseClient()
+      .from("login_activity")
+      .select("id, login_time")
+      .eq("session_id", session_id)
+      .maybeSingle();
 
-        const { data: sessions, error: fetchErr } = await getSupabaseClient()
-          .from("login_activity")
-          .select("id, login_time")
-          .eq("user_id", user_id)
-          .eq("status", "active");
+    if (error) throw error;
+    if (!data) return res.status(404).json({ error: "Session not found" });
 
-        if (fetchErr) throw fetchErr;
+    const logoutTime = new Date().toISOString();
+    const { error: upd } = await getSupabaseClient()
+      .from("login_activity")
+      .update({ logout_time: logoutTime, session_duration: Math.floor((new Date(logoutTime) - new Date(data.login_time)) / 1000), status: "logged_out", updated_at: new Date().toISOString() })
+      .eq("id", data.id);
 
-        const logoutTime = new Date().toISOString();
+    if (upd) throw upd;
 
-        for (const s of sessions || []) {
-          const duration = Math.max(0, Math.floor((new Date(logoutTime) - new Date(s.login_time)) / 1000));
-          const { error: upd } = await getSupabaseClient()
-            .from("login_activity")
-            .update({ logout_time: logoutTime, session_duration: duration, status: "logged_out", updated_at: new Date().toISOString() })
-            .eq("id", s.id);
-          if (upd) console.warn("Failed to update session during force-logout", s.id, upd.message);
-        }
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Logout device error:", error);
+    res.status(500).json({ error: "Failed to logout device" });
+  }
+});
 
-        res.json({ success: true, updated: (sessions || []).length });
-      } catch (error) {
-        console.error("Force logout error:", error);
-        res.status(500).json({ error: "Failed to force logout user" });
-      }
-    });
+/**
+ * POST /api/developer/login-activity/logout-all
+ * Body: { user_id }
+ */
+router.post("/api/developer/login-activity/logout-all", verifyDeveloperAccess, async (req, res) => {
+  try {
+    const { user_id } = req.body || {};
+    if (!user_id) return res.status(400).json({ error: "Missing user_id" });
 
-    /**
-     * GET /api/developer/login-activity/analytics
-     * Returns totals: totalLoginsToday, activeUsers, mostActiveUser, mostUsedDevice
-     */
-    router.get("/api/developer/login-activity/analytics", verifyDeveloperAccess, async (req, res) => {
-      try {
-        const startOfDay = new Date();
-        startOfDay.setHours(0, 0, 0, 0);
+    const { data: sessions, error: fetchErr } = await getSupabaseClient()
+      .from("login_activity")
+      .select("id, login_time")
+      .eq("user_id", user_id)
+      .eq("status", "active");
 
-        const { data: todayLogins } = await getSupabaseClient()
-          .from("login_activity")
-          .select("id, user_id, device_name")
-          .gte("login_time", startOfDay.toISOString());
+    if (fetchErr) throw fetchErr;
 
-        const totalLoginsToday = (todayLogins || []).length;
-        const activeSessionsRes = await getSupabaseClient().from("login_activity").select("user_id").eq("status", "active");
-        const activeUsers = new Set((activeSessionsRes.data || []).map((s) => s.user_id)).size;
+    const logoutTime = new Date().toISOString();
 
-        // most active user: count logins per user
-        const counts = {};
-        (todayLogins || []).forEach((r) => { counts[r.user_id] = (counts[r.user_id] || 0) + 1; });
-        const mostActiveUser = Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0] || null;
+    for (const s of sessions || []) {
+      const duration = Math.max(0, Math.floor((new Date(logoutTime) - new Date(s.login_time)) / 1000));
+      const { error: upd } = await getSupabaseClient()
+        .from("login_activity")
+        .update({ logout_time: logoutTime, session_duration: duration, status: "logged_out", updated_at: new Date().toISOString() })
+        .eq("id", s.id);
+      if (upd) console.warn("Failed to update session during logout-all", s.id, upd.message);
+    }
 
-        // most used device
-        const deviceCounts = {};
-        (todayLogins || []).forEach((r) => { if (r.device_name) deviceCounts[r.device_name] = (deviceCounts[r.device_name] || 0) + 1; });
-        const mostUsedDevice = Object.keys(deviceCounts).sort((a, b) => deviceCounts[b] - deviceCounts[a])[0] || null;
+    res.json({ success: true, updated: (sessions || []).length });
+  } catch (error) {
+    console.error("Logout all devices error:", error);
+    res.status(500).json({ error: "Failed to logout all devices" });
+  }
+});
 
-        res.json({ totalLoginsToday, activeUsers, mostActiveUser, mostUsedDevice });
-      } catch (error) {
-        console.error("Login analytics error:", error);
-        res.status(500).json({ error: "Failed to fetch analytics" });
-      }
-    });
+/**
+ * POST /api/developer/login-activity/force-logout
+ * Admin only. Body: { user_id }
+ */
+router.post("/api/developer/login-activity/force-logout", verifyDeveloperAccess, async (req, res) => {
+  try {
+    if (!["admin", "super_admin"].includes(req.profile?.role)) return res.status(403).json({ error: "Admin only" });
+    const { user_id } = req.body || {};
+    if (!user_id) return res.status(400).json({ error: "Missing user_id" });
+
+    const { data: sessions, error: fetchErr } = await getSupabaseClient()
+      .from("login_activity")
+      .select("id, login_time")
+      .eq("user_id", user_id)
+      .eq("status", "active");
+
+    if (fetchErr) throw fetchErr;
+
+    const logoutTime = new Date().toISOString();
+
+    for (const s of sessions || []) {
+      const duration = Math.max(0, Math.floor((new Date(logoutTime) - new Date(s.login_time)) / 1000));
+      const { error: upd } = await getSupabaseClient()
+        .from("login_activity")
+        .update({ logout_time: logoutTime, session_duration: duration, status: "logged_out", updated_at: new Date().toISOString() })
+        .eq("id", s.id);
+      if (upd) console.warn("Failed to update session during force-logout", s.id, upd.message);
+    }
+
+    res.json({ success: true, updated: (sessions || []).length });
+  } catch (error) {
+    console.error("Force logout error:", error);
+    res.status(500).json({ error: "Failed to force logout user" });
+  }
+});
+
+/**
+ * GET /api/developer/login-activity/analytics
+ * Returns totals: totalLoginsToday, activeUsers, mostActiveUser, mostUsedDevice
+ */
+router.get("/api/developer/login-activity/analytics", verifyDeveloperAccess, async (req, res) => {
+  try {
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const { data: todayLogins } = await getSupabaseClient()
+      .from("login_activity")
+      .select("id, user_id, device_name")
+      .gte("login_time", startOfDay.toISOString());
+
+    const totalLoginsToday = (todayLogins || []).length;
+    const activeSessionsRes = await getSupabaseClient().from("login_activity").select("user_id").eq("status", "active");
+    const activeUsers = new Set((activeSessionsRes.data || []).map((s) => s.user_id)).size;
+
+    // most active user: count logins per user
+    const counts = {};
+    (todayLogins || []).forEach((r) => { counts[r.user_id] = (counts[r.user_id] || 0) + 1; });
+    const mostActiveUser = Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0] || null;
+
+    // most used device
+    const deviceCounts = {};
+    (todayLogins || []).forEach((r) => { if (r.device_name) deviceCounts[r.device_name] = (deviceCounts[r.device_name] || 0) + 1; });
+    const mostUsedDevice = Object.keys(deviceCounts).sort((a, b) => deviceCounts[b] - deviceCounts[a])[0] || null;
+
+    res.json({ totalLoginsToday, activeUsers, mostActiveUser, mostUsedDevice });
+  } catch (error) {
+    console.error("Login analytics error:", error);
+    res.status(500).json({ error: "Failed to fetch analytics" });
+  }
+});
 
 /**
  * GET /api/developer/credits/summary
@@ -2101,7 +2106,7 @@ router.post("/api/developer/testers/:testerId/credits/assign", verifyDeveloperAc
       authUserData.user.user_metadata?.name ||
       testerEmail.split("@")[0] ||
       testerEmail;
-    
+
     // Ensure tester profile exists in app_profiles before creating wallet
     if (!existingProfile) {
       console.log("Creating tester profile for:", testerEmail);
@@ -2112,7 +2117,7 @@ router.post("/api/developer/testers/:testerId/credits/assign", verifyDeveloperAc
         developerCredits: 0,
       });
     }
-    
+
     // Ensure wallet exists before updating balance
     const { data: existingWallet } = await getSupabaseClient()
       .from("tester_credit_wallets")
@@ -2863,11 +2868,11 @@ router.post("/api/developer/debug/simulate-usage", async (req, res) => {
         .from("app_profiles")
         .select("id")
         .limit(1);
-      
+
       if (!anyProfile || anyProfile.length === 0) {
         return res.status(400).json({ error: "No users found in database" });
       }
-      
+
       profiles = anyProfile;
     }
 
@@ -2938,7 +2943,7 @@ router.post("/api/tester/toggle-testing-mode", async (req, res) => {
 
     const token = authHeader.slice(7);
     const supabaseClient = getSupabaseClient();
-    
+
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
     if (authError || !user) {
       return res.status(401).json({ error: "Invalid token" });
