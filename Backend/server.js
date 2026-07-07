@@ -60,6 +60,7 @@ import audioRoutes from './routes/audio.routes.js';
 import videoRoutes from './routes/video.routes.js';
 import imageRoutes from './routes/image.routes.js';
 import mediaRoutes from './routes/media.routes.js';
+import historyRoutes from './routes/history.routes.js';
 import { securityHeaders } from './middleware/security.middleware.js';
 dotenv.config();
 
@@ -166,6 +167,7 @@ app.use("/api", audioRoutes);
 app.use("/api", videoRoutes);
 app.use("/", imageRoutes);
 app.use("/api", mediaRoutes);
+app.use("/api/history", historyRoutes);
 app.use(developerPortalAPI);
 
 // ✅ SET FFMPEG

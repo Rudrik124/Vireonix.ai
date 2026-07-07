@@ -232,8 +232,6 @@ export function DeveloperDashboardPage() {
     { label: "Tester Credits", path: "/developer/tester-credits", icon: Wallet, desc: "Manage tester allowances", count: "Beta" },
     // AI Testing Lab removed per request
     { label: "Analytics", path: "/developer/analytics", icon: BarChart3, desc: "Platform metrics & charts", count: "Active" },
-    { label: "Login Activity", path: "/developer/login-activity", icon: Activity, desc: "Track login sessions and device events", count: "Live" },
-    { label: "AI Cost Monitoring", path: "/developer/ai-cost-monitoring", icon: TrendingUp, desc: "Runway requests, costs, daily/weekly/monthly views", count: "Active" },
     { label: "Reports", path: "/developer/reports", icon: AlertCircle, desc: "View testing bug report board", count: "Live" },
     { label: "Error Logs", path: "/developer/error-logs", icon: Terminal, desc: "System traces & issues", count: "0 Critical" },
     { label: "Feedback", path: "/developer/feedback", icon: MessageSquare, desc: "User feedback & requests", count: "12 New" },

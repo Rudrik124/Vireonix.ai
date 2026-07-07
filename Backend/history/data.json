@@ -1,0 +1,38 @@
+[
+  {
+    "id": 1,
+    "type": "Ai generated video",
+    "title": "Cosmic Journey",
+    "desc": "A cinematic journey through space",
+    "date": "2026-07-06T10:00:00.000Z",
+    "time": "10:00 AM",
+    "videoUrl": ""
+  },
+  {
+    "id": 2,
+    "type": "Reference video",
+    "title": "Reference Dancing",
+    "desc": "Dance style transfer using reference",
+    "date": "2026-07-06T11:00:00.000Z",
+    "time": "11:00 AM",
+    "videoUrl": ""
+  },
+  {
+    "id": 3,
+    "type": "Direct pic to video",
+    "title": "Portrait Animation",
+    "desc": "Animated face from a single portrait",
+    "date": "2026-07-05T15:30:00.000Z",
+    "time": "03:30 PM",
+    "videoUrl": ""
+  },
+  {
+    "id": 4,
+    "type": "Ai manual edit",
+    "title": "Color Grading Edit",
+    "desc": "Enhanced lighting and colors",
+    "date": "2026-07-01T09:15:00.000Z",
+    "time": "09:15 AM",
+    "videoUrl": ""
+  }
+]

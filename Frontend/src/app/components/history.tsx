@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   ArrowLeft, Trash2, Video, Image as ImageIcon, Music, Edit, 
@@ -6,6 +6,7 @@ import {
   User, Bookmark, Folder, Download, Clock
 } from "lucide-react";
 import { useNavigate } from "react-router";
+import { buildApiUrl } from "@/lib/api";
 
 // Helper function for grouping
 function getGroupKey(dateString: string) {
@@ -42,9 +43,39 @@ const initialHistory: HistoryItem[] = [];
 
 export function HistoryPage() {
   const navigate = useNavigate();
-  const [history, setHistory] = useState(initialHistory);
+  const [history, setHistory] = useState<HistoryItem[]>(initialHistory);
   const [showConfirm, setShowConfirm] = useState(false);
   const [showToast, setShowToast] = useState(false);
+  const [activeTab, setActiveTab] = useState("All");
+  const [isLoading, setIsLoading] = useState(true);
+
+  const tabs = ["All", "Ai generated video", "Reference video", "Direct pic to video", "Ai manual edit"];
+
+  useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        const response = await fetch(buildApiUrl("/api/history"));
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.history) {
+            // Map icon string to component if needed, but since we get raw data, we can set default icons here based on type
+            const mappedHistory = data.history.map((item: any) => ({
+              ...item,
+              icon: Video, // Default icon for video
+              color: "text-purple-400",
+              bg: "bg-purple-500/10",
+            }));
+            setHistory(mappedHistory);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch history:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchHistory();
+  }, []);
 
   const handleClearHistory = () => {
     setHistory([]);
@@ -53,7 +84,11 @@ export function HistoryPage() {
     setTimeout(() => setShowToast(false), 3000);
   };
 
-  const groupedHistory = history.reduce((acc, item) => {
+  const filteredHistory = activeTab === "All" 
+    ? history 
+    : history.filter(item => item.type === activeTab);
+
+  const groupedHistory = filteredHistory.reduce((acc, item) => {
     const group = getGroupKey(item.date);
     if (!acc[group]) acc[group] = [];
     acc[group].push(item);
@@ -100,7 +135,28 @@ export function HistoryPage() {
       {/* Content */}
       <main className="relative z-10 flex-1 overflow-y-auto p-6 lg:p-10">
         <div className="max-w-4xl mx-auto">
-          {history.length === 0 ? (
+          {/* Tabs UI */}
+          <div className="flex items-center gap-2 mb-8 overflow-x-auto pb-2 scrollbar-hide">
+            {tabs.map(tab => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-colors border ${
+                  activeTab === tab 
+                    ? "bg-purple-500/20 border-purple-500/50 text-purple-300" 
+                    : "bg-white/5 border-white/5 text-gray-400 hover:bg-white/10 hover:text-gray-200"
+                }`}
+              >
+                {tab === "All" ? "All History" : tab}
+              </button>
+            ))}
+          </div>
+
+          {isLoading ? (
+            <div className="flex justify-center items-center py-20">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+            </div>
+          ) : filteredHistory.length === 0 ? (
             <motion.div 
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
