@@ -341,23 +341,6 @@ export const router = createBrowserRouter([
         ]
       },
       {
-        path: "/security",
-        element: (
-          <PortalGate portal="user">
-            <Outlet />
-          </PortalGate>
-        ),
-        children: [
-          {
-            index: true,
-            async lazy() {
-              const { SecurityPage } = await import("./components/security");
-              return { Component: SecurityPage };
-            }
-          }
-        ]
-      },
-      {
         path: "/notifications",
         element: (
           <PortalGate portal="user">
