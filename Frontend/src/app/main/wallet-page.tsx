@@ -374,21 +374,21 @@ export function WalletPage() {
                     <span className="text-gray-400">Credits Used</span>
                     <span>{creditsUsed}</span>
                   </div>
-                  <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden"><motion.div initial={{ width: 0 }} whileInView={{ width: '62%' }} viewport={{ once: true }} transition={{ duration: 1 }} className="h-full bg-blue-500" /></div>
+                  <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden"><motion.div initial={{ width: 0 }} whileInView={{ width: (creditsUsed === 0 || creditsUsed === '0') ? '0%' : '62%' }} viewport={{ once: true }} transition={{ duration: 1 }} className="h-full bg-blue-500" /></div>
                 </div>
                 <div>
                   <div className="flex justify-between text-sm font-bold mb-2">
                     <span className="text-gray-400">Credits Purchased</span>
                     <span>{creditsPurchased}</span>
                   </div>
-                  <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden"><motion.div initial={{ width: 0 }} whileInView={{ width: '100%' }} viewport={{ once: true }} transition={{ duration: 1 }} className="h-full bg-green-500" /></div>
+                  <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden"><motion.div initial={{ width: 0 }} whileInView={{ width: (creditsPurchased === 0 || creditsPurchased === '0') ? '0%' : '100%' }} viewport={{ once: true }} transition={{ duration: 1 }} className="h-full bg-green-500" /></div>
                 </div>
                 <div>
                   <div className="flex justify-between text-sm font-bold mb-2">
                     <span className="text-gray-400">Remaining</span>
                     <span className="text-fuchsia-400">{creditsRemaining}</span>
                   </div>
-                  <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden"><motion.div initial={{ width: 0 }} whileInView={{ width: '38%' }} viewport={{ once: true }} transition={{ duration: 1 }} className="h-full bg-fuchsia-500" /></div>
+                  <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden"><motion.div initial={{ width: 0 }} whileInView={{ width: (creditsRemaining === 0 || creditsRemaining === '0') ? '0%' : '38%' }} viewport={{ once: true }} transition={{ duration: 1 }} className="h-full bg-fuchsia-500" /></div>
                 </div>
               </div>
             </motion.div>
@@ -461,7 +461,6 @@ export function WalletPage() {
 
               <div className="flex gap-4">
                 <Button onClick={() => setShowConfirmModal(false)} className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl h-12 font-bold text-white">Cancel</Button>
-                <Button className="flex-1 bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:opacity-90 rounded-xl h-12 font-bold shadow-lg shadow-purple-500/20">Confirm</Button>
               </div>
             </motion.div>
           </div>

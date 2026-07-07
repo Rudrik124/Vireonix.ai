@@ -670,7 +670,7 @@ export const router = createBrowserRouter([
         ),
       },
       // Admin Portal Routes
-      {
+      /* {
         path: "/admin/dashboard",
         element: (
           <PortalGate portal="admin">
@@ -685,7 +685,7 @@ export const router = createBrowserRouter([
             <TestingCredentialsPage />
           </PortalGate>
         ),
-      },
+      }, */
       // Tester Portal Routes
       {
         path: "/tester/dashboard",
