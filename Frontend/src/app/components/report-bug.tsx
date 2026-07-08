@@ -99,6 +99,15 @@ export function ReportBugPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (isValid) {
+      const subject = encodeURIComponent(`Bug Report: ${formData.title}`);
+      const body = encodeURIComponent(
+        `Tool: ${formData.tool}\n` +
+        `Severity: ${formData.severity}\n\n` +
+        `Issue:\n${formData.description}\n\n` +
+        `Steps to reproduce:\n${formData.steps}\n`
+      );
+      window.location.href = `mailto:official@mavrostech.in?subject=${subject}&body=${body}`;
+      
       setIsSubmitted(true);
     }
   };

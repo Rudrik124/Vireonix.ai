@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ArrowLeft,
@@ -18,6 +18,8 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/app/context/auth-context';
 
 type NotificationType = 'ai_video' | 'image_video' | 'reference_video' | 'manual_edit' | 'download' | 'upload' | 'subscription' | 'account' | 'security' | 'feature' | 'system';
 
@@ -136,9 +138,79 @@ const getIconBgClass = (type: NotificationType) => {
 
 export function NotificationsPage() {
   const navigate = useNavigate();
-  const [notifications, setNotifications] = useState<AppNotification[]>(mockNotifications);
+  const { session } = useAuth();
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [activeTab, setActiveTab] = useState<string>('All');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!session?.user?.id) return;
+
+    const fetchNotifications = async () => {
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching notifications:', error);
+        return;
+      }
+
+      if (data) {
+        const mapped: AppNotification[] = data.map((n: any) => {
+          // Calculate time ago
+          const created = new Date(n.created_at);
+          const now = new Date();
+          const diffInMinutes = Math.floor((now.getTime() - created.getTime()) / 60000);
+          
+          let timestamp = '';
+          if (diffInMinutes < 1) timestamp = 'Just now';
+          else if (diffInMinutes < 60) timestamp = `${diffInMinutes} minute${diffInMinutes !== 1 ? 's' : ''} ago`;
+          else if (diffInMinutes < 1440) timestamp = `${Math.floor(diffInMinutes / 60)} hour${Math.floor(diffInMinutes / 60) !== 1 ? 's' : ''} ago`;
+          else timestamp = `${Math.floor(diffInMinutes / 1440)} day${Math.floor(diffInMinutes / 1440) !== 1 ? 's' : ''} ago`;
+
+          let action = undefined;
+          if (n.action_label && n.action_path) {
+             action = { label: n.action_label, path: n.action_path };
+          } else if (n.action && typeof n.action === 'object') {
+             // In case action is a JSON object { label: string, path: string }
+             action = n.action;
+          }
+
+          return {
+            id: n.id,
+            type: n.type as NotificationType,
+            title: n.title,
+            description: n.description,
+            fullMessage: n.full_message,
+            timestamp,
+            isRead: n.is_read,
+            category: n.category || 'System',
+            action
+          };
+        });
+        setNotifications(mapped);
+      }
+    };
+
+    fetchNotifications();
+
+    const channel = supabase.channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${session.user.id}` },
+        () => {
+          fetchNotifications();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [session?.user?.id]);
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
@@ -150,9 +222,22 @@ export function NotificationsPage() {
     return n.category === activeTab;
   });
 
-  const handleNotificationClick = (id: string) => {
-    // Mark as read if it's unread
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+  const handleNotificationClick = async (id: string) => {
+    const notification = notifications.find(n => n.id === id);
+    if (notification && !notification.isRead) {
+      // Mark as read immediately for UX
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+      
+      // Update in Supabase
+      const { error } = await supabase
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('id', id);
+        
+      if (error) {
+        console.error('Failed to mark notification as read', error);
+      }
+    }
     
     // Toggle expansion
     if (expandedId === id) {

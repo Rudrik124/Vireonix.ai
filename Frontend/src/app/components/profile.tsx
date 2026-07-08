@@ -10,6 +10,8 @@ import {
 } from "lucide-react";
 
 import { useNavigate } from "react-router";
+import { supabase } from "@/lib/supabase";
+import { AnimatePresence } from "framer-motion";
 
 export function ProfilePage() {
   const navigate = useNavigate();
@@ -24,6 +26,30 @@ export function ProfilePage() {
     manualEdits: 0,
     creditsUsed: 0
   });
+
+  const [isEditing, setIsEditing] = React.useState(false);
+  const [editForm, setEditForm] = React.useState({
+    fullName: "",
+    username: "",
+    timezone: "",
+    phone: "",
+    country: "",
+    language: ""
+  });
+  const [isSaving, setIsSaving] = React.useState(false);
+
+  React.useEffect(() => {
+    if (profile) {
+      setEditForm({
+        fullName: profile.fullName || "",
+        username: profile.name || "",
+        timezone: profile.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
+        phone: profile.phone || "",
+        country: profile.country || "",
+        language: profile.language || "English (US)"
+      });
+    }
+  }, [profile]);
 
   React.useEffect(() => {
     try {
@@ -57,6 +83,42 @@ export function ProfilePage() {
       setError("Failed to refresh profile data. Please try again.");
     } finally {
       setIsRefreshing(false);
+    }
+  };
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!session?.user?.id) return;
+
+    try {
+      setIsSaving(true);
+      
+      const { error } = await supabase
+        .from('app_profiles')
+        .upsert({
+          id: session.user.id,
+          email: session.user.email,
+          full_name: editForm.fullName,
+          name: editForm.username,
+          timezone: editForm.timezone,
+          phone: editForm.phone,
+          country: editForm.country,
+          language: editForm.language,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'id' });
+
+      if (error) {
+        console.error('Failed to update profile:', error);
+        setError("Failed to update profile. Please try again.");
+      } else {
+        await refreshProfile();
+        setIsEditing(false);
+      }
+    } catch (err) {
+      console.error(err);
+      setError("An unexpected error occurred.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -166,7 +228,7 @@ export function ProfilePage() {
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-3 w-full lg:w-auto relative z-10 shrink-0">
-            <button className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white text-sm font-bold transition-all flex items-center gap-2 border border-white/5 hover:border-white/10">
+            <button onClick={() => setIsEditing(true)} className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white text-sm font-bold transition-all flex items-center gap-2 border border-white/5 hover:border-white/10 cursor-pointer">
               <Edit2 className="w-4 h-4 text-gray-400" /> Edit Profile
             </button>
             <button className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white text-sm font-bold transition-all flex items-center gap-2 border border-white/5 hover:border-white/10">
@@ -219,7 +281,7 @@ export function ProfilePage() {
               <div>
                 <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-1.5 flex items-center gap-2">
                   Username
-                  <button className="text-purple-400 hover:text-purple-300 transition-colors"><Edit2 className="w-3 h-3" /></button>
+                  <button onClick={() => setIsEditing(true)} className="text-purple-400 hover:text-purple-300 transition-colors cursor-pointer"><Edit2 className="w-3 h-3" /></button>
                 </p>
                 <p className="text-sm font-medium text-white">@{profile?.name || "Not Set"}</p>
               </div>
@@ -228,23 +290,29 @@ export function ProfilePage() {
                 <p className="text-sm font-medium text-white">{email}</p>
               </div>
               <div>
-                <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-1.5">Phone Number</p>
-                <p className="text-sm font-medium text-gray-400 italic">Not provided</p>
+                <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-1.5 flex items-center gap-2">
+                  Phone Number
+                  <button onClick={() => setIsEditing(true)} className="text-purple-400 hover:text-purple-300 transition-colors cursor-pointer"><Edit2 className="w-3 h-3" /></button>
+                </p>
+                <p className="text-sm font-medium text-white">{profile?.phone || <span className="text-gray-400 italic">Not provided</span>}</p>
               </div>
               <div>
                 <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-1.5 flex items-center gap-2">
                   Country / Region
-                  <button className="text-purple-400 hover:text-purple-300 transition-colors"><Edit2 className="w-3 h-3" /></button>
+                  <button onClick={() => setIsEditing(true)} className="text-purple-400 hover:text-purple-300 transition-colors cursor-pointer"><Edit2 className="w-3 h-3" /></button>
                 </p>
-                <p className="text-sm font-medium text-gray-400 italic">Not set</p>
+                <p className="text-sm font-medium text-white">{profile?.country || <span className="text-gray-400 italic">Not set</span>}</p>
               </div>
               <div>
                 <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-1.5">Timezone</p>
                 <p className="text-sm font-medium text-white">{profile?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone}</p>
               </div>
               <div>
-                <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-1.5">Language</p>
-                <p className="text-sm font-medium text-white">English (US)</p>
+                <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-1.5 flex items-center gap-2">
+                  Language
+                  <button onClick={() => setIsEditing(true)} className="text-purple-400 hover:text-purple-300 transition-colors cursor-pointer"><Edit2 className="w-3 h-3" /></button>
+                </p>
+                <p className="text-sm font-medium text-white">{profile?.language || "English (US)"}</p>
               </div>
               <div>
                 <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-1.5">Account Status</p>
@@ -483,6 +551,126 @@ export function ProfilePage() {
         {/* Bottom padding for scroll */}
         <div className="h-12" />
       </div>
+
+      {/* EDIT PROFILE MODAL */}
+      <AnimatePresence>
+        {isEditing && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              onClick={() => setIsEditing(false)}
+            />
+            
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-md bg-[#141223] border border-white/10 rounded-3xl p-6 md:p-8 shadow-2xl overflow-hidden"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-2xl font-bold text-white">Edit Profile</h3>
+                <button 
+                  onClick={() => setIsEditing(false)}
+                  className="p-2 bg-white/5 hover:bg-white/10 rounded-xl transition-colors cursor-pointer"
+                >
+                  <XCircle className="w-5 h-5 text-gray-400" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveProfile} className="space-y-5">
+                <div>
+                  <label className="block text-sm font-bold text-gray-300 mb-2">Full Name</label>
+                  <input 
+                    type="text" 
+                    value={editForm.fullName}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, fullName: e.target.value }))}
+                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all"
+                    placeholder="Enter your full name"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-bold text-gray-300 mb-2">Username</label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold">@</span>
+                    <input 
+                      type="text" 
+                      value={editForm.username}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, username: e.target.value.replace(/[^a-zA-Z0-9_]/g, '') }))}
+                      className="w-full bg-black/40 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all"
+                      placeholder="username"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-300 mb-2">Timezone</label>
+                  <input 
+                    type="text" 
+                    value={editForm.timezone}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, timezone: e.target.value }))}
+                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all"
+                    placeholder="e.g. America/New_York"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-bold text-gray-300 mb-2">Phone</label>
+                    <input 
+                      type="tel" 
+                      value={editForm.phone}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, phone: e.target.value }))}
+                      className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all"
+                      placeholder="+1 (555) 000-0000"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-300 mb-2">Country</label>
+                    <input 
+                      type="text" 
+                      value={editForm.country}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, country: e.target.value }))}
+                      className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all"
+                      placeholder="e.g. United States"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-300 mb-2">Language</label>
+                  <input 
+                    type="text" 
+                    value={editForm.language}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, language: e.target.value }))}
+                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all"
+                    placeholder="e.g. English (US)"
+                  />
+                </div>
+
+                <div className="pt-4 flex items-center justify-end gap-3">
+                  <button 
+                    type="button" 
+                    onClick={() => setIsEditing(false)}
+                    className="px-5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white font-medium transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit" 
+                    disabled={isSaving}
+                    className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold transition-colors cursor-pointer shadow-[0_0_15px_rgba(168,85,247,0.4)]"
+                  >
+                    {isSaving && <RefreshCw className="w-4 h-4 animate-spin" />}
+                    Save Changes
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

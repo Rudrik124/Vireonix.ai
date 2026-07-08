@@ -15,6 +15,12 @@ export interface AppProfile {
   name?: string;
   timezone?: string;
   role?: string;
+  phone?: string;
+  country?: string;
+  language?: string;
+  credits?: {
+    userCredits: number;
+  };
 }
 
 export interface TestingCredentials {

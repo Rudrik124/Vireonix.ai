@@ -94,10 +94,10 @@ import { buildApiUrl } from "../../../lib/api";
 import { useAuth } from "../../context/auth-context";
 import { useAspectRatio, PRESET_RATIOS } from "./hooks/useAspectRatio";
 import { AspectRatioCard } from "./components/AspectRatioCard";
+import { generateThumbnail } from "@/lib/thumbnail";
 import { CustomRatioModal } from "./components/CustomRatioModal";
 import { SlidersHorizontal } from "lucide-react";
 
-import { HistoryDialog, type HistoryItem, saveToHistory } from "../../components/history-dialog";
 import { PremiumModal } from "../../components/premium-modal";
 import { MusicPickerModal } from "../../components/editor/music-picker-modal";
 import { MusicStrip } from "../../components/editor/music-strip";
@@ -110,6 +110,7 @@ import {
   DialogTrigger
 } from "../../components/ui/dialog";
 import { Label } from "../../components/ui/label";
+import { supabase } from "@/lib/supabase";
 
 async function extractAudioFromVideoFile(videoFile: File): Promise<File> {
   if (!videoFile.type.startsWith("video/")) {
@@ -371,6 +372,7 @@ const TimelineHub = memo(({
   showReadLine,
   setShowReadLine,
   selectPreviewWithTransition,
+  session,
 }: any) => {
   const timelineScrollRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
@@ -615,6 +617,24 @@ const TimelineHub = memo(({
                       type: file.type.startsWith('video/') ? 'video' as const : 'image' as const,
                       duration: await getMediaDuration(file)
                     })));
+                    
+                    if (session?.user?.id) {
+                      newItems.forEach(async item => {
+                        const thumbnail_url = await generateThumbnail(item.file);
+                        supabase.from('app_uploads').insert({
+                          user_id: session.user.id,
+                          original_filename: item.file.name,
+                          upload_type: item.type === 'video' ? 'Video' : 'Image',
+                          size: `${(item.file.size / (1024 * 1024)).toFixed(2)} MB`,
+                          resolution: "Unknown",
+                          duration: `${item.duration.toFixed(1)}s`,
+                          tool_used: "Manual Edit",
+                          used_in_project: "Draft",
+                          thumbnail_url
+                        }).then();
+                      });
+                    }
+
                     setMediaItems((prev: any) => {
                       const filteredPrev = prev.filter((p: any) => p.id !== 'initial' || p.file !== null);
                       const updated = [...filteredPrev, ...newItems];
@@ -2333,7 +2353,7 @@ const ToolInspector = memo(({
 });
 
 export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
-  const { profile } = useAuth();
+  const { profile, session } = useAuth();
   type FilterType =
     | 'none'
     | 'cinematic'
@@ -2381,21 +2401,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
     setIsPremiumModalOpen(true);
   };
 
-  const handleHistorySelect = (item: HistoryItem) => {
-    console.log("Loading project from history:", item);
-    if (item.config) {
-      if (item.config.style) setSelectedStyle(item.config.style);
-      if (item.config.ratio) {
-        const preset = PRESET_RATIOS[item.config.ratio];
-        if (preset) applyAspectRatio(preset.width, preset.height, preset.name);
-      }
-      if (item.config.fps) setFps(item.config.fps);
-      if (item.config.exportQuality) setExportQuality(item.config.exportQuality);
-      if (item.config.watermark !== undefined) setWatermark(item.config.watermark);
-      if (item.config.aiOptions) setAiOptions(prev => ({ ...prev, ...item.config.aiOptions }));
-    }
-    setActiveTool(null);
-  };
+
   const [mediaItems, setMediaItems] = useState<Array<{ id: string, file: File | null, preview: string, type: 'video' | 'image', duration: number }>>([]);
   const [isMediaPoolVisible, setIsMediaPoolVisible] = useState(true);
   const [activePreviewId, setActivePreviewId] = useState<string | null>(null);
@@ -4059,6 +4065,23 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
       duration: await getMediaDuration(file)
     })));
 
+    if (session?.user?.id) {
+      newItems.forEach(async item => {
+        const thumbnail_url = await generateThumbnail(item.file);
+        supabase.from('app_uploads').insert({
+          user_id: session.user.id,
+          original_filename: item.file.name,
+          upload_type: item.type === 'video' ? 'Video' : 'Image',
+          size: `${(item.file.size / (1024 * 1024)).toFixed(2)} MB`,
+          resolution: "Unknown",
+          duration: `${item.duration.toFixed(1)}s`,
+          tool_used: "Manual Edit",
+          used_in_project: "Draft",
+          thumbnail_url
+        }).then();
+      });
+    }
+
     selectPreviewWithTransition(newItems[0].id);
     setIsPlaying(false);
 
@@ -4438,23 +4461,6 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
       },
     };
 
-    saveToHistory({
-      title: `${mediaItems.length > 0 ? mediaItems.length + ' Media Items' : 'Quick Edit'} • ${editingStyles.find(s => s.id === selectedStyle)?.title || selectedStyle}`,
-      tool: 'quick-edit',
-      config: {
-        style: selectedStyle,
-        ratio: formattedRatio,
-        fps,
-        exportQuality,
-        watermark,
-        aiOptions,
-        selectedEffect,
-        effectSettings,
-        transitionPlan,
-        editorSelections,
-      }
-    });
-
     // Debug logging for transitions
     console.log("📤 [QUICK-EDIT] Sending to processing screen:", {
       mediaCount: mediaForProcessing.length,
@@ -4464,6 +4470,48 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
       hasTransitionsInPlan: transitionPlan.some(t => t.transition !== 'none'),
       hasTransitionsInClipMap: Object.values(clipTransitions).some(t => t !== 'none'),
     });
+
+    if (session?.user?.id) {
+      // Async insert, we don't await so it doesn't block navigation
+      supabase.from('app_generations_history').insert({
+        user_id: session.user.id,
+        type: "Ai manual edit",
+        title: `${mediaItems.length > 0 ? mediaItems.length + ' Media Items' : 'Quick Edit'} • ${editingStyles.find(s => s.id === selectedStyle)?.title || selectedStyle}`,
+        description: `Ratio: ${formattedRatio} • FPS: ${fps} • Quality: ${exportQuality}`,
+        metadata: {
+          style: selectedStyle,
+          ratio: formattedRatio,
+          fps,
+          exportQuality,
+          watermark,
+          aiOptions,
+          selectedEffect,
+          effectSettings,
+          transitionPlan,
+          editorSelections,
+        }
+      }).then();
+
+      // Add to downloads table
+      const activeFile = mediaItems.find((item: any) => item.id === activePreviewId)?.file || mediaItems[0]?.file;
+      const thumbPromise = activeFile ? generateThumbnail(activeFile) : Promise.resolve("https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=800");
+
+      thumbPromise.then(thumbnail_url => {
+        supabase.from('app_downloads').insert({
+          user_id: session.user.id,
+          project_name: `${mediaItems.length > 0 ? mediaItems.length + ' Media Items' : 'Quick Edit'}`,
+          tool_used: "Manual Edit",
+          prompt: prompt || "Manual video editing",
+          resolution: exportQuality,
+          aspect_ratio: formattedRatio,
+          duration: "Variable",
+          file_size: "128 MB",
+          format: "MP4",
+          video_url: "",
+          thumbnail_url
+        }).then();
+      });
+    }
 
     navigate(`/quick-edit/processing${location.search}`, {
       state: {
@@ -5356,6 +5404,7 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
           {/* Timeline hub container */}
           <div className="flex-1 overflow-hidden h-full">
             <TimelineHub
+              session={session}
               mediaItems={mediaItems}
               getClipGlobalStart={getClipGlobalStart}
               audioTracks={audioTracks}
@@ -5423,13 +5472,6 @@ export const QuickEditStyleScreen = memo(function QuickEditStyleScreen() {
           </button>
         </div>
       </footer>
-
-      <HistoryDialog
-        open={activeTool === 'history'}
-        onOpenChange={(open) => setActiveTool(open ? 'history' : null)}
-        onSelect={handleHistorySelect}
-        currentTool="quick-edit"
-      />
 
       <PremiumModal
         open={isPremiumModalOpen}

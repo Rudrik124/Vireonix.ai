@@ -1,18 +1,19 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ArrowLeft, Upload, Image as ImageIcon, Sparkles, Video, Clock, History, Settings2, Download, User, ChevronDown, LogOut, Play,
+  ArrowLeft, Upload, Image as ImageIcon, Sparkles, Video, Clock, Settings2, Download, User, ChevronDown, LogOut, Play,
   Battery, Monitor, Save, Copy, Trash2, X, Sliders, Activity, Cpu, Music, Focus, Palette
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Textarea } from "../../components/ui/textarea";
 import { useAuth } from "../../context/auth-context";
+import { supabase } from "@/lib/supabase";
+import { generateThumbnail } from "@/lib/thumbnail";
 import { BrandLogo } from "../../components/brand-logo";
 import { Switch } from "../../components/ui/switch";
 import { useRedirectParam } from "../../lib/useRedirectParam";
-import { type HistoryItem } from "../../components/history-dialog";
 
 const frameStyleOptions = [
   { label: "16:9", ratio: "YouTube", icon: Monitor },
@@ -64,22 +65,7 @@ export function ImagesToVideoUploadScreen() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userName = session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || "User";
 
-  const [recentGenerations, setRecentGenerations] = useState<HistoryItem[]>([]);
 
-  const loadRecentGenerations = () => {
-    try {
-      const saved = localStorage.getItem('veytrix_history');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        const filtered = parsed.filter((item: HistoryItem) => item.tool === 'image-to-video');
-        setRecentGenerations(filtered.slice(0, 4));
-      }
-    } catch (e) {}
-  };
-
-  React.useEffect(() => {
-    loadRecentGenerations();
-  }, []);
 
   const [prompt, setPrompt] = useState("");
   const [negativePrompt, setNegativePrompt] = useState("");
@@ -115,6 +101,23 @@ export function ImagesToVideoUploadScreen() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    if (referenceImage && session?.user?.id) {
+      generateThumbnail(referenceImage).then(thumbnail_url => {
+        supabase.from('app_uploads').insert({
+          user_id: session.user.id,
+          original_filename: referenceImage.name,
+          upload_type: "Image",
+          size: `${(referenceImage.size / (1024 * 1024)).toFixed(2)} MB`,
+          resolution: "Unknown",
+          tool_used: "Image to Video",
+          used_in_project: "Draft",
+          thumbnail_url
+        }).then();
+      });
+    }
+  }, [referenceImage, session?.user?.id]);
+
   const handleFileDrop = (e: React.DragEvent) => {
     e.preventDefault();
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
@@ -139,8 +142,45 @@ export function ImagesToVideoUploadScreen() {
     }
   };
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     const duration = selectedDuration === "custom" ? customDuration : selectedDuration;
+    
+    if (session?.user?.id) {
+      await supabase.from('app_generations_history').insert({
+        user_id: session.user.id,
+        type: "Direct pic to video",
+        title: prompt ? prompt.slice(0, 50) + (prompt.length > 50 ? '...' : '') : "Image to Video Generation",
+        description: `Style: ${selectedStyle} • Duration: ${duration}s • Res: ${selectedResolution}`,
+        metadata: {
+          prompt,
+          duration,
+          ratio: selectedRatio,
+          resolution: selectedResolution,
+          style: selectedStyle,
+          model: selectedModel
+        }
+      });
+
+      // Also add to downloads (in a real app, this might happen after processing)
+      const thumbPromise = referenceImage ? generateThumbnail(referenceImage) : Promise.resolve("https://images.unsplash.com/photo-1541185933-ef5d8ed016c2?w=800");
+      
+      thumbPromise.then(thumbnail_url => {
+        supabase.from('app_downloads').insert({
+          user_id: session.user.id,
+          project_name: prompt ? prompt.slice(0, 30) + (prompt.length > 30 ? '...' : '') : "Image to Video",
+          tool_used: "Image to Video",
+          prompt: prompt || "Visual generation from image",
+          resolution: selectedResolution,
+          aspect_ratio: selectedRatio,
+          duration: `${duration}`,
+          file_size: "32 MB",
+          format: "MP4",
+          video_url: "",
+          thumbnail_url
+        }).then();
+      });
+    }
+
     // Route to the existing processing screen
     navigate("/images-to-video/processing", {
       state: {
@@ -181,17 +221,12 @@ export function ImagesToVideoUploadScreen() {
           </motion.button>
         </div>
 
-        <div className="flex flex-wrap items-center justify-center sm:justify-end gap-3 w-full sm:w-auto">
-          <div className="hidden lg:flex items-center gap-4 bg-white/5 border border-white/10 rounded-full px-4 py-1.5 mr-2">
-            <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-amber-400"><Battery className="w-3.5 h-3.5" /> {profile?.credits?.userCredits ?? 0} Credits</span>
-          </div>
+          <div className="flex flex-wrap items-center justify-center sm:justify-end gap-3 w-full sm:w-auto">
+            <div className="hidden lg:flex items-center gap-4 bg-white/5 border border-white/10 rounded-full px-4 py-1.5 mr-2">
+              <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-amber-400"><Battery className="w-3.5 h-3.5" /> {profile?.credits?.userCredits ?? 0} Credits</span>
+            </div>
 
-          <button className="flex items-center gap-2 bg-white/5 hover:bg-white/10 px-4 py-2 rounded-full border border-white/10 transition-all text-slate-300 hover:text-white shadow-lg">
-            <History className="w-4 h-4" />
-            <span className="text-[11px] font-bold uppercase tracking-widest hidden sm:inline">History</span>
-          </button>
-
-          {isLoggedIn ? (
+            {isLoggedIn ? (
             <div className="relative">
               <button onClick={() => setIsUserMenuOpen(!isUserMenuOpen)} className="flex items-center gap-2.5 bg-white/5 hover:bg-white/10 px-3.5 py-2 rounded-full border border-white/10 transition-all text-white shadow-lg">
                 <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center">
@@ -216,7 +251,7 @@ export function ImagesToVideoUploadScreen() {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 lg:px-8 relative z-10 flex flex-col flex-1">
+      <main className="container mx-auto px-4 lg:px-8 relative z-10 flex flex-col flex-1">
 
         {/* Title */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-10 text-center lg:text-left">
@@ -684,40 +719,7 @@ export function ImagesToVideoUploadScreen() {
             )}
           </AnimatePresence>
         </div>
-
-        {/* RECENT CREATIONS */}
-        <div className="mb-20">
-          <h3 className="text-sm font-black uppercase tracking-widest text-slate-300 mb-6 flex items-center gap-2"><History className="w-4 h-4" /> Recent Creations</h3>
-          {recentGenerations.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 px-4 bg-[#10162A]/60 border border-white/5 rounded-3xl opacity-60">
-              <History className="w-12 h-12 text-slate-500 mb-4" />
-              <p className="text-sm font-black uppercase tracking-widest text-slate-400">No recent projects</p>
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-2">Start creating to see your history here</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {recentGenerations.map(r => (
-                <div key={r.id} className="cursor-pointer bg-[#10162A]/60 border border-white/5 rounded-2xl overflow-hidden group hover:border-blue-500/30 transition-all shadow-lg hover:shadow-[0_0_30px_rgba(59,130,246,0.1)] flex flex-col">
-                  <div className="relative aspect-video overflow-hidden bg-black/80 flex items-center justify-center">
-                    <Video className="w-8 h-8 text-white/20 group-hover:scale-110 transition-transform duration-500" />
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 backdrop-blur-sm pointer-events-none">
-                      <button className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center hover:scale-110 transition-transform pointer-events-auto"><Play className="w-5 h-5 ml-1" /></button>
-                    </div>
-                  </div>
-                  <div className="p-4 flex-1 flex flex-col">
-                    <p className="text-sm font-medium text-slate-200 line-clamp-1 mb-2 flex-1">{r.title}</p>
-                    <div className="flex justify-between items-center text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-auto">
-                      <span>{r.config?.quality || '1080p'} • {r.config?.duration || '10'}s</span>
-                      <span>{new Date(r.timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-      </div>
+      </main>
     </div>
   );
 }

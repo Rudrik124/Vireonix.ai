@@ -282,7 +282,7 @@ export function LandingPage() {
     }
   }, [isLoggedIn, isLoading, profile, session, navigate]);
 
-  const userName = session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || "User";
+  const userName = profile?.fullName || session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || "User";
 
   const handleLogout = async () => {
     setIsProcessing(true);

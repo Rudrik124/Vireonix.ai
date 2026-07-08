@@ -50,12 +50,12 @@ const AnimatedCounter = ({ value, duration = 2 }: { value: number, duration?: nu
 
 export function WalletPage() {
   const navigate = useNavigate();
-  const { isLoggedIn, session, logout } = useAuth();
+  const { isLoggedIn, session, logout, profile } = useAuth();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [selectedAction, setSelectedAction] = useState<any>(null);
 
-  const userName = session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || "User";
+  const userName = profile?.fullName || session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || "User";
 
   const totalCredits = 0;
   const creditsUsed = 0;

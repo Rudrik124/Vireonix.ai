@@ -12,13 +12,11 @@ import { useAuth } from "../../context/auth-context";
 import { LoginModal } from "../../components/login-modal";
 import { LoadingModal, type LoadingState } from "../../components/loading-modal";
 import { BrandLogo } from "../../components/brand-logo";
-import { HistoryDialog, type HistoryItem, saveToHistory } from "../../components/history-dialog";
-import { 
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger 
-} from "../../components/ui/dialog";
 import { Label } from "../../components/ui/label";
 import { Switch } from "../../components/ui/switch";
 import { PremiumModal } from "../../components/premium-modal";
+import { supabase } from "@/lib/supabase";
+// @ts-ignore
 import { generateVideo } from "../../../api/generatevideo";
 import { usePortalTestingContext } from "../../../shared/portal/testing-context";
 import { useRedirectParam } from "../../lib/useRedirectParam";
@@ -70,28 +68,10 @@ const cameraStyles = [
   "Static", "Pan Left", "Pan Right", "Zoom In", "Zoom Out", "Orbit", "Drone", "Tracking", "Handheld", "Crane"
 ];
 
-const lightingStyles = [
-  "Natural", "Golden Hour", "Studio", "Sunset", "Moonlight", "Blue Hour", "Volumetric", "Neon", "Noir"
-];
-
-const visualStyles = [
-  "Realistic", "Cinematic", "Anime", "Pixar", "Cyberpunk", "Fantasy", "Oil Painting", "3D", "Photorealistic", "Watercolor"
-];
-
 const premiumPrompts = [
   "A cinematic drone fly-through of a neon cyberpunk city at midnight, highly detailed, Unreal Engine 5 render, volumetric lighting",
   "A macro shot of a bioluminescent glowing jellyfish in a dark underwater cave, photorealistic, 8k resolution, ray tracing",
   "A sprawling alien landscape with two massive moons in a twilight sky, ethereal synthwave color palette, smooth camera pan"
-];
-
-const dummyQueue = [
-  { id: 1, prompt: "Cyberpunk city fly-through...", status: "Generating", progress: 65, eta: "1m 12s" },
-  { id: 2, prompt: "Neon signs glowing in the rain...", status: "Queued", progress: 0, eta: "Pending" },
-];
-
-const dummyRecent = [
-  { id: 3, prompt: "Sunset over a vast mountain range...", duration: "10s", resolution: "4K", created: "10 mins ago", thumbnail: "https://images.unsplash.com/photo-1506744626753-1fa30a006c57?w=300" },
-  { id: 4, prompt: "Futuristic spaceship cockpit view...", duration: "15s", resolution: "1080p", created: "1 hour ago", thumbnail: "https://images.unsplash.com/photo-1541185933-ef5d8ed016c2?w=300" },
 ];
 
 const BackgroundGlows = memo(() => (
@@ -176,20 +156,8 @@ export function AIGenerativeVideoPage() {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isAIAssistantOpen, setIsAIAssistantOpen] = useState(false);
-  const userName = session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || "User";
-  const [recentGenerations, setRecentGenerations] = useState<HistoryItem[]>([]);
+  const userName = profile?.fullName || session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || "User";
 
-  const loadRecentGenerations = () => {
-    try {
-      const saved = localStorage.getItem('veytrix_history');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        const filtered = parsed.filter((item: HistoryItem) => item.tool === 'forge');
-        setRecentGenerations(filtered.slice(0, 4));
-      }
-    } catch (e) {}
-  };
-  
   const [prompt, setPrompt] = useState("");
   const [negativePrompt, setNegativePrompt] = useState("");
   const [selectedDuration, setSelectedDuration] = useState<number | "custom">(5);
@@ -203,30 +171,22 @@ export function AIGenerativeVideoPage() {
   const [motionStrength, setMotionStrength] = useState(50);
   const [cameraMovement, setCameraMovement] = useState(50);
   const [promptStrength, setPromptStrength] = useState(50);
-  const [consistency, setConsistency] = useState(50);
-  const [frameSmoothness, setFrameSmoothness] = useState(50);
 
   const [selectedCameraStyle, setSelectedCameraStyle] = useState("Static");
-  const [selectedLighting, setSelectedLighting] = useState("Natural");
-  const [selectedStyle, setSelectedStyle] = useState("Cinematic");
   
   const [isAdvancedConfigOpen, setIsAdvancedConfigOpen] = useState(false);
   const [seed, setSeed] = useState("");
   const [randomSeed, setRandomSeed] = useState(true);
   const [cfgScale, setCfgScale] = useState(7.5);
-  const [samplingSteps, setSamplingSteps] = useState(30);
   const [fps, setFps] = useState(30);
   const [loopVideo, setLoopVideo] = useState(false);
-  const [safetyFilter, setSafetyFilter] = useState(true);
   const [watermark, setWatermark] = useState(true);
-  const [frameInterpolation, setFrameInterpolation] = useState(true);
   
   const [isGenerating, setIsGenerating] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [loadingState, setLoadingState] = useState<LoadingState>(null);
   const [loadingMessage, setLoadingMessage] = useState("");
 
-  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
   const [premiumFeature, setPremiumFeature] = useState<"watermark" | "4k" | "60fps" | "general">("general");
 
@@ -235,19 +195,10 @@ export function AIGenerativeVideoPage() {
     setIsPremiumModalOpen(true);
   };
 
-  const handleHistorySelect = (item: HistoryItem) => {
-    if (item.tool === 'forge' && item.config) {
-      if (item.config.prompt) setPrompt(item.config.prompt);
-      if (item.config.frame) setSelectedRatio(item.config.frame);
-    }
-    setIsHistoryOpen(false);
-  };
-
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     setMounted(true);
     setErrorMessage("");
-    loadRecentGenerations();
   }, []);
 
   const handleSurpriseMe = () => {
@@ -278,7 +229,7 @@ export function AIGenerativeVideoPage() {
         prompt: prompt.trim(),
         duration,
         frame: selectedRatio,
-        quality: selectedResolution, // Using resolution mapped to original quality prop
+        quality: selectedResolution,
         fps,
         watermark,
         usageContext,
@@ -289,20 +240,36 @@ export function AIGenerativeVideoPage() {
       setLoadingState("success");
       setLoadingMessage("Video generated successfully!");
 
-      saveToHistory({
-        title: prompt.slice(0, 30) + (prompt.length > 30 ? "..." : ""),
-        tool: 'forge',
-        config: {
-          prompt,
-          ratio: selectedRatio,
-          duration,
-          quality: selectedResolution,
-          fps,
-          watermark
-        }
-      });
-      
-      loadRecentGenerations();
+      if (session?.user?.id) {
+        await supabase.from('app_generations_history').insert({
+          user_id: session.user.id,
+          type: "Ai generated video",
+          title: prompt.slice(0, 50) + (prompt.length > 50 ? '...' : ''),
+          description: `Duration: ${duration}s • Ratio: ${selectedRatio} • Res: ${selectedResolution}`,
+          metadata: {
+            prompt,
+            duration,
+            ratio: selectedRatio,
+            resolution: selectedResolution,
+            model: selectedModel
+          }
+        });
+
+        // Also add to downloads
+        await supabase.from('app_downloads').insert({
+          user_id: session.user.id,
+          project_name: prompt.slice(0, 30) + (prompt.length > 30 ? '...' : ''),
+          tool_used: "AI Video Generation",
+          prompt: prompt,
+          resolution: selectedResolution,
+          aspect_ratio: selectedRatio,
+          duration: `${duration}`,
+          file_size: "45 MB", // Placeholder since we don't have actual file size
+          format: "MP4",
+          video_url: data.video || "",
+          thumbnail_url: "https://images.unsplash.com/photo-1535016120720-40c746a51d47?w=800" // Placeholder
+        });
+      }
 
       localStorage.setItem("generatedVideo", data.video);
       localStorage.removeItem("generatedVideoError");
@@ -340,7 +307,6 @@ export function AIGenerativeVideoPage() {
       <BackgroundGlows />
       <ParticleBackground />
 
-      {/* Modern Header */}
       <div className="pt-6 px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-4 relative z-50 w-full mb-8 border-b border-white/5 pb-6 bg-[#050812]/40 backdrop-blur-md">
         <div className="flex flex-col gap-1">
           <motion.div 
@@ -362,17 +328,10 @@ export function AIGenerativeVideoPage() {
           </motion.button>
         </div>
 
-        <div className="flex flex-wrap items-center justify-center sm:justify-end gap-3 w-full sm:w-auto">
-          <div className="hidden lg:flex items-center gap-3 bg-white/5 border border-white/10 rounded-full px-4 py-1.5 mr-2">
-            <span className="flex items-center gap-1.5 text-xs font-bold text-amber-400"><Battery className="w-3.5 h-3.5" /> {profile?.credits?.userCredits ?? 0} Credits</span>
-          </div>
-
-
-
-          <button onClick={() => setIsHistoryOpen(true)} className="flex items-center gap-2 bg-white/5 hover:bg-white/10 px-4 py-2 rounded-full border border-white/10 transition-all text-slate-300 hover:text-white shadow-lg">
-            <History className="w-4 h-4" />
-            <span className="text-[11px] font-bold uppercase tracking-widest hidden sm:inline">History</span>
-          </button>
+          <div className="flex flex-wrap items-center justify-center sm:justify-end gap-3 w-full sm:w-auto">
+            <div className="hidden lg:flex items-center gap-3 bg-white/5 border border-white/10 rounded-full px-4 py-1.5 mr-2">
+              <span className="flex items-center gap-1.5 text-xs font-bold text-amber-400"><Battery className="w-3.5 h-3.5" /> {profile?.credits?.userCredits ?? 0} Credits</span>
+            </div>
 
           {isLoggedIn ? (
             <div className="relative">
@@ -409,7 +368,6 @@ export function AIGenerativeVideoPage() {
 
       <div className="container mx-auto px-4 lg:px-8 relative z-10 flex flex-col flex-1">
         
-        {/* Modern Hero */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-12">
           <div className="inline-flex items-center gap-2 bg-purple-500/10 border border-purple-500/30 px-5 py-2 rounded-full mb-6 shadow-[0_0_20px_rgba(168,85,247,0.15)]">
             <Sparkles className="w-4 h-4 text-purple-400" />
@@ -423,10 +381,8 @@ export function AIGenerativeVideoPage() {
           </p>
         </motion.div>
 
-        {/* 3-Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 relative">
           
-          {/* LEFT PANEL: Prompt Studio */}
           <div className="lg:col-span-4 space-y-6">
             <div className="bg-[#10162A]/80 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl relative overflow-hidden group h-full">
               <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
@@ -483,7 +439,6 @@ export function AIGenerativeVideoPage() {
             </div>
           </div>
 
-          {/* CENTER PANEL: Video Configuration */}
           <div className="lg:col-span-5 space-y-6">
             <div className="bg-[#10162A]/80 backdrop-blur-xl border border-white/10 rounded-3xl p-6 lg:p-8 shadow-2xl relative h-full">
               <div className="flex items-center gap-2 mb-6 border-b border-white/5 pb-4">
@@ -491,7 +446,6 @@ export function AIGenerativeVideoPage() {
                 <h2 className="text-sm font-black uppercase tracking-widest text-white">Video Configuration</h2>
               </div>
 
-              {/* Aspect Ratio */}
               <div className="mb-8">
                 <label className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 block">Aspect Ratio</label>
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
@@ -513,7 +467,6 @@ export function AIGenerativeVideoPage() {
                 </div>
               </div>
 
-              {/* Duration */}
               <div className="mb-8">
                 <label className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 block">Duration</label>
                 <div className="grid grid-cols-4 gap-3">
@@ -539,7 +492,6 @@ export function AIGenerativeVideoPage() {
                 )}
               </div>
 
-              {/* Resolution & Quality */}
               <div className="grid sm:grid-cols-2 gap-8 mb-8">
                 <div>
                   <label className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 block">Resolution</label>
@@ -564,7 +516,6 @@ export function AIGenerativeVideoPage() {
                 </div>
               </div>
 
-              {/* Model Selection */}
               <div>
                 <label className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 block">AI Model</label>
                 <div className="relative">
@@ -578,11 +529,9 @@ export function AIGenerativeVideoPage() {
                   <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
                 </div>
               </div>
-
             </div>
           </div>
 
-          {/* RIGHT PANEL: Creative Controls & Accordion */}
           <div className="lg:col-span-3 space-y-6">
             <div className="bg-[#10162A]/80 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl relative">
               <div className="flex items-center gap-2 mb-6 border-b border-white/5 pb-4">
@@ -619,7 +568,6 @@ export function AIGenerativeVideoPage() {
               </div>
             </div>
 
-            {/* Advanced Settings */}
             <div className="bg-[#10162A]/80 backdrop-blur-xl border border-white/10 rounded-3xl p-4 shadow-2xl relative">
               <button onClick={() => setIsAdvancedConfigOpen(!isAdvancedConfigOpen)} className="w-full flex items-center justify-between font-black uppercase tracking-widest text-xs text-white p-2">
                 <div className="flex items-center gap-2"><Sliders className="w-4 h-4 text-slate-400" /> Advanced Settings</div>
@@ -655,7 +603,6 @@ export function AIGenerativeVideoPage() {
           </div>
         </div>
 
-        {/* BOTTOM GENERATION CARD */}
         <div className="mt-8 mb-12">
           <div className="bg-[#10162A]/90 backdrop-blur-3xl border border-purple-500/30 rounded-[2rem] p-6 sm:p-8 shadow-[0_10px_50px_rgba(0,0,0,0.5)] flex flex-col sm:flex-row items-center justify-between gap-6 relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 via-fuchsia-500/5 to-transparent pointer-events-none" />
@@ -691,41 +638,8 @@ export function AIGenerativeVideoPage() {
           </div>
         </div>
 
-        {/* RECENT GENERATIONS */}
-        <div className="mb-20">
-          <h3 className="text-sm font-black uppercase tracking-widest text-slate-300 mb-6 flex items-center gap-2"><History className="w-4 h-4" /> Recent Generations</h3>
-          {recentGenerations.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 px-4 bg-[#10162A]/60 border border-white/5 rounded-3xl opacity-60">
-              <History className="w-12 h-12 text-slate-500 mb-4" />
-              <p className="text-sm font-black uppercase tracking-widest text-slate-400">No recent creations</p>
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-2">Start generating to see your history here</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {recentGenerations.map(r => (
-                <div key={r.id} onClick={() => handleHistorySelect(r)} className="cursor-pointer bg-[#10162A]/60 border border-white/5 rounded-2xl overflow-hidden group hover:border-purple-500/30 transition-all shadow-lg hover:shadow-[0_0_30px_rgba(168,85,247,0.1)] flex flex-col">
-                  <div className="relative aspect-video overflow-hidden bg-black/80 flex items-center justify-center">
-                    <Video className="w-8 h-8 text-white/20 group-hover:scale-110 transition-transform duration-500" />
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 backdrop-blur-sm">
-                      <div className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center hover:scale-110 transition-transform"><Play className="w-5 h-5 ml-1" /></div>
-                    </div>
-                  </div>
-                  <div className="p-4 flex-1 flex flex-col">
-                    <p className="text-sm font-medium text-slate-200 line-clamp-1 mb-2 flex-1">{r.title}</p>
-                    <div className="flex justify-between items-center text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-auto">
-                      <span>{r.config?.quality || '1080p'} • {r.config?.duration || '5'}s</span>
-                      <span>{new Date(r.timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
       </div>
 
-      {/* Floating AI Assistant */}
       <div className="fixed bottom-6 right-6 z-50 hidden lg:block">
         <AnimatePresence>
           {isAIAssistantOpen ? (
@@ -782,7 +696,7 @@ export function AIGenerativeVideoPage() {
 
       <LoadingModal state={loadingState} message={loadingMessage} onDismiss={() => { setLoadingState(null); setErrorMessage(""); }} />
       <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} customTitle="Login Required" customMessage="Please sign in to generate your video." />
-      <HistoryDialog open={isHistoryOpen} onOpenChange={setIsHistoryOpen} onSelect={handleHistorySelect} currentTool="forge" />
+
       <PremiumModal open={isPremiumModalOpen} onOpenChange={setIsPremiumModalOpen} feature={premiumFeature} />
     </div>
   );

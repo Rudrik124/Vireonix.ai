@@ -36,7 +36,7 @@ const AI_MODES = ["Cinematic", "Anime", "Realistic", "Commercial", "Viral Reel"]
 
 export function VideoTypePage() {
   const navigate = useNavigate();
-  const { isLoggedIn, logout, session } = useAuth();
+  const { isLoggedIn, logout, session, profile } = useAuth();
   
   const [mounted, setMounted] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
@@ -48,7 +48,7 @@ export function VideoTypePage() {
   const [promptPhase, setPromptPhase] = useState("typing");
   const [progressValue, setProgressValue] = useState(0);
   
-  const userName = session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || "User";
+  const userName = profile?.fullName || session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || "User";
   const fullPrompt = "Generate a cinematic cyberpunk travel reel with neon lights, drone shots and smooth transitions...";
 
   // Mouse Parallax Tracking

@@ -5,9 +5,11 @@ import {
   Search, HardDrive
 } from "lucide-react";
 import { useNavigate } from "react-router";
+import { supabase } from "@/lib/supabase";
+import { useAuth } from "../context/auth-context";
 
 interface DownloadItem {
-  id: number;
+  id: string;
   projectName: string;
   toolUsed: string;
   prompt: string;
@@ -19,18 +21,99 @@ interface DownloadItem {
   dateTime: string;
   status: "Completed";
   thumbnail: string;
+  created_at?: string;
 }
-
-const mockDownloads: DownloadItem[] = [];
 
 const FILTERS = ["All", "AI Video Generation", "Reference Video", "Image to Video", "Manual Edit"];
 
 export function DownloadsPage() {
+  const { session } = useAuth();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("All");
+  const [downloads, setDownloads] = useState<DownloadItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const filteredDownloads = mockDownloads.filter(item => {
+  React.useEffect(() => {
+    if (!session?.user?.id) return;
+
+    const fetchDownloads = async () => {
+      try {
+        setIsLoading(true);
+        const { data, error } = await supabase
+          .from('app_downloads')
+          .select('*')
+          .order('created_at', { ascending: false });
+          
+        if (error) throw error;
+        
+        if (data) {
+          const formattedData = data.map((item: any) => ({
+            id: item.id,
+            projectName: item.project_name,
+            toolUsed: item.tool_used,
+            prompt: item.prompt,
+            resolution: item.resolution || "1080p",
+            aspectRatio: item.aspect_ratio || "16:9",
+            duration: item.duration || "5s",
+            fileSize: item.file_size || "15 MB",
+            format: item.format || "MP4",
+            dateTime: new Date(item.created_at).toLocaleString(),
+            status: "Completed",
+            thumbnail: item.thumbnail_url || "https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=800",
+            created_at: item.created_at,
+          }));
+          setDownloads(formattedData);
+        }
+      } catch (error) {
+        console.error("Failed to fetch downloads:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDownloads();
+
+    const channel = supabase
+      .channel('public:app_downloads')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'app_downloads', filter: `user_id=eq.${session.user.id}` },
+        (payload: any) => {
+          const item = payload.new;
+          const newItem: DownloadItem = {
+            id: item.id,
+            projectName: item.project_name,
+            toolUsed: item.tool_used,
+            prompt: item.prompt,
+            resolution: item.resolution || "1080p",
+            aspectRatio: item.aspect_ratio || "16:9",
+            duration: item.duration || "5s",
+            fileSize: item.file_size || "15 MB",
+            format: item.format || "MP4",
+            dateTime: new Date(item.created_at).toLocaleString(),
+            status: "Completed",
+            thumbnail: item.thumbnail_url || "https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=800",
+            created_at: item.created_at,
+          };
+          setDownloads((prev) => [newItem, ...prev]);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'app_downloads', filter: `user_id=eq.${session.user.id}` },
+        (payload: any) => {
+          setDownloads((prev) => prev.filter(item => item.id !== payload.old.id));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [session?.user?.id]);
+
+  const filteredDownloads = downloads.filter(item => {
     const matchesSearch = 
       item.projectName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.prompt.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -71,12 +154,12 @@ export function DownloadsPage() {
           <div className="flex-1">
             <div className="flex justify-between text-[10px] font-bold text-gray-400 mb-1">
               <span>Storage Used</span>
-              <span className="text-white">{mockDownloads.length > 0 ? "8.6 GB" : "0 GB"} / 50 GB</span>
+              <span className="text-white">{downloads.length > 0 ? `${(downloads.length * 15.5).toFixed(1)} MB` : "0 MB"} / 50 GB</span>
             </div>
             <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
               <motion.div 
                 initial={{ width: 0 }}
-                animate={{ width: mockDownloads.length > 0 ? '17.2%' : '0%' }} // 8.6 / 50
+                animate={{ width: downloads.length > 0 ? `${Math.min((downloads.length * 15.5) / 500, 100)}%` : '0%' }}
                 transition={{ duration: 1, ease: "easeOut" }}
                 className="h-full bg-gradient-to-r from-purple-500 to-fuchsia-500"
               />

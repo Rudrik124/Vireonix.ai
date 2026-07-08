@@ -146,7 +146,7 @@ const PortalPreview = ({ type, isActive }: { type: string, isActive: boolean }) 
 export function FeaturesSelectionPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isLoggedIn, logout, session } = useAuth();
+  const { isLoggedIn, logout, session, profile } = useAuth();
   const { isDeveloperTestMode, search } = usePortalTestingContext();
   const [mounted, setMounted] = useState(false);
   const [showLoginSuccess, setShowLoginSuccess] = useState(false);
@@ -157,7 +157,7 @@ export function FeaturesSelectionPage() {
 
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const userName = session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || "User";
+  const userName = profile?.fullName || session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || "User";
 
   useEffect(() => {
     setMounted(true);

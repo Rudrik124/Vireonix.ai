@@ -5,9 +5,11 @@ import {
   Search, HardDrive, UploadCloud
 } from "lucide-react";
 import { useNavigate } from "react-router";
+import { supabase } from "@/lib/supabase";
+import { useAuth } from "../context/auth-context";
 
 interface UploadItem {
-  id: number;
+  id: string;
   originalFilename: string;
   uploadType: "Video" | "Image";
   size: string;
@@ -20,16 +22,92 @@ interface UploadItem {
   thumbnail: string;
 }
 
-const mockUploads: UploadItem[] = [];
-
 const FILTERS = ["All", "Images", "Videos"];
 
 export function UploadsPage() {
+  const { session } = useAuth();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("All");
+  const [uploads, setUploads] = useState<UploadItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const filteredUploads = mockUploads.filter(item => {
+  React.useEffect(() => {
+    if (!session?.user?.id) return;
+
+    const fetchUploads = async () => {
+      try {
+        setIsLoading(true);
+        const { data, error } = await supabase
+          .from('app_uploads')
+          .select('*')
+          .order('created_at', { ascending: false });
+          
+        if (error) throw error;
+        
+        if (data) {
+          const formattedData = data.map((item: any) => ({
+            id: item.id,
+            originalFilename: item.original_filename,
+            uploadType: item.upload_type,
+            size: item.size || "15 MB",
+            resolution: item.resolution || "1080p",
+            duration: item.duration,
+            uploadDate: new Date(item.created_at).toLocaleString(),
+            toolUsed: item.tool_used,
+            status: item.status || "Active",
+            usedInProject: item.used_in_project || "Unassigned",
+            thumbnail: item.thumbnail_url || (item.upload_type === "Video" ? "https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=800" : "https://images.unsplash.com/photo-1541185933-ef5d8ed016c2?w=800"),
+          }));
+          setUploads(formattedData);
+        }
+      } catch (error) {
+        console.error("Failed to fetch uploads:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUploads();
+
+    const channel = supabase
+      .channel('public:app_uploads')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'app_uploads', filter: `user_id=eq.${session.user.id}` },
+        (payload: any) => {
+          const item = payload.new;
+          const newItem: UploadItem = {
+            id: item.id,
+            originalFilename: item.original_filename,
+            uploadType: item.upload_type,
+            size: item.size || "15 MB",
+            resolution: item.resolution || "1080p",
+            duration: item.duration,
+            uploadDate: new Date(item.created_at).toLocaleString(),
+            toolUsed: item.tool_used,
+            status: item.status || "Active",
+            usedInProject: item.used_in_project || "Unassigned",
+            thumbnail: item.thumbnail_url || (item.upload_type === "Video" ? "https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=800" : "https://images.unsplash.com/photo-1541185933-ef5d8ed016c2?w=800"),
+          };
+          setUploads((prev) => [newItem, ...prev]);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'app_uploads', filter: `user_id=eq.${session.user.id}` },
+        (payload: any) => {
+          setUploads((prev) => prev.filter(item => item.id !== payload.old.id));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [session?.user?.id]);
+
+  const filteredUploads = uploads.filter(item => {
     const matchesSearch = 
       item.originalFilename.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.usedInProject.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -72,12 +150,12 @@ export function UploadsPage() {
           <div className="flex-1">
             <div className="flex justify-between text-[10px] font-bold text-gray-400 mb-1">
               <span>Storage Used</span>
-              <span className="text-white">{mockUploads.length > 0 ? "8.6 GB" : "0 GB"} / 50 GB</span>
+              <span className="text-white">{uploads.length > 0 ? `${(uploads.length * 12.4).toFixed(1)} MB` : "0 MB"} / 50 GB</span>
             </div>
             <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
               <motion.div 
                 initial={{ width: 0 }}
-                animate={{ width: mockUploads.length > 0 ? '17.2%' : '0%' }} // 8.6 / 50
+                animate={{ width: uploads.length > 0 ? `${Math.min((uploads.length * 12.4) / 500, 100)}%` : '0%' }}
                 transition={{ duration: 1, ease: "easeOut" }}
                 className="h-full bg-gradient-to-r from-purple-500 to-fuchsia-500"
               />

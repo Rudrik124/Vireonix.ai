@@ -6,6 +6,12 @@ type SupabaseProfileRow = {
   id?: string;
   email?: string | null;
   full_name?: string | null;
+  name?: string | null;
+  timezone?: string | null;
+  role?: string | null;
+  phone?: string | null;
+  country?: string | null;
+  language?: string | null;
 };
 
 export function buildFallbackProfile(session: Session): AppProfile {
@@ -25,6 +31,12 @@ function normalizeProfile(row: SupabaseProfileRow, session: Session): AppProfile
     id: row.id || fallback.id,
     email: row.email || fallback.email,
     fullName: row.full_name || fallback.fullName,
+    name: row.name || undefined,
+    timezone: row.timezone || undefined,
+    role: row.role || undefined,
+    phone: row.phone || undefined,
+    country: row.country || undefined,
+    language: row.language || undefined,
   };
 }
 
@@ -35,7 +47,7 @@ async function selectProfile(tableName: string, session: Session) {
 
   const query = await supabase
     .from(tableName)
-    .select("id,email,full_name")
+    .select("id,email,full_name,name,timezone,role,phone,country,language")
     .eq("id", session.user.id)
     .maybeSingle();
 

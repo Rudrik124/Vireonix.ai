@@ -1,9 +1,8 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { ArrowLeft, User, Upload, Music, Shield, FileVideo, Check, X, Zap, Cloud, Sparkles, Layers, Lock, Play, History, Loader, ArrowRight } from 'lucide-react';
+import { ArrowLeft, User, Upload, Music, Shield, FileVideo, Check, X, Zap, Cloud, Sparkles, Layers, Lock, Play, Loader, ArrowRight } from 'lucide-react';
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "../../context/auth-context";
-import { HistoryDialog, HistoryItem } from "../../components/history-dialog";
 import { BrandLogo } from "../../components/brand-logo";
 import { useRedirectParam } from "../../lib/useRedirectParam";
 
@@ -43,7 +42,6 @@ export function QuickEditUploadScreen() {
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
-  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   // ----- MOUSE TRACKING -----
   useEffect(() => {
@@ -124,10 +122,6 @@ export function QuickEditUploadScreen() {
       }, 1500);
     }
   }, [file, audioFile, navigate]);
-
-  const handleHistorySelect = useCallback((item: HistoryItem) => {
-    setIsHistoryOpen(false);
-  }, []);
 
   // ----- STYLES -----
   const styles: Record<string, React.CSSProperties> = {
@@ -532,10 +526,6 @@ export function QuickEditUploadScreen() {
             </button>
           </div>
           <div style={styles.navRight}>
-            <button style={styles.navBtn} onClick={() => setIsHistoryOpen(true)}>
-              <History size={16} />
-              <span className="hidden md:inline">History</span>
-            </button>
             <button style={{...styles.navBtn, padding: '8px'}}>
               <User size={18} />
             </button>
@@ -699,13 +689,6 @@ export function QuickEditUploadScreen() {
         <div style={styles.ribbonItem}><Zap size={14} color={CONFIG.accent} /> Real-time Rendering</div>
         <div style={styles.ribbonItem}><Cloud size={14} color={CONFIG.accentCyan} /> Cloud Synced</div>
       </div>
-
-      <HistoryDialog 
-        open={isHistoryOpen} 
-        onOpenChange={setIsHistoryOpen}
-        onSelect={handleHistorySelect}
-        currentTool="quick-edit"
-      />
     </div>
   );
 }

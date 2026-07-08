@@ -1,18 +1,19 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  ArrowLeft, Upload, FileVideo, Sparkles, Video, Clock, History, Settings2, Check, Zap, Download, Layers, ChevronRight, User, ChevronDown, LogOut, Play,
-  Battery, Bell, Moon, Monitor, Menu, Dice5, Save, LayoutTemplate, TrendingUp, AlertTriangle, Copy, Trash2, Heart, Info, X, Camera, Palette, Sliders, Activity, Cpu, Music, Mic, Volume2
+  ArrowLeft, Upload, FileVideo, Sparkles, Video, Clock, Settings2, User, ChevronDown, LogOut, Play,
+  Battery,  Monitor,  Sliders,  Cpu, Music,  X, Activity, UploadCloud, Layout, Zap, Trash2, Volume2, VolumeX
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Textarea } from "../../components/ui/textarea";
 import { useAuth } from "../../context/auth-context";
+import { supabase } from "@/lib/supabase";
 import { BrandLogo } from "../../components/brand-logo";
 import { Switch } from "../../components/ui/switch";
 import { useRedirectParam } from "../../lib/useRedirectParam";
-import { type HistoryItem } from "../../components/history-dialog";
+import { generateThumbnail } from "@/lib/thumbnail";
 
 const frameStyleOptions = [
   { label: "16:9", ratio: "YouTube", icon: Monitor },
@@ -45,11 +46,6 @@ const promptSuggestions = [
   "Keep Camera Motion", "Preserve Subject", "Cinematic Lighting", "Ultra Realistic", "Slow Motion", "Drone Shot", "Golden Hour", "Commercial", "Music Video", "Luxury Ad"
 ];
 
-const dummyRecent = [
-  { id: 1, prompt: "Make the subject a futuristic cyborg...", duration: "10s", created: "10 mins ago", status: "Completed", thumbnail: "https://images.unsplash.com/photo-1541185933-ef5d8ed016c2?w=300" },
-  { id: 2, prompt: "Change environment to a snowy mountain...", duration: "15s", created: "1 hour ago", status: "Completed", thumbnail: "https://images.unsplash.com/photo-1506744626753-1fa30a006c57?w=300" },
-];
-
 export function ReferenceVideoSetupScreen() {
   const navigate = useNavigate();
   const { isLoggedIn, session, logout, profile } = useAuth();
@@ -57,22 +53,6 @@ export function ReferenceVideoSetupScreen() {
   
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userName = session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || "User";
-  const [recentGenerations, setRecentGenerations] = useState<HistoryItem[]>([]);
-
-  const loadRecentGenerations = () => {
-    try {
-      const saved = localStorage.getItem('veytrix_history');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        const filtered = parsed.filter((item: HistoryItem) => item.tool === 'reference-video');
-        setRecentGenerations(filtered.slice(0, 4));
-      }
-    } catch (e) {}
-  };
-
-  useEffect(() => {
-    loadRecentGenerations();
-  }, []);
 
   const [prompt, setPrompt] = useState("");
   const [negativePrompt, setNegativePrompt] = useState("");
@@ -114,6 +94,23 @@ export function ReferenceVideoSetupScreen() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    if (referenceVideo && session?.user?.id) {
+      generateThumbnail(referenceVideo).then(thumbnail_url => {
+        supabase.from('app_uploads').insert({
+          user_id: session.user.id,
+          original_filename: referenceVideo.name,
+          upload_type: "Video",
+          size: `${(referenceVideo.size / (1024 * 1024)).toFixed(2)} MB`,
+          resolution: "Unknown",
+          tool_used: "Reference Video",
+          used_in_project: "Draft",
+          thumbnail_url
+        }).then();
+      });
+    }
+  }, [referenceVideo, session?.user?.id]);
+
   const handleFileDrop = (e: React.DragEvent) => {
     e.preventDefault();
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
@@ -121,8 +118,44 @@ export function ReferenceVideoSetupScreen() {
     }
   };
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     const duration = selectedDuration === "custom" ? customDuration : selectedDuration;
+    
+    if (session?.user?.id) {
+      await supabase.from('app_generations_history').insert({
+        user_id: session.user.id,
+        type: "Reference video",
+        title: prompt ? prompt.slice(0, 50) + (prompt.length > 50 ? '...' : '') : "Reference Video Generation",
+        description: `Duration: ${duration}s • Res: ${selectedResolution}`,
+        metadata: {
+          prompt,
+          duration,
+          ratio: selectedRatio,
+          resolution: selectedResolution,
+          model: selectedModel
+        }
+      });
+
+      // Add to downloads table (in a real app, this might happen after processing)
+      const thumbPromise = referenceVideo ? generateThumbnail(referenceVideo) : Promise.resolve("https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=800");
+
+      thumbPromise.then(thumbnail_url => {
+        supabase.from('app_downloads').insert({
+          user_id: session.user.id,
+          project_name: prompt ? prompt.slice(0, 30) + (prompt.length > 30 ? '...' : '') : "Reference Video",
+          tool_used: "Reference Video",
+          prompt: prompt || "Visual generation from reference video",
+          resolution: selectedResolution,
+          aspect_ratio: selectedRatio,
+          duration: `${duration}`,
+          file_size: "64 MB",
+          format: "MP4",
+          video_url: "",
+          thumbnail_url
+        }).then();
+      });
+    }
+
     navigate("/reference-video/processing", {
       state: {
         prompt,
@@ -162,16 +195,10 @@ export function ReferenceVideoSetupScreen() {
           </motion.button>
         </div>
 
-        <div className="flex flex-wrap items-center justify-center sm:justify-end gap-3 w-full sm:w-auto">
-          <div className="hidden lg:flex items-center gap-4 bg-white/5 border border-white/10 rounded-full px-4 py-1.5 mr-2">
-            <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-amber-400"><Battery className="w-3.5 h-3.5" /> {profile?.credits?.userCredits ?? 0} Credits</span>
-          </div>
-
-          <button className="flex items-center gap-2 bg-white/5 hover:bg-white/10 px-4 py-2 rounded-full border border-white/10 transition-all text-slate-300 hover:text-white shadow-lg">
-            <History className="w-4 h-4" />
-            <span className="text-[11px] font-bold uppercase tracking-widest hidden sm:inline">History</span>
-          </button>
-
+          <div className="flex flex-wrap items-center justify-center sm:justify-end gap-3 w-full sm:w-auto">
+            <div className="hidden lg:flex items-center gap-4 bg-white/5 border border-white/10 rounded-full px-4 py-1.5 mr-2">
+              <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-amber-400"><Battery className="w-3.5 h-3.5" /> {profile?.credits?.userCredits ?? 0} Credits</span>
+            </div>
 
           {isLoggedIn ? (
             <div className="relative">
@@ -636,38 +663,6 @@ export function ReferenceVideoSetupScreen() {
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
-
-        {/* RECENT STUDIO PROJECTS */}
-        <div className="mb-20">
-          <h3 className="text-sm font-black uppercase tracking-widest text-slate-300 mb-6 flex items-center gap-2"><History className="w-4 h-4" /> Recent Studio Projects</h3>
-          {recentGenerations.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 px-4 bg-[#10162A]/60 border border-white/5 rounded-3xl opacity-60">
-              <History className="w-12 h-12 text-slate-500 mb-4" />
-              <p className="text-sm font-black uppercase tracking-widest text-slate-400">No recent projects</p>
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-2">Start creating to see your history here</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {recentGenerations.map(r => (
-                <div key={r.id} className="cursor-pointer bg-[#10162A]/60 border border-white/5 rounded-2xl overflow-hidden group hover:border-purple-500/30 transition-all shadow-lg hover:shadow-[0_0_30px_rgba(168,85,247,0.1)] flex flex-col">
-                  <div className="relative aspect-video overflow-hidden bg-black/80 flex items-center justify-center">
-                    <Video className="w-8 h-8 text-white/20 group-hover:scale-110 transition-transform duration-500" />
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 backdrop-blur-sm pointer-events-none">
-                      <button className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center hover:scale-110 transition-transform pointer-events-auto"><Play className="w-5 h-5 ml-1" /></button>
-                    </div>
-                  </div>
-                  <div className="p-4 flex-1 flex flex-col">
-                    <p className="text-sm font-medium text-slate-200 line-clamp-1 mb-2 flex-1">{r.title}</p>
-                    <div className="flex justify-between items-center text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-auto">
-                      <span>{r.config?.quality || '1080p'} • {r.config?.duration || '10'}s</span>
-                      <span>{new Date(r.timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       </div>
     </div>

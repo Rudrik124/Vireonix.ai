@@ -6,7 +6,8 @@ import {
   User, Bookmark, Folder, Download, Clock
 } from "lucide-react";
 import { useNavigate } from "react-router";
-import { buildApiUrl } from "@/lib/api";
+import { supabase } from "@/lib/supabase";
+import { useAuth } from "../context/auth-context";
 
 // Helper function for grouping
 function getGroupKey(dateString: string) {
@@ -28,7 +29,7 @@ function getGroupKey(dateString: string) {
 }
 
 interface HistoryItem {
-  id: number;
+  id: string;
   type: string;
   title: string;
   desc: string;
@@ -37,11 +38,13 @@ interface HistoryItem {
   icon: any;
   color: string;
   bg: string;
+  created_at?: string;
 }
 
 const initialHistory: HistoryItem[] = [];
 
 export function HistoryPage() {
+  const { session } = useAuth();
   const navigate = useNavigate();
   const [history, setHistory] = useState<HistoryItem[]>(initialHistory);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -51,22 +54,37 @@ export function HistoryPage() {
 
   const tabs = ["All", "Ai generated video", "Reference video", "Direct pic to video", "Ai manual edit"];
 
+  const formatHistoryItem = (item: any): HistoryItem => {
+    const d = new Date(item.created_at);
+    return {
+      id: item.id,
+      type: item.type,
+      title: item.title,
+      desc: item.description || "Generated successfully",
+      date: d.toISOString(),
+      time: d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      icon: Video, // Default icon
+      color: "text-purple-400",
+      bg: "bg-purple-500/10",
+      created_at: item.created_at,
+    };
+  };
+
   useEffect(() => {
+    if (!session?.user?.id) return;
+
     const fetchHistory = async () => {
       try {
-        const response = await fetch(buildApiUrl("/api/history"));
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success && data.history) {
-            // Map icon string to component if needed, but since we get raw data, we can set default icons here based on type
-            const mappedHistory = data.history.map((item: any) => ({
-              ...item,
-              icon: Video, // Default icon for video
-              color: "text-purple-400",
-              bg: "bg-purple-500/10",
-            }));
-            setHistory(mappedHistory);
-          }
+        setIsLoading(true);
+        const { data, error } = await supabase
+          .from('app_generations_history')
+          .select('*')
+          .order('created_at', { ascending: false });
+          
+        if (error) throw error;
+        
+        if (data) {
+          setHistory(data.map(formatHistoryItem));
         }
       } catch (error) {
         console.error("Failed to fetch history:", error);
@@ -74,14 +92,49 @@ export function HistoryPage() {
         setIsLoading(false);
       }
     };
-    fetchHistory();
-  }, []);
 
-  const handleClearHistory = () => {
-    setHistory([]);
-    setShowConfirm(false);
-    setShowToast(true);
-    setTimeout(() => setShowToast(false), 3000);
+    fetchHistory();
+
+    // Subscribe to realtime updates
+    const channel = supabase
+      .channel('public:app_generations_history')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'app_generations_history', filter: `user_id=eq.${session.user.id}` },
+        (payload: any) => {
+          setHistory((prev) => [formatHistoryItem(payload.new), ...prev]);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'app_generations_history', filter: `user_id=eq.${session.user.id}` },
+        (payload: any) => {
+          setHistory((prev) => prev.filter(item => item.id !== payload.old.id));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [session?.user?.id]);
+
+  const handleClearHistory = async () => {
+    try {
+      const { error } = await supabase
+        .from('app_generations_history')
+        .delete()
+        .eq('user_id', session?.user?.id);
+        
+      if (error) throw error;
+      
+      setHistory([]);
+      setShowConfirm(false);
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    } catch (error) {
+      console.error("Failed to clear history:", error);
+    }
   };
 
   const filteredHistory = activeTab === "All" 
