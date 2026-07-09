@@ -156,13 +156,7 @@ export function UserProfileSidebar({
                     </div>
                     <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
-                  <div className={navItemClass}>
-                    <div className="flex items-center gap-3">
-                      <Folder className="w-4 h-4 text-gray-400 group-hover:text-purple-400 transition-colors" />
-                      <span>Projects</span>
-                    </div>
-                    <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </div>
+
                   <div className={navItemClass} onClick={() => handleNavigation("/history")}>
                     <div className="flex items-center gap-3">
                       <Clock className="w-4 h-4 text-gray-400 group-hover:text-purple-400 transition-colors" />
@@ -211,14 +205,8 @@ export function UserProfileSidebar({
                     <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
 
-                  <div className={navItemClass} onClick={() => handleNavigation("/security")}>
-                    <div className="flex items-center gap-3">
-                      <Shield className="w-4 h-4 text-gray-400 group-hover:text-blue-400 transition-colors" />
-                      <span>Security</span>
-                    </div>
-                    <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </div>
-                  <div className={navItemClass}>
+
+                  <div className={navItemClass} onClick={() => handleNavigation("/keyboard-shortcuts")}>
                     <div className="flex items-center gap-3">
                       <Keyboard className="w-4 h-4 text-gray-400 group-hover:text-blue-400 transition-colors" />
                       <span>Keyboard Shortcuts</span>

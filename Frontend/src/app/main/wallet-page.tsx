@@ -7,7 +7,6 @@ import {
   Video,
   Image as ImageIcon,
   Wand2,
-  Bell,
   User,
   ChevronDown,
   ArrowLeft,
@@ -126,11 +125,6 @@ export function WalletPage() {
               <Zap className="w-4 h-4 text-fuchsia-400" />
               <span className="text-sm font-bold text-white"><AnimatedCounter value={totalCredits} /></span>
             </div>
-            
-            <button className="text-gray-400 hover:text-white transition-colors relative">
-              <Bell className="w-5 h-5" />
-              <span className="absolute 0 top-0 right-0 w-2 h-2 bg-fuchsia-500 rounded-full border border-[#0A0A0A]"></span>
-            </button>
 
             {isLoggedIn ? (
               <div className="relative">

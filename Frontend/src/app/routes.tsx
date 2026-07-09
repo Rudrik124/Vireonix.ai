@@ -112,6 +112,13 @@ const legacyUserRoutes = [
     }
   },
   {
+    path: "/keyboard-shortcuts",
+    async lazy() {
+      const { KeyboardShortcutsPage } = await import("./components/keyboard-shortcuts");
+      return { Component: KeyboardShortcutsPage };
+    }
+  },
+  {
     path: "/editor",
     async lazy() {
       const { EditorPage } = await import("./pages/editor/editor-page");
