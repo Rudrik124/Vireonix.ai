@@ -41,6 +41,7 @@ export function UploadsPage() {
         const { data, error } = await supabase
           .from('app_uploads')
           .select('*')
+          .eq('user_id', session.user.id)
           .order('created_at', { ascending: false });
           
         if (error) throw error;
