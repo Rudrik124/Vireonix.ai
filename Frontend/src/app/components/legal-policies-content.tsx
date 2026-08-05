@@ -23,7 +23,7 @@ export function PrivacyPolicyContent() {
         <h2 className="text-2xl font-bold text-fuchsia-400">3. How We Use Your Information</h2>
         <p className="text-gray-300">We use collected information to:</p>
         <ul className="list-disc list-inside text-gray-300 space-y-2 ml-4">
-          <li>Provide AI video generation services</li>
+          <li>Provide Quick AI Edit services</li>
           <li>Improve platform performance</li>
           <li>Personalize user experience</li>
           <li>Detect fraud and abuse</li>

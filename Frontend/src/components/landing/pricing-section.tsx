@@ -40,7 +40,7 @@ export const PricingSection = ({ isDarkMode, fadeInUp }: PricingSectionProps) =>
               price: '₹99',
               period: '/month',
               badge: 'Perfect for Beginners',
-              features: ['40 AI Credits + 5 Bonus Credits', 'AI Video Generation', 'Image to Video', 'AI Manual Edit', 'HD Export', 'Standard Render Queue', 'Commercial Usage'],
+              features: ['40 AI Credits + 5 Bonus Credits', 'Quick AI Edit', 'HD Export', 'Standard Render Queue', 'Commercial Usage'],
               buttonText: 'Start with Plus',
               featured: false
             },
@@ -50,7 +50,7 @@ export const PricingSection = ({ isDarkMode, fadeInUp }: PricingSectionProps) =>
               period: '/month',
               badge: 'Best for Creators',
               topBadge: '🔥 MOST POPULAR',
-              features: ['80 AI Credits + 10 Bonus Credits', 'AI Video Generation', 'Image to Video', 'AI Manual Edit', 'Faster AI Rendering', 'Priority Queue', 'Full HD Export', 'Commercial Usage', 'Early Access Features'],
+              features: ['80 AI Credits + 10 Bonus Credits', 'Quick AI Edit', 'Faster AI Rendering', 'Priority Queue', 'Full HD Export', 'Commercial Usage', 'Early Access Features'],
               buttonText: 'Go Pro',
               featured: true
             },
@@ -59,7 +59,7 @@ export const PricingSection = ({ isDarkMode, fadeInUp }: PricingSectionProps) =>
               price: '₹299',
               period: '/month',
               badge: 'For Professionals',
-              features: ['130 AI Credits + 15 Bonus Credits', 'Unlimited AI Creativity', 'AI Video Generation', 'Image to Video', 'AI Manual Edit', 'Fastest Rendering', '4K Export', 'Premium AI Models', 'Priority Support', 'Commercial License', 'Early Beta Features'],
+              features: ['130 AI Credits + 15 Bonus Credits', 'Unlimited AI Creativity', 'Quick AI Edit', 'Fastest Rendering', '4K Export', 'Premium AI Models', 'Priority Support', 'Commercial License', 'Early Beta Features'],
               buttonText: 'Choose Elite',
               featured: false
             }

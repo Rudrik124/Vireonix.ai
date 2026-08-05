@@ -3,9 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ArrowLeft, 
   HelpCircle,
-  Video,
-  Image as ImageIcon,
-  Film,
   Wand2,
   ChevronDown,
   Mail,
@@ -19,23 +16,8 @@ export function HelpCenterPage() {
 
   const quickHelpCards = [
     {
-      icon: <Video className="w-8 h-8 text-purple-400" />,
-      title: "AI Video Generation",
-      description: "Learn how to generate videos from text prompts.",
-    },
-    {
-      icon: <ImageIcon className="w-8 h-8 text-fuchsia-400" />,
-      title: "Image to Video",
-      description: "Turn static images into cinematic AI videos.",
-    },
-    {
-      icon: <Film className="w-8 h-8 text-blue-400" />,
-      title: "Reference Video Editing",
-      description: "Upload a reference video and recreate its style using AI.",
-    },
-    {
       icon: <Wand2 className="w-8 h-8 text-pink-400" />,
-      title: "AI Manual Edit",
+      title: "Quick AI Edit",
       description: "Professionally edit videos using effects, transitions, filters, and AI-powered tools.",
     }
   ];
@@ -58,22 +40,10 @@ export function HelpCenterPage() {
       title: "Choose Your AI Tool",
       content: (
         <div className="space-y-4">
-          <p className="text-gray-300">Explain the four available tools:</p>
+          <p className="text-gray-300">Explain the available tool:</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="bg-white/5 p-4 rounded-xl border border-white/10">
-              <h4 className="font-bold text-white mb-1">AI Video Generation</h4>
-              <p className="text-sm text-gray-400">Generate videos from detailed prompts.</p>
-            </div>
-            <div className="bg-white/5 p-4 rounded-xl border border-white/10">
-              <h4 className="font-bold text-white mb-1">Image to Video</h4>
-              <p className="text-sm text-gray-400">Animate images into videos.</p>
-            </div>
-            <div className="bg-white/5 p-4 rounded-xl border border-white/10">
-              <h4 className="font-bold text-white mb-1">Reference Video Editing</h4>
-              <p className="text-sm text-gray-400">Upload a reference video and recreate similar scenes.</p>
-            </div>
-            <div className="bg-white/5 p-4 rounded-xl border border-white/10">
-              <h4 className="font-bold text-white mb-1">AI Manual Edit</h4>
+              <h4 className="font-bold text-white mb-1">Quick AI Edit</h4>
               <p className="text-sm text-gray-400">Edit existing videos using professional editing tools.</p>
             </div>
           </div>
@@ -174,7 +144,7 @@ export function HelpCenterPage() {
     { q: "Why is my generation taking longer?", a: "High traffic or highly complex prompts at 4K resolution can sometimes increase processing time up to 5-10 minutes." },
     { q: "Which formats are supported?", a: "We support MP4, MOV, and WebM for video uploads, and JPG, PNG, and WebP for image uploads. Exports are in MP4 format." },
     { q: "Can I generate 4K videos?", a: "Yes, Pro users have access to 4K resolution generation and upscaling." },
-    { q: "Can I edit generated videos later?", a: "Absolutely! You can load any previously generated video into the AI Manual Edit tool for further refinement." },
+    { q: "Can I edit videos using AI?", a: "Absolutely! You can load any video into the Quick AI Edit tool for professional refinement." },
     { q: "Where can I find my exported videos?", a: "All successfully generated and exported videos are automatically saved in the Downloads page." },
     { q: "How do credits work?", a: "Each generation consumes credits based on the complexity and length. Pro plans include a monthly refill of credits." },
     { q: "Can I delete my uploaded files?", a: "Yes, you can manage and delete your files from the Uploads and Downloads pages at any time." },

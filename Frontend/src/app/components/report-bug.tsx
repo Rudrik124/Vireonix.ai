@@ -30,10 +30,7 @@ export function ReportBugPage() {
   const videoInputRef = useRef<HTMLInputElement>(null);
 
   const tools = [
-    "AI Video Generation",
-    "Image to Video",
-    "Reference Video Editing",
-    "AI Manual Edit",
+    "Quick AI Edit",
     "Downloads",
     "Uploads",
     "Profile",

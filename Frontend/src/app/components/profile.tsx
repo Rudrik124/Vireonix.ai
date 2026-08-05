@@ -57,7 +57,7 @@ export function ProfilePage() {
       if (saved) {
         const history = JSON.parse(saved);
         const projects = history.length;
-        const videosGenerated = history.filter((i: any) => ['forge', 'image-to-video', 'reference-video'].includes(i.tool)).length;
+        const videosGenerated = history.filter((i: any) => ['forge'].includes(i.tool)).length;
         const imagesGenerated = history.filter((i: any) => ['avatar'].includes(i.tool)).length;
         const manualEdits = history.filter((i: any) => ['quick-edit'].includes(i.tool)).length;
         

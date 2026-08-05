@@ -2,7 +2,7 @@ import { useState, useEffect, lazy, Suspense } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { ConfigProvider, theme, Button, Modal, Row, Col, Card, Switch, Typography, Progress } from 'antd';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircleOutlined, GithubOutlined, TwitterOutlined, RocketOutlined, SearchOutlined, CloudUploadOutlined, CloudDownloadOutlined, ThunderboltOutlined, PictureOutlined, CodeOutlined, PlayCircleOutlined, ScissorOutlined, MessageOutlined, AudioOutlined, BgColorsOutlined, MobileOutlined, SoundOutlined, BulbOutlined, FieldTimeOutlined, SafetyCertificateOutlined, CloudServerOutlined, VideoCameraOutlined, CopyOutlined, FileImageOutlined, EditOutlined, CloseOutlined, SlidersOutlined, DiscordOutlined, ArrowRightOutlined, InstagramOutlined, LinkedinOutlined, FacebookOutlined } from '@ant-design/icons';
+import { CheckCircleOutlined, GithubOutlined, TwitterOutlined, RocketOutlined, SearchOutlined, CloudUploadOutlined, CloudDownloadOutlined, ThunderboltOutlined, PictureOutlined, CodeOutlined, PlayCircleOutlined, ScissorOutlined, MessageOutlined, AudioOutlined, BgColorsOutlined, MobileOutlined, SoundOutlined, BulbOutlined, FieldTimeOutlined, SafetyCertificateOutlined, CloudServerOutlined, EditOutlined, CloseOutlined, SlidersOutlined, DiscordOutlined, ArrowRightOutlined, InstagramOutlined, LinkedinOutlined, FacebookOutlined } from '@ant-design/icons';
 const LoginModal = lazy(() => import('../components/login-modal').then(m => ({ default: m.LoginModal })));
 import { BrandLogo } from '../components/brand-logo';
 import { Sparkles, Play, Video, Image as ImageIcon, Wand2, Music, CheckCircle2, Menu, Loader2, Star, Zap, Clapperboard, Globe, ShieldCheck, User, ChevronRight, ChevronDown, LogOut, Wallet, Mail, LifeBuoy, UserCircle, CreditCard, Lightbulb, Bug, Briefcase, Clock, X } from 'lucide-react';
@@ -103,7 +103,7 @@ function ContactModal({ isOpen, onClose }: ContactModalProps) {
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.28, ease: "easeOut" }}
             className="relative w-full max-w-4xl max-h-[90vh] bg-[#0a0a10]/80 backdrop-blur-2xl border border-white/[0.08] rounded-[28px] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5),0_0_40px_rgba(168,85,247,0.1)] flex flex-col overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e: React.MouseEvent) => e.stopPropagation()}
           >
             {/* Header */}
             <div className="flex-shrink-0 flex justify-between items-start p-8 pb-6 border-b border-white/5">
@@ -380,41 +380,8 @@ export function LandingPage() {
 
   const workflows = [
     {
-      id: 1,
-      title: "AI Video Generation",
-      description: "Transform simple text prompts into fully generated cinematic videos using advanced AI models. Describe your idea, scene, style, motion, lighting, camera angles, or aesthetic — and the AI automatically creates a professional-quality video in seconds. Perfect for creators, marketers, reels, ads, storytelling, and social media content.",
-      features: ["Text-to-Video Generation", "Cinematic Scene Creation", "AI Camera Motion", "Smart Visual Styling", "Fast Rendering Engine", "Reel & Shorts Optimization"],
-      indicators: ["⚡ Fast Processing", "🎬 4K Export", "🤖 AI Powered", "☁️ Cloud Rendering"],
-      icon: <VideoCameraOutlined />,
-      color: "from-blue-500 to-purple-500",
-      glowColor: "shadow-blue-500/20",
-      borderColor: "border-blue-500/20"
-    },
-    {
-      id: 2,
-      title: "Reference Video Editing",
-      description: "Upload a reference video and let AI recreate, enhance, or transform it using your own prompts, images, clips, or editing instructions. Change styles, transitions, effects, pacing, colors, or visual aesthetics while preserving the original flow and structure.",
-      features: ["AI Reference Analysis", "Style Transfer Editing", "Scene Recreation", "Smart Clip Replacement", "AI Motion Matching", "Cinematic Enhancement"],
-      indicators: ["⚡ Fast Processing", "🎬 4K Export", "🤖 AI Powered", "☁️ Cloud Rendering"],
-      icon: <CopyOutlined />,
-      color: "from-fuchsia-500 to-pink-500",
-      glowColor: "shadow-fuchsia-500/20",
-      borderColor: "border-fuchsia-500/20"
-    },
-    {
-      id: 3,
-      title: "Image to Video",
-      description: "Convert static images into dynamic cinematic videos with realistic AI-generated motion, camera movement, depth animation, zoom effects, transitions, and visual storytelling. Simply upload images and describe how the motion and scene should behave.",
-      features: ["AI Motion Generation", "Depth & Camera Animation", "Image Cinematics", "Smooth Transitions", "Dynamic Scene Effects", "Visual Storytelling AI"],
-      indicators: ["⚡ Fast Processing", "🎬 4K Export", "🤖 AI Powered", "☁️ Cloud Rendering"],
-      icon: <FileImageOutlined />,
-      color: "from-orange-500 to-red-500",
-      glowColor: "shadow-orange-500/20",
-      borderColor: "border-orange-500/20"
-    },
-    {
       id: 4,
-      title: "AI Manual Edit",
+      title: "Quick AI Edit",
       description: "Edit videos manually with the power of AI-assisted prompting. Control speed, cuts, effects, transitions, captions, color grading, timing, and animations using intelligent prompts while still having full creative freedom through professional editing tools.",
       features: ["Prompt-Based Editing", "AI Smart Timeline", "Advanced Transitions", "Auto Captions & Effects", "Speed & Motion Controls", "Professional Editing Suite"],
       indicators: ["⚡ Fast Processing", "🎬 4K Export", "🤖 AI Powered", "☁️ Cloud Rendering"],
@@ -797,11 +764,10 @@ export function LandingPage() {
         <section id="how-it-works" className={`py-24 px-6 md:py-32 relative z-10 ${isDarkMode ? 'bg-gradient-to-b from-[#0B0A10] to-[#0B0815]' : 'bg-gradient-to-b from-gray-50 to-white'}`}>
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-16 md:mb-24">
-              <h2 className="text-4xl md:text-[clamp(2.5rem,5vw,3.5rem)] font-black mb-6 tracking-tight">See How VEYTRIX Works</h2>
-              <p className="text-xl opacity-70 max-w-2xl mx-auto font-medium">Four powerful AI workflows designed for creators, editors, brands, and cinematic content production.</p>
+              <h2 className="text-4xl md:text-[clamp(2.5rem,5vw,3.5rem)] font-black mb-6 tracking-tight">Quick AI Edit</h2>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10">
+            <div className="flex justify-center w-full max-w-xl mx-auto">
               {workflows.map((workflow) => (
                 <motion.div
                   key={workflow.id}
@@ -890,7 +856,7 @@ export function LandingPage() {
                 </div>
                 <h3 className="text-2xl font-bold mb-4">Describe Your Vision</h3>
                 <p className="opacity-70 text-lg leading-relaxed">
-                  Use prompts, images, or reference videos to guide the AI.
+                  Use prompts to guide the AI.
                 </p>
               </motion.div>
 
@@ -1063,7 +1029,7 @@ export function LandingPage() {
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ duration: 0.28, ease: "easeOut" }}
                 className="relative w-full max-w-5xl max-h-[90vh] bg-[#0a0a10]/80 backdrop-blur-2xl border border-white/[0.08] rounded-[28px] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5),0_0_40px_rgba(168,85,247,0.1)] flex flex-col overflow-hidden"
-                onClick={(e) => e.stopPropagation()}
+                onClick={(e: React.MouseEvent) => e.stopPropagation()}
               >
                 <div className="flex-shrink-0 flex justify-end p-6 border-b border-white/5">
                   <button
@@ -1090,25 +1056,7 @@ export function LandingPage() {
                     <Row gutter={[20, 20]} justify="center" className="mb-10">
                       {[
                         {
-                          title: 'AI Video Generation',
-                          desc: 'Generate stunning cinematic videos from simple text prompts using advanced AI models.',
-                          features: ['Text to Video', 'Cinematic Camera Motion', 'AI Scene Creation', 'HD & 4K Ready', 'Fast Cloud Rendering'],
-                          icon: <VideoCameraOutlined className="text-2xl text-fuchsia-400" />
-                        },
-                        {
-                          title: 'Reference Video Editing',
-                          desc: 'Upload a reference video and recreate its visual style, motion, composition, and atmosphere using AI.',
-                          features: ['Style Transfer', 'Motion Reference', 'Cinematic Recreation', 'AI Guided Editing', 'Visual Consistency'],
-                          icon: <CopyOutlined className="text-2xl text-purple-400" />
-                        },
-                        {
-                          title: 'Image to Video',
-                          desc: 'Transform static images into dynamic videos with realistic movement and cinematic animation.',
-                          features: ['Camera Zoom', 'Object Motion', 'AI Animation', 'Smooth Transitions', 'Social Media Ready'],
-                          icon: <FileImageOutlined className="text-2xl text-fuchsia-400" />
-                        },
-                        {
-                          title: 'AI Manual Edit',
+                          title: 'Quick AI Edit',
                           desc: 'Professional editing studio with AI-assisted controls for creators.',
                           features: ['Premium Effects', 'Cinematic Filters', 'Advanced Transitions', 'Motion Tracking', 'Speed Control', 'AI Enhancement', 'Professional Timeline Editing'],
                           icon: <SlidersOutlined className="text-2xl text-purple-400" />
@@ -1233,10 +1181,7 @@ export function LandingPage() {
                 <div>
                   <h4 className="font-bold mb-6 text-lg">AI Tools</h4>
                   <ul className="space-y-4 text-sm opacity-70">
-                    <li><button onClick={(e) => { e.preventDefault(); setActiveWorkflowModal(1); }} className="hover:text-fuchsia-500 transition-colors block text-left cursor-pointer bg-transparent border-none p-0 m-0 font-inherit text-inherit">AI Video Generation</button></li>
-                    <li><button onClick={(e) => { e.preventDefault(); setActiveWorkflowModal(2); }} className="hover:text-fuchsia-500 transition-colors block text-left cursor-pointer bg-transparent border-none p-0 m-0 font-inherit text-inherit">Reference Video Editing</button></li>
-                    <li><button onClick={(e) => { e.preventDefault(); setActiveWorkflowModal(3); }} className="hover:text-fuchsia-500 transition-colors block text-left cursor-pointer bg-transparent border-none p-0 m-0 font-inherit text-inherit">Image to Video</button></li>
-                    <li><button onClick={(e) => { e.preventDefault(); setActiveWorkflowModal(4); }} className="hover:text-fuchsia-500 transition-colors block text-left cursor-pointer bg-transparent border-none p-0 m-0 font-inherit text-inherit">AI Manual Edit</button></li>
+                    <li><button onClick={(e) => { e.preventDefault(); setActiveWorkflowModal(4); }} className="hover:text-fuchsia-500 transition-colors block text-left cursor-pointer bg-transparent border-none p-0 m-0 font-inherit text-inherit">Quick AI Edit</button></li>
                   </ul>
                 </div>
               </div>
@@ -1298,7 +1243,7 @@ export function LandingPage() {
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ duration: 0.28, ease: "easeOut" }}
                 className="relative w-full max-w-4xl max-h-[90vh] bg-[#0a0a10]/80 backdrop-blur-2xl border border-white/[0.08] rounded-[28px] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5),0_0_40px_rgba(168,85,247,0.1)] flex flex-col overflow-hidden"
-                onClick={(e) => e.stopPropagation()}
+                onClick={(e: React.MouseEvent) => e.stopPropagation()}
               >
                 <div className="flex-shrink-0 flex justify-end p-6 border-b border-white/5">
                   <button

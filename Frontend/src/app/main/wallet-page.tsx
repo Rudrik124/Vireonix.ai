@@ -68,10 +68,7 @@ export function WalletPage() {
   };
 
   const usageCards = [
-    { title: "AI Video", cost: "25 Credits", action: "Generate", icon: <Video className="w-6 h-6 text-fuchsia-400" />, color: "from-fuchsia-500/20 to-pink-500/20", borderColor: "hover:border-fuchsia-500/50" },
-    { title: "Reference Edit", cost: "18 Credits", action: "Generate", icon: <Wand2 className="w-6 h-6 text-purple-400" />, color: "from-purple-500/20 to-indigo-500/20", borderColor: "hover:border-purple-500/50" },
-    { title: "Image to Video", cost: "15 Credits", action: "Generate", icon: <ImageIcon className="w-6 h-6 text-blue-400" />, color: "from-blue-500/20 to-cyan-500/20", borderColor: "hover:border-blue-500/50" },
-    { title: "AI Manual Edit", cost: "8 Credits / Minute", action: "Edit", icon: <Activity className="w-6 h-6 text-emerald-400" />, color: "from-emerald-500/20 to-teal-500/20", borderColor: "hover:border-emerald-500/50" }
+    { title: "Quick AI Edit", cost: "8 Credits / Minute", action: "Edit", icon: <Activity className="w-6 h-6 text-emerald-400" />, color: "from-emerald-500/20 to-teal-500/20", borderColor: "hover:border-emerald-500/50" }
   ];
 
   const pricingCards = [
@@ -81,8 +78,7 @@ export function WalletPage() {
   ];
 
   const transactions = [
-    { title: "AI Video Generation", amount: "-0 Credits", date: "Today, 09:42 AM", type: "usage" },
-    { title: "Image to Video", amount: "-0 Credits", date: "Today, 08:18 AM", type: "usage" },
+    { title: "Quick AI Edit", amount: "-0 Credits", date: "Today, 09:42 AM", type: "usage" },
     { title: "Credits Purchased", amount: "+0 Credits", date: "Yesterday, 14:30 PM", type: "purchase", bonus: "+0 Bonus Credits" }
   ];
 
@@ -397,7 +393,7 @@ export function WalletPage() {
                 {[
                   { title: "Daily Login", reward: "+0 Credits", icon: <Gift className="w-5 h-5 text-pink-400" />, action: "Claim" },
                   { title: "Invite Friends", reward: "+0 Credits", icon: <Users className="w-5 h-5 text-blue-400" />, action: "Share" },
-                  { title: "Complete 20 Videos", reward: "+0 Credits", icon: <Video className="w-5 h-5 text-purple-400" />, action: "Track" }
+                  { title: "Complete 20 Edits", reward: "+0 Credits", icon: <Activity className="w-5 h-5 text-purple-400" />, action: "Track" }
                 ].map((reward, idx) => (
                   <div key={idx} className="flex items-center justify-between p-3 rounded-2xl hover:bg-white/5 transition-colors cursor-pointer group">
                     <div className="flex items-center gap-3">

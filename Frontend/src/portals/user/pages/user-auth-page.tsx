@@ -20,7 +20,7 @@ export function UserAuthPage() {
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     try {
-      await signInWithGoogle();
+      await signInWithGoogle(`${window.location.origin}/auth/callback`);
     } catch (err: any) {
       setError(err?.message || "Google sign-in failed.");
     } finally {

@@ -24,7 +24,7 @@ interface DownloadItem {
   created_at?: string;
 }
 
-const FILTERS = ["All", "AI Video Generation", "Reference Video", "Image to Video", "Manual Edit"];
+const FILTERS = ["All", "Quick AI Edit"];
 
 export function DownloadsPage() {
   const { session } = useAuth();

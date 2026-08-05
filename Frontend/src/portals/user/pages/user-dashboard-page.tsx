@@ -3,18 +3,7 @@ import { CreditCard, History, ImagePlus, Settings, Sparkles, Wand2, Wallet } fro
 import { useAuth } from "../../../app/context/auth-context";
 
 const quickActions = [
-  {
-    title: "AI Generated Video",
-    description: "Prompt-driven generation with production credit tracking.",
-    href: "/create",
-    icon: Sparkles,
-  },
-  {
-    title: "Images to Video",
-    description: "Upload images or clips and generate polished motion outputs.",
-    href: "/images-to-video/upload",
-    icon: ImagePlus,
-  },
+
   {
     title: "Quick Edit",
     description: "Use AI-enhanced editing without entering the internal testing flow.",

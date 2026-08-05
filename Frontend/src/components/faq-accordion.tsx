@@ -7,7 +7,7 @@ export const FAQAccordion = () => {
 
   const faqs = [
     { q: "What is VEYTRIX.AI?", a: "VEYTRIX.AI is an AI-powered cinematic video creation platform that enables creators, marketers, agencies, and businesses to generate professional-quality videos using advanced artificial intelligence." },
-    { q: "Which AI tools are currently available?", a: "VEYTRIX.AI currently offers:\n• AI Video Generation\n• Reference Video Editing\n• Image to Video\n• AI Manual Edit Studio\n\nEach tool is optimized for professional creative workflows." },
+    { q: "Which AI tools are currently available?", a: "VEYTRIX.AI currently offers:\n• Quick AI Edit\n\nEach tool is optimized for professional creative workflows." },
     { q: "Do I need editing experience?", a: "No.\n\nVEYTRIX.AI is built for everyone. Beginners can generate videos with simple prompts, while professionals can access advanced editing controls for precise creative output." },
     { q: "How does the credit system work?", a: "Every AI generation or editing operation consumes credits depending on rendering complexity and duration.\n\nCredits are included with subscription plans, and additional credit packs can be purchased anytime." },
     { q: "Can I use generated videos commercially?", a: "Yes.\n\nVideos created using VEYTRIX.AI may be used for commercial purposes according to your active subscription plan and licensing terms." },

@@ -58,30 +58,7 @@ export function TesterTestEnvironmentPage() {
   }
 
   const cards = [
-    { 
-      title: "Test AI Generate Video", 
-      desc: "Create videos from text prompts using AI with unlimited credits", 
-      path: "/create?redirect=/tester/test-environment", 
-      icon: Sparkles,
-      action: "Open Generator",
-      status: "AI Powered"
-    },
-    { 
-      title: "Reference Video", 
-      desc: "Create videos based on reference footage and styling", 
-      path: "/reference-video/setup?redirect=/tester/test-environment", 
-      icon: Film,
-      action: "Start Reference Video",
-      status: "Experimental"
-    },
-    { 
-      title: "Direct Pic to Video", 
-      desc: "Convert your images directly into animated videos", 
-      path: "/images-to-video/upload?redirect=/tester/test-environment", 
-      icon: ImageIcon,
-      action: "Upload Images",
-      status: "Sandbox"
-    },
+
     { 
       title: "Manual Edit", 
       desc: "Manually edit and fine-tune your videos with precision controls", 

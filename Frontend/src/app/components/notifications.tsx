@@ -3,9 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ArrowLeft,
   Bell,
-  Video,
-  Image as ImageIcon,
-  Film,
   Wand2,
   Download,
   Upload,
@@ -21,7 +18,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/app/context/auth-context';
 
-type NotificationType = 'ai_video' | 'image_video' | 'reference_video' | 'manual_edit' | 'download' | 'upload' | 'subscription' | 'account' | 'security' | 'feature' | 'system';
+type NotificationType = 'manual_edit' | 'download' | 'upload' | 'subscription' | 'account' | 'security' | 'feature' | 'system';
 
 interface AppNotification {
   id: string;
@@ -39,17 +36,6 @@ interface AppNotification {
 }
 
 const mockNotifications: AppNotification[] = [
-  {
-    id: 'n1',
-    type: 'ai_video',
-    title: 'Video Generated Successfully',
-    description: 'Your AI video "Travel Cinematic" has been rendered successfully and is now available in Downloads.',
-    fullMessage: 'The render took 4 minutes and 12 seconds. Resolution: 4K. Format: MP4.',
-    timestamp: '2 minutes ago',
-    isRead: false,
-    category: 'AI Jobs',
-    action: { label: 'View Download', path: '/downloads' }
-  },
   {
     id: 'n2',
     type: 'download',
@@ -90,23 +76,11 @@ const mockNotifications: AppNotification[] = [
     timestamp: 'Yesterday',
     isRead: true,
     category: 'Account'
-  },
-  {
-    id: 'n6',
-    type: 'upload',
-    title: 'Upload Completed',
-    description: 'Your uploaded reference video has been processed successfully.',
-    timestamp: '2 days ago',
-    isRead: true,
-    category: 'AI Jobs'
   }
 ];
 
 const getIconForType = (type: NotificationType) => {
   switch (type) {
-    case 'ai_video': return <Video className="w-5 h-5 text-purple-400" />;
-    case 'image_video': return <ImageIcon className="w-5 h-5 text-blue-400" />;
-    case 'reference_video': return <Film className="w-5 h-5 text-pink-400" />;
     case 'manual_edit': return <Wand2 className="w-5 h-5 text-fuchsia-400" />;
     case 'download': return <Download className="w-5 h-5 text-green-400" />;
     case 'upload': return <Upload className="w-5 h-5 text-cyan-400" />;
@@ -121,9 +95,6 @@ const getIconForType = (type: NotificationType) => {
 
 const getIconBgClass = (type: NotificationType) => {
   switch (type) {
-    case 'ai_video': return 'bg-purple-500/20';
-    case 'image_video': return 'bg-blue-500/20';
-    case 'reference_video': return 'bg-pink-500/20';
     case 'manual_edit': return 'bg-fuchsia-500/20';
     case 'download': return 'bg-green-500/20';
     case 'upload': return 'bg-cyan-500/20';

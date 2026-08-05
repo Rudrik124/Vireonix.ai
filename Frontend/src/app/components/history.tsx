@@ -52,7 +52,7 @@ export function HistoryPage() {
   const [activeTab, setActiveTab] = useState("All");
   const [isLoading, setIsLoading] = useState(true);
 
-  const tabs = ["All", "Ai generated video", "Reference video", "Direct pic to video", "Ai manual edit"];
+  const tabs = ["All", "Quick AI Edit"];
 
   const formatHistoryItem = (item: any): HistoryItem => {
     const d = new Date(item.created_at);

@@ -22,40 +22,7 @@ const shortcutsData = [
     ]
   },
   {
-    category: "AI Video Generation",
-    icon: <Sparkles className="w-5 h-5" />,
-    description: "Tools for text-to-video generation.",
-    items: [
-      { action: "Generate Video", desc: "Start AI generation", win: ["Ctrl", "Enter"], mac: ["⌘", "Enter"] },
-      { action: "Clear Prompt", desc: "Clear current prompt", win: ["Ctrl", "Backspace"], mac: ["⌘", "Delete"] },
-      { action: "Focus Prompt Box", desc: "Quickly start typing", win: ["/"], mac: ["/"] },
-      { action: "Change Aspect Ratio", desc: "Toggle video format", win: ["Alt", "A"], mac: ["⌥", "A"] },
-      { action: "Increase Duration", desc: "Add more time", win: ["Alt", "↑"], mac: ["⌥", "↑"] },
-      { action: "Decrease Duration", desc: "Reduce video time", win: ["Alt", "↓"], mac: ["⌥", "↓"] },
-    ]
-  },
-  {
-    category: "Image To Video",
-    icon: <ImageIcon className="w-5 h-5" />,
-    description: "Animate your static images.",
-    items: [
-      { action: "Upload Image", desc: "Select source image", win: ["Ctrl", "U"], mac: ["⌘", "U"] },
-      { action: "Generate", desc: "Start animation process", win: ["Ctrl", "Enter"], mac: ["⌘", "Enter"] },
-      { action: "Replace Image", desc: "Swap current image", win: ["Ctrl", "R"], mac: ["⌘", "R"] },
-    ]
-  },
-  {
-    category: "Reference Video",
-    icon: <Video className="w-5 h-5" />,
-    description: "Style transfer from references.",
-    items: [
-      { action: "Upload Reference", desc: "Add reference clip", win: ["Ctrl", "Shift", "U"], mac: ["⌘", "Shift", "U"] },
-      { action: "Generate", desc: "Start restyling", win: ["Ctrl", "Enter"], mac: ["⌘", "Enter"] },
-      { action: "Clear Reference", desc: "Remove reference clip", win: ["Delete"], mac: ["Delete"] },
-    ]
-  },
-  {
-    category: "AI Manual Edit",
+    category: "Quick AI Edit",
     icon: <Scissors className="w-5 h-5" />,
     description: "Precision editing controls.",
     items: [

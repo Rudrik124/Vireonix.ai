@@ -231,7 +231,7 @@ export function LoginModal({ isOpen, onClose, customMessage, customTitle }: Logi
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.28, ease: "easeOut" }}
             className="relative w-full max-w-[440px] max-h-[90vh] overflow-y-auto bg-[#0a0a10]/80 backdrop-blur-2xl border border-white/[0.08] rounded-[28px] p-8 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5),0_0_40px_rgba(168,85,247,0.1)] flex flex-col"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e: React.MouseEvent) => e.stopPropagation()}
           >
             {/* Close button */}
             <button

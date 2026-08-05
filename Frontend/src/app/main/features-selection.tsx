@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, FileVideo, Zap, Image as ImageIcon, ArrowLeft, LogOut, User, ChevronDown, Menu, Play } from "lucide-react";
+import { Zap, ArrowLeft, LogOut, User, ChevronDown } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/auth-context";
 import { SuccessToast } from "../components/success-toast";
@@ -9,45 +9,6 @@ import { buildPortalAwarePath, usePortalTestingContext } from "../../shared/port
 import { LoginModal } from "../components/login-modal";
 
 const features = [
-  {
-    id: "ai-generated",
-    title: "AI Generated Video",
-    description: "Text-to-Video • Cinematic",
-    icon: Sparkles,
-    colorTheme: "blue",
-    useCases: "Ads • Reels",
-    stats: ["4K Ready", "~20s", "AI Enhanced"],
-    cta: "Launch Workspace",
-    tag: "🔥",
-    route: "/create",
-    previewType: "cinematic",
-  },
-  {
-    id: "reference-video",
-    title: "Generate Using Reference",
-    description: "Style Transfer • Motion Match",
-    icon: FileVideo,
-    colorTheme: "purple",
-    useCases: "Style Transfer • Edits",
-    stats: ["4K Ready", "~15s", "Artistic"],
-    cta: "Open Studio",
-    tag: "⚡",
-    route: "/reference-video/setup",
-    previewType: "split",
-  },
-  {
-    id: "media-to-video",
-    title: "Direct Pic to Video",
-    description: "Image Animation • Depth",
-    icon: ImageIcon,
-    colorTheme: "orange",
-    useCases: "Slides • Social",
-    stats: ["HD Ready", "~10s", "Motion"],
-    cta: "Create Now",
-    tag: "✨",
-    route: "/images-to-video/upload",
-    previewType: "morphing",
-  },
   {
     id: "quick-edit",
     title: "Quick AI Edit",
@@ -64,81 +25,31 @@ const features = [
 ];
 
 const PortalPreview = ({ type, isActive }: { type: string, isActive: boolean }) => {
-  if (type === "cinematic") {
-    return (
-       <div className="w-full h-full relative bg-[#0B0A10] flex items-center justify-center overflow-hidden rounded-t-[14px]">
-          <motion.img 
-            src="https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=1000&auto=format&fit=crop"
-            animate={isActive ? { scale: [1, 1.1, 1], x: [0, -10, 0] } : { scale: 1, x: 0 }}
-            transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
-            className="absolute inset-0 w-[120%] h-[120%] object-cover opacity-60"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0B0A10] via-transparent to-transparent" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 md:w-10 md:h-10 rounded-full border border-blue-500/50 flex items-center justify-center bg-black/40 backdrop-blur-md shadow-[0_0_15px_rgba(59,130,246,0.3)]">
-             <Play className="w-3 h-3 md:w-4 md:h-4 text-blue-400 ml-0.5" fill="currentColor" />
-          </div>
-       </div>
-    );
-  }
-  if (type === "split") {
-     return (
-       <div className="w-full h-full relative bg-black flex items-center justify-center overflow-hidden rounded-t-[14px]">
-         <div className="absolute inset-0 flex">
-            <div className="w-1/2 h-full relative">
-               <img src="https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=500&auto=format&fit=crop" className="w-full h-full object-cover opacity-40 grayscale" />
-               <div className="absolute top-1 left-1 text-[7px] md:text-[9px] font-black tracking-widest text-white/50 bg-black/80 px-1 rounded border border-white/10">IN</div>
-            </div>
-            <div className="w-1/2 h-full relative">
-               <img src="https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=500&auto=format&fit=crop" className="w-full h-full object-cover opacity-90" />
-               <div className="absolute top-1 right-1 text-[7px] md:text-[9px] font-black tracking-widest text-fuchsia-200 bg-purple-900/80 px-1 rounded border border-fuchsia-500/30">OUT</div>
-            </div>
-         </div>
-         <motion.div 
-           animate={isActive ? { x: ['-100%', '100%'] } : { x: 0 }}
-           transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-           className="absolute top-0 bottom-0 left-1/2 w-0.5 bg-white shadow-[0_0_10px_#ec4899]"
-         />
-       </div>
-     );
-  }
-  if (type === "morphing") {
-     return (
-       <div className="w-full h-full relative bg-black flex items-center justify-center overflow-hidden rounded-t-[14px]">
-          <motion.img 
-            src="https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?q=80&w=1000&auto=format&fit=crop"
-            animate={isActive ? { filter: ['hue-rotate(0deg) saturate(1)', 'hue-rotate(45deg) saturate(1.5)', 'hue-rotate(0deg) saturate(1)'], scale: [1, 1.15, 1] } : { scale: 1 }}
-            transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute inset-0 w-full h-full object-cover opacity-80"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0B0A10] via-transparent to-transparent" />
-       </div>
-     );
-  }
   if (type === "timeline") {
-     return (
-       <div className="w-full h-full relative bg-[#0B0A10] p-2 md:p-3 flex flex-col justify-end overflow-hidden rounded-t-[14px]">
-          <div className="flex gap-[2px] mb-2 h-1/2 items-end px-1">
-            {Array.from({ length: 25 }).map((_, i) => (
-               <motion.div 
-                 key={i}
-                 animate={isActive ? { height: [`${Math.random()*30 + 10}%`, `${Math.random()*80 + 20}%`, `${Math.random()*30 + 10}%`] } : { height: '20%' }}
-                 transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut", delay: i * 0.05 }}
-                 className="flex-1 bg-emerald-500/60 rounded-t-sm"
-               />
-            ))}
-          </div>
-          <div className="w-full h-4 md:h-6 bg-white/5 rounded flex gap-0.5 p-0.5 relative border border-white/10">
-             <div className="w-1/4 bg-fuchsia-500/30 rounded border border-fuchsia-500/20" />
-             <div className="w-1/2 bg-emerald-500/30 rounded border border-emerald-500/20" />
-             <div className="w-1/4 bg-purple-500/30 rounded border border-purple-500/20" />
-             <motion.div 
-               animate={isActive ? { x: ['0%', '350%'] } : { x: '0%' }}
-               transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-               className="absolute top-[-2px] bottom-[-2px] w-px bg-white shadow-[0_0_8px_#10b981] left-1"
-             />
-          </div>
-       </div>
-     );
+    return (
+      <div className="w-full h-full relative bg-[#0B0A10] p-2 md:p-3 flex flex-col justify-end overflow-hidden rounded-t-[14px]">
+        <div className="flex gap-[2px] mb-2 h-1/2 items-end px-1">
+          {Array.from({ length: 25 }).map((_, i) => (
+            <motion.div
+              key={i}
+              animate={isActive ? { height: [`${Math.random() * 30 + 10}%`, `${Math.random() * 80 + 20}%`, `${Math.random() * 30 + 10}%`] } : { height: '20%' }}
+              transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut", delay: i * 0.05 }}
+              className="flex-1 bg-emerald-500/60 rounded-t-sm"
+            />
+          ))}
+        </div>
+        <div className="w-full h-4 md:h-6 bg-white/5 rounded flex gap-0.5 p-0.5 relative border border-white/10">
+          <div className="w-1/4 bg-fuchsia-500/30 rounded border border-fuchsia-500/20" />
+          <div className="w-1/2 bg-emerald-500/30 rounded border border-emerald-500/20" />
+          <div className="w-1/4 bg-purple-500/30 rounded border border-purple-500/20" />
+          <motion.div
+            animate={isActive ? { x: ['0%', '350%'] } : { x: '0%' }}
+            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+            className="absolute top-[-2px] bottom-[-2px] w-px bg-white shadow-[0_0_8px_#10b981] left-1"
+          />
+        </div>
+      </div>
+    );
   }
   return null;
 }
@@ -194,16 +105,16 @@ export function FeaturesSelectionPage() {
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 bg-[#0B0A10]">
         {/* Grid Glow */}
         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:60px_60px] [perspective:1000px] [transform-style:preserve-3d]">
-           <div className="absolute inset-0 bg-gradient-to-t from-[#0B0A10] via-transparent to-[#0B0A10]" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0B0A10] via-transparent to-[#0B0A10]" />
         </div>
-        
+
         {/* Gradient Blobs (matching landing page purple/indigo) */}
-        <motion.div 
+        <motion.div
           animate={{ x: [0, 50, 0], y: [0, -25, 0], scale: [1, 1.1, 1] }}
           transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
           className="absolute top-0 right-1/4 w-[600px] h-[600px] bg-fuchsia-600/10 rounded-full blur-[100px]"
         />
-        <motion.div 
+        <motion.div
           animate={{ x: [0, -50, 0], y: [0, 25, 0], scale: [1, 1.05, 1] }}
           transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
           className="absolute bottom-0 left-1/4 w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[100px]"
@@ -259,8 +170,7 @@ export function FeaturesSelectionPage() {
       {/* MAIN CONTENT */}
       <div className="flex-1 flex flex-col items-center w-full max-w-5xl mx-auto relative z-10 h-full min-h-0">
         <div className="tools-header">
-          <h1 className="tools-title font-black tracking-tight drop-shadow-lg">See How VEYTRIX Works</h1>
-          <p className="tools-subtitle font-medium">Four powerful AI workflows for creators</p>
+          <h1 className="tools-title font-black tracking-tight drop-shadow-lg">AI Edit</h1>
         </div>
 
         <div className="portals-grid w-full">
@@ -268,7 +178,7 @@ export function FeaturesSelectionPage() {
             const Icon = feature.icon;
             const isClicking = clickingPortal === feature.id;
             const isRow1 = index < 2;
-            
+
             return (
               <div
                 key={feature.id}
@@ -280,8 +190,8 @@ export function FeaturesSelectionPage() {
                 {/* Click/Loading Overlay */}
                 {isClicking && (
                   <div className="absolute inset-0 bg-black/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center rounded-[clamp(14px,2vw,24px)]">
-                     <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin mb-2" />
-                     <div className="text-white font-bold tracking-widest text-[11px] animate-pulse">LOADING...</div>
+                    <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin mb-2" />
+                    <div className="text-white font-bold tracking-widest text-[11px] animate-pulse">LOADING...</div>
                   </div>
                 )}
 
@@ -300,7 +210,7 @@ export function FeaturesSelectionPage() {
                     <p className="portal-cap text-white/80 font-medium">{feature.description}</p>
                     <p className="portal-usecase">📋 Use Cases: {feature.useCases}</p>
                   </div>
-                  
+
                   <div>
                     <div className="portal-stats">
                       {feature.stats.map((stat, i) => (
@@ -311,7 +221,7 @@ export function FeaturesSelectionPage() {
                       ))}
                     </div>
                     <button className={`portal-btn ${feature.colorTheme} w-full`}>
-                       {feature.cta}
+                      {feature.cta}
                     </button>
                   </div>
                 </div>
@@ -364,12 +274,16 @@ export function FeaturesSelectionPage() {
 
         /* Portals grid */
         .portals-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          flex-direction: column;
           gap: 1.5vh;
           flex: 1;
-          align-content: center;
           min-height: 0;
+          width: 100%;
+          max-width: 400px;
+          margin: 0 auto;
         }
 
         /* Base portal sizing */
@@ -384,6 +298,7 @@ export function FeaturesSelectionPage() {
           transition: all 0.3s ease;
           position: relative;
           cursor: pointer;
+          width: 100%;
         }
 
         /* Specific row heights to emulate 42% and 38% */
@@ -501,7 +416,8 @@ export function FeaturesSelectionPage() {
         /* Responsive - Keep it in viewport if possible */
         @media (max-width: 768px) {
           .portals-grid {
-            grid-template-columns: 1fr;
+            display: flex;
+            flex-direction: column;
             gap: 1.5vh;
             overflow-y: auto;
             padding-bottom: 20px;
